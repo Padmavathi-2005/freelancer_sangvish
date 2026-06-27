@@ -1,0 +1,2210 @@
+"use client";
+
+import React from "react";
+import { DashboardProvider, useDashboard } from "./DashboardContext";
+import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX } from "react-icons/fi";
+import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
+import CustomSelect from "@/components/CustomSelect";
+
+function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
+  const {
+    userName,
+    userRole,
+    isSidebarOpen,
+    setIsSidebarOpen,
+    profileCompletionProgress,
+    unreadNotificationsCount,
+    notifications,
+    isNotificationsOpen,
+    setIsNotificationsOpen,
+    handleMarkAllRead,
+    handleMarkSingleRead,
+    handleRoleSwitch,
+    setSelectedProjectDetails,
+    setSelectedGigOrderDetails,
+    apiAlert,
+    selectedFreelancerProfile,
+    setSelectedFreelancerProfile,
+    loadingProfileDetails,
+    handleStartConversation,
+    gigs,
+    gigApplications,
+    isCreatingJob,
+    setIsCreatingJob,
+    activeTab,
+    setActiveTab,
+
+    // Onboarding context variables
+    onboardingCompleted,
+    onboardingStep,
+    clientWizardStep,
+    clientError,
+    clientSuccess,
+    companyName,
+    setCompanyName,
+    companySize,
+    setCompanySize,
+    industry,
+    setIndustry,
+    companyWebsite,
+    setCompanyWebsite,
+    companyDescription,
+    setCompanyDescription,
+    companyEstablishedYear,
+    setCompanyEstablishedYear,
+    hiringContactName,
+    setHiringContactName,
+    hiringContactDesignation,
+    setHiringContactDesignation,
+    setClientWizardStep,
+    wizardStep,
+    setWizardStep,
+    categories,
+    subCategories,
+    availableSkills,
+    languages,
+    categoryId,
+    handleCategoryChange,
+    subCategoryId,
+    setSubCategoryId,
+    professionalTitle,
+    setProfessionalTitle,
+    experienceLevel,
+    setExperienceLevel,
+    totalExperienceYears,
+    setTotalExperienceYears,
+    hourlyRate,
+    setHourlyRate,
+    availabilityStatus,
+    setAvailabilityStatus,
+    linkedinUrl,
+    setLinkedinUrl,
+    portfolioWebsite,
+    setPortfolioWebsite,
+    resumeUrl,
+    setResumeUrl,
+    selectedSkillIds,
+    handleToggleSkill,
+    selectedLanguageIds,
+    setSelectedLanguageIds,
+    step1Error,
+    step1Success,
+    handleSaveStep1,
+    experiences,
+    educations,
+    certifications,
+    expCompany,
+    setExpCompany,
+    expTitle,
+    setExpTitle,
+    expEmpType,
+    setExpEmpType,
+    expCurrent,
+    setExpCurrent,
+    expStart,
+    setExpStart,
+    expEnd,
+    setExpEnd,
+    expDesc,
+    setExpDesc,
+    handleAddExperience,
+    eduInst,
+    setEduInst,
+    eduDegree,
+    setEduDegree,
+    eduField,
+    setEduField,
+    eduStart,
+    setEduStart,
+    eduEnd,
+    setEduEnd,
+    handleAddEducation,
+    certName,
+    setCertName,
+    certOrg,
+    setCertOrg,
+    certDate,
+    setCertDate,
+    certCredUrl,
+    setCertCredUrl,
+    handleAddCertification,
+    handleSkipStep2,
+    updateOnboardingStep,
+    userEmail,
+    userPhone,
+    setUserPhone,
+    emailVerified,
+    phoneVerified,
+    emailOtp,
+    setEmailOtp,
+    phoneOtp,
+    setPhoneOtp,
+    emailOtpSent,
+    phoneOtpSent,
+    otpError,
+    otpSuccess,
+    handleSendEmailOtp,
+    handleVerifyEmailOtp,
+    handleSendPhoneOtp,
+    handleVerifyPhoneOtp,
+    handleSkipStep3,
+    handleSaveStep3,
+    projectTitle,
+    setProjectTitle,
+    projectDesc,
+    setProjectDesc,
+    projectImages,
+    setProjectImages,
+    projectVideo,
+    setProjectVideo,
+    projectDocs,
+    setProjectDocs,
+    portfolioSuccess,
+    handleAddProject,
+    handleFinishOnboarding,
+    handleSelectFreelancer,
+    handleSelectClient,
+    handleSkip,
+    handleSaveClientStep,
+    clientNotice,
+
+    // Project proposal modal and settings confirmation
+    showPublishConfirmModal,
+    setShowPublishConfirmModal,
+    handleSaveClientStepSettings,
+    triggerToast,
+    showProposalModal,
+    setShowProposalModal,
+    applyingJob,
+    setApplyingJob,
+    proposalError,
+    setProposalError,
+    proposalBidAmount,
+    setProposalBidAmount,
+    proposalDeliveryDays,
+    setProposalDeliveryDays,
+    proposalUseMilestones,
+    setProposalUseMilestones,
+    proposalMilestones,
+    setProposalMilestones,
+    handleRemoveProposalMilestone,
+    newMilestoneTitle,
+    setNewMilestoneTitle,
+    newMilestoneAmount,
+    setNewMilestoneAmount,
+    handleAddProposalMilestone,
+    proposalCoverLetter,
+    setProposalCoverLetter,
+    proposalSubmitting,
+    handleSubmitProposal
+  } = useDashboard();
+
+  // Helper for logout
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("onboarding_completed");
+      localStorage.removeItem("onboarding_role");
+      window.location.href = "/login";
+    }
+  };
+
+  const isProfileIncomplete = userRole === "freelancer" && profileCompletionProgress < 100;
+  const isLight = true;
+
+  // DYNAMIC THEME CLASS MAPS
+  const modalOverlayClass = isLight ? "bg-slate-900/35" : "bg-slate-955/70";
+  const cardBgClass = isLight ? "bg-white border border-slate-200/80 shadow-2xl text-slate-800" : "bg-slate-900 border border-slate-800 shadow-2xl text-white";
+  const textClass = isLight ? "text-slate-900" : "text-white";
+  const subTextClass = isLight ? "text-slate-500 font-medium" : "text-slate-400 font-semibold";
+  
+  const inputClass = isLight 
+    ? "w-full bg-slate-50 border border-slate-250 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none" 
+    : "w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-emerald-500 focus:outline-none";
+  
+  const subCardClass = isLight 
+    ? "border border-slate-200 p-4 rounded-[2rem] bg-slate-50" 
+    : "border border-slate-855 p-4 rounded-[2rem] bg-slate-955/40";
+  
+  const listBgClass = isLight 
+    ? "space-y-2 mb-4 bg-slate-100/50 p-3 rounded-xl border border-slate-150" 
+    : "space-y-2 mb-4 bg-slate-955 p-3 rounded-xl";
+
+  if (onboardingStep === "loading") {
+    return (
+      <div className={`w-full min-h-screen ${isLight ? "bg-slate-50 text-slate-800" : "bg-slate-900 text-white"} flex flex-col items-center justify-center`}>
+        <div className="flex flex-col items-center gap-4">
+          <div className={`w-10 h-10 border-4 border-t-emerald-500 ${isLight ? "border-slate-200" : "border-slate-700"} rounded-full animate-spin`}></div>
+          <p className={`${isLight ? "text-slate-500" : "text-slate-400"} font-semibold text-sm`}>Loading onboarding credentials...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-screen w-full bg-slate-50 flex flex-row overflow-x-hidden">
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-30 lg:hidden cursor-pointer"
+        />
+      )}
+
+      {/* LEFT SIDEBAR PANEL */}
+      <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col h-screen lg:h-screen z-40 transition-transform duration-300 transform lg:transform-none ${
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+      }`}>
+        <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between shrink-0">
+          <span className="text-xl font-extrabold text-teal-700 tracking-tight font-display select-none">
+            {userRole === "client" ? "Client Workspace" : "Freelancer"}
+          </span>
+          <button
+            onClick={() => setIsSidebarOpen(false)}
+            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg lg:hidden cursor-pointer flex items-center justify-center border border-slate-200 bg-slate-50"
+            aria-label="Close sidebar"
+          >
+            <FiX className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Sidebar Role Switcher */}
+        <div className="px-4 py-3 border-b border-slate-100 flex flex-col gap-1.5 select-none">
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider px-2">Active Workspace Role</span>
+          <div onClick={() => setIsSidebarOpen(false)} className="bg-slate-100/80 p-1 rounded-xl flex gap-1 border border-slate-200/50">
+            <button
+              onClick={() => handleRoleSwitch("freelancer")}
+              className={`flex-1 text-center py-1.5 rounded-lg text-xxs font-black transition-all cursor-pointer ${
+                userRole === "freelancer"
+                  ? "bg-white text-slate-800 shadow-sm border border-slate-200/40 font-bold"
+                  : "text-slate-500 hover:text-slate-850"
+              }`}
+            >
+              Freelancer
+            </button>
+            <button
+              onClick={() => handleRoleSwitch("client")}
+              className={`flex-1 text-center py-1.5 rounded-lg text-xxs font-black transition-all cursor-pointer ${
+                userRole === "client"
+                  ? "bg-white text-slate-800 shadow-sm border border-slate-200/40 font-bold"
+                  : "text-slate-500 hover:text-slate-850"
+              }`}
+            >
+              Client
+            </button>
+          </div>
+        </div>
+
+        {userRole === "client" ? (
+          <nav onClick={() => setIsSidebarOpen(false)} className="flex-1 p-4 flex flex-col gap-4 select-none overflow-y-auto max-h-[calc(100vh-12rem)] scrollbar-thin">
+            
+            {/* Common Workspace Hub */}
+            <div className="flex flex-col gap-1">
+              <button
+                onClick={() => {
+                  setActiveTab("workspace");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "workspace"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Workspace Hub
+              </button>
+              
+              {profileCompletionProgress < 100 && (
+                <button
+                  onClick={() => {
+                    setActiveTab("settings");
+                  }}
+                  className="w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Profile Setup
+                </button>
+              )}
+            </div>
+
+            {/* HIRE FREELANCERS MODULE */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Hire Freelancers</span>
+              
+              <button
+                onClick={() => {
+                  setActiveTab("find_work");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "find_work"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                Search & Browse
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("client_hired_freelancers");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "client_hired_freelancers"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Already Hired
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("client_recommended_freelancers");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "client_recommended_freelancers"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                Recommendations
+              </button>
+            </div>
+
+            {/* PROJECT MANAGEMENT MODULE */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Project Management</span>
+              
+              <button
+                onClick={() => {
+                  setIsCreatingJob(true);
+                  setActiveTab("proposals");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "proposals" && isCreatingJob
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Add Project
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsCreatingJob(false);
+                  setActiveTab("proposals");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "proposals" && !isCreatingJob
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Your Projects
+              </button>
+            </div>
+
+            {/* GIG ORDERS & SERVICES MODULE */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Gig Orders & Services</span>
+              
+              <button
+                onClick={() => {
+                  setActiveTab("explore_gigs");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "explore_gigs"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                Explore Gigs
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("client_orders");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "client_orders"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Your Gig Orders
+              </button>
+            </div>
+
+            {/* COMMUNICATION & SETTINGS */}
+            <div className="flex flex-col gap-1 pt-2 border-t border-slate-100">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Communication & Settings</span>
+
+              <button
+                onClick={() => {
+                  setActiveTab("notifications");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center justify-between ${activeTab === "notifications"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <span>Notifications</span>
+                </div>
+                {unreadNotificationsCount > 0 && (
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "notifications" ? "bg-white/20 text-white" : "bg-rose-50 text-rose-600 border border-rose-100"}`}>
+                    {unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("inbox");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "inbox"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Inbox Messages
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("wallet");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "wallet"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                My Wallet
+              </button>
+
+
+              <button
+                onClick={() => {
+                  setActiveTab("settings");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "settings"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+              </button>
+            </div>
+          </nav>
+        ) : (
+          <nav onClick={() => setIsSidebarOpen(false)} className="flex-1 p-4 flex flex-col gap-4 select-none overflow-y-auto max-h-[calc(100vh-12rem)] scrollbar-thin">
+            {/* Common Workspace Hub */}
+            <div className="flex flex-col gap-1">
+              <button
+                onClick={() => {
+                  setActiveTab("workspace");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "workspace"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                Workspace Hub
+              </button>
+
+              {profileCompletionProgress < 100 && (
+                <button
+                  onClick={() => {
+                    setActiveTab("settings");
+                  }}
+                  className="w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Profile Setup
+                </button>
+              )}
+            </div>
+
+            {/* FIND & DELIVER WORK */}
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Find & Deliver Work</span>
+              
+              <button
+                disabled={isProfileIncomplete}
+                onClick={() => {
+                  setActiveTab("find_work");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                  isProfileIncomplete
+                    ? "opacity-50 cursor-not-allowed text-slate-400"
+                    : activeTab === "find_work"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10 cursor-pointer"
+                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50 cursor-pointer"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <span>Find Work</span>
+                </div>
+                {isProfileIncomplete && (
+                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                )}
+              </button>
+
+              <button
+                disabled={isProfileIncomplete}
+                onClick={() => {
+                  setActiveTab("proposals");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                  isProfileIncomplete
+                    ? "opacity-50 cursor-not-allowed text-slate-400"
+                    : activeTab === "proposals"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10 cursor-pointer"
+                      : "text-slate-500 hover:text-slate-855 hover:bg-slate-50 cursor-pointer"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>My Proposals</span>
+                </div>
+                {isProfileIncomplete ? (
+                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                ) : (
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "proposals" ? "bg-white/20 text-white" : "bg-teal-50 text-teal-700"}`}>
+                    4
+                  </span>
+                )}
+              </button>
+
+              <button
+                disabled={isProfileIncomplete}
+                onClick={() => {
+                  setActiveTab("gigs");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                  isProfileIncomplete
+                    ? "opacity-50 cursor-not-allowed text-slate-400"
+                    : activeTab === "gigs"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v.75c0 .621.504 1.125 1.125 1.125z" />
+                  </svg>
+                  <span>My Gigs</span>
+                </div>
+                {isProfileIncomplete ? (
+                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                ) : (
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "gigs" ? "bg-white/20 text-white" : "bg-teal-50 text-teal-700"}`}>
+                    {gigs.length}
+                  </span>
+                )}
+              </button>
+
+              <button
+                disabled={isProfileIncomplete}
+                onClick={() => {
+                  setActiveTab("gig_applications");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                  isProfileIncomplete
+                    ? "opacity-50 cursor-not-allowed text-slate-400"
+                    : activeTab === "gig_applications"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-1.5l1.359-3.058a1.125 1.125 0 011.543-.58l1.359.604a1.125 1.125 0 001.388-.383l2.206-2.941" />
+                  </svg>
+                  <span>Gig Orders</span>
+                </div>
+                {isProfileIncomplete ? (
+                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                ) : (
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "gig_applications" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700 border border-emerald-100/50"}`}>
+                    {gigApplications.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* COMMUNICATION & SETTINGS */}
+            <div className="flex flex-col gap-1 pt-2 border-t border-slate-100">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Communication & Settings</span>
+
+              <button
+                disabled={isProfileIncomplete}
+                onClick={() => {
+                  setActiveTab("notifications");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                  isProfileIncomplete
+                    ? "opacity-50 cursor-not-allowed text-slate-400"
+                    : activeTab === "notifications"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                  <span>Notifications</span>
+                </div>
+                {isProfileIncomplete ? (
+                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                ) : (
+                  unreadNotificationsCount > 0 && (
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "notifications" ? "bg-white/20 text-white" : "bg-rose-50 text-rose-700 border border-rose-100/50"}`}>
+                      {unreadNotificationsCount}
+                    </span>
+                  )
+                )}
+              </button>
+
+              <button
+                disabled={isProfileIncomplete}
+                onClick={() => {
+                  setActiveTab("inbox");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                  isProfileIncomplete
+                    ? "opacity-50 cursor-not-allowed text-slate-400"
+                    : activeTab === "inbox"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  <span>Inbox Messages</span>
+                </div>
+                {profileCompletionProgress < 100 ? (
+                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                ) : (
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "inbox" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700 border border-emerald-100/50"}`}>
+                    New
+                  </span>
+                )}
+              </button>
+
+              <button
+                disabled={isProfileIncomplete}
+                onClick={() => {
+                  setActiveTab("wallet");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${
+                  isProfileIncomplete
+                    ? "opacity-50 cursor-not-allowed text-slate-400"
+                    : activeTab === "wallet"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                My Wallet
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("settings");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "settings"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+              </button>
+            </div>
+          </nav>
+        )}
+
+        {/* Sidebar Footer User Details */}
+        <div className="p-4 border-t border-slate-200 bg-slate-50 flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-700 to-cyan-500 flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0">
+              {userName.substring(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-slate-800 truncate">{userName}</p>
+              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{userRole === "client" ? "Client" : "Freelancer"}</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN CONTAINER */}
+      <div className="flex-1 flex flex-col max-w-full lg:h-screen lg:overflow-hidden relative z-10">
+        <header className="h-16 w-full bg-white border-b border-slate-200 px-6 flex flex-row items-center justify-between relative z-30 shrink-0 shadow-sm">
+          {/* Left: Mobile hamburger menu toggle & role switch */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 -ml-2 text-slate-500 hover:text-slate-800 border border-slate-200 bg-white rounded-xl transition-all cursor-pointer shadow-sm lg:hidden flex items-center justify-center w-9 h-9"
+              aria-label="Open sidebar"
+            >
+              <FiMenu className="w-5 h-5" />
+            </button>
+
+            {/* Header Role indicator & quick switch */}
+            <div className="flex items-center gap-2 select-none">
+              <span className="text-xs font-bold text-slate-400 hidden sm:inline">Active view:</span>
+              <button
+                onClick={() => handleRoleSwitch(userRole === "client" ? "freelancer" : "client")}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all text-xs font-bold text-slate-800 cursor-pointer shadow-sm animate-fadeIn"
+              >
+                <span>{userRole === "client" ? "Client Workspace" : "Freelancer Workspace"}</span>
+                <span className="text-slate-400 font-normal">| Switch ⇄</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 relative">
+            {/* Notifications Bell Dropdown */}
+            <NotificationsDropdown
+              notifications={notifications}
+              unreadNotificationsCount={unreadNotificationsCount}
+              isNotificationsOpen={isNotificationsOpen}
+              setIsNotificationsOpen={setIsNotificationsOpen}
+              handleMarkAllRead={handleMarkAllRead}
+              handleMarkSingleRead={handleMarkSingleRead}
+            />
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors px-4 py-2 rounded-xl bg-rose-50 border border-rose-200/60 hover:bg-rose-100 cursor-pointer shadow-sm shrink-0"
+            >
+              Logout
+            </button>
+          </div>
+        </header>
+
+        {/* SCROLLABLE MAIN CONTENT AREA */}
+        <div className="flex-1 py-8 px-6 overflow-y-auto relative z-10 w-full flex flex-col gap-8">
+          {/* Background Decorative Pattern */}
+          <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0"></div>
+          {children}
+        </div>
+      </div>
+
+      {/* Onboarding Popup Overlay */}
+      {!onboardingCompleted && (
+        <div className={`fixed inset-0 z-50 ${modalOverlayClass} flex items-center justify-center p-4 overflow-y-auto select-none`}>
+          
+          {/* STEP 1: ROLE SELECTION MODAL */}
+          {onboardingStep === "role_selection" && (
+            <div className={`${cardBgClass} w-full max-w-xl rounded-3xl overflow-hidden relative flex flex-col p-6 sm:p-8 animate-fadeIn`}>
+              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                <div className="absolute top-[-25%] left-[-15%] w-[25rem] h-[25rem] bg-emerald-500/10 rounded-full filter blur-[80px]"></div>
+                <div className="absolute bottom-[-25%] right-[-15%] w-[25rem] h-[25rem] bg-teal-500/10 rounded-full filter blur-[80px]"></div>
+              </div>
+
+              <button
+                onClick={handleSkip}
+                className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer z-20 flex items-center justify-center gap-1.5 border text-slate-500 hover:text-slate-850 bg-slate-100 hover:bg-slate-200/80 border-slate-200"
+              >
+                Close
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="relative z-10 flex-grow flex flex-col justify-center items-center py-4">
+                <span className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase mb-1.5">Setup Onboarding</span>
+                <h1 className="text-xl sm:text-2xl font-black leading-tight tracking-tight text-center max-w-sm text-slate-900">
+                  How do you plan to use our platform?
+                </h1>
+                <p className="text-xs sm:text-sm text-center mt-2 max-w-xs leading-relaxed text-slate-500 font-medium">
+                  Choose the workspace track that matches your goals. We&apos;ll configure your experience accordingly.
+                </p>
+
+                {clientNotice && (
+                  <div className="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold rounded-xl animate-pulse text-center w-full">
+                    💼 Client flow selected! Redirecting to dashboard workspace...
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-4 w-full mt-6">
+                  <div
+                    onClick={handleSelectFreelancer}
+                    className="border p-4.5 rounded-2xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md group flex items-start gap-4 text-left bg-slate-50/50 border-slate-200 hover:border-teal-700/50 hover:bg-white"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-base shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      💻
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-extrabold group-hover:text-emerald-500 transition-colors text-slate-900">
+                        I&apos;m a Freelancer
+                      </h3>
+                      <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                        I want to find remote contracts, grow my skills, and build project milestones.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={handleSelectClient}
+                    className="border p-4.5 rounded-2xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md group flex items-start gap-4 text-left bg-slate-50/50 border-slate-200 hover:border-teal-700/50 hover:bg-white"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-base shrink-0 group-hover:scale-105 transition-transform duration-300">
+                      💼
+                    </div>
+                    <div>
+                      <h3 className="text-sm sm:text-base font-extrabold group-hover:text-emerald-500 transition-colors text-slate-900">
+                        I&apos;m a Client
+                      </h3>
+                      <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                        I want to hire remote talent, fund contracts securely, and review deliverables.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* CLIENT STEP-BY-STEP FLOW */}
+          {onboardingStep === "client_flow" && (
+            <div className="bg-white border border-slate-200/80 shadow-2xl text-slate-800 w-full max-w-3xl rounded-3xl overflow-hidden relative flex flex-col p-6 sm:p-8 animate-fadeIn max-h-[90vh]">
+              <button
+                onClick={handleSkip}
+                className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer z-20 flex items-center justify-center gap-1.5 border text-slate-500 hover:text-slate-855 bg-slate-100 hover:bg-slate-200/80 border-slate-200"
+              >
+                Close
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                <div className="absolute top-[-20%] left-[-20%] w-[30rem] h-[30rem] bg-emerald-500/5 rounded-full filter blur-[100px]"></div>
+                <div className="absolute bottom-[-20%] right-[-20%] w-[30rem] h-[30rem] bg-teal-500/5 rounded-full filter blur-[100px]"></div>
+              </div>
+
+              <div className="relative z-10 flex items-center justify-between border-b border-slate-100/55 pb-4 mb-6 pr-16 sm:pr-24 text-left">
+                <div>
+                  <span className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase">Client Onboarding</span>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Step {clientWizardStep} of 3</h2>
+                </div>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3].map((step) => (
+                    <div
+                      key={step}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        step === clientWizardStep
+                          ? "w-8 bg-emerald-500"
+                          : step < clientWizardStep
+                          ? "w-3 bg-emerald-700"
+                          : "w-3 bg-slate-400"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="relative z-10 flex-grow overflow-y-auto pr-1 text-left">
+                {clientError && (
+                  <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold rounded-xl mb-4">
+                    ⚠️ {clientError}
+                  </div>
+                )}
+                {clientSuccess && (
+                  <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold rounded-xl mb-4 animate-pulse">
+                    {clientWizardStep === 3 
+                      ? "🎉 Setup complete! Redirecting to workspace..." 
+                      : "🎉 Section saved! Moving to next step..."}
+                  </div>
+                )}
+
+                {/* STEP 1: COMPANY BASICS */}
+                {clientWizardStep === 1 && (
+                  <div className="space-y-4">
+                    <h3 className="text-base font-black text-slate-900">Company Basics</h3>
+                    <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                      Let's set up the basic credentials of your organization or business.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Company Name *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Acme Corporation"
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Industry *</label>
+                        <CustomSelect
+                          options={[
+                            { value: "Technology", label: "Technology & Software" },
+                            { value: "Finance", label: "Finance & Banking" },
+                            { value: "Healthcare", label: "Healthcare & Medicine" },
+                            { value: "Education", label: "Education & EdTech" },
+                            { value: "Marketing", label: "Marketing & Advertising" },
+                            { value: "Retail", label: "Retail & E-commerce" },
+                            { value: "Other", label: "Other Industry" }
+                          ]}
+                          value={industry}
+                          onChange={(val) => setIndustry(val as string)}
+                          placeholder="Select Industry"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Company Size *</label>
+                        <CustomSelect
+                          options={[
+                            { value: "1-10", label: "1-10 employees" },
+                            { value: "11-50", label: "11-50 employees" },
+                            { value: "51-200", label: "51-200 employees" },
+                            { value: "201-500", label: "201-500 employees" },
+                            { value: "500+", label: "500+ employees" }
+                          ]}
+                          value={companySize}
+                          onChange={(val) => setCompanySize(val as string)}
+                          placeholder="Select Company Size"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Established Year</label>
+                        <input
+                          type="number"
+                          min="1800"
+                          max={new Date().getFullYear()}
+                          placeholder="e.g. 2020"
+                          value={companyEstablishedYear}
+                          onChange={(e) => setCompanyEstablishedYear(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 2: COMPANY PRESENCE & DETAILS */}
+                {clientWizardStep === 2 && (
+                  <div className="space-y-4">
+                    <h3 className="text-base font-black text-slate-900">Company Presence & Details</h3>
+                    <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                      Provide details about your company website and description to build trust with candidates.
+                    </p>
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Website URL</label>
+                        <input
+                          type="url"
+                          placeholder="https://www.company.com"
+                          value={companyWebsite}
+                          onChange={(e) => setCompanyWebsite(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Company Description</label>
+                        <textarea
+                          placeholder="Tell us about what your business does, your mission, and your work culture..."
+                          value={companyDescription}
+                          onChange={(e) => setCompanyDescription(e.target.value)}
+                          className={`${inputClass} h-32`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: REPRESENTATIVE CONTACT DETAILS */}
+                {clientWizardStep === 3 && (
+                  <div className="space-y-4">
+                    <h3 className="text-base font-black text-slate-900">Hiring Contact Details</h3>
+                    <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                      Provide the contact representative details who will be interacting and hiring freelancers.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Hiring Contact Name *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. John Doe"
+                          value={hiringContactName}
+                          onChange={(e) => setHiringContactName(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Hiring Contact Designation *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Head of Talent Acquisition"
+                          value={hiringContactDesignation}
+                          onChange={(e) => setHiringContactDesignation(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative z-10 flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-800 mt-6 shrink-0">
+                <button
+                  type="button"
+                  disabled={clientWizardStep === 1}
+                  onClick={() => setClientWizardStep(clientWizardStep - 1)}
+                  className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-slate-500 hover:text-slate-800 bg-slate-100"
+                >
+                  ← Back
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSaveClientStep(clientWizardStep)}
+                  className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-950 flex items-center gap-1"
+                >
+                  <span>{clientWizardStep === 3 ? "Complete Onboarding ✓" : "Save & Continue →"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* FREELANCER STEP-BY-STEP FLOW */}
+          {onboardingStep === "freelancer_flow" && (
+            <div className="bg-white border border-slate-200/80 shadow-2xl text-slate-800 w-full max-w-5xl rounded-3xl overflow-hidden relative flex flex-col p-6 sm:p-8 animate-fadeIn max-h-[90vh]">
+              <button
+                onClick={handleSkip}
+                className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer z-20 flex items-center justify-center gap-1.5 border text-slate-500 hover:text-slate-850 bg-slate-100 hover:bg-slate-200/80 border-slate-200"
+              >
+                Close
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                <div className="absolute top-[-20%] left-[-20%] w-[30rem] h-[30rem] bg-emerald-500/5 rounded-full filter blur-[100px]"></div>
+                <div className="absolute bottom-[-20%] right-[-20%] w-[30rem] h-[30rem] bg-teal-500/5 rounded-full filter blur-[100px]"></div>
+              </div>
+
+              <div className="relative z-10 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-6 pr-16 sm:pr-24">
+                <div>
+                  <span className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase">Freelancer Onboarding</span>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Step {wizardStep} of 4</h2>
+                </div>
+                <div className="flex gap-1.5">
+                  {[1, 2, 3, 4].map((step) => (
+                    <div
+                      key={step}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        step === wizardStep
+                          ? "w-8 bg-emerald-500"
+                          : step < wizardStep
+                          ? "w-3 bg-emerald-700"
+                          : "w-3 bg-slate-450"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="relative z-10 flex-grow overflow-y-auto pr-1 text-left">
+                
+                {/* STEP 1 FORM - PROFILE DETAILS */}
+                {wizardStep === 1 && (
+                  <form onSubmit={handleSaveStep1} className="space-y-4">
+                    <h3 className="text-base font-black text-slate-900">Setup Profile & Details</h3>
+                    <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                      Tell clients about your professional domain, level of expertise, availability, and active skills.
+                    </p>
+
+                    {step1Error && (
+                      <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold rounded-xl">
+                        ⚠️ {step1Error}
+                      </div>
+                    )}
+                    {step1Success && (
+                      <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold rounded-xl">
+                        🎉 Profile information updated! Navigating to Step 2...
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Category *</label>
+                        <CustomSelect
+                          options={categories.map((c) => ({ value: c.category_id, label: c.category_name }))}
+                          value={categoryId}
+                          onChange={(val) => handleCategoryChange(String(val))}
+                          placeholder="Select Category"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Subcategory *</label>
+                        <CustomSelect
+                          options={subCategories.map((sc) => ({ value: sc.sub_category_id, label: sc.sub_category_name }))}
+                          value={subCategoryId}
+                          disabled={!categoryId}
+                          onChange={(val) => setSubCategoryId(String(val))}
+                          placeholder="Select Subcategory"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Professional Title *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Senior Full Stack Engineer (React, Node)"
+                          value={professionalTitle}
+                          onChange={(e) => setProfessionalTitle(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Experience Level *</label>
+                        <CustomSelect
+                          options={[
+                            { value: "Beginner", label: "Beginner" },
+                            { value: "Intermediate", label: "Intermediate" },
+                            { value: "Expert", label: "Expert" }
+                          ]}
+                          value={experienceLevel}
+                          onChange={(val) => setExperienceLevel(val as string)}
+                          placeholder="Select Experience Level"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Years of Experience *</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="e.g. 5"
+                          value={totalExperienceYears}
+                          onChange={(e) => setTotalExperienceYears(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Hourly Rate ($) (Optional)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="e.g. 45"
+                          value={hourlyRate}
+                          onChange={(e) => setHourlyRate(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Availability Status</label>
+                        <CustomSelect
+                          options={[
+                            { value: "Available", label: "Available" },
+                            { value: "Busy", label: "Busy" },
+                            { value: "Not Available", label: "Not Available" }
+                          ]}
+                          value={availabilityStatus}
+                          onChange={(val) => setAvailabilityStatus(val as string)}
+                          placeholder="Select Availability"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="text-xs font-bold block mb-1 text-slate-600">LinkedIn Profile Link</label>
+                        <input
+                          type="url"
+                          placeholder="https://linkedin.com/in/username"
+                          value={linkedinUrl}
+                          onChange={(e) => setLinkedinUrl(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Portfolio Website URL</label>
+                        <input
+                          type="url"
+                          placeholder="https://myportfolio.com"
+                          value={portfolioWebsite}
+                          onChange={(e) => setPortfolioWebsite(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Resume Document URL</label>
+                        <input
+                          type="url"
+                          placeholder="https://drive.google.com/.../resume.pdf"
+                          value={resumeUrl}
+                          onChange={(e) => setResumeUrl(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="text-xs font-bold block mb-1.5 text-slate-600">Select Skills * (At least 1)</label>
+                      {!subCategoryId ? (
+                        <p className="text-xs text-slate-400 italic">Please select a subcategory first to load skills.</p>
+                      ) : availableSkills.length === 0 ? (
+                        <p className="text-xs text-slate-400 italic">No skills registered for this subcategory.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 rounded-xl border bg-slate-100/50 border-slate-200">
+                          {availableSkills.map((sk) => {
+                            const isChecked = selectedSkillIds.includes(sk.skill_id);
+                            return (
+                              <div
+                                key={sk.skill_id}
+                                onClick={() => handleToggleSkill(sk.skill_id)}
+                                className={`px-3 py-1.5 rounded-lg border text-xxs font-bold cursor-pointer transition-all duration-150 ${
+                                  isChecked
+                                    ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500 font-extrabold"
+                                    : "bg-white border-slate-250 text-slate-600 hover:border-slate-350"
+                                }`}
+                              >
+                                {sk.skill_name}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4">
+                      <label className="text-xs font-bold block mb-1.5 text-slate-600">Select Languages * (At least 1)</label>
+                      <CustomSelect
+                        multiple={true}
+                        options={languages.map((l) => ({ value: l.language_id, label: l.language_name }))}
+                        value={selectedLanguageIds}
+                        onChange={(val) => setSelectedLanguageIds(val as number[])}
+                        placeholder="Select Languages"
+                      />
+                    </div>
+
+                    <div className="flex justify-end pt-4">
+                      <button
+                        type="submit"
+                        className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-950 flex items-center gap-1"
+                      >
+                        Save & Next →
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* STEP 2 FORM - CAREER INFORMATION (OPTIONAL) */}
+                {wizardStep === 2 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-base font-black text-slate-900">Career Information (Optional)</h3>
+                      <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                        Add past work experience, degree levels, or professional certifications to make your profile stand out. You can skip this step.
+                      </p>
+                    </div>
+
+                    <div className={subCardClass}>
+                      <h4 className="text-xs font-black text-emerald-500 mb-2 uppercase tracking-wide">Work Experience</h4>
+                      
+                      {experiences.length > 0 && (
+                        <div className={listBgClass}>
+                          {experiences.map((exp, idx) => (
+                            <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0">
+                              <p className="font-extrabold text-slate-900">{exp.job_title} @ {exp.company_name}</p>
+                              <p className="text-slate-400 text-xxs">{exp.start_date || "N/A"} - {exp.currently_working ? "Present" : exp.end_date || "N/A"}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <input
+                          type="text"
+                          placeholder="Company Name"
+                          value={expCompany}
+                          onChange={(e) => setExpCompany(e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Job Title"
+                          value={expTitle}
+                          onChange={(e) => setExpTitle(e.target.value)}
+                          className={inputClass}
+                        />
+                        <CustomSelect
+                          options={[
+                            { value: "Full-time", label: "Full-time" },
+                            { value: "Part-time", label: "Part-time" },
+                            { value: "Contract", label: "Contract" },
+                            { value: "Freelance", label: "Freelance" }
+                          ]}
+                          value={expEmpType}
+                          onChange={(val) => setExpEmpType(val as string)}
+                          placeholder="Select Employment Type"
+                        />
+                        <div className="flex gap-2 items-center">
+                          <label className="text-[10px] font-bold flex items-center gap-1.5 text-slate-600">
+                            <input
+                              type="checkbox"
+                              checked={expCurrent}
+                              onChange={(e) => setExpCurrent(e.target.checked)}
+                              className="rounded border-slate-350"
+                            />
+                            Currently Working
+                          </label>
+                        </div>
+                        <input
+                          type="date"
+                          placeholder="Start Date"
+                          value={expStart}
+                          onChange={(e) => setExpStart(e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          type="date"
+                          placeholder="End Date"
+                          disabled={expCurrent}
+                          value={expEnd}
+                          onChange={(e) => setExpEnd(e.target.value)}
+                          className={`${inputClass} disabled:opacity-50`}
+                        />
+                        <textarea
+                          placeholder="Brief description of work highlights..."
+                          value={expDesc}
+                          onChange={(e) => setExpDesc(e.target.value)}
+                          className={`sm:col-span-2 ${inputClass} h-16`}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddExperience}
+                        className="mt-3 border text-bold text-xxs px-4 py-2 rounded-lg cursor-pointer transition-colors bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                      >
+                        + Add Experience
+                      </button>
+                    </div>
+
+                    <div className={subCardClass}>
+                      <h4 className="text-xs font-black text-emerald-500 mb-2 uppercase tracking-wide">Education</h4>
+                      
+                      {educations.length > 0 && (
+                        <div className={listBgClass}>
+                          {educations.map((edu, idx) => (
+                            <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0">
+                              <p className="font-extrabold text-slate-900">{edu.degree} in {edu.field_of_study}</p>
+                              <p className="text-slate-400 text-xxs">{edu.institution_name} ({edu.start_year} - {edu.end_year || "N/A"})</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <input
+                          type="text"
+                          placeholder="Institution Name"
+                          value={eduInst}
+                          onChange={(e) => setEduInst(e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Degree (e.g. Bachelor of Science)"
+                          value={eduDegree}
+                          onChange={(e) => setEduDegree(e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Field of Study (e.g. Computer Science)"
+                          value={eduField}
+                          onChange={(e) => setEduField(e.target.value)}
+                          className={`sm:col-span-2 ${inputClass}`}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Start Year (e.g. 2018)"
+                          value={eduStart}
+                          onChange={(e) => setEduStart(e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          type="number"
+                          placeholder="End Year (or Expected)"
+                          value={eduEnd}
+                          onChange={(e) => setEduEnd(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddEducation}
+                        className="mt-3 border text-bold text-xxs px-4 py-2 rounded-lg cursor-pointer transition-colors bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                      >
+                        + Add Education
+                      </button>
+                    </div>
+
+                    <div className={subCardClass}>
+                      <h4 className="text-xs font-black text-emerald-500 mb-2 uppercase tracking-wide">Certifications</h4>
+                      
+                      {certifications.length > 0 && (
+                        <div className={listBgClass}>
+                          {certifications.map((c, idx) => (
+                            <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0">
+                              <p className="font-extrabold text-slate-900">{c.certificate_name} - {c.issuing_organization}</p>
+                              {c.credential_url && <p className="text-emerald-500 text-xxs truncate">{c.credential_url}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <input
+                          type="text"
+                          placeholder="Certification Name"
+                          value={certName}
+                          onChange={(e) => setCertName(e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Issuing Organization"
+                          value={certOrg}
+                          onChange={(e) => setCertOrg(e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          type="date"
+                          placeholder="Issue Date"
+                          value={certDate}
+                          onChange={(e) => setCertDate(e.target.value)}
+                          className={inputClass}
+                        />
+                        <input
+                          type="url"
+                          placeholder="Credential Verification Link"
+                          value={certCredUrl}
+                          onChange={(e) => setCertCredUrl(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddCertification}
+                        className="mt-3 border text-bold text-xxs px-4 py-2 rounded-lg cursor-pointer transition-colors bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                      >
+                        + Add Certification
+                      </button>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setWizardStep(1)}
+                        className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-850 bg-slate-100 hover:bg-slate-200"
+                      >
+                        ← Back
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSkipStep2}
+                          className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-850 bg-slate-100 hover:bg-slate-200"
+                        >
+                          Skip Step
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            setWizardStep(3);
+                            await updateOnboardingStep(3);
+                          }}
+                          className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-955"
+                        >
+                          Next Step →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3 FORM - VERIFICATION (OPTIONAL) */}
+                {wizardStep === 3 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-base font-black text-slate-900">Contact Verification (Optional)</h3>
+                      <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                        You can verify your email and phone number to build trust, or skip this step to proceed.
+                      </p>
+                    </div>
+
+                    {otpError && (
+                      <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold rounded-xl">
+                        ⚠️ {otpError}
+                      </div>
+                    )}
+                    {otpSuccess && (
+                      <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold rounded-xl">
+                        💡 {otpSuccess}
+                      </div>
+                    )}
+
+                    <div className={`${subCardClass} space-y-4`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">📧</span>
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-900">Verify Email Address</p>
+                            <p className="text-xxs text-slate-400">{userEmail || "Loading Email..."}</p>
+                          </div>
+                        </div>
+                        {emailVerified ? (
+                          <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 border border-emerald-500/35 px-2.5 py-1 rounded uppercase tracking-wider">
+                            Verified
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded uppercase tracking-wider">
+                            Pending
+                          </span>
+                        )}
+                      </div>
+
+                      {!emailVerified && (
+                        <div className="flex gap-2 flex-wrap items-center">
+                          {!emailOtpSent ? (
+                            <button
+                              type="button"
+                              onClick={handleSendEmailOtp}
+                              className="bg-emerald-500 hover:bg-emerald-600 text-slate-955 font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                            >
+                              Send OTP Code
+                            </button>
+                          ) : (
+                            <div className="flex gap-2 w-full sm:w-auto">
+                              <input
+                                type="text"
+                                maxLength={6}
+                                placeholder="Enter OTP"
+                                value={emailOtp}
+                                onChange={(e) => setEmailOtp(e.target.value)}
+                                className={inputClass}
+                                style={{ width: "8rem", textAlign: "center" }}
+                              />
+                              <button
+                                type="button"
+                                onClick={handleVerifyEmailOtp}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-slate-955 font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                              >
+                                Verify
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleSendEmailOtp}
+                                className="text-slate-450 hover:text-emerald-500 text-[10px] px-2 font-bold cursor-pointer"
+                              >
+                                Resend
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className={`${subCardClass} space-y-4`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">📱</span>
+                          <div>
+                            <p className="text-xs font-extrabold text-slate-900">Verify Phone Number</p>
+                            <p className="text-xxs text-slate-400">{userPhone || "No Phone Registered"}</p>
+                          </div>
+                        </div>
+                        {phoneVerified ? (
+                          <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 border border-emerald-500/35 px-2.5 py-1 rounded uppercase tracking-wider">
+                            Verified
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded uppercase tracking-wider">
+                            Pending
+                          </span>
+                        )}
+                      </div>
+
+                      {!phoneVerified && (
+                        <div className="space-y-3">
+                          {!userPhone && (
+                            <div className="flex gap-2">
+                              <input
+                                type="tel"
+                                placeholder="+1 (555) 123-4567"
+                                value={userPhone}
+                                onChange={(e) => setUserPhone(e.target.value)}
+                                className={inputClass}
+                              />
+                            </div>
+                          )}
+                          <div className="flex gap-2 flex-wrap items-center">
+                            {!phoneOtpSent ? (
+                              <button
+                                type="button"
+                                onClick={handleSendPhoneOtp}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-slate-955 font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                              >
+                                Send OTP Code
+                              </button>
+                            ) : (
+                              <div className="flex gap-2 w-full sm:w-auto">
+                                <input
+                                  type="text"
+                                  maxLength={6}
+                                  placeholder="Enter OTP"
+                                  value={phoneOtp}
+                                  onChange={(e) => setPhoneOtp(e.target.value)}
+                                  className={inputClass}
+                                  style={{ width: "8rem", textAlign: "center" }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleVerifyPhoneOtp}
+                                  className="bg-emerald-500 hover:bg-emerald-600 text-slate-955 font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                                >
+                                  Verify
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleSendPhoneOtp}
+                                  className="text-slate-450 hover:text-emerald-500 text-[10px] px-2 font-bold cursor-pointer"
+                                >
+                                  Resend
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setWizardStep(2)}
+                        className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
+                      >
+                        ← Back
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSkipStep3}
+                          className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
+                        >
+                          Skip Step
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveStep3}
+                          className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-955"
+                        >
+                          Next Step →
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 4 FORM - PORTFOLIO SECTIONS (OPTIONAL) */}
+                {wizardStep === 4 && (
+                  <form onSubmit={handleAddProject} className="space-y-4">
+                    <div>
+                      <h3 className="text-base font-black text-slate-900">Add Project to Portfolio (Optional)</h3>
+                      <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                        Add screenshots, documents, and descriptions of past contracts. This will build credibility with incoming buyers.
+                      </p>
+                    </div>
+
+                    {portfolioSuccess && (
+                      <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold rounded-xl">
+                        🎉 Project added successfully! Completing your onboarding profile...
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Title *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Decentralized Freelance Workspace Platform"
+                          value={projectTitle}
+                          onChange={(e) => setProjectTitle(e.target.value)}
+                          className={inputClass}
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Description</label>
+                        <textarea
+                          placeholder="Summarize the core problem solved, architectural choices, and tech stack used..."
+                          value={projectDesc}
+                          onChange={(e) => setProjectDesc(e.target.value)}
+                          className={`${inputClass} h-24`}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Images (comma-separated URLs)</label>
+                        <input
+                          type="text"
+                          placeholder="https://image1.jpg, https://image2.png"
+                          value={projectImages}
+                          onChange={(e) => setProjectImages(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Walkthrough Video URL</label>
+                        <input
+                          type="url"
+                          placeholder="https://youtube.com/watch?v=..."
+                          value={projectVideo}
+                          onChange={(e) => setProjectVideo(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Documents (comma-separated URLs)</label>
+                        <input
+                          type="text"
+                          placeholder="https://docs.pdf, https://source-file.zip"
+                          value={projectDocs}
+                          onChange={(e) => setProjectDocs(e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4">
+                      <button
+                        type="button"
+                        onClick={() => setWizardStep(3)}
+                        className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
+                      >
+                        ← Back
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleFinishOnboarding}
+                          className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
+                        >
+                          Skip Project
+                        </button>
+                        <button
+                          type="submit"
+                          className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-955"
+                        >
+                          Add & Finish Onboarding
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Publish Profile Confirmation Modal */}
+      {showPublishConfirmModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-center relative text-slate-800">
+            <div className="w-16 h-16 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4 shadow-sm select-none">
+              🚀
+            </div>
+            <h2 className="text-lg font-black text-slate-900 leading-tight">Publish Client Profile?</h2>
+            <p className="text-slate-500 text-xs mt-2 font-medium leading-relaxed">
+              This will update your profile on the SQL database, flag your onboarding as complete, and activate your workspace hub dashboard.
+            </p>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowPublishConfirmModal(false)}
+                className="flex-1 py-3 rounded-xl font-bold text-xs border border-slate-200 text-slate-500 bg-slate-100 hover:bg-slate-200/60 transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setShowPublishConfirmModal(false);
+                  await handleSaveClientStepSettings(3); // Updates onboarding_completed = true in DB
+                  localStorage.setItem("onboarding_completed", "true");
+                  triggerToast("success", "Workspace activated! Welcome to LancerFlow.");
+                  setTimeout(() => {
+                    setActiveTab("workspace");
+                    if (typeof window !== "undefined") {
+                      window.location.reload();
+                    }
+                  }, 1200);
+                }}
+                className="flex-1 bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1 hover:scale-[1.02] active:scale-95"
+              >
+                <span>Publish & Unlock</span>
+                <FiCheck className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Submit Job Proposal Modal */}
+      {showProposalModal && applyingJob && (
+        <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative">
+            <button
+              onClick={() => {
+                setShowProposalModal(false);
+                setApplyingJob(null);
+                setProposalError("");
+              }}
+              className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-500 hover:text-slate-850 cursor-pointer"
+            >
+              Close
+            </button>
+
+            <div className="border-b border-slate-100 pb-4 pr-16 text-slate-800">
+              <span className="text-[10px] font-bold text-teal-700 tracking-widest uppercase mb-1">Submit Project Proposal</span>
+              <h2 className="text-base font-black text-slate-850 line-clamp-1">{applyingJob.title}</h2>
+              <p className="text-slate-400 text-xs font-semibold mt-1">Client: {applyingJob.company_name || applyingJob.client_name}</p>
+            </div>
+
+            <form onSubmit={handleSubmitProposal} className="flex flex-col gap-5 mt-6 text-slate-800">
+              {proposalError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-1.5">
+                  <FiAlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{proposalError}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Your Bid (USD) *</label>
+                  <div className="relative">
+                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 font-bold text-xs">
+                      $
+                    </span>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      placeholder="e.g. 1500"
+                      value={proposalBidAmount || ""}
+                      onChange={(e) => setProposalBidAmount(Number(e.target.value))}
+                      className="w-full bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl py-2.5 pl-7 pr-4 text-xs focus:outline-none focus:border-teal-750 focus:bg-white transition-all text-slate-850 font-bold"
+                    />
+                  </div>
+                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Project budget: ${parseFloat(applyingJob.budget).toLocaleString()}</span>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Delivery Time (Days) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    placeholder="e.g. 7"
+                    value={proposalDeliveryDays || ""}
+                    onChange={(e) => setProposalDeliveryDays(Number(e.target.value))}
+                    className="w-full bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl py-2.5 px-4 text-xs focus:outline-none focus:border-teal-750 focus:bg-white transition-all text-slate-850 font-bold"
+                  />
+                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Estimated time to complete the work</span>
+                </div>
+              </div>
+
+              {applyingJob.project_type === "Fixed" && (
+                <>
+                  {applyingJob.milestone_type === "Milestone" && (
+                    <div className="p-3 bg-teal-50 border border-teal-100 rounded-xl text-slate-700 text-xxs font-extrabold uppercase tracking-wider flex items-center gap-2">
+                      <i className="fa-solid fa-circle-info text-teal-700 text-xs"></i>
+                      <span>This project requires defining Milestones structure</span>
+                    </div>
+                  )}
+
+                  {applyingJob.milestone_type === "Both" && (
+                    <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200 p-3.5 rounded-xl">
+                      <input
+                        type="checkbox"
+                        id="proposalUseMilestones"
+                        checked={proposalUseMilestones}
+                        onChange={(e) => {
+                          setProposalUseMilestones(e.target.checked);
+                          if (!e.target.checked) setProposalMilestones([]);
+                        }}
+                        className="w-4 h-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700 cursor-pointer accent-teal-700"
+                      />
+                      <label htmlFor="proposalUseMilestones" className="text-xs font-bold text-slate-700 cursor-pointer select-none">
+                        Propose milestone-based payment structure for this bid
+                      </label>
+                    </div>
+                  )}
+
+                  {(applyingJob.milestone_type === "Milestone" || (applyingJob.milestone_type === "Both" && proposalUseMilestones)) && (
+                    <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200 p-4 rounded-xl">
+                      <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Define Milestones ({proposalMilestones.length})</h4>
+                      
+                      {proposalMilestones.length > 0 && (
+                        <div className="flex flex-col gap-2">
+                          {proposalMilestones.map((milestone, idx) => (
+                            <div key={idx} className="bg-white border border-slate-200 p-3 rounded-lg flex items-center justify-between gap-3 text-xs">
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 shrink-0">
+                                  {idx + 1}
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-slate-800 truncate">{milestone.title}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <span className="font-extrabold text-slate-700">${milestone.amount.toLocaleString()}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveProposalMilestone(idx)}
+                                  className="text-rose-500 hover:text-rose-700 font-bold hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-100 transition-all cursor-pointer"
+                                  title="Remove Milestone"
+                                >
+                                  <i className="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end border-t border-slate-100 pt-3 mt-1">
+                        <div className="sm:col-span-8 flex flex-col gap-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">Milestone Description *</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Design Figma layouts and style guide"
+                            value={newMilestoneTitle}
+                            onChange={(e) => setNewMilestoneTitle(e.target.value)}
+                            className="w-full bg-white border border-slate-250 hover:border-slate-350 rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold"
+                          />
+                        </div>
+                        <div className="sm:col-span-3 flex flex-col gap-1">
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">Amount (USD) *</label>
+                          <input
+                            type="number"
+                            placeholder="Amount"
+                            value={newMilestoneAmount}
+                            onChange={(e) => setNewMilestoneAmount(e.target.value !== "" ? Number(e.target.value) : "")}
+                            className="w-full bg-white border border-slate-250 hover:border-slate-350 rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold"
+                          />
+                        </div>
+                        <div className="sm:col-span-1 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={handleAddProposalMilestone}
+                            className="bg-teal-700 hover:bg-teal-800 text-white w-full h-[34px] rounded-lg shadow-sm transition-all flex items-center justify-center cursor-pointer hover:scale-[1.02]"
+                            title="Add Milestone"
+                          >
+                            <span className="font-extrabold text-sm">+</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[10px] font-extrabold uppercase mt-2 pt-2 border-t border-slate-100">
+                        <span className="text-slate-400">Total Milestones sum:</span>
+                        <span className={`text-xs ${
+                          proposalMilestones.reduce((sum, m) => sum + m.amount, 0) > proposalBidAmount
+                            ? "text-rose-600 font-black"
+                            : "text-slate-700 font-black"
+                        }`}>
+                          ${proposalMilestones.reduce((sum, m) => sum + m.amount, 0).toLocaleString()} / ${proposalBidAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Cover Letter / Pitch *</label>
+                <textarea
+                  required
+                  rows={6}
+                  placeholder="Introduce yourself, describe your approach to this project, and detail why you're the perfect fit..."
+                  value={proposalCoverLetter}
+                  onChange={(e) => setProposalCoverLetter(e.target.value)}
+                  className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-850 font-medium resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProposalModal(false);
+                    setApplyingJob(null);
+                    setProposalError("");
+                  }}
+                  className="px-5 py-2.5 rounded-xl font-bold text-xs border border-slate-200 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/60 transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={proposalSubmitting}
+                  className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                >
+                  {proposalSubmitting ? (
+                    "Submitting..."
+                  ) : (
+                    <>
+                      <span>Submit Proposal</span>
+                      <FiCheck className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <DashboardProvider>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </DashboardProvider>
+  );
+}
