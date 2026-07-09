@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { FiCheck, FiInfo, FiLayers, FiCalendar, FiCreditCard } from "react-icons/fi";
+import { API_URL } from "@/config/api";
 
 interface SubscriptionInfo {
   active_plan_id: number | null;
@@ -41,10 +42,10 @@ export default function SubscriptionTab() {
         }
 
         const [subRes, limitRes] = await Promise.all([
-          fetch("https://freelancer.sangvish.com/api/users/me/subscription", {
+          fetch(`${API_URL}/users/me/subscription`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          fetch("https://freelancer.sangvish.com/api/proposals/check-limit", {
+          fetch(`${API_URL}/proposals/limit-check`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);
