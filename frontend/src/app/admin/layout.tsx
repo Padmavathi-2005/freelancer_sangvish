@@ -33,6 +33,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     setTransactionsSubTab,
     categoriesSubTab,
     setCategoriesSubTab,
+    projectsSubTab,
+    setProjectsSubTab,
   } = useAdmin();
 
   const [isAdminNotificationsOpen, setIsAdminNotificationsOpen] = useState(false);
@@ -108,8 +110,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       : "w-full text-left px-2.5 py-2 rounded-xl text-[13px] font-semibold transition-all duration-200 cursor-pointer flex items-center justify-between text-slate-500 hover:text-slate-850 hover:bg-slate-50";
   };
 
-  const subNavBtnClass = (tabName: string, subTabs?: string[]) => {
-    const isActive = activeTab === tabName || (subTabs && subTabs.includes(activeTab));
+  const subNavBtnClass = (tabName: string, subTabs?: string[], forceActive?: boolean) => {
+    const isActive = forceActive !== undefined ? forceActive : (activeTab === tabName || (subTabs && subTabs.includes(activeTab)));
     if (isActive) {
       return isDark
         ? "w-full text-left px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer bg-teal-500/10 text-teal-400"
@@ -285,10 +287,22 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             {(projectMenuOpen || activeTab === "projects" || activeTab === "project_orders") && (
               <div className={`pl-6 flex flex-col gap-1 border-l ml-6 mt-1 mb-2 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
                 <button
-                  onClick={() => setActiveTab("projects")}
-                  className={subNavBtnClass("projects")}
+                  onClick={() => {
+                    setActiveTab("projects");
+                    setProjectsSubTab("projects");
+                  }}
+                  className={subNavBtnClass("projects", [], activeTab === "projects" && projectsSubTab === "projects")}
                 >
                   Project listings
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("projects");
+                    setProjectsSubTab("proposals");
+                  }}
+                  className={subNavBtnClass("projects", [], activeTab === "projects" && projectsSubTab === "proposals")}
+                >
+                  Project proposals
                 </button>
                 <button
                   onClick={() => setActiveTab("project_orders")}
