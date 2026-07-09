@@ -68,7 +68,7 @@ export default function TransactionsTab({
     {
       header: "Status",
       accessor: (row: any) => (
-        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
           row.status === "Completed" ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" :
           row.status === "In Progress" ? "bg-teal-50 text-teal-700 border border-teal-200/60" :
           "bg-rose-50 text-rose-700 border border-rose-250"

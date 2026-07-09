@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useDragScroll } from "@/hooks/useDragScroll";
 
 export interface Column<T> {
   header: string;
@@ -39,6 +40,7 @@ export default function Table<T>({
   onSelectionChange,
   getRowId,
 }: TableProps<T>) {
+  const { props: dragScrollProps } = useDragScroll();
   
   // Calculate index range
   const startIdx = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
@@ -85,7 +87,7 @@ export default function Table<T>({
   return (
     <div className="w-full flex flex-col bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
       {/* Table Content Scroll wrapper */}
-      <div className="w-full overflow-x-auto">
+      <div className="w-full overflow-x-auto" {...dragScrollProps}>
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/80">

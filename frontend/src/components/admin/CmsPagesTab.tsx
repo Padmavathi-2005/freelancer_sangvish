@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useDragScroll } from "@/hooks/useDragScroll";
 import { useAdmin } from "../../app/admin/AdminContext";
 import { FiPlus, FiTrash2, FiEdit2, FiChevronUp, FiChevronDown, FiGlobe, FiEye, FiSettings } from "react-icons/fi";
 
@@ -11,6 +12,7 @@ interface BuilderBlock {
 }
 
 export default function CmsPagesTab() {
+  const { props: dragScrollProps } = useDragScroll();
   const {
     adminTheme,
     cmsPagesList,
@@ -318,7 +320,7 @@ export default function CmsPagesTab() {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto w-full">
+            <div className="overflow-x-auto w-full" {...dragScrollProps}>
               <table className="w-full min-w-[800px] border-collapse">
                 <thead>
                   <tr>
