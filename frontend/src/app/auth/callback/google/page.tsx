@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -37,7 +39,7 @@ export default function GoogleCallbackPage() {
         const profile = await profileRes.json();
         
         // 3. Perform backend login/register exchange
-        const res = await fetch("https://freelancer.sangvish.com/api/users/social-login", {
+        const res = await fetch(`${API_URL}/users/social-login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -58,7 +60,7 @@ export default function GoogleCallbackPage() {
         localStorage.removeItem("onboarding_step");
 
         // Check onboarding status
-        const checkRes = await fetch("https://freelancer.sangvish.com/api/users/onboarding-check", {
+        const checkRes = await fetch(`${API_URL}/users/onboarding-check`, {
           headers: { Authorization: `Bearer ${data.token}` }
         });
         

@@ -1,4 +1,6 @@
 "use client";
+import { API_URL, API_BASE_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -109,7 +111,7 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
   const imgSrc = cat.category_image
     ? cat.category_image.startsWith("http")
       ? cat.category_image
-      : `https://freelancer.sangvish.com/${cat.category_image.replace(/^\/?/, "")}`
+      : `${API_BASE_URL}/${cat.category_image.replace(/^\/?/, "")}`
     : null;
 
   return (
@@ -185,7 +187,7 @@ export default function Categories() {
   useEffect(() => {
     const load = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/categories-stats");
+        const res = await fetch(`${API_URL}/categories-stats`);
         if (res.ok) {
           const data: CategoryStat[] = await res.json();
           setCategories(data.length > 0 ? data.slice(0, 4) : FALLBACK_CATEGORIES);

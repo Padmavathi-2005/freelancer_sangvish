@@ -1,4 +1,6 @@
 "use client";
+import { API_URL, API_BASE_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -156,7 +158,7 @@ export default function GigDetailsPage() {
     try {
       const token = localStorage.getItem("token");
       if (token) {
-        await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
+        await fetch(`${API_URL}/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -204,8 +206,8 @@ export default function GigDetailsPage() {
       ],
       video_url: "https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-his-computer-34281-large.mp4",
       documents: [
-        "https://freelancer.sangvish.com/public/documents/onboard/Web_Development_Agreement.pdf",
-        "https://freelancer.sangvish.com/public/documents/onboard/API_Specification_v1.docx"
+        `${API_BASE_URL}/public/documents/onboard/Web_Development_Agreement.pdf`,
+        `${API_BASE_URL}/public/documents/onboard/API_Specification_v1.docx`
       ],
       freelancer_id: 999991,
       freelancer_name: "John Doe",
@@ -256,7 +258,7 @@ export default function GigDetailsPage() {
       ],
       video_url: "https://assets.mixkit.co/videos/preview/mixkit-web-designer-working-on-a-tablet-design-34282-large.mp4",
       documents: [
-        "https://freelancer.sangvish.com/public/documents/onboard/Figma_Design_Assets.pdf"
+        `${API_BASE_URL}/public/documents/onboard/Figma_Design_Assets.pdf`
       ],
       freelancer_id: 999992,
       freelancer_name: "Jane Smith",
@@ -299,7 +301,7 @@ export default function GigDetailsPage() {
       ],
       video_url: "https://assets.mixkit.co/videos/preview/mixkit-server-room-rack-servers-blinking-led-lights-43283-large.mp4",
       documents: [
-        "https://freelancer.sangvish.com/public/documents/onboard/AI_Integration_Blueprint.pdf"
+        `${API_BASE_URL}/public/documents/onboard/AI_Integration_Blueprint.pdf`
       ],
       freelancer_id: 999993,
       freelancer_name: "Alex Johnson",
@@ -342,8 +344,8 @@ export default function GigDetailsPage() {
       ],
       video_url: "https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-his-computer-34281-large.mp4",
       documents: [
-        "https://freelancer.sangvish.com/public/documents/onboard/Web_Development_Agreement.pdf",
-        "https://freelancer.sangvish.com/public/documents/onboard/API_Specification_v1.docx"
+        `${API_BASE_URL}/public/documents/onboard/Web_Development_Agreement.pdf`,
+        `${API_BASE_URL}/public/documents/onboard/API_Specification_v1.docx`
       ],
       freelancer_id: 999991,
       freelancer_name: "John Doe",
@@ -394,7 +396,7 @@ export default function GigDetailsPage() {
       ],
       video_url: "https://assets.mixkit.co/videos/preview/mixkit-web-designer-working-on-a-tablet-design-34282-large.mp4",
       documents: [
-        "https://freelancer.sangvish.com/public/documents/onboard/Figma_Design_Assets.pdf"
+        `${API_BASE_URL}/public/documents/onboard/Figma_Design_Assets.pdf`
       ],
       freelancer_id: 999992,
       freelancer_name: "Jane Smith",
@@ -437,7 +439,7 @@ export default function GigDetailsPage() {
       ],
       video_url: "https://assets.mixkit.co/videos/preview/mixkit-server-room-rack-servers-blinking-led-lights-43283-large.mp4",
       documents: [
-        "https://freelancer.sangvish.com/public/documents/onboard/AI_Integration_Blueprint.pdf"
+        `${API_BASE_URL}/public/documents/onboard/AI_Integration_Blueprint.pdf`
       ],
       freelancer_id: 999993,
       freelancer_name: "Alex Johnson",
@@ -479,7 +481,7 @@ export default function GigDetailsPage() {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${id}`, { headers });
+        const res = await fetch(`${API_URL}/freelancer/client/gigs/${id}`, { headers });
 
         if (res.ok) {
           const data = await res.json();
@@ -515,7 +517,7 @@ export default function GigDetailsPage() {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${id}/similar`, { headers });
+        const res = await fetch(`${API_URL}/freelancer/client/gigs/${id}/similar`, { headers });
 
         if (res.ok) {
           const data = await res.json();
@@ -564,7 +566,7 @@ export default function GigDetailsPage() {
         return;
       }
 
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs/apply", {
+      const res = await fetch(`${API_URL}/freelancer/client/gigs/apply`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,4 @@
+import { API_URL, API_BASE_URL } from "@/config/api";
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { FiMessageSquare } from "react-icons/fi";
@@ -23,7 +24,7 @@ const getAvatarSrc = (imagePath: string | null) => {
     if (imagePath.startsWith("/public")) return imagePath;
     return `https://freelancer.sangvish.com${imagePath}`;
   }
-  return `https://freelancer.sangvish.com/${imagePath}`;
+  return `${API_BASE_URL}/${imagePath}`;
 };
 
 const getInitials = (name: string) => {
@@ -94,7 +95,7 @@ export default function InboxTab({
   const handleRespondToDispute = async (disputeId: number, action: 'Accept' | 'Contest', explanation?: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/dispute/${disputeId}/respond`, {
+      const res = await fetch(`${API_URL}/payments/dispute/${disputeId}/respond`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -119,7 +120,7 @@ export default function InboxTab({
   const handleProposeSettlement = async (disputeId: number, clientRefundPercent: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/dispute/${disputeId}/settle/propose`, {
+      const res = await fetch(`${API_URL}/payments/dispute/${disputeId}/settle/propose`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -144,7 +145,7 @@ export default function InboxTab({
   const handleAcceptSettlement = async (disputeId: number, clientRefundPercent: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/dispute/${disputeId}/settle/accept`, {
+      const res = await fetch(`${API_URL}/payments/dispute/${disputeId}/settle/accept`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -169,7 +170,7 @@ export default function InboxTab({
   const handleEscalateDispute = async (disputeId: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/dispute/${disputeId}/escalate`, {
+      const res = await fetch(`${API_URL}/payments/dispute/${disputeId}/escalate`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`
@@ -220,7 +221,7 @@ export default function InboxTab({
       }
 
       // Always send the explanation as a chat message (both freelancer and client)
-      await fetch(`https://freelancer.sangvish.com/api/messages/${selectedConvId}`, {
+      await fetch(`${API_URL}/messages/${selectedConvId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -245,7 +246,7 @@ export default function InboxTab({
   const handleAdminResolveDispute = async (disputeId: number, verdict: string, clientRefundPercent?: number) => {
     try {
       const adminToken = localStorage.getItem("adminToken");
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/disputes/${disputeId}/resolve`, {
+      const res = await fetch(`${API_URL}/admin/disputes/${disputeId}/resolve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -681,7 +682,7 @@ export default function InboxTab({
                                   // Accept & create order
                                   const token = localStorage.getItem("token");
                                   try {
-                                    const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs/apply", {
+                                    const res = await fetch(`${API_URL}/freelancer/client/gigs/apply`, {
                                       method: "POST",
                                       headers: {
                                         "Content-Type": "application/json",
@@ -1076,7 +1077,7 @@ export default function InboxTab({
                   // Send payload as message
                   const token = localStorage.getItem("token");
                   try {
-                    const res = await fetch(`https://freelancer.sangvish.com/api/messages/${selectedConvId}`, {
+                    const res = await fetch(`${API_URL}/messages/${selectedConvId}`, {
                       method: "POST",
                       headers: {
                         "Content-Type": "application/json",

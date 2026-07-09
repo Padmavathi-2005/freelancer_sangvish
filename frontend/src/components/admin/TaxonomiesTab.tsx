@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React from "react";
 import Table from "@/components/Table";
@@ -184,7 +186,7 @@ export default function TaxonomiesTab({
     setCleaning(true);
     try {
       const adminToken = localStorage.getItem("adminToken");
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/clean-data", {
+      const res = await fetch(`${API_URL}/admin/clean-data`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${adminToken}`,

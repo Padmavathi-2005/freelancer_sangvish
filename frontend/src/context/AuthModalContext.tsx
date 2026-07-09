@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { createContext, useContext, useState } from "react";
 import { createPortal } from "react-dom";
@@ -47,7 +49,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
 
     try {
-      const response = await fetch("https://freelancer.sangvish.com/api/users/login", {
+      const response = await fetch(`${API_URL}/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

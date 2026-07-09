@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { FiAward } from "react-icons/fi";
@@ -42,7 +44,7 @@ export default function Hero() {
   useEffect(() => {
     const fetchHeroSettings = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const settings = await res.json();
           const heroSetting = settings.find((s: any) => s.setting_key === "frontend_hero_content");
@@ -74,7 +76,7 @@ export default function Hero() {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/client-companies");
+        const res = await fetch(`${API_URL}/client-companies`);
         if (res.ok) {
           const data: string[] = await res.json();
           if (data.length > 0) setCompanies(data);

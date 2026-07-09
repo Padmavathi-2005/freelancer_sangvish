@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -72,7 +74,7 @@ export default function FeaturedFreelancers() {
   useEffect(() => {
     const fetchFreelancers = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/freelancers/public/list");
+        const res = await fetch(`${API_URL}/freelancers/public/list`);
         if (res.ok) {
           const data: Freelancer[] = await res.json();
           // Normalize skills — the API returns skill_name strings; handle both array forms

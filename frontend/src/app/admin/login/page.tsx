@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 
@@ -32,7 +34,7 @@ export default function AdminLoginPage() {
     try {
       let response: Response;
       try {
-        response = await fetch("https://freelancer.sangvish.com/api/admin/login", {
+        response = await fetch(`${API_URL}/admin/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

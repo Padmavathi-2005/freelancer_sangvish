@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -81,8 +83,8 @@ function ProjectsSearchContent() {
   useEffect(() => {
     const fetchTaxonomies = async () => {
       try {
-        const catRes = await fetch("https://freelancer.sangvish.com/api/admin/categories");
-        const subRes = await fetch("https://freelancer.sangvish.com/api/admin/sub-categories");
+        const catRes = await fetch(`${API_URL}/admin/categories`);
+        const subRes = await fetch(`${API_URL}/admin/sub-categories`);
         if (catRes.ok && subRes.ok) {
           const cats = await catRes.json();
           const subs = await subRes.json();
@@ -101,7 +103,7 @@ function ProjectsSearchContent() {
     const fetchJobs = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://freelancer.sangvish.com/api/jobs/public");
+        const res = await fetch(`${API_URL}/jobs/public`);
         if (res.ok) {
           const data = await res.json();
           setJobs(data);

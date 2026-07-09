@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useAdmin } from "@/app/admin/AdminContext";
@@ -19,7 +21,7 @@ export default function SocialLoginTab() {
     const fetchSettings = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
           data.forEach((s: any) => {

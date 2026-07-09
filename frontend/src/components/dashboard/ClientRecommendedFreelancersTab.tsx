@@ -1,3 +1,4 @@
+import { API_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 
 interface Freelancer {
@@ -134,7 +135,7 @@ export default function ClientRecommendedFreelancersTab({
     const fetchRecommendations = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/recommendations", {
+        const res = await fetch(`${API_URL}/freelancer/client/recommendations`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

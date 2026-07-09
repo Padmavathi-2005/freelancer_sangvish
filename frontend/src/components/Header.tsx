@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -77,7 +79,7 @@ export default function Header() {
 
     const fetchPagesList = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/pages");
+        const res = await fetch(`${API_URL}/pages`);
         if (res.ok) {
           const data = await res.json();
           setCmsPages(data);
@@ -90,8 +92,8 @@ export default function Header() {
 
     const fetchTaxonomies = async () => {
       try {
-        const catRes = await fetch("https://freelancer.sangvish.com/api/admin/categories");
-        const subRes = await fetch("https://freelancer.sangvish.com/api/admin/sub-categories");
+        const catRes = await fetch(`${API_URL}/admin/categories`);
+        const subRes = await fetch(`${API_URL}/admin/sub-categories`);
         if (catRes.ok && subRes.ok) {
           const cats = await catRes.json();
           const subs = await subRes.json();

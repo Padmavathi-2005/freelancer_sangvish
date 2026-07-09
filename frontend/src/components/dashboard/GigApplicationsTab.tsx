@@ -1,3 +1,4 @@
+import { API_URL } from "@/config/api";
 import React, { useEffect, useState } from "react";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { FiBriefcase, FiMessageSquare, FiRefreshCw, FiClock, FiCheckCircle, FiDollarSign, FiAlertTriangle, FiX } from "react-icons/fi";
@@ -47,7 +48,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
   useEffect(() => {
     const fetchReasons = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
           const disputeSetting = data.find((s: any) => s.setting_key === "dispute_reasons");
@@ -105,7 +106,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
   const handleStartWork = async (contractId: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/${contractId}/start-work`, {
+      const res = await fetch(`${API_URL}/payments/contract/${contractId}/start-work`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -137,7 +138,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
   const handleSubmitDeliverables = async (contractId: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${contractId}/request-payment`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${contractId}/request-payment`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -174,7 +175,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
     try {
       setDisputeLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/${contractId}/dispute`, {
+      const res = await fetch(`${API_URL}/payments/contract/${contractId}/dispute`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -786,7 +786,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       setLoadingFullProfile(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/profile/${selectedFreelancerProfile.user_id}`, {
+        const res = await fetch(`${API_URL}/freelancer/profile/${selectedFreelancerProfile.user_id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
@@ -1884,7 +1884,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/notifications", {
+      const res = await fetch(`${API_URL}/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1898,7 +1898,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const fetchUnreadCount = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/notifications/unread-count", {
+      const res = await fetch(`${API_URL}/notifications/unread-count`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1913,7 +1913,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleMarkAllRead = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/notifications/read-all", {
+      const res = await fetch(`${API_URL}/notifications/read-all`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -1930,7 +1930,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleMarkSingleRead = async (notifId: number, notifType: string, refId: string | null) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/notifications/${notifId}/read`, {
+      const res = await fetch(`${API_URL}/notifications/${notifId}/read`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -2039,7 +2039,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingActiveJobProposals(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/proposals/job/${jobId}`, {
+      const res = await fetch(`${API_URL}/proposals/job/${jobId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2055,7 +2055,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleUpdateProposalStatus = async (proposalId: number, status: "Accepted" | "Declined", jobId: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/proposals/${proposalId}/status`, {
+      const res = await fetch(`${API_URL}/proposals/${proposalId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -2112,7 +2112,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       setProposalSubmitting(true);
       setProposalError("");
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/proposals", {
+      const res = await fetch(`${API_URL}/proposals`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2194,7 +2194,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingConversations(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/messages/conversations", {
+      const res = await fetch(`${API_URL}/messages/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2211,7 +2211,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingChatMessages(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/messages/conversation/${convId}`, {
+      const res = await fetch(`${API_URL}/messages/conversation/${convId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2239,7 +2239,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setSendingChatMessage(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/messages/send", {
+      const res = await fetch(`${API_URL}/messages/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2271,7 +2271,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setPostJobSubCategoryId("");
     if (catId) {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/admin/sub-categories");
+        const res = await fetch(`${API_URL}/admin/sub-categories`);
         if (res.ok) {
           const data = await res.json();
           setPostJobSubCategories(data.filter((sub: any) => sub.category_id.toString() === catId));
@@ -2289,7 +2289,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setPostJobSelectedSkills([]);
     if (subCatId) {
       try {
-        const res = await fetch(`https://freelancer.sangvish.com/api/admin/skills/subcategory/${subCatId}`);
+        const res = await fetch(`${API_URL}/admin/skills/subcategory/${subCatId}`);
         if (res.ok) {
           setPostJobAvailableSkills(await res.json());
         }
@@ -2304,7 +2304,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const fetchPostJobLanguages = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/languages", {
+      const res = await fetch(`${API_URL}/freelancer/languages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2331,7 +2331,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingGigs(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/gigs", {
+      const res = await fetch(`${API_URL}/freelancer/gigs`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2348,7 +2348,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingClientGigs(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs", {
+      const res = await fetch(`${API_URL}/freelancer/client/gigs`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2365,7 +2365,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingApplications(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/gigs/applications", {
+      const res = await fetch(`${API_URL}/freelancer/gigs/applications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2382,7 +2382,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingClientApplications(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs/applications", {
+      const res = await fetch(`${API_URL}/freelancer/client/gigs/applications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2399,7 +2399,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingHiredFreelancers(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/users/client/hired-freelancers", {
+      const res = await fetch(`${API_URL}/users/client/hired-freelancers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2430,7 +2430,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const upfrontAmount = priceVal;
 
       if (orderPaymentMethod === "stripe" || orderPaymentMethod === "paypal") {
-        const walletRes = await fetch("https://freelancer.sangvish.com/api/wallet", {
+        const walletRes = await fetch(`${API_URL}/wallet`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (walletRes.ok) {
@@ -2439,7 +2439,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const needed = upfrontAmount - currentBalance;
           if (needed > 0) {
             // Auto fund wallet via simulated deposit
-            await fetch("https://freelancer.sangvish.com/api/wallet/deposit", {
+            await fetch(`${API_URL}/wallet/deposit`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -2451,7 +2451,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs/apply", {
+      const res = await fetch(`${API_URL}/freelancer/client/gigs/apply`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2493,7 +2493,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleUpdateApplicationStatus = async (applicationId: number, status: "Accepted" | "Rejected") => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/gigs/applications/${applicationId}`, {
+      const res = await fetch(`${API_URL}/freelancer/gigs/applications/${applicationId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -2516,7 +2516,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const fetchCurrencies = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/currencies", {
+      const res = await fetch(`${API_URL}/freelancer/currencies`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2534,7 +2534,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const fetchGigCategories = async () => {
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/categories");
+      const res = await fetch(`${API_URL}/admin/categories`);
       if (res.ok) {
         setGigCategories(await res.json());
       }
@@ -2545,7 +2545,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const fetchGigSubCategories = async (catId?: string) => {
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/sub-categories");
+      const res = await fetch(`${API_URL}/admin/sub-categories`);
       if (res.ok) {
         const data = await res.json();
         if (catId) {
@@ -2561,7 +2561,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const fetchGigSkills = async (subCatId: string) => {
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/skills/subcategory/${subCatId}`);
+      const res = await fetch(`${API_URL}/admin/skills/subcategory/${subCatId}`);
       if (res.ok) {
         setGigAvailableSkills(await res.json());
       }
@@ -2574,7 +2574,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const formData = new FormData();
     formData.append("file", file);
     const token = localStorage.getItem("token");
-    const res = await fetch("https://freelancer.sangvish.com/api/upload", {
+    const res = await fetch(`${API_URL}/upload`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -2593,7 +2593,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
-      const res = await fetch("https://freelancer.sangvish.com/api/users/client-profile", {
+      const res = await fetch(`${API_URL}/users/client-profile`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2633,7 +2633,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const url = await uploadFile(file);
       console.log("🌐 File uploaded successfully. Server URL returned:", url);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/users/profile", {
+      const res = await fetch(`${API_URL}/users/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -2747,7 +2747,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setGigPublishing(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/gigs", {
+      const res = await fetch(`${API_URL}/freelancer/gigs`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2831,7 +2831,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         
-        const res = await fetch("https://freelancer.sangvish.com/api/freelancer/onboarding/profile", {
+        const res = await fetch(`${API_URL}/freelancer/onboarding/profile`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -2862,7 +2862,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (stepNum === 5) {
         // Save skills selector
-        const res = await fetch("https://freelancer.sangvish.com/api/freelancer/onboarding/skills", {
+        const res = await fetch(`${API_URL}/freelancer/onboarding/skills`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -2923,7 +2923,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/users/client-profile", {
+      const res = await fetch(`${API_URL}/users/client-profile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2951,7 +2951,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/messages/conversation", {
+      const res = await fetch(`${API_URL}/messages/conversation`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -3090,7 +3090,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       try {
         setClientError("");
         const token = localStorage.getItem("token");
-        const res = await fetch("https://freelancer.sangvish.com/api/users/client-profile", {
+        const res = await fetch(`${API_URL}/users/client-profile`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -3139,7 +3139,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("token");
       if (!token) return;
       setLoadingWallet(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/wallet", {
+      const res = await fetch(`${API_URL}/wallet`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -3164,7 +3164,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/wallet/withdraw", {
+      const res = await fetch(`${API_URL}/wallet/withdraw`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -3198,7 +3198,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/wallet/deposit", {
+      const res = await fetch(`${API_URL}/wallet/deposit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -3224,7 +3224,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const fetchFreelancerContracts = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/contracts", {
+      const res = await fetch(`${API_URL}/freelancer/contracts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -3238,7 +3238,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const fetchRecommendedClients = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/recommended-clients", {
+      const res = await fetch(`${API_URL}/freelancer/recommended-clients`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -3252,7 +3252,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const requestContractPayment = async (contractId: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${contractId}/request-payment`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${contractId}/request-payment`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -3271,7 +3271,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const startWorkContract = async (contractId: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/${contractId}/start-work`, {
+      const res = await fetch(`${API_URL}/payments/contract/${contractId}/start-work`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -3300,7 +3300,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const balanceAmount = hasMilestones ? (budget * 0.50) : 0;
 
           if (balanceAmount > 0) {
-            const walletRes = await fetch("https://freelancer.sangvish.com/api/wallet", {
+            const walletRes = await fetch(`${API_URL}/wallet`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             if (walletRes.ok) {
@@ -3308,7 +3308,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
               const currentBalance = parseFloat(walletInfo.balance);
               const needed = balanceAmount - currentBalance;
               if (needed > 0) {
-                await fetch("https://freelancer.sangvish.com/api/wallet/deposit", {
+                await fetch(`${API_URL}/wallet/deposit`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
@@ -3322,7 +3322,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${contractId}/approve-payment`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${contractId}/approve-payment`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });

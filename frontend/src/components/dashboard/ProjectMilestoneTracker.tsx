@@ -1,3 +1,4 @@
+import { API_URL, API_BASE_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FiCheck, FiDollarSign, FiCheckCircle, FiCreditCard, FiUnlock, FiMessageSquare, FiBriefcase, FiFileText } from "react-icons/fi";
@@ -12,7 +13,7 @@ const getAvatarSrc = (imagePath: string | null) => {
     if (imagePath.startsWith("/public")) return imagePath;
     return `https://freelancer.sangvish.com${imagePath}`;
   }
-  return `https://freelancer.sangvish.com/${imagePath}`;
+  return `${API_BASE_URL}/${imagePath}`;
 };
 
 interface ProjectMilestoneTrackerProps {
@@ -85,7 +86,7 @@ export default function ProjectMilestoneTracker({
       if (activeContract && activeContract.status === "Completed") {
         try {
           const token = localStorage.getItem("token");
-          const res = await fetch(`https://freelancer.sangvish.com/api/proposals/contracts/${activeContract.contract_id}/review`, {
+          const res = await fetch(`${API_URL}/proposals/contracts/${activeContract.contract_id}/review`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (res.ok) {
@@ -112,7 +113,7 @@ export default function ProjectMilestoneTracker({
     setReviewLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/proposals/contracts/${activeContract.contract_id}/review`, {
+      const res = await fetch(`${API_URL}/proposals/contracts/${activeContract.contract_id}/review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -153,7 +154,7 @@ export default function ProjectMilestoneTracker({
   useEffect(() => {
     const fetchReasons = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
           const disputeSetting = data.find((s: any) => s.setting_key === "dispute_reasons");
@@ -184,7 +185,7 @@ export default function ProjectMilestoneTracker({
     try {
       setLoadingProposals(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/proposals/job/${job.job_id}`, {
+      const res = await fetch(`${API_URL}/proposals/job/${job.job_id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -201,7 +202,7 @@ export default function ProjectMilestoneTracker({
     try {
       setLoadingContracts(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/contracts", {
+      const res = await fetch(`${API_URL}/freelancer/contracts`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -218,7 +219,7 @@ export default function ProjectMilestoneTracker({
     try {
       setLoadingTimecards(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${contractId}/timecards`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${contractId}/timecards`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -262,7 +263,7 @@ export default function ProjectMilestoneTracker({
 
     try {
       if (payMethod === "stripe") {
-        const res = await fetch("https://freelancer.sangvish.com/api/payments/proposal/stripe/create-session", {
+        const res = await fetch(`${API_URL}/payments/proposal/stripe/create-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -278,7 +279,7 @@ export default function ProjectMilestoneTracker({
         }
       } else {
         // Direct Wallet or simulated PayPal payment
-        const res = await fetch("https://freelancer.sangvish.com/api/payments/proposal/pay", {
+        const res = await fetch(`${API_URL}/payments/proposal/pay`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -330,7 +331,7 @@ export default function ProjectMilestoneTracker({
     setIsSubmittingTimecard(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${activeContract.contract_id}/timecards`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${activeContract.contract_id}/timecards`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -369,7 +370,7 @@ export default function ProjectMilestoneTracker({
     setTimecardActionLoadingId(timecardId);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${activeContract.contract_id}/timecards/${timecardId}/approve`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${activeContract.contract_id}/timecards/${timecardId}/approve`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`
@@ -398,7 +399,7 @@ export default function ProjectMilestoneTracker({
     setTimecardActionLoadingId(-1);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${activeContract.contract_id}/timecards/request-payment`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${activeContract.contract_id}/timecards/request-payment`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -431,7 +432,7 @@ export default function ProjectMilestoneTracker({
     setTimecardActionLoadingId(timecardId);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${activeContract.contract_id}/timecards/${timecardId}/decline`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${activeContract.contract_id}/timecards/${timecardId}/decline`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`
@@ -463,7 +464,7 @@ export default function ProjectMilestoneTracker({
 
     try {
       if (payTimecardMethod === "stripe") {
-        const res = await fetch("https://freelancer.sangvish.com/api/payments/timecard/stripe/create-session", {
+        const res = await fetch(`${API_URL}/payments/timecard/stripe/create-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -479,7 +480,7 @@ export default function ProjectMilestoneTracker({
           setPayTimecardError(data.message || "Failed to initiate Stripe session.");
         }
       } else {
-        const res = await fetch("https://freelancer.sangvish.com/api/payments/timecard/pay", {
+        const res = await fetch(`${API_URL}/payments/timecard/pay`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -513,7 +514,7 @@ export default function ProjectMilestoneTracker({
   const fetchContractMessages = async (convId: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/messages/conversation/${convId}`, {
+      const res = await fetch(`${API_URL}/messages/conversation/${convId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -531,7 +532,7 @@ export default function ProjectMilestoneTracker({
     try {
       setLoadingMessages(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/messages/conversation", {
+      const res = await fetch(`${API_URL}/messages/conversation`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -558,7 +559,7 @@ export default function ProjectMilestoneTracker({
     setSendingMsg(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/messages/send", {
+      const res = await fetch(`${API_URL}/messages/send`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -959,7 +960,7 @@ export default function ProjectMilestoneTracker({
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/proposals/${acceptedProposal.proposal_id}/milestones`, {
+      const res = await fetch(`${API_URL}/proposals/${acceptedProposal.proposal_id}/milestones`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -980,7 +981,7 @@ export default function ProjectMilestoneTracker({
     try {
       setMilestoneActionLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/milestone/${milestoneId}/submit`, {
+      const res = await fetch(`${API_URL}/payments/contract/milestone/${milestoneId}/submit`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -1004,7 +1005,7 @@ export default function ProjectMilestoneTracker({
     try {
       setMilestoneActionLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/milestone/${milestoneId}/reject`, {
+      const res = await fetch(`${API_URL}/payments/contract/milestone/${milestoneId}/reject`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1033,7 +1034,7 @@ export default function ProjectMilestoneTracker({
     if (!confirm(`Are you sure you want to release the payment of $${amount.toFixed(2)} for milestone "${title}"?`)) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/milestone/${milestoneId}/release`, {
+      const res = await fetch(`${API_URL}/payments/contract/milestone/${milestoneId}/release`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -1059,7 +1060,7 @@ export default function ProjectMilestoneTracker({
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/${activeContract.contract_id}/cancel`, {
+      const res = await fetch(`${API_URL}/payments/contract/${activeContract.contract_id}/cancel`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -1089,7 +1090,7 @@ export default function ProjectMilestoneTracker({
     try {
       setDisputeLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/${activeContract.contract_id}/dispute`, {
+      const res = await fetch(`${API_URL}/payments/contract/${activeContract.contract_id}/dispute`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1124,7 +1125,7 @@ export default function ProjectMilestoneTracker({
     }
     setIsSubmittingCompletion(true);
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${activeContract.contract_id}/submit-completion`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${activeContract.contract_id}/submit-completion`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
@@ -1152,7 +1153,7 @@ export default function ProjectMilestoneTracker({
     }
     setIsApprovingCompletion(true);
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${activeContract.contract_id}/approve-completion`, {
+      const res = await fetch(`${API_URL}/freelancer/contracts/${activeContract.contract_id}/approve-completion`, {
         method: "PUT",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token") || ""}`

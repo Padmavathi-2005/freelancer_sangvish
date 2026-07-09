@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect, useCallback } from "react";
 import ReactDOM from "react-dom";
@@ -15,7 +17,7 @@ import {
   FiFile,
 } from "react-icons/fi";
 
-const API = "https://freelancer.sangvish.com/api/admin";
+const API = `${API_URL}/admin`;
 
 function getToken() {
   return typeof window !== "undefined" ? localStorage.getItem("adminToken") || "" : "";

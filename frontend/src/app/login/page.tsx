@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
@@ -28,7 +30,7 @@ export default function LoginPage() {
 
     const fetchSocialSettings = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
           const settings = {
@@ -75,7 +77,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://freelancer.sangvish.com/api/users/login", {
+      const response = await fetch(`${API_URL}/users/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

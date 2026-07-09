@@ -1,3 +1,4 @@
+import { API_URL } from "@/config/api";
 import React, { useState, useMemo, useEffect } from "react";
 import { FiCheck } from "react-icons/fi";
 import CustomSelect from "../CustomSelect";
@@ -139,6 +140,33 @@ export default function ProposalsTab({
   const { pendingInviteFreelancer, setPendingInviteFreelancer } = useDashboard();
   const [selectedProposalDetails, setSelectedProposalDetails] = useState<any | null>(null);
   const [projectFilter, setProjectFilter] = useState<"all" | "pending" | "ongoing" | "dispute" | "completed" | "draft">("all");
+  const [freelancerFilter, setFreelancerFilter] = useState<"all" | "pending" | "accepted" | "declined">("all");
+
+  const filteredFreelancerProposals = useMemo(() => {
+    return freelancerProposals.filter((proposal) => {
+      const contractStatus = proposal.contract_status;
+      if (freelancerFilter === "pending") {
+        return proposal.status === "Pending";
+      }
+      if (freelancerFilter === "accepted") {
+        return (
+          proposal.status === "Accepted" ||
+          proposal.status === "Accepted_By_Freelancer" ||
+          contractStatus === "Hired" ||
+          contractStatus === "Work Started" ||
+          contractStatus === "Completed"
+        );
+      }
+      if (freelancerFilter === "declined") {
+        return (
+          proposal.status === "Declined" ||
+          proposal.status === "Cancelled" ||
+          contractStatus === "Cancelled"
+        );
+      }
+      return true;
+    });
+  }, [freelancerProposals, freelancerFilter]);
   const [postJobSlug, setPostJobSlug] = useState("");
   const [postJobSeoTitle, setPostJobSeoTitle] = useState("");
   const [postJobSeoDescription, setPostJobSeoDescription] = useState("");
@@ -163,7 +191,7 @@ export default function ProposalsTab({
     const formData = new FormData();
     formData.append("file", file);
     const token = localStorage.getItem("token");
-    const res = await fetch("https://freelancer.sangvish.com/api/upload", {
+    const res = await fetch(`${API_URL}/upload`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -209,7 +237,7 @@ export default function ProposalsTab({
     const delay = setTimeout(async () => {
       try {
         setSlugValidating(true);
-        const res = await fetch(`https://freelancer.sangvish.com/api/jobs/validate-slug?slug=${encodeURIComponent(postJobSlug)}&excludeJobId=${editingDraftJobId || ""}`, {
+        const res = await fetch(`${API_URL}/jobs/validate-slug?slug=${encodeURIComponent(postJobSlug)}&excludeJobId=${editingDraftJobId || ""}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`
           }
@@ -310,7 +338,7 @@ export default function ProposalsTab({
     if (!window.confirm(`Are you sure you want to ${action.toLowerCase()} this direct hire offer?`)) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/proposals/${proposalId}/respond-direct-hire`, {
+      const res = await fetch(`${API_URL}/proposals/${proposalId}/respond-direct-hire`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -402,8 +430,8 @@ export default function ProposalsTab({
       }).filter(Boolean);
 
       const url = editingDraftJobId
-        ? `https://freelancer.sangvish.com/api/jobs/${editingDraftJobId}`
-        : "https://freelancer.sangvish.com/api/jobs";
+        ? `${API_URL}/jobs/${editingDraftJobId}`
+        : `${API_URL}/jobs`;
       const method = editingDraftJobId ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -571,8 +599,8 @@ export default function ProposalsTab({
                     }).filter(Boolean);
 
                     const url = editingDraftJobId
-                      ? `https://freelancer.sangvish.com/api/jobs/${editingDraftJobId}`
-                      : "https://freelancer.sangvish.com/api/jobs";
+                      ? `${API_URL}/jobs/${editingDraftJobId}`
+                      : `${API_URL}/jobs`;
                     const method = editingDraftJobId ? "PUT" : "POST";
 
                     const res = await fetch(url, {
@@ -617,7 +645,7 @@ export default function ProposalsTab({
                       const postedJobId = data.job?.job_id || data.job_id;
                       if (pendingInviteFreelancer && postedJobId) {
                         try {
-                          const directHireRes = await fetch("https://freelancer.sangvish.com/api/proposals/direct-hire", {
+                          const directHireRes = await fetch(`${API_URL}/proposals/direct-hire`, {
                             method: "POST",
                             headers: {
                               "Content-Type": "application/json",
@@ -1831,6 +1859,52 @@ export default function ProposalsTab({
         ))}
       </div>
 
+      {/* Filter Tabs */}
+      {!loadingFreelancerProposals && freelancerProposals.length > 0 && (
+        <div className="flex flex-wrap bg-slate-100 p-1 rounded-xl border border-slate-200 self-start select-none gap-1">
+          <button
+            onClick={() => setFreelancerFilter("all")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              freelancerFilter === "all" 
+                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            All Proposals ({freelancerProposals.length})
+          </button>
+          <button
+            onClick={() => setFreelancerFilter("pending")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              freelancerFilter === "pending" 
+                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Pending Review ({freelancerProposals.filter((p) => p.status === "Pending").length})
+          </button>
+          <button
+            onClick={() => setFreelancerFilter("accepted")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              freelancerFilter === "accepted" 
+                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Accepted & Hired ({freelancerProposals.filter((p) => p.status === "Accepted" || p.status === "Accepted_By_Freelancer" || p.contract_status === "Hired" || p.contract_status === "Work Started" || p.contract_status === "Completed").length})
+          </button>
+          <button
+            onClick={() => setFreelancerFilter("declined")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              freelancerFilter === "declined" 
+                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            Declined & Cancelled ({freelancerProposals.filter((p) => p.status === "Declined" || p.status === "Cancelled" || p.contract_status === "Cancelled").length})
+          </button>
+        </div>
+      )}
+
       {/* Proposals list */}
       {loadingFreelancerProposals ? (
         <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm">
@@ -1853,9 +1927,19 @@ export default function ProposalsTab({
             Find Work Now
           </button>
         </div>
+      ) : filteredFreelancerProposals.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-2xl p-8 shadow-inner gap-4">
+          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
+            <i className="fa-solid fa-filter"></i>
+          </div>
+          <div>
+            <h3 className="text-sm font-extrabold text-slate-800 mb-1">No proposals match this filter</h3>
+            <p className="text-slate-400 text-xs max-w-sm font-semibold">Try changing your active status filter to view other proposals.</p>
+          </div>
+        </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {freelancerProposals.map((proposal) => {
+          {filteredFreelancerProposals.map((proposal) => {
             const contractStatus = proposal.contract_status;
             let displayStatus = proposal.status;
             let statusColorClass = "bg-amber-50 text-amber-700 border-amber-150";

@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 
@@ -28,7 +30,7 @@ export default function RegisterPage() {
 
     const fetchSocialSettings = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
           const settings = {
@@ -78,7 +80,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://freelancer.sangvish.com/api/users/register", {
+      const response = await fetch(`${API_URL}/users/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

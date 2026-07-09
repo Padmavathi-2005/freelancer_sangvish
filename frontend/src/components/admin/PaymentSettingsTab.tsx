@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 
@@ -38,7 +40,7 @@ export default function PaymentSettingsTab() {
     const fetchSettings = async () => {
       setLoading(true);
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/admin/settings", {
+        const res = await fetch(`${API_URL}/admin/settings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
@@ -97,7 +99,7 @@ export default function PaymentSettingsTab() {
 
   const saveSetting = async (key: string, value: object) => {
     const token = localStorage.getItem("adminToken");
-    await fetch("https://freelancer.sangvish.com/api/admin/settings", {
+    await fetch(`${API_URL}/admin/settings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

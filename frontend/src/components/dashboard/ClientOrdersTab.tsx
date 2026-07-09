@@ -1,3 +1,4 @@
+import { API_URL } from "@/config/api";
 import React, { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { FiBriefcase, FiCreditCard, FiCheckCircle, FiAlertTriangle, FiExternalLink, FiRefreshCw, FiStar, FiMessageSquare, FiX, FiUser, FiUnlock, FiClock } from "react-icons/fi";
@@ -54,7 +55,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
     try {
       setSubmittingReview(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${selectedGigOrderDetails.gig_id}/review`, {
+      const res = await fetch(`${API_URL}/freelancer/client/gigs/${selectedGigOrderDetails.gig_id}/review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -102,7 +103,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
 
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("https://freelancer.sangvish.com/api/payments/stripe/confirm", {
+        const res = await fetch(`${API_URL}/payments/stripe/confirm`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -161,7 +162,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
     try {
       if (payMethod === "stripe") {
         // ── STRIPE: Create session → redirect to Stripe Hosted Checkout ──
-        const res = await fetch("https://freelancer.sangvish.com/api/payments/stripe/create-session", {
+        const res = await fetch(`${API_URL}/payments/stripe/create-session`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -182,7 +183,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
       }
 
       // ── WALLET / PAYPAL: Direct payment via backend ──
-      const res = await fetch("https://freelancer.sangvish.com/api/payments/wallet/pay", {
+      const res = await fetch(`${API_URL}/payments/wallet/pay`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
@@ -623,7 +624,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 if (!confirm("Are you sure you want to mark this order as completed?")) return;
                 try {
                   const token = localStorage.getItem("token");
-                  const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/gigs/applications/${selectedGigOrderDetails.application_id}`, {
+                  const res = await fetch(`${API_URL}/freelancer/gigs/applications/${selectedGigOrderDetails.application_id}`, {
                     method: "PUT",
                     headers: {
                       "Content-Type": "application/json",
@@ -890,7 +891,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                       if (!confirm("Are you sure you want to mark this order as completed?")) return;
                       try {
                         const token = localStorage.getItem("token");
-                        const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/gigs/applications/${selectedGigOrderDetails.application_id}`, {
+                        const res = await fetch(`${API_URL}/freelancer/gigs/applications/${selectedGigOrderDetails.application_id}`, {
                           method: "PUT",
                           headers: {
                             "Content-Type": "application/json",

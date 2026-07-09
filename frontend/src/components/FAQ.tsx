@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -18,7 +20,7 @@ export default function FAQ() {
   useEffect(() => {
     const fetchFaqs = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/faqs");
+        const res = await fetch(`${API_URL}/faqs`);
         if (res.ok) {
           setFaqItems(await res.json());
         }

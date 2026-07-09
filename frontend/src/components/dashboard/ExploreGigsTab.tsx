@@ -1,3 +1,4 @@
+import { API_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiX, FiFileText, FiHeart } from "react-icons/fi";
@@ -51,7 +52,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
       try {
         if (token) {
-          await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
+          await fetch(`${API_URL}/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -71,7 +72,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
       try {
         if (token) {
-          await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
+          await fetch(`${API_URL}/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -127,7 +128,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
     try {
       setLoadingClientGigs(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs", {
+      const res = await fetch(`${API_URL}/freelancer/client/gigs`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -173,7 +174,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
       // The client will be prompted to pay via Stripe/PayPal/Wallet in ClientOrdersTab.
 
 
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs/apply", {
+      const res = await fetch(`${API_URL}/freelancer/client/gigs/apply`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

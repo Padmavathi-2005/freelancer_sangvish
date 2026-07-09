@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -80,7 +82,7 @@ export default function PlanDetailsPage() {
       try {
         setLoading(true);
         // 1. Fetch all subscription plans
-        const resPlans = await fetch("https://freelancer.sangvish.com/api/subscription-plans");
+        const resPlans = await fetch(`${API_URL}/subscription-plans`);
         if (resPlans.ok) {
           const dataPlans = await resPlans.json();
           setPlans(dataPlans);
@@ -90,7 +92,7 @@ export default function PlanDetailsPage() {
 
         // 2. Fetch logged in user details (for current plan & wallet)
         if (token) {
-          const resUser = await fetch("https://freelancer.sangvish.com/api/users/profile", {
+          const resUser = await fetch(`${API_URL}/users/profile`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (resUser.ok) {
@@ -126,7 +128,7 @@ export default function PlanDetailsPage() {
         try {
           setLoading(true);
           const token = localStorage.getItem("token");
-          const res = await fetch("https://freelancer.sangvish.com/api/users/subscribe", {
+          const res = await fetch(`${API_URL}/users/subscribe`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -180,7 +182,7 @@ export default function PlanDetailsPage() {
 
     try {
       setIsSubmitting(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/users/subscribe", {
+      const res = await fetch(`${API_URL}/users/subscribe`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -228,7 +230,7 @@ export default function PlanDetailsPage() {
     if (paymentMethod === "stripe") {
       try {
         setIsSubmitting(true);
-        const res = await fetch("https://freelancer.sangvish.com/api/payments/stripe/create-subscription-session", {
+        const res = await fetch(`${API_URL}/payments/stripe/create-subscription-session`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -254,7 +256,7 @@ export default function PlanDetailsPage() {
 
     try {
       setIsSubmitting(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/users/subscribe", {
+      const res = await fetch(`${API_URL}/users/subscribe`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
@@ -38,7 +40,7 @@ export default function LandingSectionsEditor({
   // Fetch dynamic Why Choose Us
   const fetchWhyChooseFeats = async () => {
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/why-choose-features");
+      const res = await fetch(`${API_URL}/why-choose-features`);
       if (res.ok) setWhyChooseFeats(await res.json());
     } catch (e) {
       console.error(e);
@@ -50,7 +52,7 @@ export default function LandingSectionsEditor({
   // Fetch dynamic How It Works
   const fetchHowItWorksSteps = async () => {
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/how-it-works-steps");
+      const res = await fetch(`${API_URL}/how-it-works-steps`);
       if (res.ok) setHowItWorksSteps(await res.json());
     } catch (e) {
       console.error(e);
@@ -61,7 +63,7 @@ export default function LandingSectionsEditor({
 
   const loadLangs = async () => {
     try {
-      const langRes = await fetch("https://freelancer.sangvish.com/api/languages/active");
+      const langRes = await fetch(`${API_URL}/languages/active`);
       if (langRes.ok) setAvailLanguages(await langRes.json());
     } catch (e) {
       console.error("Failed to load active languages", e);
@@ -74,7 +76,7 @@ export default function LandingSectionsEditor({
     
     for (const lang of availLanguages) {
       try {
-        const res = await fetch(`https://freelancer.sangvish.com/api/admin/translations/${lang.code}`, {
+        const res = await fetch(`${API_URL}/admin/translations/${lang.code}`, {
           headers: { Authorization: `Bearer ${getAdminToken()}` }
         });
         if (res.ok) {
@@ -177,7 +179,7 @@ export default function LandingSectionsEditor({
           value: langData[key] || ""
         }));
 
-        await fetch(`https://freelancer.sangvish.com/api/admin/translations/${code}`, {
+        await fetch(`${API_URL}/admin/translations/${code}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -216,7 +218,7 @@ export default function LandingSectionsEditor({
   // Why Choose features Actions
   const handleAddWhyChooseFeat = async () => {
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/why-choose-features", {
+      const res = await fetch(`${API_URL}/admin/why-choose-features`, {
         method: "POST",
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
@@ -235,7 +237,7 @@ export default function LandingSectionsEditor({
     if (!window.confirm(`Are you sure you want to delete "${titleText}"?`)) return;
 
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/why-choose-features/${id}`, {
+      const res = await fetch(`${API_URL}/admin/why-choose-features/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
@@ -251,7 +253,7 @@ export default function LandingSectionsEditor({
   // How It Works Steps Actions
   const handleAddHowItWorksStep = async () => {
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/how-it-works-steps", {
+      const res = await fetch(`${API_URL}/admin/how-it-works-steps`, {
         method: "POST",
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
@@ -270,7 +272,7 @@ export default function LandingSectionsEditor({
     if (!window.confirm(`Are you sure you want to delete "${titleText}"?`)) return;
 
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/how-it-works-steps/${id}`, {
+      const res = await fetch(`${API_URL}/admin/how-it-works-steps/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });

@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
@@ -55,7 +57,7 @@ export default function Pricing() {
       try {
         setLoading(true);
         // Fetch plans
-        const resPlans = await fetch("https://freelancer.sangvish.com/api/subscription-plans");
+        const resPlans = await fetch(`${API_URL}/subscription-plans`);
         if (!resPlans.ok) throw new Error("Failed to load plans.");
         const plansData = await resPlans.json();
         setPlans(plansData);
@@ -63,7 +65,7 @@ export default function Pricing() {
         // Fetch user active plan if logged in
         const token = localStorage.getItem("token");
         if (token) {
-          const resSub = await fetch("https://freelancer.sangvish.com/api/users/me/subscription", {
+          const resSub = await fetch(`${API_URL}/users/me/subscription`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (resSub.ok) {

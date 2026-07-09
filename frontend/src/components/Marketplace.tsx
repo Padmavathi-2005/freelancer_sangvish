@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
@@ -155,7 +157,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
     setSubmittingInvite(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/proposals/direct-hire", {
+      const res = await fetch(`${API_URL}/proposals/direct-hire`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -221,7 +223,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
   useEffect(() => {
     const fetchFreelancers = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/freelancers/public/list");
+        const res = await fetch(`${API_URL}/freelancers/public/list`);
         if (res.ok) {
           const data = await res.json();
           const mapped: Freelancer[] = data.map((f: any, index: number) => {

@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -50,7 +52,7 @@ export default function ProjectDetailsPage() {
   const fetchJobDetails = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`https://freelancer.sangvish.com/api/jobs/public/${slug}`);
+      const res = await fetch(`${API_URL}/jobs/public/${slug}`);
       if (!res.ok) {
         throw new Error("Project not found.");
       }
@@ -70,7 +72,7 @@ export default function ProjectDetailsPage() {
         
         // If logged in, fetch proposals for this job to check if already applied
         if (token) {
-          const propRes = await fetch(`https://freelancer.sangvish.com/api/proposals/job/${data.job_id}`, {
+          const propRes = await fetch(`${API_URL}/proposals/job/${data.job_id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (propRes.ok) {
@@ -81,7 +83,7 @@ export default function ProjectDetailsPage() {
 
           // Fetch rolling proposal limit status
           if (currentRole === "freelancer") {
-            const limitRes = await fetch("https://freelancer.sangvish.com/api/proposals/limit-check", {
+            const limitRes = await fetch(`${API_URL}/proposals/limit-check`, {
               headers: { Authorization: `Bearer ${token}` }
             });
             if (limitRes.ok) {
@@ -169,7 +171,7 @@ export default function ProjectDetailsPage() {
         return;
       }
 
-      const res = await fetch("https://freelancer.sangvish.com/api/proposals", {
+      const res = await fetch(`${API_URL}/proposals`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

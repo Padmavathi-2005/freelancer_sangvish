@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect, useRef } from "react";
 import { FiEdit2, FiEye, FiEyeOff, FiPlus, FiTrash2, FiUpload, FiX, FiSearch, FiCheck } from "react-icons/fi";
@@ -85,7 +87,7 @@ export default function SubscriptionPlansPage() {
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/subscription-plans", {
+      const res = await fetch(`${API_URL}/admin/subscription-plans`, {
         headers: { Authorization: `Bearer ${getAdminToken()}` },
       });
       if (res.ok) setPlans(await res.json());
@@ -98,7 +100,7 @@ export default function SubscriptionPlansPage() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/settings", {
+      const res = await fetch(`${API_URL}/admin/settings`, {
         headers: { Authorization: `Bearer ${getAdminToken()}` },
       });
       if (res.ok) {
@@ -126,7 +128,7 @@ export default function SubscriptionPlansPage() {
     e.preventDefault();
     setSavingSettings(true);
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/settings", {
+      const res = await fetch(`${API_URL}/admin/settings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -183,8 +185,8 @@ export default function SubscriptionPlansPage() {
       };
 
       const url = editingId
-        ? `https://freelancer.sangvish.com/api/admin/subscription-plans/${editingId}`
-        : "https://freelancer.sangvish.com/api/admin/subscription-plans";
+        ? `${API_URL}/admin/subscription-plans/${editingId}`
+        : `${API_URL}/admin/subscription-plans`;
       const method = editingId ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -228,7 +230,7 @@ export default function SubscriptionPlansPage() {
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Delete package "${name}"? This cannot be undone.`)) return;
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/subscription-plans/${id}`, {
+      const res = await fetch(`${API_URL}/admin/subscription-plans/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${getAdminToken()}` },
       });
@@ -250,7 +252,7 @@ export default function SubscriptionPlansPage() {
       if (typeof parsedFeatures === "string") {
         parsedFeatures = parsedFeatures.split("\n").map((f: string) => f.trim()).filter(Boolean);
       }
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/subscription-plans/${plan.plan_id}`, {
+      const res = await fetch(`${API_URL}/admin/subscription-plans/${plan.plan_id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -285,7 +287,7 @@ export default function SubscriptionPlansPage() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/upload", {
+      const res = await fetch(`${API_URL}/upload`, {
         method: "POST",
         headers: { Authorization: `Bearer ${getAdminToken()}` },
         body: formData,

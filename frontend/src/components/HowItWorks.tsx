@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
@@ -17,7 +19,7 @@ export default function HowItWorks() {
   useEffect(() => {
     const fetchSteps = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/how-it-works-steps");
+        const res = await fetch(`${API_URL}/how-it-works-steps`);
         if (res.ok) setSteps(await res.json());
       } catch (e) {
         console.error(e);

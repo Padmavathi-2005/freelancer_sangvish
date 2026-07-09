@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useEffect } from "react";
 import ProposalsTab from "@/components/dashboard/ProposalsTab";
@@ -97,7 +99,7 @@ export default function ProposalsPage() {
         const confirmPayment = async () => {
           try {
             const token = localStorage.getItem("token");
-            const res = await fetch("https://freelancer.sangvish.com/api/payments/proposal/confirm", {
+            const res = await fetch(`${API_URL}/payments/proposal/confirm`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -134,7 +136,7 @@ export default function ProposalsPage() {
         const confirmTimecardPayment = async () => {
           try {
             const token = localStorage.getItem("token");
-            const res = await fetch("https://freelancer.sangvish.com/api/payments/timecard/confirm", {
+            const res = await fetch(`${API_URL}/payments/timecard/confirm`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

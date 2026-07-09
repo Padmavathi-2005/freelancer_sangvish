@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -58,7 +60,7 @@ function GigsSearchContent() {
 
       try {
         if (token) {
-          await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
+          await fetch(`${API_URL}/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -78,7 +80,7 @@ function GigsSearchContent() {
 
       try {
         if (token) {
-          await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
+          await fetch(`${API_URL}/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -103,8 +105,8 @@ function GigsSearchContent() {
   useEffect(() => {
     const fetchTaxonomies = async () => {
       try {
-        const catRes = await fetch("https://freelancer.sangvish.com/api/admin/categories");
-        const subRes = await fetch("https://freelancer.sangvish.com/api/admin/sub-categories");
+        const catRes = await fetch(`${API_URL}/admin/categories`);
+        const subRes = await fetch(`${API_URL}/admin/sub-categories`);
         if (catRes.ok && subRes.ok) {
           const cats = await catRes.json();
           const subs = await subRes.json();
@@ -123,7 +125,7 @@ function GigsSearchContent() {
     const fetchGigs = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs");
+        const res = await fetch(`${API_URL}/freelancer/client/gigs`);
         if (res.ok) {
           const data = await res.json();
           setGigs(data);

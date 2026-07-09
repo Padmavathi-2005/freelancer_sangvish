@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useMemo, useEffect } from "react";
 import Table from "@/components/Table";
@@ -46,7 +48,7 @@ export default function OnboardingTab({
     setVettingLoading(userId);
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/users/${userId}/vetting`, {
+      const res = await fetch(`${API_URL}/admin/users/${userId}/vetting`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

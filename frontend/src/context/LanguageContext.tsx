@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 
@@ -76,7 +78,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         let defRate = 1.0;
         let defDir = "LTR";
 
-        const settingsRes = await fetch("https://freelancer.sangvish.com/api/settings");
+        const settingsRes = await fetch(`${API_URL}/settings`);
         if (settingsRes.ok) {
           const settingsData = await settingsRes.json();
           settingsData.forEach((setting: any) => {
@@ -93,7 +95,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Fetch active languages
-        const langRes = await fetch("https://freelancer.sangvish.com/api/languages/active");
+        const langRes = await fetch(`${API_URL}/languages/active`);
         let activeLangsList: Language[] = [];
         if (langRes.ok) {
           activeLangsList = await langRes.json();
@@ -106,7 +108,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         }
 
         // Fetch currencies
-        const currRes = await fetch("https://freelancer.sangvish.com/api/freelancer/currencies");
+        const currRes = await fetch(`${API_URL}/freelancer/currencies`);
         let activeCurrsList: Currency[] = [];
         if (currRes.ok) {
           activeCurrsList = await currRes.json();
@@ -147,7 +149,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const fetchTranslations = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`https://freelancer.sangvish.com/api/translations/${lang}`);
+        const res = await fetch(`${API_URL}/translations/${lang}`);
         if (res.ok) {
           const data = await res.json();
           setTranslations(data);

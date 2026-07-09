@@ -1,3 +1,4 @@
+import { API_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 import CustomSelect from "../CustomSelect";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
@@ -182,7 +183,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
     const delayDebounce = setTimeout(async () => {
       try {
         setIsSlugValidating(true);
-        const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/validate-slug?slug=${encodeURIComponent(gigSlug)}&excludeGigId=${editingGig?.gig_id || ""}`);
+        const res = await fetch(`${API_URL}/freelancer/client/gigs/validate-slug?slug=${encodeURIComponent(gigSlug)}&excludeGigId=${editingGig?.gig_id || ""}`);
         if (res.ok) {
           const data = await res.json();
           setSlugAvailable(data.available);
@@ -208,7 +209,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
     const formData = new FormData();
     formData.append("file", file);
     const token = localStorage.getItem("token");
-    const res = await fetch("https://freelancer.sangvish.com/api/upload", {
+    const res = await fetch(`${API_URL}/upload`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -527,8 +528,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
       setGigPublishing(true);
       const token = localStorage.getItem("token");
       const url = editingGig 
-        ? `https://freelancer.sangvish.com/api/freelancer/gigs/${editingGig.gig_id}`
-        : "https://freelancer.sangvish.com/api/freelancer/gigs";
+        ? `${API_URL}/freelancer/gigs/${editingGig.gig_id}`
+        : `${API_URL}/freelancer/gigs`;
       const method = editingGig ? "PUT" : "POST";
 
       const res = await fetch(url, {
@@ -2473,7 +2474,7 @@ export function GigConsoleModal({
                 if (window.confirm("Are you sure you want to delete this service gig permanently? This action cannot be undone.")) {
                   const token = localStorage.getItem("token");
                   try {
-                    const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/gigs/${selectedGigForDetails.gig_id}`, {
+                    const res = await fetch(`${API_URL}/freelancer/gigs/${selectedGigForDetails.gig_id}`, {
                       method: "DELETE",
                       headers: { Authorization: `Bearer ${token}` }
                     });

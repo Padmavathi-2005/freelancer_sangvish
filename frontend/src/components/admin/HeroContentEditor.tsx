@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 
@@ -44,7 +46,7 @@ export default function HeroContentEditor({
   useEffect(() => {
     const loadLangs = async () => {
       try {
-        const langRes = await fetch("https://freelancer.sangvish.com/api/languages/active");
+        const langRes = await fetch(`${API_URL}/languages/active`);
         if (langRes.ok) setAvailLanguages(await langRes.json());
       } catch (e) {
         console.error("Failed to load active languages", e);
@@ -71,7 +73,7 @@ export default function HeroContentEditor({
       
       for (const lang of availLanguages) {
         try {
-          const res = await fetch(`https://freelancer.sangvish.com/api/admin/translations/${lang.code}`, {
+          const res = await fetch(`${API_URL}/admin/translations/${lang.code}`, {
             headers: { Authorization: `Bearer ${getAdminToken()}` }
           });
           if (res.ok) {
@@ -148,7 +150,7 @@ export default function HeroContentEditor({
           { key: "hero_popular_label", value: langData.hero_popular_label || "" }
         ];
 
-        await fetch(`https://freelancer.sangvish.com/api/admin/translations/${code}`, {
+        await fetch(`${API_URL}/admin/translations/${code}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

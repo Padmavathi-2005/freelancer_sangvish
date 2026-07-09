@@ -1,3 +1,4 @@
+import { API_URL } from "@/config/api";
 import React, { useState, useMemo } from "react";
 import CustomSelect from "../CustomSelect";
 import { FiSettings, FiUser, FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiTrash2, FiPlus, FiCircle } from "react-icons/fi";
@@ -132,7 +133,7 @@ export default function SettingsTab({
     const delayDebounce = setTimeout(async () => {
       try {
         setSlugValidating(true);
-        const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/profile/validate-slug?slug=${encodeURIComponent(userSlug)}`);
+        const res = await fetch(`${API_URL}/freelancer/profile/validate-slug?slug=${encodeURIComponent(userSlug)}`);
         if (res.ok) {
           const data = await res.json();
           setSlugAvailable(data.available);
@@ -152,7 +153,7 @@ export default function SettingsTab({
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
-        const res = await fetch("https://freelancer.sangvish.com/api/users/me/subscription", {
+        const res = await fetch(`${API_URL}/users/me/subscription`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (res.ok) {
@@ -160,7 +161,7 @@ export default function SettingsTab({
           setUserSubscription(data);
         }
         
-        const resPlans = await fetch("https://freelancer.sangvish.com/api/subscription-plans");
+        const resPlans = await fetch(`${API_URL}/subscription-plans`);
         if (resPlans.ok) {
           const dataPlans = await resPlans.json();
           setAllPlans(dataPlans);
@@ -249,7 +250,7 @@ export default function SettingsTab({
     });
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/experiences", {
+      const res = await fetch(`${API_URL}/freelancer/experiences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -273,7 +274,7 @@ export default function SettingsTab({
     localStorage.setItem("profile_experiences", JSON.stringify(updated));
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/experiences", {
+      const res = await fetch(`${API_URL}/freelancer/experiences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -308,7 +309,7 @@ export default function SettingsTab({
     });
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/education", {
+      const res = await fetch(`${API_URL}/freelancer/education`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -332,7 +333,7 @@ export default function SettingsTab({
     localStorage.setItem("profile_education", JSON.stringify(updated));
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/education", {
+      const res = await fetch(`${API_URL}/freelancer/education`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -366,7 +367,7 @@ export default function SettingsTab({
     });
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/certifications", {
+      const res = await fetch(`${API_URL}/freelancer/certifications`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -390,7 +391,7 @@ export default function SettingsTab({
     localStorage.setItem("profile_certifications", JSON.stringify(updated));
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/certifications", {
+      const res = await fetch(`${API_URL}/freelancer/certifications`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

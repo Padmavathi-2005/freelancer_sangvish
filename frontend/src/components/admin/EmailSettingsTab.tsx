@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 
@@ -34,7 +36,7 @@ export default function EmailSettingsTab({
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const settingsRes = await fetch("https://freelancer.sangvish.com/api/settings");
+        const settingsRes = await fetch(`${API_URL}/settings`);
         if (settingsRes.ok) {
           const data = await settingsRes.json();
           const rawEmail = data.find((s: any) => s.setting_key === "email_settings")?.setting_value;

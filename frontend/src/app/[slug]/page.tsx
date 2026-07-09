@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
@@ -105,7 +107,7 @@ function ContactForm() {
     try {
       setSubmitting(true);
       setSubmitStatus(null);
-      const res = await fetch("https://freelancer.sangvish.com/api/contact", {
+      const res = await fetch(`${API_URL}/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, subject, message })
@@ -229,7 +231,7 @@ function NewsletterForm() {
     try {
       setSubmitting(true);
       setSubmitStatus(null);
-      const res = await fetch("https://freelancer.sangvish.com/api/newsletter/subscribe", {
+      const res = await fetch(`${API_URL}/newsletter/subscribe`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
@@ -315,7 +317,7 @@ export default function DynamicCmsPage() {
     const fetchPage = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`https://freelancer.sangvish.com/api/pages/${slug}`);
+        const res = await fetch(`${API_URL}/pages/${slug}`);
         if (res.ok) {
           const data = await res.json();
           setPageData(data);

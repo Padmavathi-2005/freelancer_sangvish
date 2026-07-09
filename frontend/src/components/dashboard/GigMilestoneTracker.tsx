@@ -1,3 +1,4 @@
+import { API_URL } from "@/config/api";
 import React, { useState } from "react";
 import { FiCheck, FiDollarSign, FiClock, FiX } from "react-icons/fi";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
@@ -24,8 +25,8 @@ export default function GigMilestoneTracker({
     try {
       const token = localStorage.getItem("token");
       const endpoint = userRole === "client" 
-        ? "https://freelancer.sangvish.com/api/client/gigs/applications"
-        : "https://freelancer.sangvish.com/api/gigs/applications";
+        ? `${API_URL}/client/gigs/applications`
+        : `${API_URL}/gigs/applications`;
       
       const res = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
@@ -46,7 +47,7 @@ export default function GigMilestoneTracker({
     try {
       setMilestoneActionLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/milestone/${milestoneId}/submit`, {
+      const res = await fetch(`${API_URL}/payments/contract/milestone/${milestoneId}/submit`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -70,7 +71,7 @@ export default function GigMilestoneTracker({
     try {
       setMilestoneActionLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/milestone/${milestoneId}/reject`, {
+      const res = await fetch(`${API_URL}/payments/contract/milestone/${milestoneId}/reject`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,7 +101,7 @@ export default function GigMilestoneTracker({
     try {
       setMilestoneActionLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/milestone/${milestoneId}/release`, {
+      const res = await fetch(`${API_URL}/payments/contract/milestone/${milestoneId}/release`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -178,7 +179,7 @@ export default function GigMilestoneTracker({
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/gigs/applications/${application.application_id}/milestones`, {
+      const res = await fetch(`${API_URL}/freelancer/gigs/applications/${application.application_id}/milestones`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

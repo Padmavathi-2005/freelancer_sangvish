@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useAdmin } from "@/app/admin/AdminContext";
@@ -21,7 +23,7 @@ export default function FooterLinksTab() {
     const fetchSettings = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
           data.forEach((s: any) => {
@@ -50,7 +52,7 @@ export default function FooterLinksTab() {
       formData.append("file", file);
 
       const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
-      const res = await fetch("https://freelancer.sangvish.com/api/upload?category=settings&type=settings", {
+      const res = await fetch(`${API_URL}/upload?category=settings&type=settings`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

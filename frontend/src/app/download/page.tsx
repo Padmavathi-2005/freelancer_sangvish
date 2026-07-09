@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import Header from "@/components/Header";
@@ -18,7 +20,7 @@ export default function DownloadPage() {
   useEffect(() => {
     const fetchLinks = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
           const storeLinks = { ...links };

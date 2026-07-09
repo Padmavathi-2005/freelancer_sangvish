@@ -1,10 +1,12 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect, useCallback } from "react";
 import { FiGlobe, FiDollarSign } from "react-icons/fi";
 import { useAdmin } from "@/app/admin/AdminContext";
 
-const API = "https://freelancer.sangvish.com/api/admin";
+const API = `${API_URL}/admin`;
 
 interface Language {
   language_id: number;
@@ -131,7 +133,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
   // ── Fetch translations ───────────────────────────────────────
   const fetchTranslationsList = async (langCode: string) => {
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/translations/${langCode}`, {
+      const res = await fetch(`${API_URL}/admin/translations/${langCode}`, {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       if (res.ok) {
@@ -255,7 +257,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
     setNewKeySaving(true);
     setNewKeyError("");
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/translations/add-key`, {
+      const res = await fetch(`${API_URL}/admin/translations/add-key`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -301,7 +303,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
         return;
       }
 
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/translations/${translatingLang.code}`, {
+      const res = await fetch(`${API_URL}/admin/translations/${translatingLang.code}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
@@ -22,7 +24,7 @@ export default function PricingPlansEditor({ triggerToast }: PricingPlansEditorP
 
   const fetchPlans = async () => {
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/subscription-plans", {
+      const res = await fetch(`${API_URL}/admin/subscription-plans`, {
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
       if (res.ok) {
@@ -60,7 +62,7 @@ export default function PricingPlansEditor({ triggerToast }: PricingPlansEditorP
       if (typeof plan.features === "string") {
         parsedFeatures = plan.features.split("\n").map((f: string) => f.trim()).filter(Boolean);
       }
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/subscription-plans/${plan.plan_id}`, {
+      const res = await fetch(`${API_URL}/admin/subscription-plans/${plan.plan_id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -107,7 +109,7 @@ export default function PricingPlansEditor({ triggerToast }: PricingPlansEditorP
   const handleAddPlan = async () => {
     setCreating(true);
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/subscription-plans", {
+      const res = await fetch(`${API_URL}/admin/subscription-plans`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -156,7 +158,7 @@ export default function PricingPlansEditor({ triggerToast }: PricingPlansEditorP
       return;
     }
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/subscription-plans/${planId}`, {
+      const res = await fetch(`${API_URL}/admin/subscription-plans/${planId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });

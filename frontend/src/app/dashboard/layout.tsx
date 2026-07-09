@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -351,7 +353,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         milestones: hireMilestones.length > 0 ? hireMilestones : undefined
       };
 
-      const res = await fetch("https://freelancer.sangvish.com/api/proposals/direct-hire", {
+      const res = await fetch(`${API_URL}/proposals/direct-hire`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

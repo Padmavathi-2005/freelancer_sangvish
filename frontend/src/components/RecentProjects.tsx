@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -16,7 +18,7 @@ export default function RecentProjects() {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://freelancer.sangvish.com/api/jobs/public");
+        const res = await fetch(`${API_URL}/jobs/public`);
         if (res.ok) {
           const data = await res.json();
           setProjects(data);

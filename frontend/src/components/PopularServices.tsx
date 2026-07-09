@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -17,7 +19,7 @@ export default function PopularServices() {
     const fetchGigs = async () => {
       try {
         setLoading(true);
-        const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs");
+        const res = await fetch(`${API_URL}/freelancer/client/gigs`);
         if (res.ok) {
           const data = await res.json();
           // Sort by a simple popularity score
@@ -179,7 +181,7 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
       localStorage.setItem("lancerflow_wishlist", JSON.stringify(updated));
       try {
         if (token) {
-          await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
+          await fetch(`${API_URL}/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -195,7 +197,7 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
       localStorage.setItem("lancerflow_wishlist", JSON.stringify(updated));
       try {
         if (token) {
-          await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
+          await fetch(`${API_URL}/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

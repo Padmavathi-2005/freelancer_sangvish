@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
@@ -28,7 +30,7 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
   useEffect(() => {
     const loadLangs = async () => {
       try {
-        const langRes = await fetch("https://freelancer.sangvish.com/api/languages/active");
+        const langRes = await fetch(`${API_URL}/languages/active`);
         if (langRes.ok) setAvailLanguages(await langRes.json());
       } catch (e) {
         console.error("Failed to load active languages", e);
@@ -40,7 +42,7 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
   // 2. Fetch FAQ list
   const fetchFaqs = async () => {
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/faqs", {
+      const res = await fetch(`${API_URL}/admin/faqs`, {
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
       if (res.ok) {
@@ -60,7 +62,7 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
     
     for (const lang of availLanguages) {
       try {
-        const res = await fetch(`https://freelancer.sangvish.com/api/admin/translations/${lang.code}`, {
+        const res = await fetch(`${API_URL}/admin/translations/${lang.code}`, {
           headers: { Authorization: `Bearer ${getAdminToken()}` }
         });
         if (res.ok) {
@@ -121,7 +123,7 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
           { key: aKey, value: langData[aKey] || "" }
         ];
 
-        await fetch(`https://freelancer.sangvish.com/api/admin/translations/${code}`, {
+        await fetch(`${API_URL}/admin/translations/${code}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -145,7 +147,7 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
   const handleAddFaq = async () => {
     setCreating(true);
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/faqs", {
+      const res = await fetch(`${API_URL}/admin/faqs`, {
         method: "POST",
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
@@ -174,7 +176,7 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
     }
 
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/faqs/${faqId}`, {
+      const res = await fetch(`${API_URL}/admin/faqs/${faqId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });

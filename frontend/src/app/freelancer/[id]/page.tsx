@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -99,7 +101,7 @@ export default function FreelancerPublicProfilePage() {
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/profile/${id}`, {
+        const res = await fetch(`${API_URL}/freelancer/profile/${id}`, {
           headers
         });
 

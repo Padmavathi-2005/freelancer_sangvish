@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { useState, useEffect } from "react";
 import CustomSelect from "@/components/CustomSelect";
@@ -97,7 +99,7 @@ export default function SiteSettingsTab({
       formData.append("file", file);
       
       const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
-      const res = await fetch("https://freelancer.sangvish.com/api/upload", {
+      const res = await fetch(`${API_URL}/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -132,13 +134,13 @@ export default function SiteSettingsTab({
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const langRes = await fetch("https://freelancer.sangvish.com/api/languages/active");
+        const langRes = await fetch(`${API_URL}/languages/active`);
         if (langRes.ok) setAvailLanguages(await langRes.json());
         
-        const currRes = await fetch("https://freelancer.sangvish.com/api/admin/currencies");
+        const currRes = await fetch(`${API_URL}/admin/currencies`);
         if (currRes.ok) setAvailCurrencies(await currRes.json());
 
-        const settingsRes = await fetch("https://freelancer.sangvish.com/api/settings");
+        const settingsRes = await fetch(`${API_URL}/settings`);
         if (settingsRes.ok) {
             const data = await settingsRes.json();
             const rawSite = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;

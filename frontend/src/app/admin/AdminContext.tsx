@@ -1,4 +1,6 @@
 "use client";
+import { API_URL } from "@/config/api";
+
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -662,7 +664,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setUsersLoading(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/users", {
+      const res = await fetch(`${API_URL}/admin/users`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -681,7 +683,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/users/${userId}/toggle-active`, {
+      const res = await fetch(`${API_URL}/admin/users/${userId}/toggle-active`, {
         method: "PUT",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -699,7 +701,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setProjectsLoading(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/projects", {
+      const res = await fetch(`${API_URL}/admin/projects`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -717,7 +719,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/projects/${projectId}/status`, {
+      const res = await fetch(`${API_URL}/admin/projects/${projectId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -738,7 +740,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/projects/${projectId}`, {
+      const res = await fetch(`${API_URL}/admin/projects/${projectId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -756,7 +758,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setGigsLoading(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/gigs", {
+      const res = await fetch(`${API_URL}/admin/gigs`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -774,7 +776,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/gigs/${gigId}/status`, {
+      const res = await fetch(`${API_URL}/admin/gigs/${gigId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -795,7 +797,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/gigs/${gigId}`, {
+      const res = await fetch(`${API_URL}/admin/gigs/${gigId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -813,7 +815,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setGigOrdersLoading(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/gig-orders", {
+      const res = await fetch(`${API_URL}/admin/gig-orders`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -831,7 +833,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/gig-orders/${orderId}/status`, {
+      const res = await fetch(`${API_URL}/admin/gig-orders/${orderId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -853,7 +855,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setTransactionsLoading(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/transactions", {
+      const res = await fetch(`${API_URL}/admin/transactions`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -871,7 +873,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
           data.forEach((setting: any) => {
@@ -954,7 +956,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
 
-      await fetch("https://freelancer.sangvish.com/api/admin/settings", {
+      await fetch(`${API_URL}/admin/settings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1001,7 +1003,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
       const fetchAdmins = async () => {
         try {
-          const res = await fetch("https://freelancer.sangvish.com/api/admin/all", {
+          const res = await fetch(`${API_URL}/admin/all`, {
             headers: { "Authorization": `Bearer ${token}` }
           });
           if (!res.ok) {
@@ -1041,7 +1043,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/create", {
+      const res = await fetch(`${API_URL}/admin/create`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1066,7 +1068,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setNewAdminEmail("");
       setNewAdminPassword("");
       
-      const refreshRes = await fetch("https://freelancer.sangvish.com/api/admin/all", {
+      const refreshRes = await fetch(`${API_URL}/admin/all`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (refreshRes.ok) {
@@ -1085,7 +1087,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/delete/${id}`, {
+      const res = await fetch(`${API_URL}/admin/delete/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1109,7 +1111,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/categories", {
+      const res = await fetch(`${API_URL}/admin/categories`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1134,12 +1136,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      let url = "https://freelancer.sangvish.com/api/admin/categories";
+      let url = `${API_URL}/admin/categories`;
       let method = "POST";
 
       if (categoryModalMode === "edit" && editingCategory) {
         const catId = editingCategory.id || editingCategory.category_id || "";
-        url = `https://freelancer.sangvish.com/api/admin/categories/${catId}`;
+        url = `${API_URL}/admin/categories/${catId}`;
         method = "PUT";
       }
 
@@ -1177,7 +1179,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/categories/${id}`, {
+      const res = await fetch(`${API_URL}/admin/categories/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1222,7 +1224,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/sub-categories", {
+      const res = await fetch(`${API_URL}/admin/sub-categories`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1248,12 +1250,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      let url = "https://freelancer.sangvish.com/api/admin/sub-categories";
+      let url = `${API_URL}/admin/sub-categories`;
       let method = "POST";
 
       if (subcategoryModalMode === "edit" && editingSubcategory) {
         const subId = editingSubcategory.sub_category_id || editingSubcategory.id || "";
-        url = `https://freelancer.sangvish.com/api/admin/sub-categories/${subId}`;
+        url = `${API_URL}/admin/sub-categories/${subId}`;
         method = "PUT";
       }
 
@@ -1290,7 +1292,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/sub-categories/${id}`, {
+      const res = await fetch(`${API_URL}/admin/sub-categories/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1336,7 +1338,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("adminToken");
     try {
       const deletePromises = selectedCategoryIds.map((id) =>
-        fetch(`https://freelancer.sangvish.com/api/admin/categories/${id}`, {
+        fetch(`${API_URL}/admin/categories/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         }).then(async (res) => {
@@ -1363,7 +1365,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("adminToken");
     try {
       const deletePromises = selectedSubcategoryIds.map((id) =>
-        fetch(`https://freelancer.sangvish.com/api/admin/sub-categories/${id}`, {
+        fetch(`${API_URL}/admin/sub-categories/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         }).then(async (res) => {
@@ -1388,7 +1390,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/skills", {
+      const res = await fetch(`${API_URL}/admin/skills`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1413,12 +1415,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      let url = "https://freelancer.sangvish.com/api/admin/skills";
+      let url = `${API_URL}/admin/skills`;
       let method = "POST";
 
       if (skillModalMode === "edit" && editingSkill) {
         const skId = editingSkill.skill_id || editingSkill.id || "";
-        url = `https://freelancer.sangvish.com/api/admin/skills/${skId}`;
+        url = `${API_URL}/admin/skills/${skId}`;
         method = "PUT";
       }
 
@@ -1455,7 +1457,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/skills/${id}`, {
+      const res = await fetch(`${API_URL}/admin/skills/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1500,7 +1502,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("adminToken");
     try {
       const deletePromises = selectedSkillIds.map((id) =>
-        fetch(`https://freelancer.sangvish.com/api/admin/skills/${id}`, {
+        fetch(`${API_URL}/admin/skills/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         }).then(async (res) => {
@@ -1538,7 +1540,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setLoadingAdminWallet(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/wallet/stats", {
+      const res = await fetch(`${API_URL}/admin/wallet/stats`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1556,7 +1558,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setLoadingWithdrawals(true);
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/wallet/withdrawals", {
+      const res = await fetch(`${API_URL}/admin/wallet/withdrawals`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1573,7 +1575,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/wallet/withdrawals/${requestId}/approve`, {
+      const res = await fetch(`${API_URL}/admin/wallet/withdrawals/${requestId}/approve`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1594,7 +1596,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/wallet/withdrawals/${requestId}/reject`, {
+      const res = await fetch(`${API_URL}/admin/wallet/withdrawals/${requestId}/reject`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1615,7 +1617,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return { success: false, message: "No token found" };
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/wallet/pay", {
+      const res = await fetch(`${API_URL}/admin/wallet/pay`, {
         method: "POST",
         headers: { 
           "Authorization": `Bearer ${token}`,
@@ -1640,7 +1642,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingCms(true);
       const token = localStorage.getItem("adminToken");
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/cms/pages", {
+      const res = await fetch(`${API_URL}/admin/cms/pages`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -1658,7 +1660,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const handleCreateCmsPage = async (title: string, slug: string, status: string, contentType: string, content: string) => {
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/cms/pages", {
+      const res = await fetch(`${API_URL}/admin/cms/pages`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1680,7 +1682,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const handleUpdateCmsPage = async (id: number, title: string, slug: string, status: string, contentType: string, content: string) => {
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/cms/pages/${id}`, {
+      const res = await fetch(`${API_URL}/admin/cms/pages/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1702,7 +1704,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const handleDeleteCmsPage = async (id: number) => {
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/cms/pages/${id}`, {
+      const res = await fetch(`${API_URL}/admin/cms/pages/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`
@@ -1829,7 +1831,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch("https://freelancer.sangvish.com/api/admin/proposals/pending", {
+      const res = await fetch(`${API_URL}/admin/proposals/pending`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1844,7 +1846,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`https://freelancer.sangvish.com/api/admin/proposals/${proposalId}/vetting`, {
+      const res = await fetch(`${API_URL}/admin/proposals/${proposalId}/vetting`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
