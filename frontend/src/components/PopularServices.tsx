@@ -1,91 +1,285 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useLanguage } from "@/context/LanguageContext";
+import { convertPrice } from "@/utils/currencyHelper";
+import { FiStar, FiHeart, FiClock, FiGrid, FiArrowRight } from "react-icons/fi";
 
 export default function PopularServices() {
-  const services = [
+  const { t } = useLanguage();
+  const router = useRouter();
+
+  const [gigs, setGigs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGigs = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs");
+        if (res.ok) {
+          const data = await res.json();
+          // Sort by a simple popularity score
+          const scored = data.map((gig: any) => {
+            const views = parseInt(gig.views || 0);
+            const wishlist = parseInt(gig.wishlist_count || 0);
+            const reviewsCount = parseInt(gig.reviews_count || 0);
+            const rating = parseFloat(gig.reviews_avg_rating || 5.0);
+            return { ...gig, score: views + wishlist * 3 + reviewsCount * 5 + rating * 10 };
+          });
+          scored.sort((a: any, b: any) => b.score - a.score);
+          setGigs(scored);
+        }
+      } catch (err) {
+        console.error("Failed to fetch landing page popular gigs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGigs();
+  }, []);
+
+  const dummyGigs = [
     {
-      title: "I will build a custom responsive website in React",
-      rating: "4.9",
-      reviews: "1k+ reviews",
-      price: "$500",
-      icon: (
-        <svg className="w-12 h-12 text-[#0a5a54] group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-          <line x1="8" y1="21" x2="16" y2="21" />
-          <line x1="12" y1="17" x2="12" y2="21" />
-        </svg>
-      ),
+      gig_id: 1,
+      title: "Complete Modern React & Next.js Website Development",
+      category_name: "Web Development",
+      views: 120, wishlist_count: 32, reviews_count: 24, reviews_avg_rating: 4.9,
+      price: 199, delivery_days: 3, images: [],
     },
     {
-      title: "I will design a high-converting landing page in Figma",
-      rating: "5.0",
-      reviews: "450 reviews",
-      price: "$350",
-      icon: (
-        <svg className="w-12 h-12 text-[#0a5a54] group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-          <path d="m15 5 4 4" />
-          <path d="M9 11v-4" />
-          <path d="M5 13v-4" />
-        </svg>
-      ),
+      gig_id: 2,
+      title: "Premium UI/UX Design for Mobile App and Web Platforms",
+      category_name: "UI/UX Design",
+      views: 95, wishlist_count: 18, reviews_count: 15, reviews_avg_rating: 4.8,
+      price: 149, delivery_days: 5, images: [],
     },
     {
-      title: "I will optimize your website for SEO and speed",
-      rating: "4.8",
-      reviews: "600 reviews",
-      price: "$200",
-      icon: (
-        <svg className="w-12 h-12 text-[#0a5a54] group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-      ),
+      gig_id: 3,
+      title: "Custom AI Automation Workflow Integration & API Setup",
+      category_name: "AI Automation",
+      views: 145, wishlist_count: 45, reviews_count: 37, reviews_avg_rating: 5.0,
+      price: 299, delivery_days: 7, images: [],
+    },
+    {
+      gig_id: 4,
+      title: "SEO Content Writing & Blog Strategy for Tech Startups",
+      category_name: "Content Writing",
+      views: 80, wishlist_count: 12, reviews_count: 19, reviews_avg_rating: 4.7,
+      price: 79, delivery_days: 2, images: [],
     },
   ];
 
+  const activeGigsList = gigs.slice(0, 8);
+
+  if (!loading && activeGigsList.length === 0) {
+    return null;
+  }
+
   return (
-    <section className="w-full bg-[#f8fafc] border-t border-slate-200/50 py-16 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 text-center mb-10">
-          Popular Services
-        </h2>
+    <section className="w-full bg-[#f8fafc] border-t border-slate-200/50 py-16 px-4 sm:px-6 lg:px-8 text-left">
+      <div className="max-w-[1600px] mx-auto flex flex-col gap-8">
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => (
-            <div 
-              key={index} 
-              className="group border border-slate-200/60 rounded-2xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:border-[#0a5a54]/30 hover:shadow-xl hover:shadow-slate-200/50 cursor-pointer bg-white"
-              onClick={() => alert(`Opening details page for: "${service.title}"`)}
-            >
-              {/* Top visual block (Grey backing with centered icon) */}
-              <div className="bg-slate-200/70 hover:bg-slate-200/50 transition-colors duration-300 flex items-center justify-center p-12 aspect-video rounded-t-2xl shrink-0">
-                {service.icon}
-              </div>
+        {/* Section Header */}
+        <div className="flex items-center justify-between border-b border-slate-200/60 pb-4">
+          <div>
+            <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase block mb-1">
+              Top Ranked Services
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+              {t("popular_services_title", "Popular Services")}
+            </h2>
+          </div>
+          <button
+            onClick={() => router.push("/gigs")}
+            className="flex items-center gap-1.5 text-xs font-black text-teal-700 hover:text-teal-800 transition-colors bg-teal-50 border border-teal-150 px-4 py-2.5 rounded-xl shadow-sm cursor-pointer group"
+          >
+            <FiGrid className="w-3.5 h-3.5 shrink-0" />
+            <span>View All</span>
+            <FiArrowRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5" />
+          </button>
+        </div>
 
-              {/* Bottom detail block */}
-              <div className="p-5 flex-1 flex flex-col justify-between gap-5 border-t border-slate-100">
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug line-clamp-2">
-                    {service.title}
-                  </h3>
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-[#0a5a54] font-bold">★ {service.rating}</span>
-                    <span className="text-slate-400 font-medium">({service.reviews})</span>
+        {/*
+          Fixed-width card grid:
+          minmax(260px, 1fr) → at 1280px: fits 4 cards exactly.
+          At 1600px+: fits 5–6 cards — no card ever grows beyond 1fr of remaining space.
+          Cards are fixed height via flex-col, image is fixed h-40.
+        */}
+        {loading ? (
+          <div
+            className="grid gap-5"
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}
+          >
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="border border-slate-200/60 rounded-3xl overflow-hidden flex flex-col animate-pulse bg-white">
+                <div className="w-full h-40 bg-slate-200" />
+                <div className="p-4 flex flex-col gap-2.5">
+                  <div className="h-3.5 bg-slate-200 rounded w-1/3" />
+                  <div className="h-4 bg-slate-200 rounded w-full" />
+                  <div className="h-4 bg-slate-200 rounded w-4/5" />
+                  <div className="flex gap-3 mt-1">
+                    <div className="h-3 bg-slate-200 rounded w-16" />
+                    <div className="h-3 bg-slate-200 rounded w-12" />
                   </div>
                 </div>
-
-                {/* Footer starting price */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-100 text-xs font-bold text-slate-400">
-                  <span className="uppercase tracking-wider">Starting At</span>
-                  <span className="text-base font-extrabold text-slate-900">{service.price}</span>
+                <div className="px-4 pb-4 border-t border-slate-100 pt-3 flex justify-between mt-auto">
+                  <div className="h-3 bg-slate-200 rounded w-16" />
+                  <div className="h-4 bg-slate-200 rounded w-14" />
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            className="grid gap-5"
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}
+          >
+            {activeGigsList.map((gig) => (
+              <GigCard key={gig.gig_id} gig={gig} router={router} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
+  );
+}
+
+function GigCard({ gig, router }: { gig: any; router: any }) {
+  const { currency } = useLanguage();
+  const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("lancerflow_wishlist");
+    if (stored) {
+      try {
+        const wishlist = JSON.parse(stored);
+        setIsSaved(wishlist.some((item: any) => item.gig_id === gig.gig_id));
+      } catch (e) {}
+    }
+  }, [gig.gig_id]);
+
+  const toggleWishlist = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const stored = localStorage.getItem("lancerflow_wishlist");
+    let wishlist = [];
+    if (stored) {
+      try {
+        wishlist = JSON.parse(stored);
+      } catch (err) {}
+    }
+    const isCurrentlySaved = wishlist.some((item: any) => item.gig_id === gig.gig_id);
+    let updated;
+    const token = localStorage.getItem("token");
+
+    if (isCurrentlySaved) {
+      updated = wishlist.filter((item: any) => item.gig_id !== gig.gig_id);
+      setIsSaved(false);
+      localStorage.setItem("lancerflow_wishlist", JSON.stringify(updated));
+      try {
+        if (token) {
+          await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ action: "remove" })
+          });
+        }
+      } catch (err) {}
+    } else {
+      updated = [...wishlist, gig];
+      setIsSaved(true);
+      localStorage.setItem("lancerflow_wishlist", JSON.stringify(updated));
+      try {
+        if (token) {
+          await fetch(`https://freelancer.sangvish.com/api/freelancer/client/gigs/${gig.gig_id}/wishlist`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ action: "add" })
+          });
+        }
+      } catch (err) {}
+    }
+  };
+
+  let coverUrl = "";
+  try {
+    if (Array.isArray(gig.images)) {
+      coverUrl = gig.images[0];
+    } else if (typeof gig.images === "string") {
+      const parsed = JSON.parse(gig.images);
+      if (Array.isArray(parsed)) coverUrl = parsed[0];
+    }
+  } catch {}
+
+  const reviews = parseInt(gig.reviews_count || 0);
+  const rating = reviews > 0 ? parseFloat(gig.reviews_avg_rating).toFixed(1) : "0.0";
+  const converted = convertPrice(gig.price || 0, currency);
+
+  return (
+    <div
+      onClick={() => router.push(`/gigs/${gig.slug || gig.gig_id}`)}
+      className="group border border-slate-200/60 rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.015] hover:border-teal-500/25 hover:shadow-xl hover:shadow-slate-200/60 cursor-pointer bg-white"
+    >
+      {/* Fixed-height cover — never stretches the card */}
+      <div className="w-full h-40 shrink-0 overflow-hidden bg-gradient-to-tr from-slate-50 to-slate-100 border-b border-slate-200/50 relative">
+        {coverUrl ? (
+          <img
+            src={coverUrl}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            alt={gig.title}
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 select-none">
+            <div className="text-3xl">🎨</div>
+            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Service Preview</span>
+          </div>
+        )}
+        {/* Category badge overlaid on image */}
+        <span className="absolute top-3 left-3 text-[9px] font-black text-teal-700 bg-white/90 border border-teal-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm">
+          {gig.category_name || "Development"}
+        </span>
+        {/* Interactive wishlist button */}
+        <button
+          onClick={toggleWishlist}
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
+          title="Save to wishlist"
+        >
+          <FiHeart className={`w-3.5 h-3.5 transition-colors ${isSaved ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="p-4 flex flex-col gap-2 flex-1 text-left">
+        <h3 className="text-sm font-black text-slate-900 leading-snug line-clamp-2 group-hover:text-teal-800 transition-colors">
+          {gig.title}
+        </h3>
+        <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 mt-auto pt-2">
+          <div className="flex items-center gap-0.5">
+            <FiStar className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+            <span className="text-slate-800 font-extrabold">{rating}</span>
+            <span className="font-medium">({reviews})</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            <FiClock className="w-3 h-3 shrink-0" />
+            <span>{gig.delivery_days || 3}d delivery</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 pb-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+        <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Starting at</span>
+        <span className="text-base font-extrabold text-slate-900">
+          {converted.formatted}
+        </span>
+      </div>
+    </div>
   );
 }

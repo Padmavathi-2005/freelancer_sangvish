@@ -1,7 +1,7 @@
 import pool from "../config/db.js";
 
 // Helper to get or create a user's wallet on the fly
-export const getOrCreateWallet = async (userId, role) => {
+export const getOrCreateWallet = async (userId) => {
   const selectQuery = "SELECT * FROM wallets WHERE user_id = $1";
   const selectRes = await pool.query(selectQuery, [userId]);
   
@@ -9,8 +9,8 @@ export const getOrCreateWallet = async (userId, role) => {
     return selectRes.rows[0];
   }
 
-  // Clients start with $10,000 for testing, Freelancers start with $0
-  const initialBalance = role === "client" ? 10000.00 : 0.00;
+  // All users start with $0.00
+  const initialBalance = 0.00;
   const insertQuery = `
     INSERT INTO wallets (user_id, balance, currency)
     VALUES ($1, $2, 'USD')
@@ -23,9 +23,7 @@ export const getOrCreateWallet = async (userId, role) => {
 export const getUserWallet = async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const role = req.user.role || "freelancer";
-    
-    const wallet = await getOrCreateWallet(userId, role);
+    const wallet = await getOrCreateWallet(userId);
 
     // Get transaction history
     const transactionsQuery = `

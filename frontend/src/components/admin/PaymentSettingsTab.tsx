@@ -15,6 +15,13 @@ export default function PaymentSettingsTab() {
   const [saveMsg, setSaveMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Stripe Gateway state
+  const [stripePublicKey, setStripePublicKey] = useState("");
+  const [stripeSecretKey, setStripeSecretKey] = useState("");
+  const [showStripeSecret, setShowStripeSecret] = useState(false);
+  const [savingStripe, setSavingStripe] = useState(false);
+  const [stripeMsg, setStripeMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   // UPI / Bank details stored per platform admin
   const [upiId, setUpiId] = useState("");
   const [bankName, setBankName] = useState("");
@@ -31,12 +38,13 @@ export default function PaymentSettingsTab() {
     const fetchSettings = async () => {
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:5000/api/admin/settings", {
+        const res = await fetch("https://freelancer.sangvish.com/api/admin/settings", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) {
           const data: any[] = await res.json();
           const paypal = data.find((s: any) => s.setting_key === "paypal_keys");
+          const stripe = data.find((s: any) => s.setting_key === "stripe_keys");
           const upi   = data.find((s: any) => s.setting_key === "upi_id");
           const bank  = data.find((s: any) => s.setting_key === "bank_details");
 
@@ -46,6 +54,20 @@ export default function PaymentSettingsTab() {
               : paypal.setting_value;
             setPaypalClientId(v.client_id || "");
             setPaypalSecretKey(v.secret_key || "");
+          } else {
+            setPaypalClientId("your_paypal_client_id");
+            setPaypalSecretKey("your_paypal_secret_key");
+          }
+
+          if (stripe?.setting_value) {
+            const v = typeof stripe.setting_value === "string"
+              ? JSON.parse(stripe.setting_value)
+              : stripe.setting_value;
+            setStripePublicKey(v.public_key || "");
+            setStripeSecretKey(v.secret_key || "");
+          } else {
+            setStripePublicKey("your_stripe_public_key");
+            setStripeSecretKey("your_stripe_secret_key");
           }
           if (upi?.setting_value) {
             const v = typeof upi.setting_value === "string"
@@ -75,7 +97,7 @@ export default function PaymentSettingsTab() {
 
   const saveSetting = async (key: string, value: object) => {
     const token = localStorage.getItem("adminToken");
-    await fetch("http://localhost:5000/api/admin/settings", {
+    await fetch("https://freelancer.sangvish.com/api/admin/settings", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -100,6 +122,24 @@ export default function PaymentSettingsTab() {
       setSaveMsg({ type: "error", text: "Failed to save PayPal settings. Please try again." });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveStripe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripePublicKey.trim() || !stripeSecretKey.trim()) {
+      setStripeMsg({ type: "error", text: "Both Stripe Public Key and Secret Key are required." });
+      return;
+    }
+    setSavingStripe(true);
+    setStripeMsg(null);
+    try {
+      await saveSetting("stripe_keys", { public_key: stripePublicKey.trim(), secret_key: stripeSecretKey.trim() });
+      setStripeMsg({ type: "success", text: "Stripe API credentials saved successfully." });
+    } catch {
+      setStripeMsg({ type: "error", text: "Failed to save Stripe settings. Please try again." });
+    } finally {
+      setSavingStripe(false);
     }
   };
 
@@ -220,6 +260,82 @@ export default function PaymentSettingsTab() {
               className="bg-slate-800 hover:bg-slate-900 text-white rounded-xl px-5 py-2 text-xs font-black transition shadow-sm cursor-pointer disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save PayPal Keys"}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* ───── STRIPE GATEWAY ───── */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base">⚡</div>
+            <div>
+              <h2 className="text-sm font-extrabold text-slate-800">Stripe Gateway</h2>
+              <p className="text-[10px] text-slate-400 font-semibold">Sandbox / Live API credentials for Stripe payment processing.</p>
+            </div>
+          </div>
+          <span className="text-[9px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-100 font-black uppercase">Sandbox</span>
+        </div>
+
+        <form onSubmit={handleSaveStripe} className="p-6 space-y-5">
+          <div className="grid grid-cols-1 gap-5">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                Stripe Public Key
+              </label>
+              <input
+                type="text"
+                value={stripePublicKey}
+                onChange={(e) => setStripePublicKey(e.target.value)}
+                placeholder="pk_test_51OuCU4..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                Stripe Secret Key
+              </label>
+              <div className="relative">
+                <input
+                  type={showStripeSecret ? "text" : "password"}
+                  value={stripeSecretKey}
+                  onChange={(e) => setStripeSecretKey(e.target.value)}
+                  placeholder="sk_test_51OuCU4..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 pr-10 text-xs font-mono text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowStripeSecret(!showStripeSecret)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition cursor-pointer"
+                >
+                  {showStripeSecret ? (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {stripeMsg && (
+            <div className={`text-xs font-bold px-3 py-2 rounded-lg ${stripeMsg.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-rose-50 text-rose-700 border border-rose-100"}`}>
+              {stripeMsg.text}
+            </div>
+          )}
+
+          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+            <p className="text-[10px] text-slate-400 font-semibold">
+              Keys are stored securely in the platform settings database.
+            </p>
+            <button
+              type="submit"
+              disabled={savingStripe}
+              className="bg-slate-800 hover:bg-slate-900 text-white rounded-xl px-5 py-2 text-xs font-black transition shadow-sm cursor-pointer disabled:opacity-50"
+            >
+              {savingStripe ? "Saving..." : "Save Stripe Keys"}
             </button>
           </div>
         </form>

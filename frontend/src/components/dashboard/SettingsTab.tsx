@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import CustomSelect from "../CustomSelect";
 import { FiSettings, FiUser, FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiTrash2, FiPlus, FiCircle } from "react-icons/fi";
 
@@ -39,6 +39,10 @@ interface SettingsTabProps {
   deleteCertification: (idx: number) => void;
   setActiveTab: (tab: any) => void;
   userName?: string;
+  profileImage?: string | null;
+  handleProfileImageUpload?: (file: File) => Promise<void>;
+  setSelectedFreelancerProfile?: (profile: any) => void;
+  userEmail?: string;
 }
 
 export default function SettingsTab({
@@ -78,9 +82,119 @@ export default function SettingsTab({
   deleteCertification,
   setActiveTab,
   userName = "User",
+  profileImage = null,
+  handleProfileImageUpload,
+  setSelectedFreelancerProfile,
+  userEmail,
 }: SettingsTabProps) {
   // Local state for settings subtabs
-  const [activeSettingsSubTab, setActiveSettingsSubTab] = useState<"account" | "profile">("account");
+  const [settingsTabMode, setSettingsTabMode] = useState<"hub" | "profile" | "subscription">("hub");
+  const [activeSettingsSubTab, setActiveSettingsSubTab] = useState<"account" | "profile" | "subscription">("account");
+  const [userSubscription, setUserSubscription] = useState<any>(null);
+  const [allPlans, setAllPlans] = useState<any[]>([]);
+
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [slugValidating, setSlugValidating] = useState(false);
+
+  // Slugify helper
+  const slugifyText = (text: string) => {
+    return text
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  const handleDisplayFreelancerNameChange = (nameVal: string) => {
+    const slugVal = slugifyText(nameVal);
+    setProfileBasics({
+      ...profileBasics,
+      display_name: nameVal,
+      slug: slugVal
+    });
+  };
+
+  const handleFreelancerSlugChange = (slugVal: string) => {
+    setProfileBasics({
+      ...profileBasics,
+      slug: slugifyText(slugVal)
+    });
+  };
+
+  // Debounced live user slug verification
+  React.useEffect(() => {
+    const userSlug = profileBasics?.slug;
+    if (!userSlug || !userSlug.trim()) {
+      setSlugAvailable(null);
+      return;
+    }
+    const delayDebounce = setTimeout(async () => {
+      try {
+        setSlugValidating(true);
+        const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/profile/validate-slug?slug=${encodeURIComponent(userSlug)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSlugAvailable(data.available);
+        }
+      } catch (err) {
+        console.error("Error validating user slug", err);
+      } finally {
+        setSlugValidating(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounce);
+  }, [profileBasics?.slug]);
+
+  React.useEffect(() => {
+    const fetchSub = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch("https://freelancer.sangvish.com/api/users/me/subscription", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUserSubscription(data);
+        }
+        
+        const resPlans = await fetch("https://freelancer.sangvish.com/api/subscription-plans");
+        if (resPlans.ok) {
+          const dataPlans = await resPlans.json();
+          setAllPlans(dataPlans);
+        }
+      } catch (err) {
+        console.error("Failed to load subscription settings details:", err);
+      }
+    };
+    fetchSub();
+  }, []);
+
+  const settingsSteps = useMemo(() => {
+    if (userRole === "client") {
+      return [
+        { number: 1, label: "Company Basics", done: Boolean(clientBasics?.company_name) },
+        { number: 2, label: "Company Details", done: Boolean(clientBasics?.company_website || clientBasics?.company_description) },
+        { number: 3, label: "Hiring Contact Info", done: Boolean(clientBasics?.hiring_contact_name) }
+      ];
+    } else {
+      return [
+        { number: 1, label: "Professional Basics", done: Boolean(profileBasics?.professional_title) },
+        { number: 2, label: "Work Experience", done: experiences.length > 0 },
+        { number: 3, label: "Education History", done: education.length > 0 },
+        { number: 4, label: "Certifications", done: certifications.length > 0 },
+        { number: 5, label: "Skills Selector", done: selectedSkills.length > 0 }
+      ];
+    }
+  }, [userRole, clientBasics, profileBasics, experiences, education, certifications, selectedSkills]);
+
+  const settingsProgress = useMemo(() => {
+    if (settingsSteps.length === 0) return 0;
+    const doneCount = settingsSteps.filter((s: any) => s.done).length;
+    return Math.round((doneCount / settingsSteps.length) * 100);
+  }, [settingsSteps]);
 
   // Local state for horizontal stepper steps (when editing onboarded settings)
   const [freelancerSettingsStep, setFreelancerSettingsStep] = useState(1);
@@ -135,7 +249,7 @@ export default function SettingsTab({
     });
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/experiences", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/experiences", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -159,7 +273,7 @@ export default function SettingsTab({
     localStorage.setItem("profile_experiences", JSON.stringify(updated));
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/experiences", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/experiences", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -194,7 +308,7 @@ export default function SettingsTab({
     });
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/education", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/education", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -218,7 +332,7 @@ export default function SettingsTab({
     localStorage.setItem("profile_education", JSON.stringify(updated));
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/education", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/education", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -252,7 +366,7 @@ export default function SettingsTab({
     });
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/certifications", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/certifications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -276,7 +390,7 @@ export default function SettingsTab({
     localStorage.setItem("profile_certifications", JSON.stringify(updated));
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/certifications", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/certifications", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -320,12 +434,93 @@ export default function SettingsTab({
     }, 800);
   };
 
+  // RENDER 0: SETTINGS HUB LANDING SCREEN
+  if (settingsTabMode === "hub") {
+    return (
+      <div className="relative z-10 w-full animate-fadeIn flex flex-col gap-6 text-left">
+        <div>
+          <h2 className="text-xl font-black text-slate-800">Settings Hub</h2>
+          <p className="text-xs text-slate-400">Configure your professional identity, view platform details, and manage subscriptions.</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+          {/* Box 1: Profile */}
+          <div 
+            onClick={() => {
+              setSettingsTabMode("profile");
+              if (!isOnboardingComplete) {
+                setProfileStep(1);
+              } else {
+                setActiveSettingsSubTab("profile");
+              }
+            }}
+            className="bg-white border border-slate-200/80 hover:border-teal-700/30 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
+          >
+            <div>
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
+                  <FiUser className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] bg-slate-100 text-slate-650 font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                  {settingsProgress}% Complete
+                </span>
+              </div>
+              <h3 className="text-base font-extrabold text-slate-850 mt-4 group-hover:text-teal-750 transition-colors">
+                {userRole === "client" ? "Company Profile" : "Professional Profile"}
+              </h3>
+              <p className="text-xs text-slate-500 font-semibold mt-1 leading-normal max-w-sm">
+                Set up your professional title, availability rates, experiences, educations, and showcase skills.
+              </p>
+            </div>
+          </div>
+
+          {/* Box 2: Membership Plan */}
+          <div 
+            onClick={() => {
+              setSettingsTabMode("subscription");
+              if (!isOnboardingComplete) {
+                setProfileStep(99);
+              } else {
+                setActiveSettingsSubTab("subscription");
+              }
+            }}
+            className="bg-white border border-slate-200/80 hover:border-teal-700/30 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
+          >
+            <div>
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
+                  <FiCheckCircle className="w-5 h-5" />
+                </div>
+                <span className="text-[10px] bg-teal-55 text-teal-800 font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                  {userSubscription?.plan_name || "Starter"} Plan
+                </span>
+              </div>
+              <h3 className="text-base font-extrabold text-slate-850 mt-4 group-hover:text-teal-755 transition-colors">
+                Membership Plan
+              </h3>
+              <p className="text-xs text-slate-500 font-semibold mt-1 leading-normal max-w-sm">
+                View current active membership details, check platform allowances, and upgrade subscription tiers.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setActiveTab("workspace")}
+          className="w-full text-center py-3.5 text-xs font-black text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all cursor-pointer mt-4"
+        >
+          ← Back to Workspace Hub
+        </button>
+      </div>
+    );
+  }
+
   // RENDER 1: STEP-BY-STEP CHECKLIST ONBOARDING (if profile not 100% complete)
   if (!isOnboardingComplete) {
     return (
       <div className="relative z-10 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start w-full animate-fadeIn">
         {/* LEFT CHECKLIST SIDEBAR */}
-        <div className="xl:col-span-4 bg-white border border-slate-200/85 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+        <div className="xl:col-span-4 bg-white border border-slate-200/85 rounded-2xl p-6 shadow-sm flex flex-col gap-6 order-last xl:order-first">
           <div>
             <h2 className="text-base font-extrabold text-slate-800">Profile Setup Checklist</h2>
             <p className="text-slate-400 text-xs mt-1">Complete each section to activate your profile on the SQL DB.</p>
@@ -337,22 +532,22 @@ export default function SettingsTab({
                 <circle cx="24" cy="24" r="20" className="stroke-slate-200" strokeWidth="4" fill="transparent" />
                 <circle cx="24" cy="24" r="20" className="stroke-primary transition-all duration-300" strokeWidth="4" fill="transparent"
                   strokeDasharray={2 * Math.PI * 20}
-                  strokeDashoffset={2 * Math.PI * 20 * (1 - profileCompletionProgress / 100)} />
+                  strokeDashoffset={2 * Math.PI * 20 * (1 - settingsProgress / 100)} />
               </svg>
               <span className="absolute inset-0 flex items-center justify-center text-[10px] leading-none font-black text-slate-800">
-                {profileCompletionProgress}%
+                {settingsProgress}%
               </span>
             </div>
             <div>
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Status</span>
               <span className="text-sm font-extrabold text-slate-850">
-                {profileCompletionProgress === 100 ? "Ready to Publish! 🎉" : "In Progress"}
+                {settingsProgress === 100 ? "Ready to Publish! 🎉" : "In Progress"}
               </span>
             </div>
           </div>
 
           <div className="flex flex-col gap-2.5">
-            {stepsStatus.map((step) => {
+            {settingsSteps.map((step: any) => {
               const isCurrent = profileStep === step.number;
               return (
                 <button
@@ -387,47 +582,168 @@ export default function SettingsTab({
                 </button>
               );
             })}
+            
+            {/* Membership Plan tab (Available even during onboarding checklist) */}
+            <div className="border-t border-slate-100 pt-3 mt-1.5">
+              <button
+                onClick={() => {
+                  setProfileStep(99);
+                  setIsEditingProfile(true);
+                }}
+                className={`w-full text-left px-4 py-3.5 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center justify-between group ${
+                  profileStep === 99
+                    ? "bg-primary text-white border-primary shadow-md shadow-primary/10"
+                    : "bg-slate-50/50 border-slate-200/80 text-slate-650 hover:bg-white hover:border-slate-355"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    profileStep === 99
+                      ? "bg-white/20 text-white"
+                      : "bg-teal-50 text-teal-800 font-extrabold"
+                  }`}>
+                    ★
+                  </span>
+                  <span>Membership Plan</span>
+                </div>
+                <FiCheckCircle className={`w-4 h-4 shrink-0 ${profileStep === 99 ? "text-white" : "text-teal-650"}`} />
+              </button>
+            </div>
           </div>
 
           <button
-            onClick={() => setActiveTab("workspace")}
-            className="w-full text-center py-3 text-xs font-bold text-slate-500 hover:text-slate-885 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all cursor-pointer font-sans"
+            onClick={() => setSettingsTabMode("hub")}
+            className="w-full text-center py-3 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all cursor-pointer font-sans"
           >
-            ← Back to Workspace Hub
+            ← Back to Settings Hub
           </button>
         </div>
 
         {/* RIGHT WIZARD FLOW CONTENT */}
-        <div className="xl:col-span-8 flex flex-col gap-6 w-full">
+        <div className="xl:col-span-8 flex flex-col gap-6 w-full order-first xl:order-none">
           <div className="bg-white border border-slate-200/85 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 text-slate-800">
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <span className="text-[10px] font-black text-primary uppercase tracking-wider block">
-                  Step {profileStep} of {userRole === "client" ? "3" : "5"}
+                  {profileStep === 99 ? "Premium Perks" : `Step ${profileStep} of ${userRole === "client" ? "3" : "5"}`}
                 </span>
                 <h1 className="text-lg font-black text-slate-900 leading-tight">
-                  {userRole === "client" ? (
-                    <>
-                      {profileStep === 1 && "Company Basics"}
-                      {profileStep === 2 && "Company Presence & Details"}
-                      {profileStep === 3 && "Hiring Contact Info"}
-                    </>
-                  ) : (
-                    <>
-                      {profileStep === 1 && "Core Professional Profile"}
-                      {profileStep === 2 && "Work Experience History"}
-                      {profileStep === 3 && "Education History"}
-                      {profileStep === 4 && "Professional Certifications"}
-                      {profileStep === 5 && "Skills Selector"}
-                    </>
+                  {profileStep === 99 ? "Membership & Subscription" : (
+                    userRole === "client" ? (
+                      <>
+                        {profileStep === 1 && "Company Basics"}
+                        {profileStep === 2 && "Company Presence & Details"}
+                        {profileStep === 3 && "Hiring Contact Info"}
+                      </>
+                    ) : (
+                      <>
+                        {profileStep === 1 && "Core Professional Profile"}
+                        {profileStep === 2 && "Work Experience History"}
+                        {profileStep === 3 && "Education History"}
+                        {profileStep === 4 && "Professional Certifications"}
+                        {profileStep === 5 && "Skills Selector"}
+                      </>
+                    )
                   )}
                 </h1>
               </div>
             </div>
 
+            {/* MEMBERSHIP PLAN STEP OVERRIDE */}
+            {profileStep === 99 && (
+              <div className="flex flex-col gap-6 animate-fadeIn">
+                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 shadow-xs text-left">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Plan:</span>
+                      <span className="text-xs bg-teal-50 border border-teal-100 text-teal-850 px-2.5 py-0.5 rounded-full font-black tracking-wider uppercase">
+                        {userSubscription?.plan_name || "Starter"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 font-semibold mt-1 leading-normal max-w-md">
+                      {userSubscription?.description || "Basic membership tier with standard platform limits."}
+                    </p>
+                  </div>
+
+                  <div className="text-right sm:text-left shrink-0">
+                    <span className="text-lg font-black text-slate-900 leading-tight font-sans">
+                      {userSubscription?.price || "Free"}
+                    </span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mt-0.5">
+                      {userSubscription?.period || ""}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Next Upgrade Tier */}
+                {(!userSubscription || userSubscription.active_plan_id !== 3) && (
+                  <div className="bg-[#063c38]/5 border border-teal-700/10 p-5 rounded-2xl text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 mt-2 text-left">
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-[#063c38] text-white flex items-center justify-center font-black shrink-0 shadow-sm text-sm">
+                        🚀
+                      </div>
+                      <div>
+                        <h5 className="font-black text-slate-850 text-xs">
+                          Next Level Upgrade: {userSubscription?.active_plan_id === 2 ? "Enterprise Plan" : "Professional Plan"}
+                        </h5>
+                        <p className="text-slate-500 font-semibold mt-1 max-w-sm leading-normal">
+                          {userSubscription?.active_plan_id === 2 
+                            ? "Gain unlimited active job posts, unlimited bid proposals, and custom enterprise support options."
+                            : "Unlock advanced matching algorithms, priority support channels, and reduced transaction fees."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        const nextPlanId = (userSubscription?.active_plan_id || 1) + 1;
+                        window.location.href = `/pricing/${nextPlanId}`;
+                      }}
+                      className="w-full sm:w-auto bg-[#063c38] hover:bg-[#084843] text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer text-center shrink-0"
+                    >
+                      Upgrade Now
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* FREELANCER STEP 1: BASICS */}
             {userRole !== "client" && profileStep === 1 && (
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-5 text-left">
+                {/* Modern Circular Profile Image Uploader */}
+                <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-4">
+                  <div className="relative w-24 h-24 select-none shrink-0">
+                    <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 ${profileImage ? "bg-slate-50" : "bg-gradient-to-tr from-primary to-cyan-500"}`}>
+                      {profileImage ? (
+                        <img src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`} alt={userName} className="w-full h-full object-cover" />
+                      ) : (
+                        userName ? userName.substring(0, 2).toUpperCase() : "US"
+                      )}
+                    </div>
+                    
+                    {handleProfileImageUpload && (
+                      <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-lg border-2 border-white cursor-pointer transition-all hover:scale-105 active:scale-95 group" title="Change profile photo">
+                        <i className="fa-solid fa-camera text-[10px] transition-transform group-hover:scale-110"></i>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              await handleProfileImageUpload(e.target.files[0]);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <h4 className="text-base font-black text-slate-850 leading-tight">Your Avatar Photo</h4>
+                    <p className="text-xs text-slate-555 mt-1 leading-relaxed">Upload a professional, high-resolution headshot for your public freelancer card. Click the camera icon on the circle to choose a photo.</p>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="flex flex-col gap-1.5 text-left">
                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Professional Title</label>
@@ -524,13 +840,35 @@ export default function SettingsTab({
                   </div>
                 </div>
 
-                <div className="flex justify-end mt-4">
+                <div className="flex justify-between items-center mt-4 border-t border-slate-100 pt-5">
+                  {setSelectedFreelancerProfile && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFreelancerProfile({
+                        user_id: 0,
+                        name: userName,
+                        role: profileBasics.professional_title || "Elite Specialist",
+                        email: userEmail || "developer@lancerflow.net",
+                        skills: selectedSkills || [],
+                        hourlyRate: parseFloat(profileBasics.hourly_rate) || 45,
+                        rating: 5.0,
+                        completedJobs: 0,
+                        bio: profileBasics.bio || "No professional overview bio provided yet by this freelancer partner.",
+                        profile_image: profileImage || null,
+                        description: profileBasics.bio || "No professional overview bio provided yet by this freelancer partner."
+                      })}
+                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-eye text-xs"></i>
+                      <span>Preview Profile</span>
+                    </button>
+                  )}
                   <button
                     onClick={async () => {
                       await handleSaveStep(1);
                       setProfileStep(2);
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 ml-auto"
+                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 ml-auto animate-fadeIn"
                   >
                     <span>Save & Continue</span>
                     <span className="text-xxs">→</span>
@@ -1013,7 +1351,40 @@ export default function SettingsTab({
 
             {/* CLIENT STEP 1: COMPANY BASICS */}
             {userRole === "client" && profileStep === 1 && (
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-5 text-left">
+                {/* Modern Circular Profile Image Uploader */}
+                <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-4">
+                  <div className="relative w-24 h-24 select-none shrink-0">
+                    <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 ${profileImage ? "bg-slate-50" : "bg-gradient-to-tr from-primary to-cyan-500"}`}>
+                      {profileImage ? (
+                        <img src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`} alt={userName} className="w-full h-full object-cover" />
+                      ) : (
+                        userName ? userName.substring(0, 2).toUpperCase() : "US"
+                      )}
+                    </div>
+                    
+                    {handleProfileImageUpload && (
+                      <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-lg border-2 border-white cursor-pointer transition-all hover:scale-105 active:scale-95 group" title="Change company logo">
+                        <i className="fa-solid fa-camera text-[10px] transition-transform group-hover:scale-110"></i>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            if (e.target.files && e.target.files.length > 0) {
+                              await handleProfileImageUpload(e.target.files[0]);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                  <div className="flex-1 text-center sm:text-left">
+                    <h4 className="text-base font-black text-slate-850 leading-tight">Company Logo or Avatar</h4>
+                    <p className="text-xs text-slate-550 mt-1 leading-relaxed">Upload a recognizable company brand logo or a representative photo. Click the camera icon on the circle to choose a photo.</p>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="flex flex-col gap-1.5 text-left">
                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Company Name *</label>
@@ -1229,8 +1600,25 @@ export default function SettingsTab({
           >
             <FiBriefcase className="w-4 h-4" /> {userRole === "client" ? "Company Profile" : "Professional Profile"}
           </button>
+
+          <button
+            onClick={() => setActiveSettingsSubTab("subscription")}
+            className={`w-full text-left px-4 py-3 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center gap-3 ${
+              activeSettingsSubTab === "subscription"
+                ? "bg-primary text-white border-primary shadow-md shadow-primary/10"
+                : "bg-slate-50/50 border-slate-200/80 text-slate-650 hover:bg-white hover:border-slate-350"
+            }`}
+          >
+            <FiCheckCircle className="w-4 h-4" /> Membership Plan
+          </button>
         </div>
 
+        <button
+          onClick={() => setSettingsTabMode("hub")}
+          className="w-full text-center py-3 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all cursor-pointer font-sans"
+        >
+          ← Back to Settings Hub
+        </button>
         <button
           onClick={() => setActiveTab("workspace")}
           className="w-full text-center py-3 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all cursor-pointer font-sans"
@@ -1257,16 +1645,64 @@ export default function SettingsTab({
               </div>
 
               {/* Profile Card Summary */}
-              <div className="bg-slate-50 border border-slate-200/60 p-5 rounded-2xl flex items-center gap-4.5 shadow-sm">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center font-black text-xl text-white shadow-sm shrink-0">
-                  {userName.substring(0, 2).toUpperCase()}
+              <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-6 shadow-sm">
+                <div className="relative w-24 h-24 select-none shrink-0">
+                  <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 ${profileImage ? "bg-slate-50" : "bg-gradient-to-tr from-primary to-cyan-500"}`}>
+                    {profileImage ? (
+                      <img src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`} alt={userName} className="w-full h-full object-cover" />
+                    ) : (
+                      userName ? userName.substring(0, 2).toUpperCase() : "US"
+                    )}
+                  </div>
+                  
+                  {handleProfileImageUpload && (
+                    <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-lg border-2 border-white cursor-pointer transition-all hover:scale-105 active:scale-95 group" title="Change profile photo">
+                      <i className="fa-solid fa-camera text-[10px] transition-transform group-hover:scale-110"></i>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            await handleProfileImageUpload(e.target.files[0]);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
                 </div>
-                <div>
-                  <h4 className="text-base font-black text-slate-850 leading-tight">{userName}</h4>
+
+                <div className="flex-1 text-center sm:text-left">
+                  <h4 className="text-lg font-black text-slate-850 leading-tight">{userName}</h4>
                   <p className="text-xs font-semibold text-slate-400 mt-1 capitalize">Role: {userRole || "Freelancer"}</p>
-                  <p className="text-[10px] text-primary font-bold mt-1 uppercase tracking-wider flex items-center gap-1">
-                    SQL Verified Account <FiCheck className="w-3.5 h-3.5" />
-                  </p>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-3">
+                    <span className="text-[10px] text-primary bg-primary/5 border border-primary/10 font-bold px-2.5 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                      SQL Verified Account <FiCheck className="w-3.5 h-3.5" />
+                    </span>
+                    
+                    {setSelectedFreelancerProfile && userRole !== "client" && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFreelancerProfile({
+                          user_id: 0,
+                          name: userName,
+                          role: profileBasics.professional_title || "Elite Specialist",
+                          email: userEmail || "developer@lancerflow.net",
+                          skills: selectedSkills || [],
+                          hourlyRate: parseFloat(profileBasics.hourly_rate) || 45,
+                          rating: 5.0,
+                          completedJobs: 0,
+                          bio: profileBasics.bio || "No professional overview bio provided yet by this freelancer partner.",
+                          profile_image: profileImage || null,
+                          description: profileBasics.bio || "No professional overview bio provided yet by this freelancer partner."
+                        })}
+                        className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xxs px-3 py-1.5 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-xs active:scale-95"
+                      >
+                        <i className="fa-solid fa-eye text-xxs"></i>
+                        <span>Preview Profile</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1303,6 +1739,75 @@ export default function SettingsTab({
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 3: MEMBERSHIP & SUBSCRIPTION */}
+          {activeSettingsSubTab === "subscription" && (
+            <div className="flex flex-col gap-6 animate-fadeIn">
+              <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-800">Membership & Subscription</h3>
+                  <p className="text-xs text-slate-400">Manage your active subscription plan and benefits.</p>
+                </div>
+                <span className="bg-teal-50 text-teal-800 border border-teal-100 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                  Active Tier
+                </span>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 shadow-xs">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Plan:</span>
+                    <span className="text-xs bg-teal-50 border border-teal-100 text-teal-850 px-2.5 py-0.5 rounded-full font-black tracking-wider uppercase">
+                      {userSubscription?.plan_name || "Starter"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 font-semibold mt-1 leading-normal max-w-md">
+                    {userSubscription?.description || "Basic membership tier with standard platform limits."}
+                  </p>
+                </div>
+
+                <div className="text-right sm:text-left shrink-0">
+                  <span className="text-lg font-black text-slate-900 leading-tight font-sans">
+                    {userSubscription?.price || "Free"}
+                  </span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mt-0.5">
+                    {userSubscription?.period || ""}
+                  </span>
+                </div>
+              </div>
+
+              {/* Next Upgrade Tier */}
+              {(!userSubscription || userSubscription.active_plan_id !== 3) && (
+                <div className="bg-[#063c38]/5 border border-teal-700/10 p-5 rounded-2xl text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 mt-2">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-[#063c38] text-white flex items-center justify-center font-black shrink-0 shadow-sm text-sm">
+                      🚀
+                    </div>
+                    <div>
+                      <h5 className="font-black text-slate-850 text-xs">
+                        Next Level Upgrade: {userSubscription?.active_plan_id === 2 ? "Enterprise Plan" : "Professional Plan"}
+                      </h5>
+                      <p className="text-slate-500 font-semibold mt-1 max-w-sm leading-normal">
+                        {userSubscription?.active_plan_id === 2 
+                          ? "Gain unlimited active job posts, unlimited bid proposals, and custom enterprise support options."
+                          : "Unlock advanced matching algorithms, priority support channels, and reduced transaction fees."}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      const nextPlanId = (userSubscription?.active_plan_id || 1) + 1;
+                      window.location.href = `/pricing/${nextPlanId}`;
+                    }}
+                    className="w-full sm:w-auto bg-[#063c38] hover:bg-[#084843] text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer text-center shrink-0"
+                  >
+                    Upgrade Now
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -1553,12 +2058,58 @@ export default function SettingsTab({
                     <div className="flex flex-col gap-5">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="flex flex-col gap-1.5 text-left">
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Display Name</label>
+                          <input
+                            type="text"
+                            value={profileBasics.display_name || ""}
+                            onChange={(e) => handleDisplayFreelancerNameChange(e.target.value)}
+                            placeholder="e.g. Alex Rivera"
+                            className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 text-left">
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Profile URL Slug</label>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xxs font-bold select-none">
+                              lancerflow.net/freelancer/
+                            </span>
+                            <input
+                              type="text"
+                              value={profileBasics.slug || ""}
+                              onChange={(e) => handleFreelancerSlugChange(e.target.value)}
+                              placeholder="url-slug"
+                              className="w-full bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl pl-[142px] pr-10 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-semibold font-mono"
+                            />
+                            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center">
+                              {slugValidating && (
+                                <div className="w-4 h-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+                              )}
+                              {!slugValidating && slugAvailable === true && (
+                                <span className="text-emerald-600 text-xs font-black" title="Slug is available">✓</span>
+                              )}
+                              {!slugValidating && slugAvailable === false && (
+                                <span className="text-rose-500 text-xs font-black" title="Slug is already taken">✗</span>
+                              )}
+                            </div>
+                          </div>
+                          {slugAvailable === true && (
+                            <p className="text-[10px] text-emerald-600 font-bold mt-1">✓ URL slug is available!</p>
+                          )}
+                          {slugAvailable === false && (
+                            <p className="text-[10px] text-rose-500 font-bold mt-1">✗ Slug is already taken by another freelancer.</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="flex flex-col gap-1.5 text-left">
                           <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Professional Title</label>
                           <input
                             type="text"
                             value={profileBasics.professional_title || ""}
                             onChange={(e) => setProfileBasics({ ...profileBasics, professional_title: e.target.value })}
-                            className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-bold"
+                            className="bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-bold"
                           />
                         </div>
                         <div className="flex flex-col gap-1.5 text-left">

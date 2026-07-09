@@ -17,7 +17,8 @@ export default function OnboardingPage() {
     filteredOnboardedUsers,
     userCounts,
     itemsPerPage,
-    handleToggleUserActive
+    handleToggleUserActive,
+    fetchUsers
   } = useAdmin();
 
   return (
@@ -34,6 +35,7 @@ export default function OnboardingPage() {
       userCounts={userCounts}
       itemsPerPage={itemsPerPage}
       handleToggleUserActive={handleToggleUserActive}
+      onVettingUpdate={fetchUsers}
     />
   );
 }

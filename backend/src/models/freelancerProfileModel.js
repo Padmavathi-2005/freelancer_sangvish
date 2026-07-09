@@ -69,6 +69,16 @@ export const FreelancerProfile = {
         );
     },
 
+    updateVettingStatus: async (userId, vettingStatus) => {
+        return await pool.query(
+            `UPDATE freelancer_profiles
+             SET vetting_status = $1, updated_at = NOW()
+             WHERE user_id = $2
+             RETURNING *`,
+            [vettingStatus, userId]
+        );
+    },
+
     update: async (
         userId,
         categoryId,

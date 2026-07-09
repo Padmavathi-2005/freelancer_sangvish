@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useDashboard } from "@/app/dashboard/DashboardContext";
 
 // Mock Freelancer Data
 interface Freelancer {
@@ -111,9 +112,173 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
   const [jobDescription, setJobDescription] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const [freelancersList, setFreelancersList] = useState<Freelancer[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const { 
+    clientJobs, 
+    fetchClientJobs, 
+    pendingInviteFreelancer, 
+    setPendingInviteFreelancer, 
+    setActiveTab, 
+    setIsCreatingJob,
+    triggerToast 
+  } = useDashboard();
+
+  const [selectedFreelancerForInvite, setSelectedFreelancerForInvite] = useState<Freelancer | null>(null);
+  const [selectedJobForInvite, setSelectedJobForInvite] = useState<string>("");
+  const [inviteBidAmount, setInviteBidAmount] = useState<number>(1000);
+  const [inviteDeliveryDays, setInviteDeliveryDays] = useState<number>(14);
+  const [inviteCoverLetter, setInviteCoverLetter] = useState<string>("");
+  const [submittingInvite, setSubmittingInvite] = useState<boolean>(false);
+
+  // Filter open jobs for invite dropdown
+  const openJobs = useMemo(() => {
+    return (clientJobs || []).filter((job: any) => job.status === "Open" || job.status === "Pending");
+  }, [clientJobs]);
+
+  // Set default offer details when selected freelancer changes
+  useEffect(() => {
+    if (selectedFreelancerForInvite) {
+      setInviteBidAmount(selectedFreelancerForInvite.hourlyRate * 40 || 1000);
+      setInviteCoverLetter(`Hi ${selectedFreelancerForInvite.name.split(" ")[0]},\n\nI was impressed by your profile as a ${selectedFreelancerForInvite.role} and would love to invite you to discuss our project request details.`);
+      if (openJobs.length > 0) {
+        setSelectedJobForInvite(openJobs[0].job_id.toString());
+      }
+    }
+  }, [selectedFreelancerForInvite, openJobs]);
+
+  const handleSendInviteSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFreelancerForInvite || !selectedJobForInvite) return;
+
+    setSubmittingInvite(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("https://freelancer.sangvish.com/api/proposals/direct-hire", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          freelancer_id: parseInt(selectedFreelancerForInvite.id),
+          job_id: parseInt(selectedJobForInvite),
+          bid_amount: inviteBidAmount,
+          delivery_days: inviteDeliveryDays,
+          cover_letter: inviteCoverLetter,
+          milestones: []
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        if (triggerToast) {
+          triggerToast("success", `Invite request sent to ${selectedFreelancerForInvite.name}!`, `Offer Budget: $${inviteBidAmount}`);
+        } else {
+          setToastMessage(`🎉 Invite request sent to ${selectedFreelancerForInvite.name}!`);
+        }
+        setSelectedFreelancerForInvite(null);
+        onToggleView("dashboard");
+        setActiveTab("client_hired_freelancers");
+      } else {
+        if (triggerToast) {
+          triggerToast("error", data.message || "Failed to send invite request.");
+        } else {
+          setToastMessage(`❌ Error: ${data.message || "Failed to send invite request."}`);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      if (triggerToast) {
+        triggerToast("error", "An error occurred while sending invite request.");
+      }
+    } finally {
+      setSubmittingInvite(false);
+    }
+  };
+
+  const handleCreateProjectAndInvite = () => {
+    if (!selectedFreelancerForInvite) return;
+
+    setPendingInviteFreelancer({
+      id: selectedFreelancerForInvite.id,
+      name: selectedFreelancerForInvite.name,
+      role: selectedFreelancerForInvite.role,
+      hourlyRate: selectedFreelancerForInvite.hourlyRate
+    });
+
+    setSelectedFreelancerForInvite(null);
+    onToggleView("dashboard");
+    setActiveTab("proposals");
+    setIsCreatingJob(true);
+
+    if (triggerToast) {
+      triggerToast("success", `Describe your project, and we'll auto-invite ${selectedFreelancerForInvite.name}!`, "Directing to project creation wizard...");
+    }
+  };
+
+  useEffect(() => {
+    const fetchFreelancers = async () => {
+      try {
+        const res = await fetch("https://freelancer.sangvish.com/api/freelancers/public/list");
+        if (res.ok) {
+          const data = await res.json();
+          const mapped: Freelancer[] = data.map((f: any, index: number) => {
+            const colors = [
+              "from-violet-500 to-indigo-500",
+              "from-cyan-500 to-blue-500",
+              "from-emerald-500 to-teal-500",
+              "from-rose-500 to-pink-500",
+              "from-amber-500 to-orange-500",
+              "from-purple-500 to-fuchsia-500"
+            ];
+            const avatarColor = colors[index % colors.length];
+
+            let category: "development" | "design" | "marketing" | "ai" = "development";
+            const catName = (f.category_name || "").toLowerCase();
+            if (catName.includes("dev") || catName.includes("software") || catName.includes("program")) {
+              category = "development";
+            } else if (catName.includes("design") || catName.includes("creative") || catName.includes("ux") || catName.includes("ui")) {
+               category = "design";
+            } else if (catName.includes("market") || catName.includes("sale") || catName.includes("growth")) {
+               category = "marketing";
+            } else if (catName.includes("ai") || catName.includes("intelligence") || catName.includes("machine") || catName.includes("ml")) {
+               category = "ai";
+            }
+
+            return {
+              id: f.user_id.toString(),
+              name: f.name || "Freelancer Partner",
+              avatarColor,
+              role: f.professional_title || "Freelancer Expert",
+              rating: 5.0,
+              completedJobs: 0,
+              hourlyRate: parseFloat(f.hourly_rate) || 50,
+              skills: Array.isArray(f.skills) ? f.skills : [],
+              bio: f.bio || "No professional overview bio provided yet by this freelancer partner.",
+              verified: f.vetting_status === "Approved",
+              category
+            };
+          });
+          setFreelancersList(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching public freelancers:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFreelancers();
+  }, []);
+
+  const displayList = useMemo(() => {
+    return freelancersList.length > 0 ? freelancersList : freelancersData;
+  }, [freelancersList]);
+
   // Filter freelancers based on search query and category
   const filteredFreelancers = useMemo(() => {
-    return freelancersData.filter((freelancer) => {
+    return displayList.filter((freelancer) => {
       const matchesCategory = selectedCategory === "all" || freelancer.category === selectedCategory;
       const matchesSearch =
         freelancer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -121,7 +286,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
         freelancer.skills.some((skill) => skill.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, displayList]);
 
   const handlePostJobSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -323,13 +488,11 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
                   </div>
 
                   <button
-                    onClick={() => onToggleView("dashboard")}
+                    onClick={() => setSelectedFreelancerForInvite(freelancer)}
                     className="text-xs font-bold text-primary hover:text-primary-hover flex items-center gap-1 group py-1.5 px-3 rounded-xl border border-primary/20 hover:bg-primary/5 transition-all cursor-pointer"
                   >
-                    Hire Candidate
-                    <svg className="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <i className="fa-solid fa-paper-plane mr-1 text-[10px]"></i>
+                    Send Invite
                   </button>
                 </div>
               </div>
@@ -427,6 +590,184 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Send Invite Modal */}
+      {selectedFreelancerForInvite && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xl text-slate-800 text-left relative animate-scaleIn">
+            
+            {/* Sticky Close Button */}
+            <button
+              onClick={() => setSelectedFreelancerForInvite(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-750 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer z-50"
+            >
+              <i className="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            {/* Modal Header */}
+            <div className="px-6 py-5 border-b border-slate-150 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-base shrink-0">
+                <i className="fa-solid fa-envelope-open-text text-primary"></i>
+              </div>
+              <div>
+                <h3 className="text-sm font-extrabold text-slate-900">Send Invite Request</h3>
+                <p className="text-slate-400 text-xxs font-semibold">Invite candidate to submit proposal or receive direct hire offer.</p>
+              </div>
+            </div>
+
+            {/* Modal Body / Form */}
+            <div className="max-h-[75vh] overflow-y-auto p-6 flex flex-col gap-6">
+              
+              {/* Freelancer Profile Summary Card */}
+              <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl flex gap-4 items-center">
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-tr ${selectedFreelancerForInvite.avatarColor} flex items-center justify-center font-bold text-lg text-white shadow-sm shrink-0`}>
+                  {selectedFreelancerForInvite.name.split(" ").map(n => n[0]).join("")}
+                </div>
+                <div className="min-w-0 text-left">
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="font-extrabold text-slate-800 text-sm leading-none truncate">{selectedFreelancerForInvite.name}</h4>
+                    {selectedFreelancerForInvite.verified && (
+                      <span className="text-cyan-600 shrink-0" title="Verified Professional">
+                        <i className="fa-solid fa-circle-check text-xs"></i>
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block mt-1 truncate">{selectedFreelancerForInvite.role}</span>
+                  <span className="text-slate-650 text-xxs font-bold mt-1.5 inline-block bg-white px-2 py-0.5 border border-slate-150 rounded">
+                    ${selectedFreelancerForInvite.hourlyRate}/hr
+                  </span>
+                </div>
+              </div>
+
+              {openJobs.length > 0 ? (
+                <form onSubmit={handleSendInviteSubmit} className="flex flex-col gap-4">
+                  {/* Select Project */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Select Open Project *</label>
+                    <select
+                      required
+                      value={selectedJobForInvite}
+                      onChange={(e) => setSelectedJobForInvite(e.target.value)}
+                      className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-800 font-bold"
+                    >
+                      {openJobs.map((job: any) => (
+                        <option key={job.job_id} value={job.job_id}>
+                          {job.title} (${parseFloat(job.budget || 0).toLocaleString()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Bid Amount & Delivery Days row */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Offer Budget ($) *</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={inviteBidAmount}
+                        onChange={(e) => setInviteBidAmount(Number(e.target.value))}
+                        className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-800 font-bold"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Estimated Days *</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={inviteDeliveryDays}
+                        onChange={(e) => setInviteDeliveryDays(Number(e.target.value))}
+                        className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-800 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Message/Cover Letter */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Invitation Message *</label>
+                    <textarea
+                      required
+                      rows={3}
+                      value={inviteCoverLetter}
+                      onChange={(e) => setInviteCoverLetter(e.target.value)}
+                      className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-800 font-medium resize-none"
+                    />
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-slate-100 justify-between mt-2">
+                    <button
+                      type="button"
+                      onClick={handleCreateProjectAndInvite}
+                      className="text-primary hover:text-primary-hover text-xs font-extrabold transition-all cursor-pointer underline flex items-center gap-1.5 py-2"
+                    >
+                      <i className="fa-solid fa-plus-circle text-xs"></i>
+                      Or create a new project instead
+                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedFreelancerForInvite(null)}
+                        className="px-4 py-2 rounded-xl text-slate-500 hover:text-slate-800 text-xs font-bold transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submittingInvite}
+                        className="px-6 py-2.5 bg-primary hover:bg-primary-hover disabled:bg-slate-300 text-white rounded-xl shadow-md transition-all font-extrabold text-xs cursor-pointer active:scale-95 flex items-center gap-1.5"
+                      >
+                        {submittingInvite ? (
+                          <>
+                            <i className="fa-solid fa-spinner fa-spin"></i>
+                            Sending Offer...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fa-solid fa-paper-plane"></i>
+                            Send Offer
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center py-6">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-4 border border-slate-200">
+                    <i className="fa-solid fa-folder-open text-lg"></i>
+                  </div>
+                  <h4 className="text-xs font-extrabold text-slate-800 mb-1">No open projects found</h4>
+                  <p className="text-slate-400 text-xxs font-semibold max-w-xs mb-6">
+                    You need to post a project first before you can send an invite to {selectedFreelancerForInvite.name}.
+                  </p>
+                  
+                  <div className="flex items-center gap-3 w-full">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFreelancerForInvite(null)}
+                      className="w-1/3 py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-550 hover:text-slate-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCreateProjectAndInvite}
+                      className="w-2/3 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-1.5"
+                    >
+                      <i className="fa-solid fa-plus-circle"></i>
+                      Create a New Project
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
           </div>
         </div>
       )}

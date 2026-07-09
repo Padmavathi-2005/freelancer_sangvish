@@ -8,6 +8,7 @@ interface NotificationsDropdownProps {
   setIsNotificationsOpen: (open: boolean) => void;
   handleMarkAllRead: () => Promise<void>;
   handleMarkSingleRead: (notifId: number, notifType: string, refId: string | null) => Promise<void>;
+  setActiveTab: (tab: string) => void;
 }
 
 export default function NotificationsDropdown({
@@ -17,11 +18,21 @@ export default function NotificationsDropdown({
   setIsNotificationsOpen,
   handleMarkAllRead,
   handleMarkSingleRead,
+  setActiveTab,
 }: NotificationsDropdownProps) {
+  const lastFiveNotifications = notifications.slice(0, 5);
+
   return (
-    <div className="relative">
+    <div 
+      className="relative"
+      onMouseEnter={() => setIsNotificationsOpen(true)}
+      onMouseLeave={() => setIsNotificationsOpen(false)}
+    >
       <button
-        onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+        onClick={() => {
+          setActiveTab("notifications");
+          setIsNotificationsOpen(false);
+        }}
         className="relative p-2 text-slate-500 hover:text-primary hover:bg-slate-50 rounded-xl transition-all border border-slate-200 bg-white cursor-pointer shadow-sm shrink-0 flex items-center justify-center w-9 h-9"
       >
         <FiBell className="w-5 h-5" />
@@ -42,7 +53,7 @@ export default function NotificationsDropdown({
           {/* Dropdown panel */}
           <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200/80 shadow-lg py-2 z-50 animate-fadeIn text-left text-slate-800">
             <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
-              <span className="text-xs font-black text-slate-800">Notifications</span>
+              <span className="text-xs font-black text-slate-800">Recent Notifications</span>
               {unreadNotificationsCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
@@ -54,19 +65,19 @@ export default function NotificationsDropdown({
             </div>
 
             <div className="max-h-64 overflow-y-auto divide-y divide-slate-50">
-              {notifications.length === 0 ? (
+              {lastFiveNotifications.length === 0 ? (
                 <div className="p-6 text-center text-slate-400 select-none">
                   <p className="text-[11px] font-semibold">No notifications yet</p>
                   <p className="text-[9px] mt-0.5 font-medium leading-normal">Updates on projects, orders and inbox will appear here.</p>
                 </div>
               ) : (
-                notifications.map((n) => (
+                lastFiveNotifications.map((n) => (
                   <div
-                    key={n.notification_id}
-                    onClick={() => handleMarkSingleRead(n.notification_id, n.type, n.reference_id)}
-                    className={`p-3.5 flex gap-3 hover:bg-slate-50/50 transition-all cursor-pointer ${
-                      !n.is_read ? "bg-primary/5" : ""
-                    }`}
+                     key={n.notification_id}
+                     onClick={() => handleMarkSingleRead(n.notification_id, n.type, n.reference_id)}
+                     className={`p-3.5 flex gap-3 hover:bg-slate-50/50 transition-all cursor-pointer ${
+                       !n.is_read ? "bg-primary/5" : ""
+                     }`}
                   >
                     {/* Type Icon */}
                     <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs select-none">
@@ -106,6 +117,19 @@ export default function NotificationsDropdown({
                   </div>
                 ))
               )}
+            </div>
+
+            {/* View All Footer */}
+            <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl text-center">
+              <button
+                onClick={() => {
+                  setActiveTab("notifications");
+                  setIsNotificationsOpen(false);
+                }}
+                className="text-[10px] font-black text-primary hover:text-primary/80 transition-colors cursor-pointer"
+              >
+                View all notifications
+              </button>
             </div>
           </div>
         </>

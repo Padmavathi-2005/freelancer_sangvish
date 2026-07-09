@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function SuccessStories() {
+  const { t } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -56,9 +58,9 @@ export default function SuccessStories() {
 
   return (
     <section className="w-full bg-[#f8fafc] border-t border-slate-200/50 py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1600px] mx-auto">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 text-center mb-12">
-          Success Stories
+          {t("success_stories_title", "Success Stories")}
         </h2>
 
         {/* Carousel Card Container */}

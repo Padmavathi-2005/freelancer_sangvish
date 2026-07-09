@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 
 export default function WalletTab() {
@@ -17,6 +17,28 @@ export default function WalletTab() {
     handleDepositSubmit,
     userRole
   } = useDashboard();
+
+  const [holderName, setHolderName] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [branchName, setBranchName] = useState("");
+  const [ifsc, setIfsc] = useState("");
+  const [accNum, setAccNum] = useState("");
+
+  useEffect(() => {
+    if (setWithdrawMethod) {
+      setWithdrawMethod("Bank Transfer");
+    }
+  }, [setWithdrawMethod]);
+
+  useEffect(() => {
+    if (holderName || bankName || branchName || ifsc || accNum) {
+      setWithdrawAccount(
+        `Holder: ${holderName.trim()} | Bank: ${bankName.trim()} | Branch: ${branchName.trim()} | IFSC: ${ifsc.trim()} | Acc: ${accNum.trim()}`
+      );
+    } else {
+      setWithdrawAccount("");
+    }
+  }, [holderName, bankName, branchName, ifsc, accNum, setWithdrawAccount]);
 
   if (loadingWallet && !walletInfo) {
     return (
@@ -40,7 +62,7 @@ export default function WalletTab() {
       {/* HEADER SECTION */}
       <div className="flex flex-col gap-1.5">
         <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-          <span>💳</span> My Digital Wallet
+          <i className="fa-solid fa-credit-card text-teal-700"></i> My Digital Wallet
         </h1>
         <p className="text-slate-500 text-xs font-semibold">
           Manage your virtual funds, payouts, and deposit records.
@@ -89,10 +111,10 @@ export default function WalletTab() {
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
             <div>
               <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                <span>⚡</span> Sandbox Funds Topup
+                <i className="fa-solid fa-bolt text-teal-600"></i> Add Funds
               </h3>
               <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                Topup virtual wallet funds instantly for sandbox testing.
+                Add virtual funds to your wallet instantly.
               </p>
             </div>
 
@@ -110,7 +132,7 @@ export default function WalletTab() {
                 type="submit"
                 className="bg-teal-700 hover:bg-teal-800 text-white rounded-xl px-4 py-2 text-xs font-bold transition shadow-md shadow-teal-700/10 cursor-pointer"
               >
-                Add Demo Funds
+                Add Funds
               </button>
             </form>
           </div>
@@ -122,65 +144,102 @@ export default function WalletTab() {
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm h-full space-y-6">
             <div>
               <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                <span>💸</span> Request Fund Withdrawal / Payout
+                <i className="fa-solid fa-money-bill-transfer text-slate-700"></i> Request Fund Withdrawal / Payout
               </h2>
               <p className="text-xs text-slate-500 font-semibold mt-1">
-                Enter payout amount and details. Admin will review the request and process it.
+                Enter bank account details and payout amount. Admin will review the request and process it.
               </p>
             </div>
 
             <form onSubmit={handleWithdrawSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                  Amount to Withdraw (USD)
+                </label>
+                <input
+                  type="number"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  placeholder="Enter amount"
+                  min="10"
+                  step="0.01"
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700 transition"
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                    Amount to Withdraw (USD)
+                    Account Holder Name
                   </label>
                   <input
-                    type="number"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    placeholder="Enter amount"
-                    min="10"
-                    step="0.01"
+                    type="text"
+                    value={holderName}
+                    onChange={(e) => setHolderName(e.target.value)}
+                    placeholder="Enter full name"
+                    required
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700 transition"
                   />
                 </div>
 
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                    Preferred Payout Method
+                    Bank Name
                   </label>
-                  <select
-                    value={withdrawMethod}
-                    onChange={(e) => setWithdrawMethod(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-850 focus:outline-none focus:border-teal-700 transition"
-                  >
-                    <option value="PayPal">PayPal</option>
-                    <option value="UPI">UPI (Paytm / GPay / PhonePe)</option>
-                    <option value="Bank Transfer">Bank Wire Transfer</option>
-                  </select>
+                  <input
+                    type="text"
+                    value={bankName}
+                    onChange={(e) => setBankName(e.target.value)}
+                    placeholder="e.g. HDFC Bank, Chase"
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700 transition"
+                  />
                 </div>
-
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                  Payment Account Details
-                </label>
-                <textarea
-                  value={withdrawAccount}
-                  onChange={(e) => setWithdrawAccount(e.target.value)}
-                  placeholder={
-                    withdrawMethod === "PayPal"
-                      ? "Enter your PayPal email address"
-                      : withdrawMethod === "UPI"
-                      ? "Enter your UPI ID (e.g. username@okhdfcbank)"
-                      : "Enter Bank Account Holder, Account Number, IFSC, and Bank Name"
-                  }
-                  rows={3}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700 transition resize-none"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                    Account Number
+                  </label>
+                  <input
+                    type="text"
+                    value={accNum}
+                    onChange={(e) => setAccNum(e.target.value)}
+                    placeholder="Enter account number"
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700 transition"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                    IFSC / SWIFT Code
+                  </label>
+                  <input
+                    type="text"
+                    value={ifsc}
+                    onChange={(e) => setIfsc(e.target.value)}
+                    placeholder="Enter code"
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700 transition"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                    Branch Name
+                  </label>
+                  <input
+                    type="text"
+                    value={branchName}
+                    onChange={(e) => setBranchName(e.target.value)}
+                    placeholder="Enter branch name"
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700 transition"
+                  />
+                </div>
               </div>
 
               <button
@@ -199,7 +258,7 @@ export default function WalletTab() {
       {/* WITHDRAWAL REQUESTS LOG */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-4">
-          <span>🕒</span> Payout Withdrawal Requests
+          <i className="fa-solid fa-clock-rotate-left text-slate-700"></i> Payout Withdrawal Requests
         </h2>
         {withdrawals.length === 0 ? (
           <p className="text-xs text-slate-400 font-semibold text-center py-6">
@@ -256,7 +315,7 @@ export default function WalletTab() {
       {/* TRANSACTION HISTORY */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-4">
-          <span>📜</span> Wallet Transactions Log
+          <i className="fa-solid fa-receipt text-slate-700"></i> Wallet Transactions Log
         </h2>
         {transactions.length === 0 ? (
           <p className="text-xs text-slate-400 font-semibold text-center py-6">

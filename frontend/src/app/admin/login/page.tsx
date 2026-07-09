@@ -30,21 +30,36 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/admin/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: username.trim(),
-          password: password,
-        }),
-      });
+      let response: Response;
+      try {
+        response = await fetch("https://freelancer.sangvish.com/api/admin/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: username.trim(),
+            password: password,
+          }),
+        });
+      } catch {
+        setError("Cannot reach the server. Please check your internet connection or try again later.");
+        setLoading(false);
+        return;
+      }
+
+      // Check the response is JSON before parsing
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        setError("Server returned an unexpected response. The backend may be down or unreachable.");
+        setLoading(false);
+        return;
+      }
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Invalid administrative credentials or key.");
+        throw new Error(data.message || "Invalid credentials. Please check your email and password.");
       }
 
       if (typeof window !== "undefined") {
@@ -53,7 +68,7 @@ export default function AdminLoginPage() {
         window.location.href = "/admin";
       }
     } catch (err: any) {
-      setError(err.message || "Failed to connect to backend administration service.");
+      setError(err.message || "Failed to connect to the administration service.");
       setLoading(false);
     }
   };

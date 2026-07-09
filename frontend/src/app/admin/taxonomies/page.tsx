@@ -9,7 +9,11 @@ export default function TaxonomiesPage() {
 
   return (
     <TaxonomiesTab
-      categoriesSubTab={adminState.categoriesSubTab}
+      categoriesSubTab={
+        (adminState.categoriesSubTab === "languages" || adminState.categoriesSubTab === "currencies" || adminState.categoriesSubTab === "cleanup")
+          ? "categories"
+          : adminState.categoriesSubTab
+      }
       setCategoriesSubTab={adminState.setCategoriesSubTab}
       categoriesSearch={adminState.categoriesSearch}
       setCategoriesSearch={adminState.setCategoriesSearch}

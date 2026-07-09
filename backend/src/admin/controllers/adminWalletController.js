@@ -20,10 +20,16 @@ export const getPlatformWalletStats = async (req, res) => {
         w.*,
         u.first_name || ' ' || COALESCE(u.last_name, '') AS user_name,
         u.email,
-        u.role,
-        (u.freelancer_onboarding OR u.client_onboarding) AS is_onboarded
+        CASE 
+          WHEN fp.user_id IS NOT NULL THEN 'Freelancer'
+          WHEN cp.user_id IS NOT NULL THEN 'Client'
+          ELSE 'User'
+        END AS role,
+        (COALESCE(fp.onboarding_completed, false) OR COALESCE(cp.onboarding_completed, false)) AS is_onboarded
       FROM wallets w
       LEFT JOIN users u ON w.user_id = u.user_id
+      LEFT JOIN freelancer_profiles fp ON u.user_id = fp.user_id
+      LEFT JOIN client_profiles cp ON w.user_id = cp.user_id
       WHERE w.is_system = FALSE
       ORDER BY w.balance DESC
     `);
@@ -163,5 +169,79 @@ export const rejectWithdrawal = async (req, res) => {
   } catch (error) {
     console.error("Error in rejectWithdrawal:", error);
     return res.status(500).json({ message: "Failed to reject withdrawal request." });
+  }
+};
+
+export const payToUser = async (req, res) => {
+  try {
+    const { recipient_user_id, amount, description } = req.body;
+
+    if (!recipient_user_id || !amount || isNaN(amount) || parseFloat(amount) <= 0) {
+      return res.status(400).json({ message: "Please provide a valid recipient user ID and amount." });
+    }
+
+    const payAmt = parseFloat(amount);
+
+    // Get system/escrow wallet
+    const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+    const sysWallet = sysRes.rows[0];
+    if (!sysWallet) {
+      return res.status(500).json({ message: "System escrow wallet not found." });
+    }
+
+    if (parseFloat(sysWallet.balance) < payAmt) {
+      return res.status(400).json({ message: `Insufficient escrow balance. Escrow balance is $${parseFloat(sysWallet.balance).toFixed(2)}.` });
+    }
+
+    // Get or create recipient's wallet
+    let recipientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [recipient_user_id]);
+    let recipientWallet = recipientWalletRes.rows[0];
+    if (!recipientWallet) {
+      const ins = await pool.query(
+        "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
+        [recipient_user_id]
+      );
+      recipientWallet = ins.rows[0];
+    }
+
+    // Execute transfer in database transaction
+    await pool.query("BEGIN");
+    try {
+      // 1. Deduct from system wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [payAmt, sysWallet.wallet_id]
+      );
+
+      // 2. Add to recipient wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [payAmt, recipientWallet.wallet_id]
+      );
+
+      // 3. Record transaction log
+      await pool.query(
+        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+         VALUES ($1, $2, $3, 'Platform_Payout', 'Completed', $4)`,
+        [
+          sysWallet.wallet_id,
+          recipientWallet.wallet_id,
+          payAmt,
+          description || "Manual platform wallet release payout"
+        ]
+      );
+
+      await pool.query("COMMIT");
+    } catch (txErr) {
+      await pool.query("ROLLBACK");
+      throw txErr;
+    }
+
+    return res.status(200).json({
+      message: `Successfully paid $${payAmt.toFixed(2)} to user #${recipient_user_id}.`
+    });
+  } catch (error) {
+    console.error("Error in payToUser admin wallet transfer:", error);
+    return res.status(500).json({ message: "Failed to process manual platform payout." });
   }
 };

@@ -1,19 +1,21 @@
 import pool from "../config/db.js";
 
 export const UserLanguage = {
-    addLanguage: async (userId, languageId) => {
+    addLanguage: async (userId, languageId, proficiency = 'Basic') => {
         return await pool.query(
             `INSERT INTO user_languages
-            (user_id, language_id)
-            VALUES ($1, $2)
+            (user_id, language_id, proficiency)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id, language_id) DO UPDATE 
+            SET proficiency = EXCLUDED.proficiency
             RETURNING *`,
-            [userId, languageId]
+            [userId, languageId, proficiency]
         );
     },
 
     getByUserId: async (userId) => {
         return await pool.query(
-            `SELECT ul.*, l.language_name
+            `SELECT ul.*, l.language_name, l.code
              FROM user_languages ul
              JOIN languages l ON ul.language_id = l.language_id
              WHERE ul.user_id = $1`,

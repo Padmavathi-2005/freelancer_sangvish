@@ -13,7 +13,13 @@ export const Gig = {
     revisions,
     images,
     videoUrl,
-    documents
+    documents,
+    negotiation = false,
+    discountPercent = 0,
+    paymentType = 'fixed',
+    minPrice = null,
+    maxPrice = null,
+    milestones = null
   ) => {
     const query = `
       INSERT INTO gigs (
@@ -28,9 +34,15 @@ export const Gig = {
         revisions,
         images,
         video_url,
-        documents
+        documents,
+        negotiation,
+        discount_percent,
+        payment_type,
+        min_price,
+        max_price,
+        milestones
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *
     `;
     const values = [
@@ -39,13 +51,19 @@ export const Gig = {
       subCategoryId ? parseInt(subCategoryId) : null,
       title,
       description,
-      parseFloat(price),
+      parseFloat(price) || 0,
       currencyId ? parseInt(currencyId) : null,
       parseInt(deliveryDays),
       revisions ? parseInt(revisions) : null,
       images ? JSON.stringify(images) : null,
       videoUrl || null,
-      documents ? JSON.stringify(documents) : null
+      documents ? JSON.stringify(documents) : null,
+      !!negotiation,
+      parseFloat(discountPercent) || 0,
+      paymentType || 'fixed',
+      minPrice ? parseFloat(minPrice) : null,
+      maxPrice ? parseFloat(maxPrice) : null,
+      milestones ? (typeof milestones === 'string' ? milestones : JSON.stringify(milestones)) : null
     ];
 
     const result = await pool.query(query, values);
@@ -96,8 +114,8 @@ export const Gig = {
     return result.rows;
   },
 
-  findAllActive: async () => {
-    const query = `
+  findAllActive: async (excludeUserId = null) => {
+    let query = `
       SELECT 
         g.*,
         u.first_name || ' ' || u.last_name as freelancer_name,
@@ -119,10 +137,20 @@ export const Gig = {
       LEFT JOIN gig_skills gs ON g.gig_id = gs.gig_id
       LEFT JOIN skills s ON gs.skill_id = s.skill_id
       WHERE g.status = 'Active'
+    `;
+    
+    const values = [];
+    if (excludeUserId) {
+      query += ` AND g.freelancer_id != $1`;
+      values.push(parseInt(excludeUserId));
+    }
+    
+    query += `
       GROUP BY g.gig_id, u.user_id, c.currency_id, cat.category_id, sub.sub_category_id
       ORDER BY g.created_at DESC
     `;
-    const result = await pool.query(query);
+    
+    const result = await pool.query(query, values);
     return result.rows;
   },
 
@@ -152,11 +180,24 @@ export const Gig = {
         u.first_name || ' ' || u.last_name as client_name,
         u.email as client_email,
         c.code as currency_code,
-        c.symbol as currency_symbol
+        c.symbol as currency_symbol,
+        gr.rating as review_rating,
+        gr.comment as review_comment,
+        con.contract_id,
+        con.status as contract_status,
+        con.progress as contract_progress,
+        CASE WHEN con.contract_id IS NOT NULL THEN 'Paid' ELSE 'Pending' END as payment_status,
+        con.created_at as paid_at,
+        d.status as dispute_status,
+        d.resolution_type as dispute_resolution_type,
+        d.resolution_details as dispute_resolution_details
       FROM gig_applications ga
       JOIN gigs g ON ga.gig_id = g.gig_id
       JOIN users u ON ga.client_id = u.user_id
       LEFT JOIN currencies c ON ga.currency_id = c.currency_id
+      LEFT JOIN gig_reviews gr ON ga.application_id = gr.application_id
+      LEFT JOIN contracts con ON ga.application_id = con.application_id
+      LEFT JOIN disputes d ON con.contract_id = d.contract_id
       WHERE g.freelancer_id = $1
       ORDER BY ga.created_at DESC
     `;
@@ -172,11 +213,24 @@ export const Gig = {
         u.first_name || ' ' || u.last_name as freelancer_name,
         u.email as freelancer_email,
         c.code as currency_code,
-        c.symbol as currency_symbol
+        c.symbol as currency_symbol,
+        gr.rating as review_rating,
+        gr.comment as review_comment,
+        con.contract_id,
+        con.status as contract_status,
+        con.progress as contract_progress,
+        CASE WHEN con.contract_id IS NOT NULL THEN 'Paid' ELSE 'Pending' END as payment_status,
+        con.created_at as paid_at,
+        d.status as dispute_status,
+        d.resolution_type as dispute_resolution_type,
+        d.resolution_details as dispute_resolution_details
       FROM gig_applications ga
       JOIN gigs g ON ga.gig_id = g.gig_id
       JOIN users u ON g.freelancer_id = u.user_id
       LEFT JOIN currencies c ON ga.currency_id = c.currency_id
+      LEFT JOIN gig_reviews gr ON ga.application_id = gr.application_id
+      LEFT JOIN contracts con ON ga.application_id = con.application_id
+      LEFT JOIN disputes d ON con.contract_id = d.contract_id
       WHERE ga.client_id = $1
       ORDER BY ga.created_at DESC
     `;

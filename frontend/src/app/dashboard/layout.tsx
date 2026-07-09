@@ -1,14 +1,19 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "./DashboardContext";
-import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX } from "react-icons/fi";
+import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX, FiClock, FiShield, FiSearch, FiMail, FiTrendingUp, FiBriefcase, FiUsers, FiPlus } from "react-icons/fi";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import CustomSelect from "@/components/CustomSelect";
+import { useLanguage } from "@/context/LanguageContext";
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
+  const { t } = useLanguage();
   const {
     userName,
+    profileImage,
     userRole,
     isSidebarOpen,
     setIsSidebarOpen,
@@ -27,15 +32,23 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     setSelectedFreelancerProfile,
     loadingProfileDetails,
     handleStartConversation,
+    freelancerProposals,
     gigs,
     gigApplications,
     isCreatingJob,
     setIsCreatingJob,
+    setIsCreatingGig,
     activeTab,
     setActiveTab,
+    siteTheme,
+    setSiteTheme,
 
     // Onboarding context variables
     onboardingCompleted,
+    forceShowOnboarding,
+    setForceShowOnboarding,
+    showOnboardingModal,
+    vettingStatus,
     onboardingStep,
     clientWizardStep,
     clientError,
@@ -87,6 +100,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     handleToggleSkill,
     selectedLanguageIds,
     setSelectedLanguageIds,
+    selectedLanguages,
+    handleUpdateLanguageProficiency,
     step1Error,
     step1Success,
     handleSaveStep1,
@@ -196,8 +211,50 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     proposalCoverLetter,
     setProposalCoverLetter,
     proposalSubmitting,
-    handleSubmitProposal
+    handleSubmitProposal,
+    selectedFreelancerFullProfile,
+    loadingFullProfile,
+    clientJobs,
+    fetchClientJobs
   } = useDashboard();
+
+  const currentMilestonesSum = proposalMilestones.reduce((sum, m) => sum + m.amount, 0);
+  const isMilestoneLimitReached = currentMilestonesSum >= proposalBidAmount && proposalBidAmount > 0;
+
+  const pathname = usePathname();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+
+  // Direct Hire UI states
+  const [showHireWizard, setShowHireWizard] = useState(false);
+  const [hireJobMode, setHireJobMode] = useState<"existing" | "new">("existing");
+  const [selectedExistingJobId, setSelectedExistingJobId] = useState("");
+  const [newJobTitle, setNewJobTitle] = useState("");
+  const [newJobDesc, setNewJobDesc] = useState("");
+  const [hireBidAmount, setHireBidAmount] = useState(0);
+  const [hireDeliveryDays, setHireDeliveryDays] = useState(0);
+  const [hirePitch, setHirePitch] = useState("");
+  const [hireMilestones, setHireMilestones] = useState<any[]>([]);
+  const [newHMTitle, setNewHMTitle] = useState("");
+  const [newHMAmount, setNewHMAmount] = useState<number | "">("");
+  const [submittingDirectHire, setSubmittingDirectHire] = useState(false);
+  const [directHireError, setDirectHireError] = useState("");
+
+  const subNavBtnClass = (path: string) => {
+    const isActive = pathname === path;
+    if (isActive) {
+      return "w-full text-left px-4 py-2 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer bg-teal-700/10 text-teal-700 flex items-center gap-3";
+    }
+    return "w-full text-left px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer text-slate-500 hover:text-slate-850 hover:bg-slate-50 flex items-center gap-3";
+  };
+
+  const navDropdownHeaderClass = (isOpen: boolean, paths: string[]) => {
+    const isActive = paths.includes(pathname);
+    if (isActive) {
+      return "w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center justify-between bg-slate-100 text-slate-900 border border-slate-205/50";
+    }
+    return "w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center justify-between text-slate-500 hover:text-slate-850 hover:bg-slate-50";
+  };
 
   // Helper for logout
   const handleLogout = () => {
@@ -210,7 +267,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const isProfileIncomplete = userRole === "freelancer" && profileCompletionProgress < 100;
+  const isProfileIncomplete = !onboardingCompleted || vettingStatus === "Pending";
+  const isFreelancerApproved = userRole !== "freelancer" || vettingStatus === "Approved";
+  const isClientApproved = userRole !== "client" || vettingStatus === "Approved";
   const isLight = true;
 
   // DYNAMIC THEME CLASS MAPS
@@ -231,6 +290,100 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     ? "space-y-2 mb-4 bg-slate-100/50 p-3 rounded-xl border border-slate-150" 
     : "space-y-2 mb-4 bg-slate-955 p-3 rounded-xl";
 
+  const handleAddHM = () => {
+    if (!newHMTitle.trim()) {
+      setDirectHireError("Milestone title cannot be empty.");
+      return;
+    }
+    if (!newHMAmount || Number(newHMAmount) <= 0) {
+      setDirectHireError("Milestone amount must be a positive number.");
+      return;
+    }
+    setHireMilestones([...hireMilestones, { title: newHMTitle, amount: Number(newHMAmount) }]);
+    setNewHMTitle("");
+    setNewHMAmount("");
+    setDirectHireError("");
+  };
+
+  const handleRemoveHM = (index: number) => {
+    setHireMilestones(hireMilestones.filter((_, i) => i !== index));
+  };
+
+  const handleSendDirectHireSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFreelancerProfile) return;
+
+    if (hireJobMode === "existing" && !selectedExistingJobId) {
+      setDirectHireError("Please select an existing open project.");
+      return;
+    }
+    if (hireJobMode === "new") {
+      if (!newJobTitle.trim()) {
+        setDirectHireError("Please provide a title for the new project.");
+        return;
+      }
+      if (!newJobDesc.trim()) {
+        setDirectHireError("Please provide a description for the new project.");
+        return;
+      }
+    }
+    if (hireBidAmount <= 0) {
+      setDirectHireError("Offer amount must be a positive number.");
+      return;
+    }
+    if (hireDeliveryDays <= 0) {
+      setDirectHireError("Delivery days must be a positive number.");
+      return;
+    }
+
+    setSubmittingDirectHire(true);
+    setDirectHireError("");
+
+    try {
+      const token = localStorage.getItem("token");
+      const payload = {
+        freelancer_id: selectedFreelancerProfile.user_id,
+        job_id: hireJobMode === "existing" ? parseInt(selectedExistingJobId) : undefined,
+        new_job: hireJobMode === "new" ? { title: newJobTitle, description: newJobDesc } : undefined,
+        bid_amount: hireBidAmount,
+        delivery_days: hireDeliveryDays,
+        cover_letter: hirePitch || `Direct hire offer for project`,
+        milestones: hireMilestones.length > 0 ? hireMilestones : undefined
+      };
+
+      const res = await fetch("https://freelancer.sangvish.com/api/proposals/direct-hire", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSelectedFreelancerProfile(null);
+        setShowHireWizard(false);
+        setHireJobMode("existing");
+        setSelectedExistingJobId("");
+        setNewJobTitle("");
+        setNewJobDesc("");
+        setHireBidAmount(0);
+        setHireDeliveryDays(0);
+        setHirePitch("");
+        setHireMilestones([]);
+        triggerToast("success", "Hire offer sent!", "The freelancer has been notified of your direct hire offer.");
+        fetchClientJobs();
+      } else {
+        setDirectHireError(data.message || "Failed to send hire offer.");
+      }
+    } catch (err) {
+      setDirectHireError("Network error. Failed to send hire request.");
+    } finally {
+      setSubmittingDirectHire(false);
+    }
+  };
+
   if (onboardingStep === "loading") {
     return (
       <div className={`w-full min-h-screen ${isLight ? "bg-slate-50 text-slate-800" : "bg-slate-900 text-white"} flex flex-col items-center justify-center`}>
@@ -243,7 +396,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="relative min-h-screen w-full bg-slate-50 flex flex-row overflow-x-hidden">
+    <div className="relative min-h-screen lg:h-screen lg:overflow-hidden w-full bg-slate-50 flex flex-row">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
@@ -257,9 +410,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       }`}>
         <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between shrink-0">
-          <span className="text-xl font-extrabold text-teal-700 tracking-tight font-display select-none">
-            {userRole === "client" ? "Client Workspace" : "Freelancer"}
-          </span>
+          <Link 
+            href="/"
+            className="flex items-center gap-2 select-none hover:opacity-80 transition-opacity cursor-pointer"
+          >
+            <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-750 font-extrabold shadow-sm shrink-0">
+              <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <span className="text-lg font-black tracking-tight font-display flex items-baseline gap-0.5">
+              <span className="text-slate-800">Buy2</span>
+              <span className="text-teal-700">Lancer</span>
+            </span>
+          </Link>
           <button
             onClick={() => setIsSidebarOpen(false)}
             className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg lg:hidden cursor-pointer flex items-center justify-center border border-slate-200 bg-slate-50"
@@ -271,7 +435,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Role Switcher */}
         <div className="px-4 py-3 border-b border-slate-100 flex flex-col gap-1.5 select-none">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider px-2">Active Workspace Role</span>
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider px-2">{t("active_workspace_role", "Active Workspace Role")}</span>
           <div onClick={() => setIsSidebarOpen(false)} className="bg-slate-100/80 p-1 rounded-xl flex gap-1 border border-slate-200/50">
             <button
               onClick={() => handleRoleSwitch("freelancer")}
@@ -281,7 +445,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   : "text-slate-500 hover:text-slate-850"
               }`}
             >
-              Freelancer
+              {t("freelancer_role", "Freelancer")}
             </button>
             <button
               onClick={() => handleRoleSwitch("client")}
@@ -291,13 +455,30 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   : "text-slate-500 hover:text-slate-850"
               }`}
             >
-              Client
+              {t("client_role", "Client")}
             </button>
           </div>
         </div>
 
         {userRole === "client" ? (
           <nav onClick={() => setIsSidebarOpen(false)} className="flex-1 p-4 flex flex-col gap-4 select-none overflow-y-auto max-h-[calc(100vh-12rem)] scrollbar-thin">
+            {/* Quick Action Button */}
+            {!isProfileIncomplete && isClientApproved && (
+              <div className="mb-2 shrink-0">
+                <button
+                  onClick={() => {
+                    setActiveTab("proposals");
+                    setIsCreatingJob(true);
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <FiZap className="w-4 h-4 text-white shrink-0" />
+                  <span>{t("post_new_project_btn", "Post a New Project")}</span>
+                </button>
+              </div>
+            )}
             
             {/* Common Workspace Hub */}
             <div className="flex flex-col gap-1">
@@ -309,169 +490,152 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 }}
                 className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "workspace"
                     ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
                   }`}
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-                Workspace Hub
+                {t("workspace_hub_menu", "Workspace Hub")}
               </button>
-              
-              {profileCompletionProgress < 100 && (
-                <button
-                  onClick={() => {
-                    setActiveTab("settings");
-                  }}
-                  className="w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 text-slate-500 hover:text-slate-855 hover:bg-slate-50"
-                >
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Profile Setup
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setActiveTab("wishlist");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "wishlist"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {t("my_wishlist_menu", "My Wishlist")}
+              </button>
             </div>
 
             {/* HIRE FREELANCERS MODULE */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Hire Freelancers</span>
-              
-              <button
-                onClick={() => {
-                  setActiveTab("find_work");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "find_work"
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
-                  }`}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                Search & Browse
-              </button>
+            {!isProfileIncomplete && isClientApproved && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("hire_freelancers_header", "Hire Freelancers")}</span>
+                
+                <button
+                  onClick={() => {
+                    setActiveTab("find_work");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "find_work"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                    }`}
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <span>{t("search_browse_menu", "Search & Browse")}</span>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab("client_hired_freelancers");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "client_hired_freelancers"
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
-                  }`}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Already Hired
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("client_hired_freelancers");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "client_hired_freelancers"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                    }`}
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>{t("hired_freelancers_menu", "Hired Freelancers")}</span>
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab("client_recommended_freelancers");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "client_recommended_freelancers"
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
-                  }`}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-                Recommendations
-              </button>
-            </div>
+                <button
+                  onClick={() => {
+                    setActiveTab("client_recommended_freelancers");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "client_recommended_freelancers"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                    }`}
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  <span>{t("recommendations_menu", "Recommendations")}</span>
+                </button>
 
-            {/* PROJECT MANAGEMENT MODULE */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Project Management</span>
-              
-              <button
-                onClick={() => {
-                  setIsCreatingJob(true);
-                  setActiveTab("proposals");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "proposals" && isCreatingJob
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
-                  }`}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Add Project
-              </button>
-
-              <button
-                onClick={() => {
-                  setIsCreatingJob(false);
-                  setActiveTab("proposals");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "proposals" && !isCreatingJob
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
-                  }`}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Your Projects
-              </button>
-            </div>
+                <button
+                  onClick={() => {
+                    setActiveTab("proposals");
+                    setIsCreatingJob(false);
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center justify-between ${activeTab === "proposals" && !isCreatingJob
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <FiBriefcase className="w-4 h-4 shrink-0" />
+                    <span>{t("my_posted_projects_menu", "My Posted Projects")}</span>
+                  </div>
+                </button>
+              </div>
+            )}
 
             {/* GIG ORDERS & SERVICES MODULE */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Gig Orders & Services</span>
-              
-              <button
-                onClick={() => {
-                  setActiveTab("explore_gigs");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "explore_gigs"
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
-                  }`}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                Explore Gigs
-              </button>
+            {!isProfileIncomplete && isClientApproved && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("gig_orders_services_header", "Gig Orders & Services")}</span>
+                
+                <button
+                  onClick={() => {
+                    setActiveTab("explore_gigs");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "explore_gigs"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                    }`}
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  {t("explore_gigs_menu", "Explore Gigs")}
+                </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab("client_orders");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "client_orders"
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
-                  }`}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Your Gig Orders
-              </button>
-            </div>
+                <button
+                  onClick={() => {
+                    setActiveTab("client_orders");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "client_orders"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                    }`}
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                  {t("your_gig_orders_menu", "Your Gig Orders")}
+                </button>
+              </div>
+            )}
 
             {/* COMMUNICATION & SETTINGS */}
             <div className="flex flex-col gap-1 pt-2 border-t border-slate-100">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Communication & Settings</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("communication_settings_header", "Communication & Settings")}</span>
 
               <button
                 onClick={() => {
@@ -488,7 +652,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
-                  <span>Notifications</span>
+                  <span>{t("notifications_menu", "Notifications")}</span>
                 </div>
                 {unreadNotificationsCount > 0 && (
                   <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "notifications" ? "bg-white/20 text-white" : "bg-rose-50 text-rose-600 border border-rose-100"}`}>
@@ -497,22 +661,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
               </button>
 
-              <button
-                onClick={() => {
-                  setActiveTab("inbox");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "inbox"
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
-                  }`}
-              >
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                Inbox Messages
-              </button>
+              {isClientApproved && (
+                <button
+                  onClick={() => {
+                    setActiveTab("inbox");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "inbox"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                    }`}
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  {t("inbox_messages_menu", "Inbox Messages")}
+                </button>
+              )}
 
               <button
                 onClick={() => {
@@ -528,9 +694,43 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
-                My Wallet
+                {t("my_wallet_menu", "My Wallet")}
               </button>
 
+              <button
+                onClick={() => {
+                  setActiveTab("reports");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "reports"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-505 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+                </svg>
+                {t("financial_reports_menu", "Financial Reports")}
+              </button>
+
+
+              <button
+                onClick={() => {
+                  setActiveTab("subscription");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "subscription"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                {t("subscription_menu", "My Subscription")}
+              </button>
 
               <button
                 onClick={() => {
@@ -547,12 +747,32 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Settings
+                {t("settings_menu", "Settings")}
               </button>
             </div>
           </nav>
         ) : (
           <nav onClick={() => setIsSidebarOpen(false)} className="flex-1 p-4 flex flex-col gap-4 select-none overflow-y-auto max-h-[calc(100vh-12rem)] scrollbar-thin">
+            {/* Quick Action Button */}
+            {isFreelancerApproved && (
+              <div className="mb-2 shrink-0">
+                <button
+                  disabled={isProfileIncomplete}
+                  onClick={() => {
+                    setActiveTab("gigs");
+                    setIsCreatingGig(true);
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] ${
+                    isProfileIncomplete ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                  }`}
+                >
+                  <FiPlus className="w-4 h-4 text-white shrink-0" />
+                  <span>{t("post_new_gig_btn", "Post a New Gig")}</span>
+                </button>
+              </div>
+            )}
             {/* Common Workspace Hub */}
             <div className="flex flex-col gap-1">
               <button
@@ -569,156 +789,186 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-                Workspace Hub
+                {t("workspace_hub_menu", "Workspace Hub")}
               </button>
-
-              {profileCompletionProgress < 100 && (
-                <button
-                  onClick={() => {
-                    setActiveTab("settings");
-                  }}
-                  className="w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 text-slate-500 hover:text-slate-850 hover:bg-slate-50"
-                >
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Profile Setup
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setActiveTab("wishlist");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "wishlist"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {t("my_wishlist_menu", "My Wishlist")}
+              </button>
             </div>
 
             {/* FIND & DELIVER WORK */}
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Find & Deliver Work</span>
-              
-              <button
-                disabled={isProfileIncomplete}
-                onClick={() => {
-                  setActiveTab("find_work");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
-                  isProfileIncomplete
-                    ? "opacity-50 cursor-not-allowed text-slate-400"
-                    : activeTab === "find_work"
-                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10 cursor-pointer"
-                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50 cursor-pointer"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <span>Find Work</span>
-                </div>
-                {isProfileIncomplete && (
-                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                )}
-              </button>
-
-              <button
-                disabled={isProfileIncomplete}
-                onClick={() => {
-                  setActiveTab("proposals");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
-                  isProfileIncomplete
-                    ? "opacity-50 cursor-not-allowed text-slate-400"
-                    : activeTab === "proposals"
-                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10 cursor-pointer"
-                      : "text-slate-500 hover:text-slate-855 hover:bg-slate-50 cursor-pointer"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span>My Proposals</span>
-                </div>
-                {isProfileIncomplete ? (
-                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                ) : (
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "proposals" ? "bg-white/20 text-white" : "bg-teal-50 text-teal-700"}`}>
-                    4
-                  </span>
-                )}
-              </button>
-
-              <button
-                disabled={isProfileIncomplete}
-                onClick={() => {
-                  setActiveTab("gigs");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
-                  isProfileIncomplete
-                    ? "opacity-50 cursor-not-allowed text-slate-400"
-                    : activeTab === "gigs"
-                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                      : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+            {isFreelancerApproved && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("find_deliver_work_header", "Find & Deliver Work")}</span>
+                
+                <button
+                  disabled={isProfileIncomplete}
+                  onClick={() => {
+                    setActiveTab("find_work");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                    isProfileIncomplete
+                      ? "opacity-50 cursor-not-allowed text-slate-400"
+                      : activeTab === "find_work"
+                        ? "bg-teal-700 text-white shadow-md shadow-teal-700/10 cursor-pointer"
+                        : "text-slate-500 hover:text-slate-855 hover:bg-slate-50 cursor-pointer"
                   }`}
-              >
-                <div className="flex items-center gap-3">
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v.75c0 .621.504 1.125 1.125 1.125z" />
-                  </svg>
-                  <span>My Gigs</span>
-                </div>
-                {isProfileIncomplete ? (
-                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                ) : (
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "gigs" ? "bg-white/20 text-white" : "bg-teal-50 text-teal-700"}`}>
-                    {gigs.length}
-                  </span>
-                )}
-              </button>
+                >
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span>{t("find_work_menu", "Find Work")}</span>
+                  </div>
+                  {isProfileIncomplete && (
+                    <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  )}
+                </button>
 
-              <button
-                disabled={isProfileIncomplete}
-                onClick={() => {
-                  setActiveTab("gig_applications");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
-                  isProfileIncomplete
-                    ? "opacity-50 cursor-not-allowed text-slate-400"
-                    : activeTab === "gig_applications"
-                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
-                  }`}
-              >
-                <div className="flex items-center gap-3">
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-1.5l1.359-3.058a1.125 1.125 0 011.543-.58l1.359.604a1.125 1.125 0 001.388-.383l2.206-2.941" />
-                  </svg>
-                  <span>Gig Orders</span>
-                </div>
-                {isProfileIncomplete ? (
-                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                ) : (
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "gig_applications" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700 border border-emerald-100/50"}`}>
-                    {gigApplications.length}
-                  </span>
-                )}
-              </button>
-            </div>
+                  <button
+                    disabled={isProfileIncomplete}
+                    onClick={() => {
+                      setActiveTab("proposals");
+                      setSelectedProjectDetails(null);
+                      setSelectedGigOrderDetails(null);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                      isProfileIncomplete
+                        ? "opacity-50 cursor-not-allowed text-slate-400"
+                        : activeTab === "proposals"
+                          ? "bg-teal-700 text-white shadow-md shadow-teal-700/10 cursor-pointer"
+                          : "text-slate-500 hover:text-slate-855 hover:bg-slate-50 cursor-pointer"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>{t("my_proposals_menu", "My Proposals")}</span>
+                    </div>
+                    {isProfileIncomplete ? (
+                      <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    ) : (
+                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "proposals" ? "bg-white/20 text-white" : "bg-teal-50 text-teal-700"}`}>
+                        {freelancerProposals ? freelancerProposals.length : 0}
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    disabled={isProfileIncomplete}
+                    onClick={() => {
+                      setActiveTab("my_projects");
+                      setSelectedProjectDetails(null);
+                      setSelectedGigOrderDetails(null);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                      isProfileIncomplete
+                        ? "opacity-50 cursor-not-allowed text-slate-400"
+                        : activeTab === "my_projects"
+                          ? "bg-teal-700 text-white shadow-md shadow-teal-700/10 cursor-pointer"
+                          : "text-slate-500 hover:text-slate-855 hover:bg-slate-50 cursor-pointer"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <FiBriefcase className="w-4 h-4 shrink-0" />
+                      <span>{t("my_projects_menu", "My Projects")}</span>
+                    </div>
+                    {isProfileIncomplete && (
+                      <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    )}
+                  </button>
+
+                <button
+                  disabled={isProfileIncomplete}
+                  onClick={() => {
+                    setActiveTab("gigs");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                    isProfileIncomplete
+                      ? "opacity-50 cursor-not-allowed text-slate-400"
+                      : activeTab === "gigs"
+                        ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                        : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v.75c0 .621.504 1.125 1.125 1.125z" />
+                    </svg>
+                    <span>{t("my_gigs_menu", "My Gigs")}</span>
+                  </div>
+                  {isProfileIncomplete ? (
+                    <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  ) : (
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "gigs" ? "bg-white/20 text-white" : "bg-teal-50 text-teal-700"}`}>
+                      {gigs ? gigs.length : 0}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  disabled={isProfileIncomplete}
+                  onClick={() => {
+                    setActiveTab("gig_applications");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                    isProfileIncomplete
+                      ? "opacity-50 cursor-not-allowed text-slate-400"
+                      : activeTab === "gig_applications"
+                        ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                        : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                    }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-1.5l1.359-3.058a1.125 1.125 0 011.543-.58l1.359.604a1.125 1.125 0 001.388-.383l2.206-2.941" />
+                    </svg>
+                    <span>{t("gig_orders_menu", "Gig Orders")}</span>
+                  </div>
+                  {isProfileIncomplete ? (
+                    <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  ) : (
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "gig_applications" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700 border border-emerald-100/50"}`}>
+                      {gigApplications ? gigApplications.length : 0}
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
 
             {/* COMMUNICATION & SETTINGS */}
             <div className="flex flex-col gap-1 pt-2 border-t border-slate-100">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">Communication & Settings</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("communication_settings_header", "Communication & Settings")}</span>
 
               <button
                 disabled={isProfileIncomplete}
@@ -739,7 +989,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
-                  <span>Notifications</span>
+                  <span>{t("notifications_menu", "Notifications")}</span>
                 </div>
                 {isProfileIncomplete ? (
                   <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -754,37 +1004,39 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
               </button>
 
-              <button
-                disabled={isProfileIncomplete}
-                onClick={() => {
-                  setActiveTab("inbox");
-                  setSelectedProjectDetails(null);
-                  setSelectedGigOrderDetails(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
-                  isProfileIncomplete
-                    ? "opacity-50 cursor-not-allowed text-slate-400"
-                    : activeTab === "inbox"
-                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                      : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  <span>Inbox Messages</span>
-                </div>
-                {profileCompletionProgress < 100 ? (
-                  <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                ) : (
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "inbox" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700 border border-emerald-100/50"}`}>
-                    New
-                  </span>
-                )}
-              </button>
+              {isFreelancerApproved && (
+                <button
+                  disabled={isProfileIncomplete}
+                  onClick={() => {
+                    setActiveTab("inbox");
+                    setSelectedProjectDetails(null);
+                    setSelectedGigOrderDetails(null);
+                  }}
+                  className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-between ${
+                    isProfileIncomplete
+                      ? "opacity-50 cursor-not-allowed text-slate-400"
+                      : activeTab === "inbox"
+                        ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                        : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                    <span>{t("inbox_messages_menu", "Inbox Messages")}</span>
+                  </div>
+                  {isProfileIncomplete ? (
+                    <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  ) : (
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${activeTab === "inbox" ? "bg-white/20 text-white" : "bg-emerald-50 text-emerald-700 border border-emerald-100/50"}`}>
+                      {t("new_badge", "New")}
+                    </span>
+                  )}
+                </button>
+              )}
 
               <button
                 disabled={isProfileIncomplete}
@@ -804,7 +1056,45 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
-                My Wallet
+                {t("my_wallet_menu", "My Wallet")}
+              </button>
+
+              <button
+                disabled={isProfileIncomplete}
+                onClick={() => {
+                  setActiveTab("reports");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${
+                  isProfileIncomplete
+                    ? "opacity-50 cursor-not-allowed text-slate-400"
+                    : activeTab === "reports"
+                      ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                      : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z" />
+                </svg>
+                {t("financial_reports_menu", "Financial Reports")}
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("subscription");
+                  setSelectedProjectDetails(null);
+                  setSelectedGigOrderDetails(null);
+                }}
+                className={`w-full text-left px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-3 ${activeTab === "subscription"
+                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                  }`}
+              >
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                {t("subscription_menu", "My Subscription")}
               </button>
 
               <button
@@ -822,7 +1112,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Settings
+                {t("settings_menu", "Settings")}
               </button>
             </div>
           </nav>
@@ -830,14 +1120,26 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Footer User Details */}
         <div className="p-4 border-t border-slate-200 bg-slate-50 flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-700 to-cyan-500 flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0">
-              {userName.substring(0, 2).toUpperCase()}
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0 overflow-hidden ${profileImage ? "bg-slate-100" : "bg-gradient-to-tr from-teal-700 to-cyan-500"}`}>
+                {profileImage ? (
+                  <img src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`} alt={userName} className="w-full h-full object-cover" />
+                ) : (
+                  userName ? userName.substring(0, 2).toUpperCase() : "US"
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-800 truncate">{userName}</p>
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{userRole === "client" ? t("client_role", "Client") : t("freelancer_role", "Freelancer")}</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-slate-800 truncate">{userName}</p>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{userRole === "client" ? "Client" : "Freelancer"}</p>
-            </div>
+            <button
+              onClick={handleLogout}
+              className="text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-100 hover:bg-rose-100 cursor-pointer shadow-sm lg:hidden shrink-0"
+            >
+              {t("logout_btn", "Logout")}
+            </button>
           </div>
         </div>
       </aside>
@@ -855,20 +1157,42 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <FiMenu className="w-5 h-5" />
             </button>
 
-            {/* Header Role indicator & quick switch */}
+            {/* Header Role indicator */}
             <div className="flex items-center gap-2 select-none">
-              <span className="text-xs font-bold text-slate-400 hidden sm:inline">Active view:</span>
-              <button
-                onClick={() => handleRoleSwitch(userRole === "client" ? "freelancer" : "client")}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all text-xs font-bold text-slate-800 cursor-pointer shadow-sm animate-fadeIn"
-              >
-                <span>{userRole === "client" ? "Client Workspace" : "Freelancer Workspace"}</span>
-                <span className="text-slate-400 font-normal">| Switch ⇄</span>
-              </button>
+              <span className="text-[10px] font-bold text-slate-400 hidden sm:inline uppercase tracking-widest">{t("active_workspace_indicator", "Active Workspace:")}</span>
+              <span className="px-3 py-1.5 rounded-xl border border-teal-150 bg-teal-50/50 text-xs font-bold text-teal-800 shadow-xxs">
+                {userRole === "client" ? t("client_view_indicator", "💼 Client View") : t("freelancer_view_indicator", "💻 Freelancer View")}
+              </span>
             </div>
           </div>
 
           <div className="flex items-center gap-4 relative">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => {
+                const nextTheme = siteTheme === "light" ? "dark" : "light";
+                setSiteTheme(nextTheme);
+              }}
+              className={`p-2 rounded-xl border transition-all duration-300 cursor-pointer flex items-center justify-center ${
+                siteTheme === "dark" 
+                  ? "bg-slate-900 border-slate-800 text-amber-400 hover:text-amber-300 hover:bg-slate-800" 
+                  : "bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+              }`}
+              aria-label="Toggle theme"
+            >
+              {siteTheme === "dark" ? (
+                // Sun Icon (Solid)
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                // Moon Icon (Solid)
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                </svg>
+              )}
+            </button>
+
             {/* Notifications Bell Dropdown */}
             <NotificationsDropdown
               notifications={notifications}
@@ -877,14 +1201,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               setIsNotificationsOpen={setIsNotificationsOpen}
               handleMarkAllRead={handleMarkAllRead}
               handleMarkSingleRead={handleMarkSingleRead}
+              setActiveTab={setActiveTab}
             />
 
             {/* Logout */}
             <button
               onClick={handleLogout}
-              className="text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors px-4 py-2 rounded-xl bg-rose-50 border border-rose-200/60 hover:bg-rose-100 cursor-pointer shadow-sm shrink-0"
+              className="hidden sm:block text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors px-4 py-2 rounded-xl bg-rose-50 border border-rose-200/60 hover:bg-rose-100 cursor-pointer shadow-sm shrink-0"
             >
-              Logout
+              {t("logout_btn", "Logout")}
             </button>
           </div>
         </header>
@@ -893,12 +1218,58 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex-1 py-8 px-6 overflow-y-auto relative z-10 w-full flex flex-col gap-8">
           {/* Background Decorative Pattern */}
           <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0"></div>
+
+          {!onboardingCompleted && (
+            <div className="flex items-center justify-between gap-4 bg-rose-50 border border-rose-250 rounded-2xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.03] rounded-full filter blur-xl"></div>
+              
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-600 shrink-0 shadow-sm">
+                  <FiAlertTriangle className="w-4 h-4 animate-bounce" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-xs font-black text-rose-800 uppercase tracking-wide">
+                    {t("profile_onboarding_pending_title", "Profile Onboarding Pending")}
+                  </h4>
+                  <p className="text-[10px] text-rose-650 font-extrabold mt-0.5 leading-relaxed">
+                    {t("profile_onboarding_pending_desc", "Please complete your profile configuration to unlock full platform features and navigate pages.")}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setForceShowOnboarding(true)}
+                className="bg-rose-600 hover:bg-rose-750 text-white font-extrabold text-[10px] px-4 py-2.5 rounded-xl transition-all shadow-sm shrink-0 border-0 cursor-pointer"
+              >
+                {t("complete_onboarding_btn", "Complete Onboarding")}
+              </button>
+            </div>
+          )}
+
+          {onboardingCompleted && vettingStatus === "Pending" && (
+            <div className="flex items-center gap-3.5 bg-amber-50 border border-amber-250 rounded-2xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/[0.03] rounded-full filter blur-xl"></div>
+              
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 shrink-0 shadow-sm">
+                <FiClock className="w-4 h-4 animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-xs font-black text-amber-800 flex items-center gap-1.5 uppercase tracking-wide">
+                  {t("onboarding_profile_under_review_title", "Onboarding Profile Under Review")}
+                </h4>
+                <p className="text-[10px] text-amber-600 font-extrabold mt-0.5 leading-relaxed">
+                  {t("onboarding_profile_under_review_desc", "Your credentials have been submitted successfully and are currently in the queue for manual admin vetting. Some workspace actions will remain locked until approval.")}
+                </p>
+              </div>
+            </div>
+          )}
+
           {children}
         </div>
       </div>
 
       {/* Onboarding Popup Overlay */}
-      {!onboardingCompleted && (
+      {(showOnboardingModal || forceShowOnboarding) && (
         <div className={`fixed inset-0 z-50 ${modalOverlayClass} flex items-center justify-center p-4 overflow-y-auto select-none`}>
           
           {/* STEP 1: ROLE SELECTION MODAL */}
@@ -910,7 +1281,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
 
               <button
-                onClick={handleSkip}
+                onClick={() => {
+                  handleSkip();
+                  setForceShowOnboarding(false);
+                }}
                 className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer z-20 flex items-center justify-center gap-1.5 border text-slate-500 hover:text-slate-850 bg-slate-100 hover:bg-slate-200/80 border-slate-200"
               >
                 Close
@@ -1012,7 +1386,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <div className="relative z-10 flex-grow overflow-y-auto pr-1 text-left">
+              <div className="relative z-10 flex-grow overflow-y-auto no-scrollbar pr-4 text-left">
                 {clientError && (
                   <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold rounded-xl mb-4">
                     ⚠️ {clientError}
@@ -1224,7 +1598,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <div className="relative z-10 flex-grow overflow-y-auto pr-1 text-left">
+              <div className="relative z-10 flex-grow overflow-y-auto no-scrollbar pr-4 text-left">
                 
                 {/* STEP 1 FORM - PROFILE DETAILS */}
                 {wizardStep === 1 && (
@@ -1402,6 +1776,34 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         placeholder="Select Languages"
                       />
                     </div>
+
+                    {/* Spoken Languages Proficiency Levels Section */}
+                    {selectedLanguages.length > 0 && (
+                      <div className="mt-4 space-y-3 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 animate-fadeIn">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Set Language Proficiency Levels</label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          {selectedLanguages.map((selLang) => {
+                            const dbLangObj = languages.find(l => l.language_id === selLang.language_id);
+                            const labelName = dbLangObj ? dbLangObj.language_name : `Language #${selLang.language_id}`;
+                            return (
+                              <div key={selLang.language_id} className="flex flex-col gap-1 bg-white border border-slate-200/60 rounded-xl p-2.5 shadow-sm">
+                                <span className="text-xs font-bold text-slate-800">{labelName}</span>
+                                <select
+                                  value={selLang.proficiency}
+                                  onChange={(e) => handleUpdateLanguageProficiency(selLang.language_id, e.target.value)}
+                                  className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-emerald-500 transition mt-1"
+                                >
+                                  <option value="Basic">Basic</option>
+                                  <option value="Conversational">Conversational</option>
+                                  <option value="Fluent">Fluent</option>
+                                  <option value="Native/Bilingual">Native/Bilingual</option>
+                                </select>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex justify-end pt-4">
                       <button
@@ -1859,7 +2261,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           value={projectTitle}
                           onChange={(e) => setProjectTitle(e.target.value)}
                           className={inputClass}
-                          required
                         />
                       </div>
 
@@ -1985,8 +2386,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Submit Job Proposal Modal */}
       {showProposalModal && applyingJob && (
-        <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative">
+        <div className="fixed inset-0 z-50 bg-slate-900/25 backdrop-blur-[0.5px] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left max-h-[90vh] flex flex-col relative my-8">
             <button
               onClick={() => {
                 setShowProposalModal(false);
@@ -2001,10 +2402,45 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="border-b border-slate-100 pb-4 pr-16 text-slate-800">
               <span className="text-[10px] font-bold text-teal-700 tracking-widest uppercase mb-1">Submit Project Proposal</span>
               <h2 className="text-base font-black text-slate-850 line-clamp-1">{applyingJob.title}</h2>
-              <p className="text-slate-400 text-xs font-semibold mt-1">Client: {applyingJob.company_name || applyingJob.client_name}</p>
+              <p className="text-slate-400 text-[10px] font-semibold mt-1">Client: {applyingJob.company_name || applyingJob.client_name}</p>
+
+              {/* Added Project Details Summary */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-slate-100 text-[10px] font-semibold text-slate-450 uppercase tracking-wide">
+                <div className="flex items-center gap-1.5">
+                  <i className="fa-solid fa-wallet text-slate-400"></i>
+                  <span>Budget: <strong className="text-slate-700">
+                    {applyingJob.min_budget && applyingJob.max_budget 
+                      ? `$${parseFloat(applyingJob.min_budget).toLocaleString()} - $${parseFloat(applyingJob.max_budget).toLocaleString()}`
+                      : `$${parseFloat(applyingJob.budget).toLocaleString()}`}
+                    {applyingJob.project_type === "Hourly" ? " / hr" : ""}
+                  </strong></span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <i className="fa-solid fa-graduation-cap text-slate-400"></i>
+                  <span>Exp: <strong className="text-slate-700">{applyingJob.experience_level}</strong></span>
+                </div>
+                {applyingJob.sub_category_name && (
+                  <div className="flex items-center gap-1.5">
+                    <i className="fa-solid fa-tags text-slate-400"></i>
+                    <span>Subcategory: <strong className="text-slate-700">{applyingJob.sub_category_name}</strong></span>
+                  </div>
+                )}
+                {applyingJob.duration && (
+                  <div className="flex items-center gap-1.5">
+                    <i className="fa-solid fa-calendar text-slate-400"></i>
+                    <span>Duration: <strong className="text-slate-700">{applyingJob.duration}</strong></span>
+                  </div>
+                )}
+                {applyingJob.num_freelancers && (
+                  <div className="flex items-center gap-1.5">
+                    <i className="fa-solid fa-users text-slate-400"></i>
+                    <span>Freelancers: <strong className="text-slate-700">{applyingJob.num_freelancers}</strong></span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <form onSubmit={handleSubmitProposal} className="flex flex-col gap-5 mt-6 text-slate-800">
+            <form onSubmit={handleSubmitProposal} className="flex-1 overflow-y-auto flex flex-col gap-5 mt-6 text-slate-800 pr-1.5 scrollbar-thin">
               {proposalError && (
                 <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-1.5">
                   <FiAlertTriangle className="w-4 h-4 shrink-0" />
@@ -2050,7 +2486,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               {applyingJob.project_type === "Fixed" && (
                 <>
                   {applyingJob.milestone_type === "Milestone" && (
-                    <div className="p-3 bg-teal-50 border border-teal-100 rounded-xl text-slate-700 text-xxs font-extrabold uppercase tracking-wider flex items-center gap-2">
+                    <div className="p-2.5 bg-teal-50 border border-teal-100 rounded-xl text-slate-700 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
                       <i className="fa-solid fa-circle-info text-teal-700 text-xs"></i>
                       <span>This project requires defining Milestones structure</span>
                     </div>
@@ -2111,10 +2547,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <label className="text-[9px] font-bold text-slate-400 uppercase">Milestone Description *</label>
                           <input
                             type="text"
-                            placeholder="e.g. Design Figma layouts and style guide"
+                            placeholder={isMilestoneLimitReached ? "Bid total limit reached" : "e.g. Design Figma layouts and style guide"}
                             value={newMilestoneTitle}
                             onChange={(e) => setNewMilestoneTitle(e.target.value)}
-                            className="w-full bg-white border border-slate-250 hover:border-slate-350 rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold"
+                            disabled={isMilestoneLimitReached}
+                            className={`w-full border rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold ${
+                              isMilestoneLimitReached
+                                ? "bg-slate-100/80 border-slate-200 text-slate-450 cursor-not-allowed"
+                                : "bg-white border-slate-250 hover:border-slate-350"
+                            }`}
                           />
                         </div>
                         <div className="sm:col-span-3 flex flex-col gap-1">
@@ -2124,17 +2565,27 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             placeholder="Amount"
                             value={newMilestoneAmount}
                             onChange={(e) => setNewMilestoneAmount(e.target.value !== "" ? Number(e.target.value) : "")}
-                            className="w-full bg-white border border-slate-250 hover:border-slate-350 rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold"
+                            disabled={isMilestoneLimitReached}
+                            className={`w-full border rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold ${
+                              isMilestoneLimitReached
+                                ? "bg-slate-100/80 border-slate-200 text-slate-450 cursor-not-allowed"
+                                : "bg-white border-slate-250 hover:border-slate-350"
+                            }`}
                           />
                         </div>
                         <div className="sm:col-span-1 flex justify-end">
                           <button
                             type="button"
                             onClick={handleAddProposalMilestone}
-                            className="bg-teal-700 hover:bg-teal-800 text-white w-full h-[34px] rounded-lg shadow-sm transition-all flex items-center justify-center cursor-pointer hover:scale-[1.02]"
-                            title="Add Milestone"
+                            disabled={isMilestoneLimitReached}
+                            className={`w-full h-[34px] rounded-lg shadow-sm transition-all flex items-center justify-center ${
+                              isMilestoneLimitReached
+                                ? "bg-slate-200 border border-slate-300 text-slate-400 cursor-not-allowed opacity-60"
+                                : "bg-teal-700 hover:bg-teal-800 text-white cursor-pointer hover:scale-[1.02]"
+                            }`}
+                            title={isMilestoneLimitReached ? "Offered Bid Amount Reached" : "Add Milestone"}
                           >
-                            <span className="font-extrabold text-sm">+</span>
+                            <i className="fa-solid fa-plus text-xs"></i>
                           </button>
                         </div>
                       </div>
@@ -2149,6 +2600,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           ${proposalMilestones.reduce((sum, m) => sum + m.amount, 0).toLocaleString()} / ${proposalBidAmount.toLocaleString()}
                         </span>
                       </div>
+
+                      {proposalError && proposalError.toLowerCase().includes("milestone") && (
+                        <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-[10px] font-bold mt-2.5 flex items-center gap-1.5 animate-fadeIn">
+                          <FiAlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                          <span>{proposalError}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
@@ -2165,6 +2623,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-850 font-medium resize-none"
                 />
               </div>
+
+              {proposalError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-1.5 animate-fadeIn">
+                  <FiAlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{proposalError}</span>
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 mt-2">
                 <button
@@ -2194,6 +2659,461 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Freelancer Profile details & Hire request modal */}
+      {selectedFreelancerProfile && (
+        <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[1px] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 shadow-2xl rounded-3xl w-full max-w-3xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-slate-800 my-8 max-h-[90vh] flex flex-col relative">
+            <button
+              onClick={() => {
+                setSelectedFreelancerProfile(null);
+                setShowHireWizard(false);
+                setDirectHireError("");
+              }}
+              className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer z-10"
+            >
+              Close
+            </button>
+
+            {!showHireWizard ? (
+              <div className="flex-1 flex flex-col overflow-y-auto pr-1">
+                {/* 1. Header Profile details */}
+                <div className="flex flex-col sm:flex-row gap-5 border-b border-slate-100 pb-5">
+                  <div className="w-20 h-20 bg-teal-50 border border-teal-100 text-teal-700 rounded-full flex items-center justify-center text-3xl font-black shrink-0 shadow-sm">
+                    {selectedFreelancerProfile.profile_image ? (
+                      <img
+                        src={selectedFreelancerProfile.profile_image}
+                        alt={selectedFreelancerProfile.name}
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      selectedFreelancerProfile.name ? selectedFreelancerProfile.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) : "FL"
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black tracking-tight text-slate-850 flex items-center gap-2">
+                      <span>{selectedFreelancerProfile.name}</span>
+                      <span className="bg-teal-100 text-teal-800 text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">Verified</span>
+                    </h2>
+                    <p className="text-slate-500 font-bold text-sm mt-0.5">{selectedFreelancerProfile.role || "Professional Freelancer"}</p>
+                    
+                    <div className="flex flex-wrap gap-4 mt-3 text-xxs font-extrabold text-slate-450 uppercase tracking-wider">
+                      <div className="flex items-center gap-1.5">
+                        <i className="fa-solid fa-dollar-sign text-teal-600 text-xs"></i>
+                        <span>Rate: <strong className="text-slate-700">${selectedFreelancerProfile.hourlyRate || selectedFreelancerProfile.hourly_rate || "45"}/hr</strong></span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <i className="fa-solid fa-star text-amber-500 text-xs"></i>
+                        <span>Rating: <strong className="text-slate-700">5.0 (14 completed jobs)</strong></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {loadingFullProfile ? (
+                  <div className="py-12 flex flex-col items-center justify-center gap-3">
+                    <div className="w-8 h-8 border-3 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-slate-400 font-semibold text-xs">Fetching portfolio and qualifications...</p>
+                  </div>
+                ) : (
+                  <div className="mt-5 space-y-6">
+                    {/* Bio / Description */}
+                    <div>
+                      <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">About & Overview</h4>
+                      <p className="text-xs leading-relaxed font-medium text-slate-650">
+                        {selectedFreelancerFullProfile?.profile?.description || selectedFreelancerProfile.description || "Top rated developer specialized in modern web applications, scalable database systems, API integrations, and premium UI designs."}
+                      </p>
+                    </div>
+
+                    {/* Skills section */}
+                    {selectedFreelancerFullProfile?.skills && selectedFreelancerFullProfile.skills.length > 0 && (
+                      <div>
+                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Primary Skills</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedFreelancerFullProfile.skills.map((s: any) => (
+                            <span key={s.skill_id} className="bg-slate-50 border border-slate-200/60 text-slate-650 text-[10px] font-bold px-3 py-1.5 rounded-xl">
+                              {s.skill_name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Portfolio / Projects */}
+                    {selectedFreelancerFullProfile?.projects && selectedFreelancerFullProfile.projects.length > 0 && (
+                      <div>
+                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Portfolio Projects</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {selectedFreelancerFullProfile.projects.map((p: any, idx: number) => (
+                            <div key={idx} className="border border-slate-200 p-4 rounded-2xl bg-slate-50 flex flex-col justify-between">
+                              <div>
+                                <h5 className="text-xs font-black text-slate-800 truncate">{p.title}</h5>
+                                <p className="text-xxs font-medium text-slate-500 mt-1 line-clamp-3">{p.description}</p>
+                              </div>
+                              
+                              {p.live_url && (
+                                <div className="mt-3.5 pt-3 border-t border-slate-100 flex justify-between items-center">
+                                  <span className="text-[9px] font-extrabold text-slate-400 uppercase">Project Link:</span>
+                                  <a
+                                    href={p.live_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-teal-700 hover:text-teal-800 text-xxs font-black flex items-center gap-1 hover:underline cursor-pointer"
+                                  >
+                                    <span>View Live Project</span>
+                                    <i className="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Timeline section: Experience, Education, Certifications */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+                      {/* Experience */}
+                      <div>
+                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Experience</h4>
+                        {selectedFreelancerFullProfile?.experiences && selectedFreelancerFullProfile.experiences.length > 0 ? (
+                          <div className="space-y-3.5">
+                            {selectedFreelancerFullProfile.experiences.map((exp: any, idx: number) => (
+                              <div key={idx} className="border-l-2 border-teal-500/50 pl-3">
+                                <h5 className="text-xxs font-black text-slate-850 truncate">{exp.title}</h5>
+                                <p className="text-[10px] font-bold text-slate-500 mt-0.5">{exp.company_name}</p>
+                                <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">{exp.start_date} - {exp.current_job ? "Present" : exp.end_date}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xxs font-bold text-slate-400 italic">No experience logged.</p>
+                        )}
+                      </div>
+
+                      {/* Education */}
+                      <div>
+                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Education</h4>
+                        {selectedFreelancerFullProfile?.education && selectedFreelancerFullProfile.education.length > 0 ? (
+                          <div className="space-y-3.5">
+                            {selectedFreelancerFullProfile.education.map((edu: any, idx: number) => (
+                              <div key={idx} className="border-l-2 border-slate-300 pl-3">
+                                <h5 className="text-xxs font-black text-slate-850 truncate">{edu.degree}</h5>
+                                <p className="text-[10px] font-bold text-slate-500 mt-0.5">{edu.institution}</p>
+                                <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">Graduated {edu.end_date}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xxs font-bold text-slate-400 italic">No education logged.</p>
+                        )}
+                      </div>
+
+                      {/* Certifications */}
+                      <div>
+                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Certifications</h4>
+                        {selectedFreelancerFullProfile?.certifications && selectedFreelancerFullProfile.certifications.length > 0 ? (
+                          <div className="space-y-3.5">
+                            {selectedFreelancerFullProfile.certifications.map((c: any, idx: number) => (
+                              <div key={idx} className="border-l-2 border-slate-350 pl-3">
+                                <h5 className="text-xxs font-black text-slate-850 truncate">{c.name}</h5>
+                                <p className="text-[10px] font-bold text-slate-500 mt-0.5">{c.issuing_organization}</p>
+                                <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">Issued {c.issue_date}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xxs font-bold text-slate-400 italic">No certifications logged.</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer Action buttons */}
+                <div className="mt-8 pt-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                  <button
+                    onClick={() => {
+                      setSelectedFreelancerProfile(null);
+                      setShowHireWizard(false);
+                    }}
+                    className="px-5 py-2.5 rounded-xl font-bold text-xs border border-slate-200 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/60 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  {userRole === "client" && (
+                    <button
+                      onClick={() => {
+                        setShowHireWizard(true);
+                        setHireBidAmount(parseFloat(selectedFreelancerProfile.hourlyRate || selectedFreelancerProfile.hourly_rate || "45") * 40); // default 40 hours equivalent
+                        setHireDeliveryDays(14);
+                        // Pre-populate open job list
+                        if (clientJobs.length > 0) {
+                          const openJobs = clientJobs.filter(j => j.status === "Open");
+                          if (openJobs.length > 0) {
+                            setSelectedExistingJobId(openJobs[0].job_id.toString());
+                          } else {
+                            setHireJobMode("new");
+                          }
+                        } else {
+                          setHireJobMode("new");
+                        }
+                      }}
+                      className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 hover:scale-[1.02] active:scale-95"
+                    >
+                      <span>Hire Freelancer</span>
+                      <i className="fa-solid fa-briefcase"></i>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSendDirectHireSubmit} className="flex-1 flex flex-col overflow-y-auto pr-1">
+                <div className="border-b border-slate-100 pb-4 text-slate-800">
+                  <span className="text-[10px] font-bold text-teal-700 tracking-widest uppercase mb-1">Direct Offer Wizard</span>
+                  <h2 className="text-base font-black text-slate-850">Hire Offer to {selectedFreelancerProfile.name}</h2>
+                  <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Send a project proposal invitation directly to the freelancer. Escalates to escrow payment upon accept.</p>
+                </div>
+
+                <div className="mt-5 space-y-5 text-slate-800">
+                  {directHireError && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-1.5">
+                      <FiAlertTriangle className="w-4 h-4 shrink-0" />
+                      <span>{directHireError}</span>
+                    </div>
+                  )}
+
+                  {/* 1. Job linking mode selector */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Project Attachment *</label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setHireJobMode("existing");
+                          const openJobs = clientJobs.filter(j => j.status === "Open");
+                          if (openJobs.length > 0) setSelectedExistingJobId(openJobs[0].job_id.toString());
+                        }}
+                        className={`flex-1 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                          hireJobMode === "existing"
+                            ? "bg-teal-50 border-teal-350 text-teal-850"
+                            : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        <i className="fa-solid fa-folder-open text-sm"></i>
+                        <span>Select Existing Project</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHireJobMode("new")}
+                        className={`flex-1 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                          hireJobMode === "new"
+                            ? "bg-teal-50 border-teal-350 text-teal-850"
+                            : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
+                        }`}
+                      >
+                        <i className="fa-solid fa-circle-plus text-sm"></i>
+                        <span>Create New Project Inline</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2. Job selector dropdown or fields */}
+                  {hireJobMode === "existing" ? (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Select Open Project *</label>
+                      {clientJobs.filter((j) => j.status === "Open").length > 0 ? (
+                        <select
+                          value={selectedExistingJobId}
+                          onChange={(e) => setSelectedExistingJobId(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-700/50 focus:outline-none"
+                        >
+                          {clientJobs
+                            .filter((j) => j.status === "Open")
+                            .map((job) => (
+                              <option key={job.job_id} value={job.job_id}>
+                                {job.title} (${parseFloat(job.budget).toLocaleString()})
+                              </option>
+                            ))}
+                        </select>
+                      ) : (
+                        <div className="p-3 bg-amber-50 border border-amber-200/50 text-amber-700 text-xxs font-bold rounded-xl flex items-center gap-1.5">
+                          <span>You have no open projects. Please select "Create New Project Inline" instead.</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4 bg-slate-50/50 border border-slate-200 p-4 rounded-2xl">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Project Title *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Design Figma layouts and frontend mockups"
+                          value={newJobTitle}
+                          onChange={(e) => setNewJobTitle(e.target.value)}
+                          className="w-full bg-white border border-slate-250 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-700/50 focus:outline-none font-bold"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Project Description *</label>
+                        <textarea
+                          required
+                          rows={4}
+                          placeholder="Provide a detailed description of the project requirements, expectations, and goals..."
+                          value={newJobDesc}
+                          onChange={(e) => setNewJobDesc(e.target.value)}
+                          className="w-full bg-white border border-slate-250 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-700/50 focus:outline-none resize-none font-medium"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. Bid amount & Delivery Days */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Offer Budget Amount (USD) *</label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 font-bold text-xs">
+                          $
+                        </span>
+                        <input
+                          type="number"
+                          required
+                          min="1"
+                          placeholder="e.g. 1500"
+                          value={hireBidAmount || ""}
+                          onChange={(e) => setHireBidAmount(Number(e.target.value))}
+                          className="w-full bg-slate-50/50 border border-slate-250 rounded-xl py-2.5 pl-7 pr-4 text-xs focus:border-teal-700/50 focus:outline-none focus:bg-white transition-all text-slate-850 font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Delivery Limit (Days) *</label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        placeholder="e.g. 10"
+                        value={hireDeliveryDays || ""}
+                        onChange={(e) => setHireDeliveryDays(Number(e.target.value))}
+                        className="w-full bg-slate-50/50 border border-slate-250 rounded-xl py-2.5 px-4 text-xs focus:border-teal-700/50 focus:outline-none focus:bg-white transition-all text-slate-850 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 4. Milestones builder */}
+                  <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200 p-4 rounded-2xl">
+                    <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Define Contract Milestones ({hireMilestones.length})</h4>
+                    
+                    {hireMilestones.length > 0 && (
+                      <div className="flex flex-col gap-2">
+                        {hireMilestones.map((m, idx) => (
+                          <div key={idx} className="bg-white border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-black text-slate-500 shrink-0">
+                                {idx + 1}
+                              </span>
+                              <p className="font-bold text-slate-800 truncate">{m.title}</p>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="font-extrabold text-slate-700">${m.amount.toLocaleString()}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveHM(idx)}
+                                className="text-rose-500 hover:text-rose-700 font-bold hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-100 transition-all cursor-pointer"
+                              >
+                                <i className="fa-solid fa-trash-can text-xs"></i>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end border-t border-slate-150/40 pt-3 mt-1">
+                      <div className="sm:col-span-8 flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Milestone Name *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Design mockups"
+                          value={newHMTitle}
+                          onChange={(e) => setNewHMTitle(e.target.value)}
+                          className="w-full bg-white border border-slate-250 rounded-lg py-2 px-3 text-xs focus:border-teal-700/50 focus:outline-none text-slate-850 font-bold"
+                        />
+                      </div>
+                      <div className="sm:col-span-3 flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-slate-400 uppercase">Amount (USD) *</label>
+                        <input
+                          type="number"
+                          placeholder="Amount"
+                          value={newHMAmount}
+                          onChange={(e) => setNewHMAmount(e.target.value !== "" ? Number(e.target.value) : "")}
+                          className="w-full bg-white border border-slate-250 rounded-lg py-2 px-3 text-xs focus:border-teal-700/50 focus:outline-none text-slate-850 font-bold"
+                        />
+                      </div>
+                      <div className="sm:col-span-1 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={handleAddHM}
+                          className="bg-teal-700 hover:bg-teal-800 text-white w-full h-[34px] rounded-lg shadow-sm transition-all flex items-center justify-center cursor-pointer hover:scale-[1.02]"
+                        >
+                          <span className="font-extrabold text-sm">+</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[10px] font-extrabold uppercase mt-2 pt-2 border-t border-slate-100">
+                      <span className="text-slate-450">Milestones sum:</span>
+                      <span className={`text-xs ${
+                        hireMilestones.reduce((sum, m) => sum + m.amount, 0) > hireBidAmount
+                          ? "text-rose-600 font-black"
+                          : "text-slate-700 font-black"
+                      }`}>
+                        ${hireMilestones.reduce((sum, m) => sum + m.amount, 0).toLocaleString()} / ${hireBidAmount.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 5. Cover letter / offer pitch */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Offer Invitation Message (Pitch) *</label>
+                    <textarea
+                      required
+                      rows={4}
+                      placeholder="Hi, I loved your profile and portfolio. I'd love to hire you directly to work on my project..."
+                      value={hirePitch}
+                      onChange={(e) => setHirePitch(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-700/50 focus:bg-white focus:outline-none resize-none font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowHireWizard(false);
+                      setDirectHireError("");
+                    }}
+                    className="px-5 py-2.5 rounded-xl font-bold text-xs border border-slate-200 text-slate-500 hover:text-slate-850 bg-slate-100 hover:bg-slate-200/60 transition-all cursor-pointer"
+                  >
+                    Back to Profile
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingDirectHire}
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                  >
+                    {submittingDirectHire ? "Sending Request..." : "Send Hire Offer"}
+                    <FiCheck className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

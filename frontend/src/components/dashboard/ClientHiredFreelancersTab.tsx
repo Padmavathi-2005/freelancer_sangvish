@@ -109,7 +109,7 @@ export default function ClientHiredFreelancersTab({
                           key={idx}
                           onClick={async () => {
                             const token = localStorage.getItem("token");
-                            const res = await fetch(`http://localhost:5000/api/jobs/client`, {
+                            const res = await fetch(`https://freelancer.sangvish.com/api/jobs/client`, {
                               headers: { Authorization: `Bearer ${token}` }
                             });
                             if (res.ok) {
@@ -140,7 +140,7 @@ export default function ClientHiredFreelancersTab({
                           key={idx}
                           onClick={async () => {
                             const token = localStorage.getItem("token");
-                            const res = await fetch("http://localhost:5000/api/freelancer/client/gigs/applications", {
+                            const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs/applications", {
                               headers: { Authorization: `Bearer ${token}` }
                             });
                             if (res.ok) {

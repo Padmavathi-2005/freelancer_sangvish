@@ -5,8 +5,8 @@ import Table from "@/components/Table";
 import { VettingApplication } from "@/app/admin/AdminContext";
 
 interface ProjectsTabProps {
-  projectsSubTab: "projects" | "vetting";
-  setProjectsSubTab: (tab: "projects" | "vetting") => void;
+  projectsSubTab: "projects" | "vetting" | "proposals";
+  setProjectsSubTab: (tab: "projects" | "vetting" | "proposals") => void;
   projectsSearch: string;
   setProjectsSearch: (v: string) => void;
   paginatedProjects: any[];
@@ -20,6 +20,9 @@ interface ProjectsTabProps {
 
   vettingApps: VettingApplication[];
   updateVettingStatus: (id: string, newStatus: VettingApplication["status"]) => void;
+
+  pendingProposals?: any[];
+  handleUpdateProposalVettingStatus?: (proposalId: number, status: "Approved" | "Rejected") => Promise<void>;
 }
 
 export default function ProjectsTab({
@@ -36,7 +39,9 @@ export default function ProjectsTab({
   handleUpdateProjectStatus,
   handleDeleteProject,
   vettingApps,
-  updateVettingStatus
+  updateVettingStatus,
+  pendingProposals,
+  handleUpdateProposalVettingStatus
 }: ProjectsTabProps) {
 
   const projectColumns = [
@@ -93,6 +98,67 @@ export default function ProjectsTab({
     }
   ];
 
+  const proposalColumns = [
+    {
+      header: "S.No",
+      accessor: (row: any, idx: number) => idx + 1
+    },
+    {
+      header: "Project",
+      accessor: (row: any) => <div className="font-bold text-slate-800">{row.job_title}</div>
+    },
+    {
+      header: "Client",
+      accessor: (row: any) => (
+        <div>
+          <div className="font-semibold text-slate-700">{row.client_name}</div>
+          <div className="text-[10px] text-slate-400">{row.client_email}</div>
+        </div>
+      )
+    },
+    {
+      header: "Freelancer",
+      accessor: (row: any) => (
+        <div>
+          <div className="font-semibold text-slate-700">{row.freelancer_name}</div>
+          <div className="text-[10px] text-slate-400">{row.freelancer_email}</div>
+        </div>
+      )
+    },
+    {
+      header: "Bid / Delivery",
+      accessor: (row: any) => (
+        <div>
+          <div className="font-extrabold text-teal-600">${Number(row.bid_amount).toLocaleString()}</div>
+          <div className="text-[10px] text-slate-500">{row.delivery_days} days</div>
+        </div>
+      )
+    },
+    {
+      header: "Cover Letter",
+      accessor: (row: any) => <div className="max-w-[200px] truncate text-slate-600" title={row.cover_letter}>{row.cover_letter}</div>
+    },
+    {
+      header: "Actions",
+      accessor: (row: any) => (
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleUpdateProposalVettingStatus && handleUpdateProposalVettingStatus(row.proposal_id, "Approved")}
+            className="px-2.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-[10px] font-bold rounded-lg cursor-pointer"
+          >
+            Approve
+          </button>
+          <button
+            onClick={() => handleUpdateProposalVettingStatus && handleUpdateProposalVettingStatus(row.proposal_id, "Rejected")}
+            className="px-2.5 py-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 hover:bg-rose-600 hover:text-white transition-all text-[10px] font-bold rounded-lg cursor-pointer"
+          >
+            Reject
+          </button>
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
       {/* Project management sub tabs */}
@@ -116,6 +182,16 @@ export default function ProjectsTab({
           }`}
         >
           Talent vetting queue
+        </button>
+        <button
+          onClick={() => setProjectsSubTab("proposals")}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            projectsSubTab === "proposals" 
+              ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
+              : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Proposal vetting queue
         </button>
       </div>
 
@@ -152,7 +228,7 @@ export default function ProjectsTab({
             emptyMessage="No project listings found."
           />
         </div>
-      ) : (
+      ) : projectsSubTab === "vetting" ? (
         <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
           <div>
             <h3 className="text-lg font-bold text-slate-805">Talent Vetting Queue</h3>
@@ -246,6 +322,23 @@ export default function ProjectsTab({
               ))}
             </div>
           )}
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm text-left">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Proposal Vetting Queue</h3>
+            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Approve or reject bids submitted by freelancers before clients can see them.</p>
+          </div>
+          <Table
+            columns={proposalColumns}
+            data={pendingProposals || []}
+            currentPage={1}
+            totalPages={1}
+            onPageChange={() => {}}
+            totalItems={(pendingProposals || []).length}
+            itemsPerPage={100}
+            emptyMessage="No pending proposals to vet."
+          />
         </div>
       )}
     </div>

@@ -4,7 +4,7 @@ let socket: Socket | null = null;
 
 export const initSocket = (userId: string | number): Socket => {
   if (!socket) {
-    socket = io("http://localhost:5000", {
+    socket = io("https://freelancer.sangvish.com", {
       query: { userId: userId.toString() },
       autoConnect: true,
       transports: ["websocket", "polling"]

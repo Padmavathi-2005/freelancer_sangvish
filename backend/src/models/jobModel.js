@@ -20,7 +20,9 @@ export const Job = {
     languages,
     maxHours,
     paymentMode,
-    status
+    status,
+    slug = null,
+    seo = null
   ) => {
     const query = `
       INSERT INTO jobs (
@@ -42,9 +44,11 @@ export const Job = {
         languages,
         max_hours,
         payment_mode,
-        status
+        status,
+        slug,
+        seo
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *
     `;
     const values = [
@@ -66,7 +70,9 @@ export const Job = {
       languages ? JSON.stringify(languages) : null,
       maxHours ? parseInt(maxHours) : null,
       paymentMode || null,
-      status || 'Open'
+      status || 'Open',
+      slug,
+      seo ? JSON.stringify(seo) : null
     ];
 
     const result = await pool.query(query, values);
@@ -93,7 +99,9 @@ export const Job = {
     languages,
     maxHours,
     paymentMode,
-    status
+    status,
+    slug = null,
+    seo = null
   ) => {
     const query = `
       UPDATE jobs
@@ -116,6 +124,8 @@ export const Job = {
         max_hours = $18,
         payment_mode = $19,
         status = $20,
+        slug = $21,
+        seo = $22,
         updated_at = CURRENT_TIMESTAMP
       WHERE job_id = $1 AND client_id = $2
       RETURNING *
@@ -140,7 +150,9 @@ export const Job = {
       languages ? JSON.stringify(languages) : null,
       maxHours ? parseInt(maxHours) : null,
       paymentMode || null,
-      status || 'Open'
+      status || 'Open',
+      slug,
+      seo ? JSON.stringify(seo) : null
     ];
 
     const result = await pool.query(query, values);
@@ -152,10 +164,18 @@ export const Job = {
       SELECT 
         j.*,
         cat.category_name,
-        sub.sub_category_name
+        sub.sub_category_name,
+        c.status AS contract_status,
+        c.progress AS contract_progress,
+        c.contract_id
       FROM jobs j
       LEFT JOIN categories cat ON j.category_id = cat.category_id
       LEFT JOIN sub_categories sub ON j.sub_category_id = sub.sub_category_id
+      LEFT JOIN (
+        SELECT DISTINCT ON (job_id) *
+        FROM contracts
+        ORDER BY job_id, created_at DESC
+      ) c ON j.job_id = c.job_id
       WHERE j.client_id = $1
       ORDER BY j.created_at DESC
     `;
@@ -163,11 +183,11 @@ export const Job = {
     return result.rows;
   },
 
-  findAllActive: async () => {
-    const query = `
+  findAllActive: async (excludeUserId = null) => {
+    let query = `
       SELECT 
         j.*,
-        u.first_name || ' ' || u.last_name as client_name,
+        u.first_name || ' ' || COALESCE(u.last_name, '') as client_name,
         u.email as client_email,
         cp.company_name,
         cp.industry,
@@ -179,9 +199,17 @@ export const Job = {
       LEFT JOIN categories cat ON j.category_id = cat.category_id
       LEFT JOIN sub_categories sub ON j.sub_category_id = sub.sub_category_id
       WHERE j.status = 'Open'
-      ORDER BY j.created_at DESC
     `;
-    const result = await pool.query(query);
+    
+    const values = [];
+    if (excludeUserId) {
+      query += ` AND j.client_id != $1`;
+      values.push(parseInt(excludeUserId));
+    }
+    
+    query += ` ORDER BY j.created_at DESC`;
+    
+    const result = await pool.query(query, values);
     return result.rows;
   }
 };

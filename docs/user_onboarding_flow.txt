@@ -1,0 +1,55 @@
+================================================================================
+FREEALNCER PLATFORM - USER LOGIN & ONBOARDING VETTING FLOW
+================================================================================
+
+1. USER REGISTRATION & INITIAL STATE
+-------------------------------------
+- A new user signs up by entering their email, first name, last name, and password.
+- A base user record is created in the PostgreSQL `users` table.
+- At registration, the user does NOT have any profiles (Client Profile or Freelancer Profile) created yet.
+- An authentication JWT token is generated, and the user is logged in.
+
+2. ROLE TRACK SELECTION (FIRST LANDING ON DASHBOARD)
+------------------------------------------------------
+- Upon landing on the `/dashboard` route, the frontend fetches the user's status from `/api/users/onboarding-check`.
+- If `onboarding_role` is NOT set in the user's browser LocalStorage:
+  - The frontend opens the Onboarding modal overlay starting at the "Role Selection" step.
+  - The modal prompts: "How do you plan to use our platform?" with two choices:
+    * "Freelancer Workspace" (to offer services and apply to gigs)
+    * "Client Workspace" (to post jobs, hire, and make orders)
+  - Selecting a workspace sets the role in LocalStorage (`onboarding_role = "client"` or `"freelancer"`), sets the view state, and navigates them into the respective setup wizard flow.
+
+3. PROFILE CREATION WIZARD (ONBOARDING DETAILS)
+-----------------------------------------------
+- Based on the chosen track:
+  * Freelancer Flow: The user fills out details (Professional title, experience level, rate, skills, languages, profile pictures). On final submission, a record is inserted into the `freelancer_profiles` table in the database.
+  * Client Flow: The user fills out organization details (Company name, website, size, description, designation). On final submission, a record is inserted into the `client_profiles` table in the database.
+- Once submitted, the corresponding profile's `onboarding_completed` is set to `true`.
+
+4. VETTING & REVIEW POLICY (PENDING OR AUTO-APPROVE)
+----------------------------------------------------
+- When a profile is submitted, the initial `vetting_status` is determined:
+  * Freelancer Profiles: Always default to 'Pending'. They must be reviewed manually by an administrator.
+  * Client Profiles: Depend on the admin panel configuration setting `enable_client_vetting` in the `settings` table:
+    - If `enable_client_vetting` is "true": Initial vetting status is set to 'Pending'.
+    - If `enable_client_vetting` is "false": Initial vetting status is set to 'Approved' automatically.
+
+5. SIDEBAR NAVIGATION LOCKS & WARNING BANNERS
+-----------------------------------------------
+- When a user is logged in, their sidebar navigation links and active dashboard modules are fully locked (disabled, unclickable with 50% opacity) if their profile is incomplete or pending vetting.
+- Specifically, the check is:
+  `isProfileIncomplete = !onboardingCompleted || vettingStatus === "Pending"`
+- Banners are displayed at the very top of the dashboard content area (under the header) to notify the user of their status:
+  * "Profile Onboarding Pending" (Red Alert Banner): If `onboardingCompleted` is false. Offers a "Complete Onboarding" button to resume/reopen the modal.
+  * "Onboarding Profile Under Review" (Amber Warning Banner): If `onboardingCompleted` is true, but `vettingStatus === "Pending"`. Notifies the user that the admin team is reviewing their credentials.
+
+6. ADMIN VETTING QUEUES (APPROVAL & UNLOCKING)
+-----------------------------------------------
+- The administrator logs into the Admin Control Terminal.
+- Under the "Onboarding directory" page, there are separate tables/queues for "Freelancers" and "Clients".
+- The admin reviews the pending details and can click "Approve" or "Reject".
+- When "Approve" is clicked:
+  - The profile's `vetting_status` is updated to 'Approved'.
+  - A real-time notification is pushed to the user via Socket.io.
+  - On the next reload/check, `vettingStatus` resolves to 'Approved', `isProfileIncomplete` becomes false, the warning banners disappear, and all sidebar navigation links unlock automatically!
+================================================================================

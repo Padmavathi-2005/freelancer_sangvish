@@ -1,20 +1,29 @@
 import express from "express";
-import auth from "../middleware/auth.js";
+import { auth, checkApprovedFreelancer } from "../middleware/auth.js";
 import {
   createJob,
   getClientJobs,
   getAllJobs,
-  updateJob
+  updateJob,
+  validateJobSlug,
+  getJobBySlugOrId
 } from "../controllers/jobController.js";
 
 const router = express.Router();
 
-// Apply auth middleware to all job routes
+// Public routes to fetch jobs (no auth needed)
+router.get("/public", getAllJobs);
+router.get("/public/:slugOrId", getJobBySlugOrId);
+
+// Apply auth middleware to all other job routes
 router.use(auth);
 
+// Validate job slug route
+router.get("/validate-slug", validateJobSlug);
+
 // Job routes
-router.post("/", createJob);
-router.put("/:id", updateJob);
+router.post("/", checkApprovedFreelancer, createJob);
+router.put("/:id", checkApprovedFreelancer, updateJob);
 router.get("/client", getClientJobs);
 router.get("/", getAllJobs);
 

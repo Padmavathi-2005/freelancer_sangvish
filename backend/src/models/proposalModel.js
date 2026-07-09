@@ -1,7 +1,7 @@
 import pool from '../config/db.js';
 
 export const Proposal = {
-  create: async (jobId, freelancerId, coverLetter, bidAmount, deliveryDays, milestones) => {
+  create: async (jobId, freelancerId, coverLetter, bidAmount, deliveryDays, milestones, status = 'Pending') => {
     const query = `
       INSERT INTO proposals (
         job_id,
@@ -9,9 +9,10 @@ export const Proposal = {
         cover_letter,
         bid_amount,
         delivery_days,
-        milestones
+        milestones,
+        status
       )
-      VALUES ($1, $2, $3, $4, $5, $6)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
     const values = [
@@ -20,7 +21,8 @@ export const Proposal = {
       coverLetter,
       parseFloat(bidAmount),
       parseInt(deliveryDays),
-      milestones ? JSON.stringify(milestones) : null
+      milestones ? JSON.stringify(milestones) : null,
+      status
     ];
 
     const result = await pool.query(query, values);
@@ -32,15 +34,41 @@ export const Proposal = {
       SELECT 
         p.*,
         j.title as job_title,
+        j.description as job_description,
         j.budget as job_budget,
         j.experience_level as job_experience_level,
-        u.first_name || ' ' || u.last_name as client_name,
+        j.project_type as job_project_type,
+        j.location as job_location,
+        j.duration as job_duration,
+        j.num_freelancers as job_num_freelancers,
+        j.skills as job_skills,
+        j.languages as job_languages,
+        CONCAT(u.first_name, ' ', u.last_name) as client_name,
         u.email as client_email,
-        cp.company_name as client_company_name
+        cp.company_name as client_company_name,
+        cat.category_name,
+        sub.sub_category_name,
+        (
+          SELECT status FROM contracts 
+          WHERE (application_id = p.proposal_id OR (job_id = p.job_id AND freelancer_id = p.freelancer_id AND application_id IS NULL))
+          ORDER BY contract_id DESC LIMIT 1
+        ) as contract_status,
+        (
+          SELECT contract_id FROM contracts 
+          WHERE (application_id = p.proposal_id OR (job_id = p.job_id AND freelancer_id = p.freelancer_id AND application_id IS NULL))
+          ORDER BY contract_id DESC LIMIT 1
+        ) as contract_id,
+        (
+          SELECT disputed_at FROM contracts 
+          WHERE (application_id = p.proposal_id OR (job_id = p.job_id AND freelancer_id = p.freelancer_id AND application_id IS NULL))
+          ORDER BY contract_id DESC LIMIT 1
+        ) as contract_disputed_at
       FROM proposals p
       JOIN jobs j ON p.job_id = j.job_id
       JOIN users u ON j.client_id = u.user_id
       LEFT JOIN client_profiles cp ON u.user_id = cp.user_id
+      LEFT JOIN categories cat ON j.category_id = cat.category_id
+      LEFT JOIN sub_categories sub ON j.sub_category_id = sub.sub_category_id
       WHERE p.freelancer_id = $1
       ORDER BY p.created_at DESC
     `;
@@ -52,15 +80,25 @@ export const Proposal = {
     const query = `
       SELECT 
         p.*,
-        u.first_name || ' ' || u.last_name as freelancer_name,
+        CONCAT(u.first_name, ' ', u.last_name) as freelancer_name,
         u.email as freelancer_email,
         u.profile_image as freelancer_profile_image,
         fp.professional_title as freelancer_title,
-        fp.hourly_rate as freelancer_hourly_rate
+        fp.hourly_rate as freelancer_hourly_rate,
+        (
+          SELECT status FROM contracts 
+          WHERE (application_id = p.proposal_id OR (job_id = p.job_id AND freelancer_id = p.freelancer_id AND application_id IS NULL))
+          ORDER BY contract_id DESC LIMIT 1
+        ) as contract_status,
+        (
+          SELECT disputed_at FROM contracts 
+          WHERE (application_id = p.proposal_id OR (job_id = p.job_id AND freelancer_id = p.freelancer_id AND application_id IS NULL))
+          ORDER BY contract_id DESC LIMIT 1
+        ) as contract_disputed_at
       FROM proposals p
       JOIN users u ON p.freelancer_id = u.user_id
       LEFT JOIN freelancer_profiles fp ON u.user_id = fp.user_id
-      WHERE p.job_id = $1
+      WHERE p.job_id = $1 AND p.status != 'Pending Approval'
       ORDER BY p.created_at DESC
     `;
     const result = await pool.query(query, [parseInt(jobId)]);

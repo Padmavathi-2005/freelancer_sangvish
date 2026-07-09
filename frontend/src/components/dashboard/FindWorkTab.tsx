@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useRef, useState } from "react";
+import { FiChevronLeft, FiChevronRight, FiAlertTriangle, FiX } from "react-icons/fi";
 
 interface FindWorkTabProps {
   userRole: string | null;
@@ -17,6 +18,8 @@ interface FindWorkTabProps {
   loadingAllJobs: boolean;
   allJobs: any[];
   appliedJobIds: Set<number>;
+  proposalLimitReached: boolean;
+  proposalLimitMsg: string;
   setApplyingJob: (job: any) => void;
   setProposalBidAmount: (amount: number) => void;
   setProposalDeliveryDays: (days: number) => void;
@@ -43,6 +46,8 @@ export default function FindWorkTab({
   loadingAllJobs,
   allJobs,
   appliedJobIds,
+  proposalLimitReached,
+  proposalLimitMsg,
   setApplyingJob,
   setProposalBidAmount,
   setProposalDeliveryDays,
@@ -51,6 +56,36 @@ export default function FindWorkTab({
   setShowProposalModal,
   setSelectedFreelancerProfile,
 }: FindWorkTabProps) {
+  const catScrollRef = useRef<HTMLDivElement>(null);
+  const [showLimitModal, setShowLimitModal] = useState(false);
+
+  const scrollCats = (dir: "left" | "right") => {
+    if (catScrollRef.current) {
+      catScrollRef.current.scrollBy({ left: dir === "right" ? 240 : -240, behavior: "smooth" });
+    }
+  };
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const catName = params.get("categoryName");
+      const subCatName = params.get("subCategoryName");
+      if (subCatName) {
+        if (userRole === "client") {
+          setSearchQuery(subCatName);
+        } else {
+          setJobSearchQuery(subCatName);
+        }
+      } else if (catName) {
+        if (userRole === "client") {
+          setSearchQuery(catName);
+        } else {
+          setJobSearchQuery(catName);
+        }
+      }
+    }
+  }, [userRole]);
+
   if (userRole === "client") {
     return (
       <div className="relative z-10 flex flex-col gap-8 w-full animate-fadeIn text-left text-slate-800">
@@ -224,24 +259,75 @@ export default function FindWorkTab({
         </div>
       </div>
 
-      {/* Category tabs */}
-      <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none no-scrollbar">
-        {[
-          { id: "all", label: "All Categories" },
-          ...gigCategories.map((c) => ({ id: c.category_name, label: c.category_name }))
-        ].map((category) => (
-          <button
-            key={category.id}
-            onClick={() => setJobSelectedCategory(category.id)}
-            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
-              jobSelectedCategory === category.id
-                ? "bg-primary text-white shadow-md shadow-primary/10"
-                : "bg-white text-slate-500 border border-slate-205 hover:text-slate-850 hover:bg-slate-50"
-            }`}
+      {/* ─── Category Filter Strip ─── */}
+      <div className="relative flex items-center gap-1">
+        {/* Left fade + scroll button */}
+        <button
+          onClick={() => scrollCats("left")}
+          className="hidden sm:flex shrink-0 w-8 h-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary/40 shadow-sm transition-all cursor-pointer z-10"
+        >
+          <FiChevronLeft className="w-4 h-4" />
+        </button>
+
+        {/* Scroll container with gradient fade on both sides */}
+        <div className="relative flex-1 overflow-hidden">
+          {/* Left fade */}
+          <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-50 to-transparent z-10" />
+          {/* Right fade */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-50 to-transparent z-10" />
+
+          <div
+            ref={catScrollRef}
+            className="flex gap-2 overflow-x-auto scrollbar-none no-scrollbar px-3 py-1.5"
           >
-            {category.label}
-          </button>
-        ))}
+            {[
+              { id: "all", label: "All Categories" },
+              ...gigCategories.map((c) => ({ id: c.category_name, label: c.category_name }))
+            ].map((category) => {
+              const isActive = jobSelectedCategory === category.id;
+              // count matching jobs for this category
+              const count = category.id === "all"
+                ? allJobs.length
+                : allJobs.filter((j) => j.category_name === category.id).length;
+              return (
+                <button
+                  key={category.id}
+                  onClick={() => setJobSelectedCategory(category.id)}
+                  className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer shrink-0 group ${
+                    isActive
+                      ? "bg-primary text-white shadow-md shadow-primary/20 scale-[1.04]"
+                      : "bg-white text-slate-500 border border-slate-200 hover:border-primary/40 hover:text-primary hover:bg-primary/5"
+                  }`}
+                >
+                  <span>{category.label}</span>
+                  {count > 0 && (
+                    <span
+                      className={`inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[9px] font-black px-1 transition-all ${
+                        isActive
+                          ? "bg-white/25 text-white"
+                          : "bg-slate-100 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
+                  {/* Active underline indicator */}
+                  {isActive && (
+                    <span className="absolute -bottom-[3px] left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white opacity-70" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right scroll button */}
+        <button
+          onClick={() => scrollCats("right")}
+          className="hidden sm:flex shrink-0 w-8 h-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:text-primary hover:border-primary/40 shadow-sm transition-all cursor-pointer z-10"
+        >
+          <FiChevronRight className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Job Cards */}
@@ -280,12 +366,47 @@ export default function FindWorkTab({
                 jobSelectedCategory === "all" || job.category_name === jobSelectedCategory;
               return matchesSearch && matchesCategory;
             })
-            .map((job) => (
-              <div key={job.job_id} className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col gap-4 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
+            .map((job) => {
+              const isApplied = appliedJobIds.has(job.job_id);
+              const handleCardClick = () => {
+                if (!isApplied) {
+                  if (proposalLimitReached) {
+                    setShowLimitModal(true);
+                  } else {
+                    setApplyingJob(job);
+                    setProposalBidAmount(parseFloat(job.budget || 0));
+                    setProposalDeliveryDays(7);
+                    setProposalCoverLetter("");
+                    setProposalError("");
+                    setShowProposalModal(true);
+                  }
+                }
+              };
+              return (
+                <div
+                  key={job.job_id}
+                  onClick={handleCardClick}
+                  className={`bg-white border rounded-2xl p-6 shadow-sm transition-all duration-300 flex flex-col gap-4 relative overflow-hidden ${
+                    isApplied
+                      ? "border-emerald-200 bg-emerald-50/20"
+                      : "border-slate-200/80 hover:shadow-md cursor-pointer hover:border-teal-600/40"
+                  }`}
+                >
+                  {/* Top accent bar — green if applied, brand gradient otherwise */}
+                  <div className={`absolute top-0 left-0 w-full h-1 ${
+                    isApplied ? "bg-emerald-500" : "bg-gradient-to-r from-primary to-cyan-500 opacity-80"
+                  }`} />
+
                 <div className="flex justify-between items-start gap-4">
                   <div className="text-left">
-                    <h3 className="text-sm font-extrabold text-slate-850">{job.title}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-extrabold text-slate-850">{job.title}</h3>
+                      {isApplied && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          <i className="fa-solid fa-circle-check"></i> Proposal Submitted
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-slate-400 text-[10px] font-bold">
                         Posted by <strong>{job.company_name || job.client_name}</strong>
@@ -344,7 +465,7 @@ export default function FindWorkTab({
                   </div>
                 )}
                 <div className="flex flex-wrap items-center justify-between pt-4 border-t border-slate-100 mt-2 gap-4">
-                  <div className="flex flex-wrap items-center gap-6 text-slate-505 text-xxs font-bold uppercase tracking-wide">
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-slate-500 text-xxs font-semibold">
                     <div className="flex items-center gap-1.5">
                       <i className="fa-solid fa-wallet text-slate-400"></i>
                       <span>Budget: <strong className="text-slate-700">
@@ -389,32 +510,77 @@ export default function FindWorkTab({
                       </div>
                     )}
                   </div>
-                  {appliedJobIds.has(job.job_id) ? (
+                  {isApplied ? (
                     <button
                       disabled
-                      className="text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 py-2 px-4 rounded-xl cursor-not-allowed flex items-center gap-1.5"
+                      className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 py-2 px-4 rounded-xl cursor-not-allowed flex items-center gap-1.5 select-none"
                     >
-                      <i className="fa-solid fa-circle-check text-emerald-500"></i> Applied
+                      <i className="fa-solid fa-circle-check text-emerald-600"></i> Proposal Submitted
                     </button>
                   ) : (
                     <button
-                      onClick={() => {
-                        setApplyingJob(job);
-                        setProposalBidAmount(parseFloat(job.budget));
-                        setProposalDeliveryDays(7);
-                        setProposalCoverLetter("");
-                        setProposalError("");
-                        setShowProposalModal(true);
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (proposalLimitReached) {
+                          setShowLimitModal(true);
+                        } else {
+                          setApplyingJob(job);
+                          setProposalBidAmount(parseFloat(job.budget));
+                          setProposalDeliveryDays(7);
+                          setProposalCoverLetter("");
+                          setProposalError("");
+                          setShowProposalModal(true);
+                        }
                       }}
                       className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-2 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5"
                     >
                       <i className="fa-solid fa-paper-plane"></i> Submit Proposal
                     </button>
                   )}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           }
+        </div>
+      )}
+      {/* Limit Exceeded Upgrade Popup Modal */}
+      {showLimitModal && (
+        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl relative text-center flex flex-col items-center gap-4 animate-scaleUp">
+            <button 
+              onClick={() => setShowLimitModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 transition cursor-pointer bg-transparent border-none"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shadow-sm mt-2">
+              <FiAlertTriangle className="w-7 h-7" />
+            </div>
+            <h3 className="text-base font-black text-slate-900 tracking-tight mt-1">
+              Proposal Limit Exceeded
+            </h3>
+            <p className="text-xs text-slate-500 font-semibold leading-relaxed px-2">
+              {proposalLimitMsg || "Your monthly proposal limit has been reached."}
+            </p>
+            <div className="flex w-full gap-3 mt-2">
+              <button
+                onClick={() => setShowLimitModal(false)}
+                className="flex-1 py-3 rounded-xl text-xs font-black text-slate-600 border border-slate-200 hover:bg-slate-50 transition cursor-pointer bg-transparent"
+              >
+                Maybe Later
+              </button>
+              <button
+                onClick={() => {
+                  setShowLimitModal(false);
+                  window.location.href = "/pricing";
+                }}
+                className="flex-1 py-3 rounded-xl text-xs font-black text-white bg-teal-600 hover:bg-teal-700 transition shadow-md hover:shadow-teal-600/25 cursor-pointer border-none"
+              >
+                Upgrade Now
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

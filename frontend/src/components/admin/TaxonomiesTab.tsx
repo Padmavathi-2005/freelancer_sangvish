@@ -4,10 +4,11 @@ import React from "react";
 import Table from "@/components/Table";
 import CustomSelect from "@/components/CustomSelect";
 import { Category, Subcategory, Skill } from "@/app/admin/AdminContext";
+import LanguagesCurrenciesTab from "@/components/admin/LanguagesCurrenciesTab";
 
 interface TaxonomiesTabProps {
-  categoriesSubTab: "categories" | "subcategories" | "skills";
-  setCategoriesSubTab: (tab: "categories" | "subcategories" | "skills") => void;
+  categoriesSubTab: "categories" | "subcategories" | "skills" | "languages" | "currencies" | "cleanup";
+  setCategoriesSubTab: (tab: "categories" | "subcategories" | "skills" | "languages" | "currencies" | "cleanup") => void;
   categoriesSearch: string;
   setCategoriesSearch: (v: string) => void;
   paginatedCategories: Category[];
@@ -174,6 +175,35 @@ export default function TaxonomiesTab({
   handleEditSkillClick,
   handleAddSkillClick
 }: TaxonomiesTabProps) {
+  const [cleaning, setCleaning] = React.useState(false);
+
+  const handleCleanDb = async () => {
+    if (!window.confirm("WARNING: This will permanently delete all Gig Orders, Contracts, and Wallet Transactions, and reset all wallet balances to $0.00. Are you sure you want to proceed?")) {
+      return;
+    }
+    setCleaning(true);
+    try {
+      const adminToken = localStorage.getItem("adminToken");
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/clean-data", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${adminToken}`,
+          "Content-Type": "application/json"
+        }
+      });
+      if (res.ok) {
+        alert("Database cleaned successfully and all wallet balances reset to $0.00!");
+      } else {
+        const err = await res.json();
+        alert(err.message || "Failed to clean database.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Network error cleaning database.");
+    } finally {
+      setCleaning(false);
+    }
+  };
 
   const categoryColumns = [
     {
@@ -339,14 +369,84 @@ export default function TaxonomiesTab({
     }
   ];
 
+  const tabName = categoriesSubTab as string;
+  const isLangOrCurr = tabName === "languages" || tabName === "currencies";
+
+  if (tabName === "cleanup") {
+    return (
+      <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm flex flex-col gap-6 animate-fadeIn text-left">
+        <div>
+          <h3 className="text-lg font-black text-slate-800">Database Cleanup & Reset</h3>
+          <p className="text-slate-505 text-xs sm:text-sm mt-0.5">
+            Reset transaction and order data. The following database table records will be permanently deleted:
+          </p>
+        </div>
+
+        <div className="bg-rose-50/50 border border-rose-200/60 rounded-2xl p-6 flex flex-col gap-4">
+          <h4 className="text-xs font-black text-rose-800 uppercase tracking-wider">Affected Tables</h4>
+          <ul className="list-disc pl-5 text-xs text-rose-700 font-semibold space-y-2">
+            <li>
+              <strong>Gigs & Skills (<code>gigs</code>, <code>gig_skills</code>)</strong>:
+              Deletes all listed freelancer services and skill associations.
+            </li>
+            <li>
+              <strong>Jobs & Bid Proposals (<code>jobs</code>, <code>proposals</code>)</strong>:
+              Deletes all client-posted custom jobs and developer bid proposals.
+            </li>
+            <li>
+              <strong>Gig Applications & Orders (<code>gig_applications</code>)</strong>:
+              Deletes all client applications and active/completed gig orders.
+            </li>
+            <li>
+              <strong>Contracts (<code>contracts</code>)</strong>:
+              Deletes all escrow contracts, milestones progress, and project history.
+            </li>
+            <li>
+              <strong>Wallet Transactions & Withdrawals (<code>wallet_transactions</code>, <code>withdrawal_requests</code>)</strong>:
+              Deletes all transfer logs, deposit records, and withdrawal requests.
+            </li>
+            <li>
+              <strong>User & Escrow Wallets (<code>wallets</code>)</strong>:
+              Resets all client, freelancer, and system wallets back to an initial balance of <code>$0.00</code>.
+            </li>
+            <li>
+              <strong>Messages & Conversations (<code>messages</code>, <code>conversations</code>)</strong>:
+              Deletes all chat messages and workspace communication channels.
+            </li>
+          </ul>
+        </div>
+
+        <div className="pt-4 border-t border-slate-100 flex items-center gap-4">
+          <button
+            onClick={handleCleanDb}
+            disabled={cleaning}
+            className="px-6 py-3.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl cursor-pointer transition-all shadow-md shadow-rose-600/10 flex items-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
+          >
+            {cleaning ? "Cleaning Database..." : "Delete All Orders & Transactions Data ✓"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 animate-fadeIn shadow-sm text-left">
+    <div className={`flex flex-col gap-6 animate-fadeIn text-left ${
+      isLangOrCurr
+        ? ""
+        : "bg-white border border-slate-200 rounded-3xl p-6 shadow-sm"
+    }`}>
       
       {/* Main Tab Title Header */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-          <h3 className="text-lg font-bold text-slate-800">Categories & Skills Management</h3>
-          <p className="text-slate-505 text-xs sm:text-sm mt-0.5">Configure developer categories, nested subcategories, and searchable technical skills.</p>
+          <h3 className="text-lg font-bold text-slate-800">
+            {isLangOrCurr ? "Taxonomies, Languages & Currencies" : "Categories & Skills Management"}
+          </h3>
+          <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
+            {isLangOrCurr 
+              ? "Configure supported site languages, dictionary translation keys, and platform currencies." 
+              : "Configure developer categories, nested subcategories, and searchable technical skills."}
+          </p>
         </div>
         
         <div className="flex flex-wrap items-center gap-2 select-none justify-center">
@@ -374,20 +474,22 @@ export default function TaxonomiesTab({
               Delete Selected ({selectedSkillIds.length})
             </button>
           )}
-          <button
-            onClick={() => {
-              if (categoriesSubTab === "categories") {
-                handleAddCategoryClick();
-              } else if (categoriesSubTab === "subcategories") {
-                handleAddSubcategoryClick();
-              } else {
-                handleAddSkillClick();
-              }
-            }}
-            className="px-4 py-2.5 bg-teal-700 hover:bg-teal-800 border border-teal-700/20 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-md shadow-teal-700/10 flex items-center gap-2"
-          >
-            Add {categoriesSubTab === "categories" ? "Category" : categoriesSubTab === "subcategories" ? "Subcategory" : "Skill"}
-          </button>
+          {(categoriesSubTab === "categories" || categoriesSubTab === "subcategories" || categoriesSubTab === "skills") && (
+            <button
+              onClick={() => {
+                if (categoriesSubTab === "categories") {
+                  handleAddCategoryClick();
+                } else if (categoriesSubTab === "subcategories") {
+                  handleAddSubcategoryClick();
+                } else {
+                  handleAddSkillClick();
+                }
+              }}
+              className="px-4 py-2.5 bg-teal-700 hover:bg-teal-800 border border-teal-700/20 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-md shadow-teal-700/10 flex items-center gap-2"
+            >
+              Add {categoriesSubTab === "categories" ? "Category" : categoriesSubTab === "subcategories" ? "Subcategory" : "Skill"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -395,52 +497,81 @@ export default function TaxonomiesTab({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-2">
         
         {/* Sub-tabs */}
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 select-none">
-          <button
-            onClick={() => setCategoriesSubTab("categories")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              categoriesSubTab === "categories" 
-                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
-                : "text-slate-500 hover:text-slate-850"
-            }`}
-          >
-            Categories
-          </button>
-          <button
-            onClick={() => setCategoriesSubTab("subcategories")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              categoriesSubTab === "subcategories" 
-                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
-                : "text-slate-505 hover:text-slate-850"
-            }`}
-          >
-            Subcategories
-          </button>
-          <button
-            onClick={() => setCategoriesSubTab("skills")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              categoriesSubTab === "skills" 
-                ? "bg-white text-slate-850 shadow-sm border border-slate-200/50" 
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            Skills
-          </button>
+        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 select-none flex-wrap gap-1">
+          {!isLangOrCurr ? (
+            <>
+              <button
+                onClick={() => setCategoriesSubTab("categories")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  categoriesSubTab === "categories" 
+                    ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
+                    : "text-slate-500 hover:text-slate-850"
+                }`}
+              >
+                Categories
+              </button>
+              <button
+                onClick={() => setCategoriesSubTab("subcategories")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  categoriesSubTab === "subcategories" 
+                    ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
+                    : "text-slate-505 hover:text-slate-850"
+                }`}
+              >
+                Subcategories
+              </button>
+              <button
+                onClick={() => setCategoriesSubTab("skills")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  categoriesSubTab === "skills" 
+                    ? "bg-white text-slate-850 shadow-sm border border-slate-200/50" 
+                    : "text-slate-500 hover:text-slate-805"
+                }`}
+              >
+                Skills
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setCategoriesSubTab("languages")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  categoriesSubTab === "languages" 
+                    ? "bg-white text-slate-850 shadow-sm border border-slate-200/50" 
+                    : "text-slate-500 hover:text-slate-805"
+                }`}
+              >
+                Language
+              </button>
+              <button
+                onClick={() => setCategoriesSubTab("currencies")}
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  categoriesSubTab === "currencies" 
+                    ? "bg-white text-slate-850 shadow-sm border border-slate-200/50" 
+                    : "text-slate-500 hover:text-slate-805"
+                }`}
+              >
+                Currency
+              </button>
+            </>
+          )}
         </div>
 
         {/* Search Bar */}
-        <div className="w-full md:w-64 relative">
-          <input
-            type="text"
-            placeholder={`Search ${categoriesSubTab}...`}
-            value={categoriesSearch}
-            onChange={(e) => setCategoriesSearch(e.target.value)}
-            className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200"
-          />
-          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
+        {(categoriesSubTab === "categories" || categoriesSubTab === "subcategories" || categoriesSubTab === "skills") && (
+          <div className="w-full md:w-64 relative">
+            <input
+              type="text"
+              placeholder={`Search ${categoriesSubTab}...`}
+              value={categoriesSearch}
+              onChange={(e) => setCategoriesSearch(e.target.value)}
+              className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200"
+            />
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        )}
       </div>
 
       {/* Paginated Table render */}
@@ -492,13 +623,21 @@ export default function TaxonomiesTab({
         />
       )}
 
+      {categoriesSubTab === "languages" && (
+        <LanguagesCurrenciesTab forceTab="languages" />
+      )}
+
+      {categoriesSubTab === "currencies" && (
+        <LanguagesCurrenciesTab forceTab="currencies" />
+      )}
+
       {/* Category Modal */}
       {isCategoryModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/35 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative flex flex-col p-6 sm:p-8 animate-fadeIn text-slate-800">
             <button
               onClick={() => setIsCategoryModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-500 hover:text-slate-700 font-bold text-xs bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-0"
+              className="absolute top-6 right-6 z-20 text-slate-500 hover:text-slate-700 font-bold text-xs bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-0"
             >
               Cancel
             </button>
@@ -555,7 +694,7 @@ export default function TaxonomiesTab({
           <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative flex flex-col p-6 sm:p-8 animate-fadeIn text-slate-800">
             <button
               onClick={() => setIsSubcategoryModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-500 hover:text-slate-700 font-bold text-xs bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-0"
+              className="absolute top-6 right-6 z-20 text-slate-500 hover:text-slate-700 font-bold text-xs bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-0"
             >
               Cancel
             </button>
@@ -623,7 +762,7 @@ export default function TaxonomiesTab({
           <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative flex flex-col p-6 sm:p-8 animate-fadeIn text-slate-800">
             <button
               onClick={() => setIsSkillModalOpen(false)}
-              className="absolute top-6 right-6 text-slate-500 hover:text-slate-700 font-bold text-xs bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-0"
+              className="absolute top-6 right-6 z-20 text-slate-500 hover:text-slate-700 font-bold text-xs bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-0"
             >
               Cancel
             </button>

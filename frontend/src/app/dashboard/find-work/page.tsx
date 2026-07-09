@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import FindWorkTab from "@/components/dashboard/FindWorkTab";
 import { useDashboard } from "../DashboardContext";
 
@@ -22,14 +22,21 @@ export default function FindWorkPage() {
     loadingAllJobs,
     allJobs,
     appliedJobIds,
+    proposalLimitReached,
+    proposalLimitMsg,
     setApplyingJob,
     setProposalBidAmount,
     setProposalDeliveryDays,
     setProposalCoverLetter,
     setProposalError,
     setShowProposalModal,
-    setSelectedFreelancerProfile
+    setSelectedFreelancerProfile,
+    fetchAllJobs
   } = useDashboard();
+
+  useEffect(() => {
+    fetchAllJobs();
+  }, []);
 
   return (
     <FindWorkTab
@@ -49,6 +56,8 @@ export default function FindWorkPage() {
       loadingAllJobs={loadingAllJobs}
       allJobs={allJobs}
       appliedJobIds={appliedJobIds}
+      proposalLimitReached={proposalLimitReached}
+      proposalLimitMsg={proposalLimitMsg}
       setApplyingJob={setApplyingJob}
       setProposalBidAmount={setProposalBidAmount}
       setProposalDeliveryDays={setProposalDeliveryDays}

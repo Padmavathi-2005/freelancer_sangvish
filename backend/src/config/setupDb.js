@@ -11,6 +11,7 @@ async function setupTables() {
         code VARCHAR(10) UNIQUE NOT NULL,
         name VARCHAR(100) NOT NULL,
         symbol VARCHAR(10) NOT NULL,
+        rate DOUBLE PRECISION DEFAULT 1.0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -21,13 +22,13 @@ async function setupTables() {
     const currCheck = await pool.query("SELECT COUNT(*) FROM currencies");
     if (parseInt(currCheck.rows[0].count) === 0) {
       await pool.query(`
-        INSERT INTO currencies (code, name, symbol) VALUES
-        ('USD', 'US Dollar', '$'),
-        ('INR', 'Indian Rupee', '₹'),
-        ('EUR', 'Euro', '€'),
-        ('GBP', 'British Pound', '£')
+        INSERT INTO currencies (code, name, symbol, rate) VALUES
+        ('USD', 'US Dollar', '$', 1.0),
+        ('INR', 'Indian Rupee', '₹', 83.5),
+        ('EUR', 'Euro', '€', 0.92),
+        ('GBP', 'British Pound', '£', 0.78)
       `);
-      console.log("🌱 Seeded default currencies (USD, INR, EUR, GBP).");
+      console.log("🌱 Seeded default currencies (USD, INR, EUR, GBP) with rates.");
     }
 
     // Create gigs table
@@ -116,10 +117,15 @@ async function setupTables() {
         job_id INTEGER REFERENCES jobs(job_id) ON DELETE SET NULL,
         title VARCHAR(255) NOT NULL,
         budget NUMERIC NOT NULL,
-        status VARCHAR(50) DEFAULT 'In Progress',
+        status VARCHAR(50) DEFAULT 'Hired',
         progress INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        work_started_at TIMESTAMP NULL,
+        submitted_at TIMESTAMP NULL,
+        completed_at TIMESTAMP NULL,
+        disputed_at TIMESTAMP NULL,
+        cancelled_at TIMESTAMP NULL
       )
     `);
     console.log("✅ 'contracts' table ready.");
@@ -160,7 +166,8 @@ async function setupTables() {
     // Run migrations to alter existing proposals table with new columns if they do not exist
     await pool.query(`
       ALTER TABLE proposals 
-      ADD COLUMN IF NOT EXISTS milestones JSONB
+      ADD COLUMN IF NOT EXISTS milestones JSONB,
+      ADD COLUMN IF NOT EXISTS initiated_by VARCHAR(50) DEFAULT 'freelancer'
     `);
     console.log("✅ 'proposals' table columns migrated successfully.");
 
@@ -257,6 +264,673 @@ async function setupTables() {
       )
     `);
     console.log("✅ 'withdrawal_requests' table ready.");
+    // Add vetting_status and bio columns to freelancer_profiles if not exists
+    await pool.query(`
+      ALTER TABLE freelancer_profiles
+      ADD COLUMN IF NOT EXISTS vetting_status VARCHAR(50) DEFAULT 'Pending',
+      ADD COLUMN IF NOT EXISTS bio TEXT
+    `);
+    console.log("✅ 'freelancer_profiles.vetting_status' and 'bio' columns ready.");
+
+    // Create cms_pages table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cms_pages (
+        page_id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        slug VARCHAR(100) UNIQUE NOT NULL,
+        status VARCHAR(50) DEFAULT 'Draft',
+        content_type VARCHAR(50) DEFAULT 'Builder',
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'cms_pages' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS languages (
+        language_id SERIAL PRIMARY KEY,
+        language_name VARCHAR(100) UNIQUE NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await pool.query(`
+      ALTER TABLE languages 
+      ADD COLUMN IF NOT EXISTS code VARCHAR(10) UNIQUE,
+      ADD COLUMN IF NOT EXISTS direction VARCHAR(10) DEFAULT 'LTR',
+      ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active',
+      ADD COLUMN IF NOT EXISTS is_site_lang BOOLEAN DEFAULT FALSE
+    `);
+    console.log("✅ 'languages' table columns migrated successfully.");
+
+    // Create translations table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS translations (
+        translation_id SERIAL PRIMARY KEY,
+        language_code VARCHAR(10) NOT NULL,
+        key VARCHAR(255) NOT NULL,
+        value TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT unique_lang_key UNIQUE (language_code, key)
+      )
+    `);
+    console.log("✅ 'translations' table ready.");
+
+    // Create subscription_plans table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subscription_plans (
+        plan_id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
+        period VARCHAR(50),
+        features JSONB NOT NULL,
+        button_text VARCHAR(50) NOT NULL,
+        is_popular BOOLEAN DEFAULT FALSE,
+        is_current BOOLEAN DEFAULT FALSE,
+        plan_role VARCHAR(50) DEFAULT 'seller',
+        plan_type VARCHAR(50) DEFAULT 'Day(s)',
+        plan_duration INTEGER DEFAULT 30,
+        credits INTEGER DEFAULT 10,
+        profile_featured_duration INTEGER DEFAULT 0,
+        featured_project_limit INTEGER DEFAULT 0,
+        featured_project_duration INTEGER DEFAULT 0,
+        badge_image TEXT,
+        is_enabled BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT subscription_plans_name_role_key UNIQUE (name, plan_role)
+      )
+    `);
+    console.log("✅ 'subscription_plans' table ready.");
+
+    // Create faq_items table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS faq_items (
+        faq_id SERIAL PRIMARY KEY,
+        key_suffix VARCHAR(50) UNIQUE NOT NULL,
+        sort_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'faq_items' table ready.");
+
+    // Create why_choose_features table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS why_choose_features (
+        feature_id SERIAL PRIMARY KEY,
+        key_suffix VARCHAR(50) UNIQUE NOT NULL,
+        sort_order INT DEFAULT 0,
+        icon_name VARCHAR(100) DEFAULT 'Shield',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'why_choose_features' table ready.");
+
+    // Create how_it_works_steps table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS how_it_works_steps (
+        step_id SERIAL PRIMARY KEY,
+        key_suffix VARCHAR(50) UNIQUE NOT NULL,
+        sort_order INT DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'how_it_works_steps' table ready.");
+
+    // Create user_languages table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_languages (
+        user_language_id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+        language_id INTEGER NOT NULL REFERENCES languages(language_id) ON DELETE CASCADE,
+        proficiency VARCHAR(50) DEFAULT 'Basic',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (user_id, language_id)
+      )
+    `);
+    await pool.query(`
+      ALTER TABLE user_languages
+      ADD COLUMN IF NOT EXISTS proficiency VARCHAR(50) DEFAULT 'Basic'
+    `);
+    console.log("✅ 'user_languages' table and 'proficiency' column ready.");
+
+     // Create gig_application_milestones table
+     await pool.query(`
+       CREATE TABLE IF NOT EXISTS gig_application_milestones (
+         id SERIAL PRIMARY KEY,
+         application_id INTEGER NOT NULL REFERENCES gig_applications(application_id) ON DELETE CASCADE,
+         title VARCHAR(255) NOT NULL,
+         description TEXT,
+         amount NUMERIC(15, 2) NOT NULL,
+         start_date DATE,
+         end_date DATE,
+         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+       )
+     `);
+     console.log("✅ 'gig_application_milestones' table ready.");
+ 
+     // Create contract_milestones table
+     await pool.query(`
+       CREATE TABLE IF NOT EXISTS contract_milestones (
+         milestone_id SERIAL PRIMARY KEY,
+         contract_id INTEGER NOT NULL REFERENCES contracts(contract_id) ON DELETE CASCADE,
+         title VARCHAR(255) NOT NULL,
+         description TEXT,
+         amount NUMERIC(15, 2) NOT NULL,
+         start_date DATE,
+         end_date DATE,
+         status VARCHAR(50) DEFAULT 'Pending',
+         payment_status VARCHAR(50) DEFAULT 'Pending',
+         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+       )
+     `);
+     console.log("✅ 'contract_milestones' table ready.");
+
+     // Migration: Ensure description columns exist for both tables
+     await pool.query(`
+       ALTER TABLE gig_application_milestones ADD COLUMN IF NOT EXISTS description TEXT;
+     `);
+     await pool.query(`
+       ALTER TABLE contract_milestones ADD COLUMN IF NOT EXISTS description TEXT;
+     `);
+     console.log("✅ Milestone description columns migrated successfully.");
+
+    // Alter contracts table to add application_id link
+    await pool.query(`
+      ALTER TABLE contracts
+      ADD COLUMN IF NOT EXISTS application_id INTEGER REFERENCES gig_applications(application_id) ON DELETE SET NULL
+    `);
+    console.log("✅ 'contracts.application_id' column ready.");
+
+    // Alter conversations to support admin mediation
+    await pool.query(`
+      ALTER TABLE conversations
+      ADD COLUMN IF NOT EXISTS admin_id INTEGER REFERENCES users(user_id) DEFAULT NULL
+    `);
+    console.log("✅ 'conversations.admin_id' column ready.");
+
+    // Create disputes table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS disputes (
+        dispute_id SERIAL PRIMARY KEY,
+        contract_id INTEGER NOT NULL REFERENCES contracts(contract_id) ON DELETE CASCADE,
+        client_id INTEGER NOT NULL REFERENCES users(user_id),
+        freelancer_id INTEGER NOT NULL REFERENCES users(user_id),
+        conversation_id INTEGER NOT NULL REFERENCES conversations(conversation_id),
+        status VARCHAR(50) NOT NULL DEFAULT 'Open',
+        reason VARCHAR(100) NOT NULL,
+        description TEXT NOT NULL,
+        escalated_at TIMESTAMP,
+        resolved_at TIMESTAMP,
+        resolution_type VARCHAR(50),
+        resolution_details TEXT,
+        buyer_refund_percentage NUMERIC(5,2) DEFAULT 0.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'disputes' table ready.");
+
+    // Seed default languages mapping
+    await pool.query(`
+      INSERT INTO languages (language_name, code, direction, status, is_site_lang) VALUES
+      ('English', 'EN', 'LTR', 'Active', TRUE) ON CONFLICT (language_name) DO UPDATE SET code = 'EN', direction = 'LTR', status = 'Active', is_site_lang = TRUE
+    `);
+    await pool.query(`
+      INSERT INTO languages (language_name, code, direction, status, is_site_lang) VALUES
+      ('Arabic', 'AR', 'RTL', 'Active', TRUE) ON CONFLICT (language_name) DO UPDATE SET code = 'AR', direction = 'RTL', status = 'Active', is_site_lang = TRUE
+    `);
+    await pool.query(`
+      INSERT INTO languages (language_name, code, direction, status, is_site_lang) VALUES
+      ('French', 'FR', 'LTR', 'Active', TRUE) ON CONFLICT (language_name) DO UPDATE SET code = 'FR', direction = 'LTR', status = 'Active', is_site_lang = TRUE
+    `);
+    await pool.query(`
+      INSERT INTO languages (language_name, code, direction, status, is_site_lang) VALUES
+      ('German', 'DE', 'LTR', 'Active', TRUE) ON CONFLICT (language_name) DO UPDATE SET code = 'DE', direction = 'LTR', status = 'Active', is_site_lang = TRUE
+    `);
+    console.log("🌱 Seeded default languages (EN, AR, FR, DE).");
+
+    // Seed translations if empty
+    const transCount = await pool.query("SELECT COUNT(*) FROM translations");
+    if (parseInt(transCount.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO translations (language_code, key, value) VALUES
+        ('EN', 'home', 'Home'),
+        ('EN', 'about_us', 'About Us'),
+        ('EN', 'faq', 'FAQ'),
+        ('EN', 'terms_conditions', 'Terms & Conditions'),
+        ('EN', 'sign_in', 'Sign in'),
+        ('EN', 'get_started', 'Get Started'),
+        ('EN', 'dashboard', 'Dashboard'),
+        ('EN', 'search_placeholder', 'Search jobs, freelancers, services...'),
+        
+        ('AR', 'home', 'الرئيسية'),
+        ('AR', 'about_us', 'معلومات عنا'),
+        ('AR', 'faq', 'الأسئلة الشائعة'),
+        ('AR', 'terms_conditions', 'الشروط والأحكام'),
+        ('AR', 'sign_in', 'تسجيل الدخول'),
+        ('AR', 'get_started', 'ابدأ الآن'),
+        ('AR', 'dashboard', 'لوحة التحكم'),
+        ('AR', 'search_placeholder', 'ابحث عن وظائف، مستقلين، خدمات...'),
+        
+        ('FR', 'home', 'Accueil'),
+        ('FR', 'about_us', 'À propos de nous'),
+        ('FR', 'faq', 'FAQ'),
+        ('FR', 'terms_conditions', 'Termes et Conditions'),
+        ('FR', 'sign_in', 'Se connecter'),
+        ('FR', 'get_started', 'Commencer'),
+        ('FR', 'dashboard', 'Tableau de bord'),
+        ('FR', 'search_placeholder', 'Rechercher des emplois, des freelances...'),
+        
+        ('DE', 'home', 'Startseite'),
+        ('DE', 'about_us', 'Über uns'),
+        ('DE', 'faq', 'Häufig gestellte Fragen'),
+        ('DE', 'terms_conditions', 'Allgemeine Geschäftsbedingungen'),
+        ('DE', 'sign_in', 'Einloggen'),
+        ('DE', 'get_started', 'Loslegen'),
+        ('DE', 'dashboard', 'Dashboard'),
+        ('DE', 'search_placeholder', 'Suche nach Jobs, Freelancern, Dienstleistungen...'),
+
+        ('EN', 'hero_badge', 'The Top 3% Global Freelancers'),
+        ('EN', 'hero_title', 'Hire Expert Freelancers For Your Next Big Project'),
+        ('EN', 'hero_subtitle', 'Connect with top-tier professionals. Execute faster with vetted talent tailored to your enterprise needs.'),
+        ('EN', 'hero_search_placeholder', 'What skill are you looking for?'),
+        ('EN', 'hero_search_btn', 'Search Talent'),
+        ('EN', 'hero_popular_label', 'Popular: UI Design, React, AI Automation, SEO')
+        ON CONFLICT DO NOTHING
+      `);
+      console.log("🌱 Seeded translation values for EN, AR, FR, DE.");
+    }
+
+    // Seed standard CMS pages
+    const seedPages = [
+      {
+        title: "About Us",
+        slug: "about-us",
+        status: "Published",
+        content_type: "Builder",
+        content: JSON.stringify([
+          {
+            id: "about-t1",
+            type: "Title",
+            data: {
+              title: "About Buy2Lancer",
+              subtitle: "Connecting global talent with software challenges since 2026."
+            }
+          },
+          {
+            id: "about-r1",
+            type: "RichText",
+            data: {
+              content: "<p>Welcome to Buy2Lancer, the world's leading premium freelance developer marketplace. We bridge the gap between visionary clients and elite engineering talent globally.</p><p>We believe that top-tier software production shouldn't be gated by geographical borders or complex contracting overheads. By building transparent milestone escrows and vetted qualification criteria, we ensure a secure environment for product execution.</p>"
+            }
+          },
+          {
+            id: "about-f1",
+            type: "FeaturesGrid",
+            data: {
+              title: "Our Core Values",
+              subtitle: "The principles that drive our community everyday.",
+              features: [
+                { title: "Commitment to Excellence", description: "We vet our freelancers thoroughly to deliver state-of-the-art results." },
+                { title: "Transparency First", description: "Milestones and payment structures are explicitly tracked and secured." },
+                { title: "Absolute Security", description: "Your IP and funds are protected at all stages by robust escrow vaults." }
+              ]
+            }
+          }
+        ])
+      },
+      {
+        title: "FAQ",
+        slug: "faq",
+        status: "Published",
+        content_type: "Builder",
+        content: JSON.stringify([
+          {
+            id: "faq-t1",
+            type: "Title",
+            data: {
+              title: "Frequently Asked Questions",
+              subtitle: "Answers to common inquiries about workspace operations, payments, and safety."
+            }
+          },
+          {
+            id: "faq-f1",
+            type: "FAQ",
+            data: {
+              title: "General Queries",
+              items: [
+                { q: "How does milestone escrow work?", a: "When a project is created, the client deposits project funds into our escrow vault. The funds are securely held and automatically released to the freelancer only after the client reviews and approves the submitted deliverable." },
+                { q: "What is the vetting process for freelancers?", a: "Every freelancer undergoes a background assessment, portfolio review, and optional vetting interviews by our admin team before they can bid on high-tier projects." },
+                { q: "How are disputes resolved?", a: "If a conflict arises regarding milestone completeness, either party can file a dispute. Our neutral admin mediation team reviews submissions and decides on a fair disbursement." }
+              ]
+            }
+          },
+          {
+            id: "faq-c1",
+            type: "CTA",
+            data: {
+              title: "Still have questions?",
+              description: "Our friendly customer success agents are available 24/7 to resolve complex cases.",
+              buttonText: "Contact Support",
+              buttonLink: "/contact"
+            }
+          }
+        ])
+      },
+      {
+        title: "Careers",
+        slug: "careers",
+        status: "Published",
+        content_type: "Builder",
+        content: JSON.stringify([
+          {
+            id: "car-t1",
+            type: "Title",
+            data: {
+              title: "Careers at Buy2Lancer",
+              subtitle: "Shape the future of global online collaboration."
+            }
+          },
+          {
+            id: "car-r1",
+            type: "RichText",
+            data: {
+              content: "<p>We are a distributed remote team of developers, designers, and customer success heroes. We build the infrastructure that empowers millions of freelancers around the globe to support their households.</p><p>We value ownership, open communication, and high-agency execution. If you thrive under autonomy and enjoy solving scale challenges, we would love to have you on board.</p>"
+            }
+          },
+          {
+            id: "car-f1",
+            type: "FeaturesGrid",
+            data: {
+              title: "Perks & Benefits",
+              subtitle: "Why you will love working here.",
+              features: [
+                { title: "100% Remote Work", description: "Work from anywhere in the world. Set your own flexible schedule." },
+                { title: "Competitive Equity", description: "We offer stock options and salary packages matching Silicon Valley standards." },
+                { title: "Learning Budgets", description: "Get up to $2,000 annually for courses, bootcamps, and professional books." }
+              ]
+            }
+          },
+          {
+            id: "car-c1",
+            type: "CTA",
+            data: {
+              title: "Want to build with us?",
+              description: "Send your portfolio and cv to our recruitment division directly.",
+              buttonText: "Email CV",
+              buttonLink: "mailto:careers@buy2lancer.com"
+            }
+          }
+        ])
+      },
+      {
+        title: "Contact",
+        slug: "contact",
+        status: "Published",
+        content_type: "Builder",
+        content: JSON.stringify([
+          {
+            id: "con-t1",
+            type: "Title",
+            data: {
+              title: "Contact Us",
+              subtitle: "Have an inquiry? We would love to hear from you."
+            }
+          },
+          {
+            id: "con-r1",
+            type: "RichText",
+            data: {
+              content: "<p>Our global operations team is dedicated to providing high-quality assistance around the clock.</p><p><strong>Customer Support:</strong> support@buy2lancer.com<br/><strong>Business Partnerships:</strong> partners@buy2lancer.com<br/><strong>HQ Office:</strong> 100 Pine Street, San Francisco, CA 94111, USA</p><p>Expected email response times are under 4 hours for standard accounts.</p>"
+            }
+          }
+        ])
+      },
+      {
+        title: "Terms and Conditions",
+        slug: "terms-conditions",
+        status: "Published",
+        content_type: "Builder",
+        content: JSON.stringify([
+          {
+            id: "trm-t1",
+            type: "Title",
+            data: {
+              title: "Terms and Conditions",
+              subtitle: "Last revised: June 2026"
+            }
+          },
+          {
+            id: "trm-r1",
+            type: "RichText",
+            data: {
+              content: "<h3>1. Platform Registration</h3><p>By registering a client or freelancer account on Buy2Lancer, you agree to supply authentic details and keep your access credentials secure.</p><h3>2. Payments & Milestone Escrow</h3><p>Clients are required to fund milestone escrows before work starts. Freelancers deliver products on-platform. Releasing escrows constitutes confirmation that deliverables conform to terms.</p><h3>3. Platform Fees</h3><p>We deduct a nominal platform service fee from successful milestone disbursements to cover dispute resolution mechanisms and payment processing fees.</p>"
+            }
+          }
+        ])
+      }
+    ];
+
+    for (const page of seedPages) {
+      await pool.query(`
+        INSERT INTO cms_pages (title, slug, status, content_type, content)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (slug) DO UPDATE
+        SET title = $1, status = $3, content_type = $4, content = $5
+      `, [page.title, page.slug, page.status, page.content_type, page.content]);
+    }
+    console.log("✅ Seed CMS pages inserted/updated successfully.");
+
+    // Seed default currency and language settings
+    const checkCurr = await pool.query("SELECT 1 FROM settings WHERE setting_key = 'default_currency'");
+    if (checkCurr.rows.length === 0) {
+      await pool.query("INSERT INTO settings (category, setting_key, setting_value) VALUES ('site_settings', 'default_currency', '{\"code\": \"USD\"}')");
+    }
+    const checkLang = await pool.query("SELECT 1 FROM settings WHERE setting_key = 'default_language'");
+    if (checkLang.rows.length === 0) {
+      await pool.query("INSERT INTO settings (category, setting_key, setting_value) VALUES ('site_settings', 'default_language', '{\"code\": \"EN\"}')");
+    }
+    const checkLimit = await pool.query("SELECT 1 FROM settings WHERE setting_key = 'pagination_limit'");
+    if (checkLimit.rows.length === 0) {
+      await pool.query("INSERT INTO settings (category, setting_key, setting_value) VALUES ('site_settings', 'pagination_limit', '{\"limit\": 10}')");
+    }
+    const checkProposalVetting = await pool.query("SELECT 1 FROM settings WHERE setting_key = 'enable_proposal_vetting'");
+    if (checkProposalVetting.rows.length === 0) {
+      await pool.query("INSERT INTO settings (category, setting_key, setting_value) VALUES ('site_settings', 'enable_proposal_vetting', '{\"enabled\": false}')");
+    }
+    const checkHero = await pool.query("SELECT 1 FROM settings WHERE setting_key = 'frontend_hero_content'");
+    if (checkHero.rows.length === 0) {
+      const defaultValue = {
+        hero_badge: "The Top 3% Global Freelancers",
+        hero_title: "Hire Expert Freelancers For Your Next Big Project",
+        hero_subtitle: "Connect with top-tier professionals. Execute faster with vetted talent tailored to your enterprise needs.",
+        hero_search_placeholder: "What skill are you looking for?",
+        hero_search_btn: "Search Talent",
+        hero_popular_label: "Popular: UI Design, React, AI Automation, SEO"
+      };
+      await pool.query(
+        "INSERT INTO settings (category, setting_key, setting_value) VALUES ('frontend', 'frontend_hero_content', $1)",
+        [JSON.stringify(defaultValue)]
+      );
+    }
+    console.log("✅ Default currency, language, pagination, and hero content settings seeded.");
+
+    // Seed default Stripe keys settings
+    const checkStripe = await pool.query("SELECT 1 FROM settings WHERE setting_key = 'stripe_keys'");
+    if (checkStripe.rows.length === 0) {
+      const stripeDefaults = {
+        public_key: "your_stripe_public_key",
+        secret_key: "your_stripe_secret_key"
+      };
+      await pool.query(
+        "INSERT INTO settings (category, setting_key, setting_value) VALUES ('payment', 'stripe_keys', $1)",
+        [JSON.stringify(stripeDefaults)]
+      );
+    }
+
+    // Seed default PayPal keys settings (overwrite or insert if not exists)
+    const checkPaypal = await pool.query("SELECT 1 FROM settings WHERE setting_key = 'paypal_keys'");
+    if (checkPaypal.rows.length === 0) {
+      const paypalDefaults = {
+        client_id: "your_paypal_client_id",
+        secret_key: "your_paypal_secret_key"
+      };
+      await pool.query(
+        "INSERT INTO settings (category, setting_key, setting_value) VALUES ('payment', 'paypal_keys', $1)",
+        [JSON.stringify(paypalDefaults)]
+      );
+    } else {
+      const paypalDefaults = {
+        client_id: "your_paypal_client_id",
+        secret_key: "your_paypal_secret_key"
+      };
+      await pool.query(
+        "UPDATE settings SET setting_value = $1 WHERE setting_key = 'paypal_keys'",
+        [JSON.stringify(paypalDefaults)]
+      );
+    }
+
+    // Seed default site settings
+    const checkSite = await pool.query("SELECT category FROM settings WHERE setting_key = 'site_settings'");
+    if (checkSite.rows.length === 0) {
+      const siteDefaults = {
+        site_name: "Buy2Lancer",
+        site_logo: "/public/logo.png"
+      };
+      await pool.query(
+        "INSERT INTO settings (category, setting_key, setting_value) VALUES ('site_settings', 'site_settings', $1)",
+        [JSON.stringify(siteDefaults)]
+      );
+    } else if (checkSite.rows[0].category !== "site_settings") {
+      await pool.query("UPDATE settings SET category = 'site_settings' WHERE setting_key = 'site_settings'");
+      console.log("♻️ Updated existing 'site_settings' category to 'site_settings'.");
+    }
+
+    // Seed default email settings
+    const checkEmail = await pool.query("SELECT category FROM settings WHERE setting_key = 'email_settings'");
+    if (checkEmail.rows.length === 0) {
+      const emailDefaults = {
+        email_id: "noreply@buy2lancer.com",
+        smtp_host: "smtp",
+        smtp_port: 2525,
+        smtp_user: "test_user",
+        smtp_pass: "test_pass"
+      };
+      await pool.query(
+        "INSERT INTO settings (category, setting_key, setting_value) VALUES ('email_settings', 'email_settings', $1)",
+        [JSON.stringify(emailDefaults)]
+      );
+    } else if (checkEmail.rows[0].category !== "email_settings") {
+      await pool.query("UPDATE settings SET category = 'email_settings' WHERE setting_key = 'email_settings'");
+      console.log("♻️ Updated existing 'email_settings' category to 'email_settings'.");
+    }
+
+    // Seed default dispute reasons settings
+    const checkDisputesSetting = await pool.query("SELECT category FROM settings WHERE setting_key = 'dispute_reasons'");
+    if (checkDisputesSetting.rows.length === 0) {
+      const defaultReasons = [
+        "Work not delivered",
+        "Work quality is poor",
+        "Requirements not followed",
+        "Freelancer is unresponsive",
+        "Delivery is incomplete",
+        "Suspected fraud",
+        "Other"
+      ];
+      await pool.query(
+        "INSERT INTO settings (category, setting_key, setting_value) VALUES ('general', 'dispute_reasons', $1)",
+        [JSON.stringify(defaultReasons)]
+      );
+    }
+
+    // Seed default subscription plans if empty
+    const checkPlans = await pool.query("SELECT COUNT(*) FROM subscription_plans");
+    if (parseInt(checkPlans.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO subscription_plans (name, description, price, period, features, button_text, is_popular, is_current, plan_role, proposal_limit, job_posting_limit, featured_job_allowance, gig_discount_percent, credits, plan_type, plan_duration)
+        VALUES 
+        -- Freelancer Plans
+        ('Starter', 'For individuals and small teams.', 0.00, '', '["Basic talent search", "Standard support", "5% transaction fee"]', 'Current Plan', FALSE, TRUE, 'seller', 5, 3, FALSE, 0, 5, 'Day(s)', 30),
+        ('Professional', 'For growing businesses needing top talent.', 99.00, '/month', '["Advanced AI matching", "Priority 24/7 support", "2% transaction fee", "Dedicated account manager"]', 'Upgrade Now', TRUE, FALSE, 'seller', 20, 15, TRUE, 10, 50, 'Day(s)', 30),
+        ('Enterprise', 'Custom solutions for large organizations.', 999.00, '/month', '["Unlimited talent search", "Dedicated success team", "0% transaction fee", "Custom API integration"]', 'Contact Sales', FALSE, FALSE, 'seller', 99999, 99999, TRUE, 20, 99999, 'Day(s)', 30),
+        
+        -- Client (Buyer) Plans
+        ('Starter', 'For individuals and small business owners.', 0.00, '', '["3 Job Listings / month", "Standard Job Listings Visibility"]', 'Active Plan', FALSE, TRUE, 'buyer', 0, 3, FALSE, 0, 5, 'Day(s)', 30),
+        ('Professional', 'For growing teams needing elite top talent.', 99.00, '/month', '["15 Job Listings / month", "Highlight & Feature Job Listings", "Priority Support"]', 'Upgrade Now', TRUE, FALSE, 'buyer', 0, 15, TRUE, 10, 50, 'Day(s)', 30),
+        ('Enterprise', 'Dedicated recruitment solutions for large businesses.', 999.00, '/month', '["Unlimited Job Listings", "Highlight & Feature Job Listings", "Dedicated Success Manager"]', 'Contact Sales', FALSE, FALSE, 'buyer', 0, 99999, TRUE, 20, 99999, 'Day(s)', 30)
+      `);
+      console.log("🌱 Seeded default subscription plans (both Seller and Buyer tiers).");
+    }
+
+    // Add slug column to gigs
+    await pool.query(`
+      ALTER TABLE gigs ADD COLUMN IF NOT EXISTS slug VARCHAR(255) UNIQUE;
+    `);
+    console.log("✅ 'gigs.slug' column ready.");
+
+    // Add plans column to gigs
+    await pool.query(`
+      ALTER TABLE gigs ADD COLUMN IF NOT EXISTS plans JSONB;
+    `);
+    console.log("✅ 'gigs.plans' column ready.");
+
+    // Add slug column to users
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS slug VARCHAR(255) UNIQUE;
+    `);
+    console.log("✅ 'users.slug' column ready.");
+
+    // Helper to generate a URL-friendly slug
+    const makeSlug = (text) => {
+      if (!text) return '';
+      return text
+        .toLowerCase()
+        .replace(/[^\w\s-]/g, '')
+        .replace(/[\s_-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+    };
+
+    // Backfill slugs for gigs
+    const emptyGigSlugs = await pool.query("SELECT gig_id, title FROM gigs WHERE slug IS NULL OR slug = ''");
+    for (const gig of emptyGigSlugs.rows) {
+      let baseSlug = makeSlug(gig.title) || `gig-${gig.gig_id}`;
+      let finalSlug = baseSlug;
+      let counter = 1;
+      while (true) {
+        const check = await pool.query("SELECT 1 FROM gigs WHERE slug = $1 AND gig_id != $2", [finalSlug, gig.gig_id]);
+        if (check.rows.length === 0) break;
+        finalSlug = `${baseSlug}-${counter++}`;
+      }
+      await pool.query("UPDATE gigs SET slug = $1 WHERE gig_id = $2", [finalSlug, gig.gig_id]);
+    }
+    if (emptyGigSlugs.rows.length > 0) {
+      console.log(`🌱 Backfilled slugs for ${emptyGigSlugs.rows.length} gigs.`);
+    }
+
+    // Backfill slugs for users
+    const emptyUserSlugs = await pool.query("SELECT user_id, first_name, last_name, display_name FROM users WHERE slug IS NULL OR slug = ''");
+    for (const user of emptyUserSlugs.rows) {
+      let rawName = user.display_name || `${user.first_name || ''} ${user.last_name || ''}`;
+      let baseSlug = makeSlug(rawName) || `user-${user.user_id}`;
+      let finalSlug = baseSlug;
+      let counter = 1;
+      while (true) {
+        const check = await pool.query("SELECT 1 FROM users WHERE slug = $1 AND user_id != $2", [finalSlug, user.user_id]);
+        if (check.rows.length === 0) break;
+        finalSlug = `${baseSlug}-${counter++}`;
+      }
+      await pool.query("UPDATE users SET slug = $1 WHERE user_id = $2", [finalSlug, user.user_id]);
+    }
+    if (emptyUserSlugs.rows.length > 0) {
+      console.log(`🌱 Backfilled slugs for ${emptyUserSlugs.rows.length} users.`);
+    }
+
 
 
 

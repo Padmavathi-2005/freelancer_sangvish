@@ -2,7 +2,7 @@
 
 import React from "react";
 import Table from "@/components/Table";
-import { DisputeCase } from "@/app/admin/AdminContext";
+import { DisputeCase, useAdmin } from "@/app/admin/AdminContext";
 
 interface TransactionsTabProps {
   transactionsSubTab: "transactions" | "disputes";
@@ -34,6 +34,7 @@ export default function TransactionsTab({
   disputes,
   resolveDispute
 }: TransactionsTabProps) {
+  const { highlightedDisputeId, setHighlightedDisputeId } = useAdmin();
   
   const transactionColumns = [
     {
@@ -153,7 +154,16 @@ export default function TransactionsTab({
               {disputes.map((disp) => (
                 <div 
                   key={disp.id} 
-                  className={`p-6 bg-white border border-slate-200 rounded-2xl flex flex-col gap-5 shadow-sm ${
+                  onMouseEnter={() => {
+                    if (disp.id === highlightedDisputeId) {
+                      setHighlightedDisputeId(null);
+                    }
+                  }}
+                  className={`p-6 bg-white border rounded-2xl flex flex-col gap-5 shadow-sm transition-all duration-300 ${
+                    disp.id === highlightedDisputeId
+                      ? "ring-2 ring-rose-500 border-rose-500 bg-rose-500/[0.02] scale-[1.01] shadow-md shadow-rose-500/5 animate-pulse"
+                      : "border-slate-200"
+                  } ${
                     disp.status !== "Under Mediation" ? "opacity-60 border-slate-100" : ""
                   }`}
                 >

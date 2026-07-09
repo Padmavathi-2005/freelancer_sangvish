@@ -1,0 +1,45 @@
+DIRECT FREELANCER HIRING FLOW DOCUMENTATION
+===========================================
+
+1. Freelancer Details View
+--------------------------
+- Show full freelancer profile information: name, avatar, rating, completed jobs count, hourly rate, bio, portfolio details, experience, education, certifications, and skills.
+- Render a "Hire Freelancer" action.
+
+2. Hire Request Wizard (Client-Side)
+------------------------------------
+- When clicked, allow client to:
+  a. Link this direct hire request to an existing open project (from ClientJobs, status = 'Open').
+  b. Create a new project dynamically using the normal creation wizard.
+- Specify bid amount, estimated delivery days, offer/hire message, and proposed milestones.
+- Call direct hire request API.
+
+3. DB & Schema Updates
+----------------------
+- Alter `proposals` table to add `initiated_by` column:
+  `ALTER TABLE proposals ADD COLUMN IF NOT EXISTS initiated_by VARCHAR(50) DEFAULT 'freelancer';`
+- If `initiated_by = 'client'`, this is a client direct hire offer to a freelancer.
+
+4. Freelancer Response Flow
+---------------------------
+- Freelancer is notified of direct hire request.
+- Freelancer sees the request on the proposals panel under "Direct Hires".
+- Actions:
+  - Accept: Proposal status updates to 'Accepted_By_Freelancer'. Client is notified.
+  - Decline: Proposal status updates to 'Declined'. Client is notified.
+
+5. Client Escrow Payment
+------------------------
+- Client sees accepted direct hire request.
+- Action: "Fund Escrow & Confirm Hire" -> triggers Stripe or Wallet checkout.
+- Upon successful payment:
+  - Proposal status updates to 'Accepted'.
+  - Contract is created in status 'Hired'.
+  - Freelancer is notified.
+
+6. Contract In Progress (Standard Flow)
+---------------------------------------
+- Freelancer logs in and clicks "Start Work", changing status to 'Work Started'.
+- Cancellation/refund lock is enabled.
+- Freelancer submits work, changing status to 'Under Review'.
+- Client can release payment or raise mediation/dispute.

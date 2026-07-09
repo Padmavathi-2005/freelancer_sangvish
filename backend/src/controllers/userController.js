@@ -120,21 +120,26 @@ export const onboardingCheck = async (req, res) => {
 
         // Check if freelancer profile exists and is completed
         const freelancerProfileRes = await pool.query(
-            "SELECT onboarding_completed FROM freelancer_profiles WHERE user_id = $1",
+            "SELECT onboarding_completed, vetting_status FROM freelancer_profiles WHERE user_id = $1",
             [userId]
         );
         const hasFreelancerProfile = freelancerProfileRes.rows.length > 0 && freelancerProfileRes.rows[0].onboarding_completed === true;
 
         // Check if client profile exists and is completed
         const clientProfileRes = await pool.query(
-            "SELECT onboarding_completed FROM client_profiles WHERE user_id = $1",
+            "SELECT onboarding_completed, vetting_status FROM client_profiles WHERE user_id = $1",
             [userId]
         );
         const hasClientProfile = clientProfileRes.rows.length > 0 && clientProfileRes.rows[0].onboarding_completed === true;
 
+        const freelancerVettingStatus = freelancerProfileRes.rows.length > 0 ? freelancerProfileRes.rows[0].vetting_status : null;
+        const clientVettingStatus = clientProfileRes.rows.length > 0 ? clientProfileRes.rows[0].vetting_status : null;
+
         res.status(200).json({
             hasFreelancerProfile,
-            hasClientProfile
+            hasClientProfile,
+            freelancerVettingStatus,
+            clientVettingStatus
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -194,6 +199,18 @@ export const createClientProfile = async (req, res) => {
         if (onboarding_completed !== undefined) {
             const statusRes = await ClientProfile.updateOnboardingStatus(userId, onboarding_completed);
             profile = statusRes.rows[0];
+
+            if (onboarding_completed === true) {
+                const { default: pool } = await import("../config/db.js");
+                const vettingSetting = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'enable_client_vetting'");
+                let vettingVal = vettingSetting.rows[0]?.setting_value;
+                if (typeof vettingVal === "string") {
+                    try { vettingVal = JSON.parse(vettingVal); } catch {}
+                }
+                const isVettingEnabled = vettingVal === true || vettingVal === "true" || vettingVal?.enabled === true || vettingVal?.enabled === "true";
+                const vettingStatus = isVettingEnabled ? "Pending" : "Approved";
+                await ClientProfile.updateVettingStatus(userId, vettingStatus);
+            }
         }
 
         res.status(201).json({
@@ -209,14 +226,21 @@ export const getClientProfile = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const { ClientProfile } = await import('../models/clientProfileModel.js');
+        const { default: pool } = await import('../config/db.js');
 
         const checkRes = await ClientProfile.findByUserId(userId);
         if (checkRes.rows.length === 0) {
             return res.status(404).json({ message: "Client profile not found" });
         }
 
+        const userRes = await pool.query(
+            "SELECT first_name, last_name, email, profile_image FROM users WHERE user_id = $1",
+            [userId]
+        );
+
         res.status(200).json({
-            profile: checkRes.rows[0]
+            profile: checkRes.rows[0],
+            user: userRes.rows[0] || null
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -272,6 +296,241 @@ export const getClientHiredFreelancers = async (req, res) => {
         `;
         const result = await pool.query(query, [clientId]);
         res.status(200).json(result.rows);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getMySubscription = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { default: pool } = await import('../config/db.js');
+        const result = await pool.query(
+            `SELECT u.active_plan_id, u.created_at as user_created_at, sp.name as plan_name, sp.description, sp.price, sp.period, sp.gig_discount_percent, sp.features, sp.credits, sp.plan_duration, sp.plan_role
+             FROM users u
+             LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
+             WHERE u.user_id = $1`,
+            [userId]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const subscribeToPlan = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { plan_id, payment_method } = req.body;
+        const method = payment_method || "wallet";
+        const { default: pool } = await import('../config/db.js');
+
+        if (!plan_id) {
+            return res.status(400).json({ message: "plan_id is required." });
+        }
+
+        // Verify the plan exists
+        const planCheck = await pool.query("SELECT * FROM subscription_plans WHERE plan_id = $1", [parseInt(plan_id)]);
+        if (planCheck.rows.length === 0) {
+            return res.status(404).json({ message: "Subscription plan not found." });
+        }
+
+        const plan = planCheck.rows[0];
+        const priceStr = plan.price.replace(/[^0-9.]/g, '');
+        const price = priceStr ? parseFloat(priceStr) : 0;
+
+        // Start transaction
+        await pool.query("BEGIN");
+        try {
+            if (price > 0) {
+                // Verify Stripe Checkout Session
+                if (method === "stripe") {
+                    const { session_id } = req.body;
+                    if (!session_id) {
+                        await pool.query("ROLLBACK");
+                        return res.status(400).json({ message: "session_id is required for Stripe subscription confirmation." });
+                    }
+
+                    // Fetch Stripe secret key from Settings
+                    let stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+                    const stripeKeysRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'stripe_keys'");
+                    if (stripeKeysRes.rows.length > 0) {
+                        let keys = stripeKeysRes.rows[0].setting_value;
+                        if (typeof keys === "string") {
+                            try { keys = JSON.parse(keys); } catch {}
+                        }
+                        if (keys?.secret_key) {
+                            stripeSecretKey = keys.secret_key;
+                        }
+                    }
+
+                    if (!stripeSecretKey) {
+                        await pool.query("ROLLBACK");
+                        return res.status(400).json({ message: "Stripe is not configured in settings." });
+                    }
+
+                    const { default: Stripe } = await import('stripe');
+                    const localStripe = new Stripe(stripeSecretKey);
+                    const stripeSession = await localStripe.checkout.sessions.retrieve(session_id);
+                    if (stripeSession.payment_status !== "paid") {
+                        await pool.query("ROLLBACK");
+                        return res.status(400).json({ message: "Stripe payment has not been completed." });
+                    }
+                }
+
+                // Get user wallet
+                const userWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [userId]);
+                let userWallet = userWalletRes.rows[0];
+                if (!userWallet) {
+                    const insertRes = await pool.query("INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *", [userId]);
+                    userWallet = insertRes.rows[0];
+                }
+
+                // Get system/admin wallet
+                const systemWalletRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+                const systemWallet = systemWalletRes.rows[0];
+
+                if (method === "wallet") {
+                    if (parseFloat(userWallet.balance) < price) {
+                        await pool.query("ROLLBACK");
+                        return res.status(400).json({ 
+                            message: `Insufficient wallet balance. Subscription requires $${price.toFixed(2)}, but your wallet only has $${parseFloat(userWallet.balance).toFixed(2)}.` 
+                        });
+                    }
+
+                    // Debit user wallet
+                    await pool.query("UPDATE wallets SET balance = balance - $1 WHERE wallet_id = $2", [price, userWallet.wallet_id]);
+                }
+
+                // Credit system/admin wallet
+                if (systemWallet) {
+                    await pool.query("UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2", [price, systemWallet.wallet_id]);
+                }
+
+                // Record transaction
+                await pool.query(
+                    `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description) 
+                     VALUES ($1, $2, $3, 'Subscription_Purchase', 'Completed', $4)`,
+                    [
+                        method === "wallet" ? userWallet.wallet_id : null, 
+                        systemWallet?.wallet_id || null, 
+                        price, 
+                        `Subscription purchase for ${plan.name} Plan (Paid via ${method === "wallet" ? "Wallet" : method === "stripe" ? "Stripe" : "PayPal"})`
+                    ]
+                );
+            }
+
+            // Update user active plan
+            await pool.query(
+                "UPDATE users SET active_plan_id = $1 WHERE user_id = $2",
+                [parseInt(plan_id), userId]
+            );
+
+            await pool.query("COMMIT");
+
+            res.json({
+                message: `Successfully subscribed to plan "${plan.name}"`,
+                active_plan_id: plan.plan_id,
+                plan_name: plan.name,
+                gig_discount_percent: plan.gig_discount_percent
+            });
+        } catch (txnError) {
+            await pool.query("ROLLBACK");
+            throw txnError;
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getLoggedInUser = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { default: pool } = await import('../config/db.js');
+
+        const userRes = await pool.query(
+            "SELECT user_id, first_name, last_name, email, profile_image FROM users WHERE user_id = $1",
+            [userId]
+        );
+
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json({
+            user: userRes.rows[0]
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const updateUserProfile = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { default: pool } = await import('../config/db.js');
+        const { first_name, last_name, profile_image } = req.body;
+
+        const currentRes = await pool.query("SELECT * FROM users WHERE user_id = $1", [userId]);
+        if (currentRes.rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const current = currentRes.rows[0];
+
+        const updatedName = first_name !== undefined ? first_name : current.first_name;
+        const updatedLastName = last_name !== undefined ? last_name : current.last_name;
+        const updatedImage = profile_image !== undefined ? profile_image : current.profile_image;
+
+        const updateRes = await pool.query(
+            `UPDATE users 
+             SET first_name = $1, last_name = $2, profile_image = $3 
+             WHERE user_id = $4 
+             RETURNING user_id, first_name, last_name, email, profile_image`,
+            [updatedName, updatedLastName, updatedImage, userId]
+        );
+
+        res.status(200).json({
+            message: "User profile updated successfully!",
+            user: updateRes.rows[0]
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const socialLogin = async (req, res) => {
+    try {
+        const { email, first_name } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+
+        let user = await userModel.findUserByEmail(email);
+
+        if (!user) {
+            // User doesn't exist, create a new one with a dummy/empty password_hash
+            const dummyPasswordHash = "";
+            user = await userModel.createUser(first_name || email.split('@')[0], email, dummyPasswordHash);
+        }
+
+        const token = jwt.sign(
+            { user_id: user.user_id },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        res.status(200).json({
+            token,
+            user: {
+                user_id: user.user_id,
+                first_name: user.first_name,
+                email: user.email
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

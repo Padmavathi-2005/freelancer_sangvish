@@ -1,0 +1,65 @@
+================================================================================
+FREEALNCER PLATFORM - GIG ORDER & PAYMENT ESCROW FLOW
+================================================================================
+
+1. NEW NORMALIZED DATABASE TABLE FOR MILESTONES
+------------------------------------------------
+Instead of storing milestones in a JSON/JSONB text column, the system will use a normalized database table `contract_milestones` to track project progress, deadlines, and payments cleanly.
+
+Table Schema: `contract_milestones`
+- `milestone_id` SERIAL PRIMARY KEY
+- `contract_id` INTEGER NOT NULL REFERENCES contracts(contract_id) ON DELETE CASCADE
+- `title` VARCHAR(255) NOT NULL
+- `amount` NUMERIC(15, 2) NOT NULL (Price/amount for this milestone)
+- `start_date` DATE (Planned start date)
+- `end_date` DATE (Planned deadline/due date)
+- `status` VARCHAR(50) DEFAULT 'Pending' (Work status: 'Pending' or 'Completed')
+- `payment_status` VARCHAR(50) DEFAULT 'Pending' (Payment/escrow release: 'Pending' or 'Paid')
+- `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+- `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+---
+
+2. THE THREE GIG BUYING FLOWS
+------------------------------
+Clients can purchase a freelancer's gig in three distinct ways depending on terms and features enabled:
+
+FLOW 1: Direct Buy (Normal Buy - No Milestones)
+- The client purchases the gig at the listed price directly without milestones.
+- **Payment Rule**: The client pays **100% of the total price upfront** upon order creation.
+- **Escrow**: The 100% payment is held in the admin/system escrow wallet.
+- **Contract & Milestones**: A contract is created in `contracts`. A single default milestone of 100% price is inserted into the `contract_milestones` table.
+- **Release**: When the contract is completed, the client releases the payment. The admin escrow wallet releases 100% of the budget minus the platform commission (e.g., 10% fee) to the freelancer's wallet.
+
+FLOW 2: Price/Requirements Negotiation
+- If the freelancer enabled the `negotiation` toggle when creating the gig:
+  - The client can click "Negotiate" and request a custom budget, deadline, or terms.
+  - A negotiation proposal is sent to the freelancer.
+  - Once both parties agree and the freelancer clicks Accept, it triggers either Flow 1 (if no milestones) or Flow 3 (if custom milestones are defined).
+
+FLOW 3: Custom Milestones & Extra Requirements
+- The client orders the gig specifying custom requirements and a checklist of custom milestones.
+- For each custom milestone, they define:
+  * Title/description of work.
+  * Price/Amount (sum of all milestones must equal the total gig budget).
+  * Start date & end date (deadlines).
+- **Payment Rule**: The client pays **50% of the total budget upfront** to initiate the contract.
+- **Escrow**: The 50% upfront amount is held in the admin/system escrow wallet.
+- **Contract & Milestones**: A contract is created in `contracts` at 50% progress. The custom milestones list is inserted into the `contract_milestones` table.
+- **Release**: When the freelancer completes the tasks:
+  1. The client is charged the remaining **50% balance amount** of the budget.
+  2. The admin escrow wallet releases the first 50%.
+  3. Platform commission (e.g., 10% fee) is calculated on the total budget and retained in the system wallet.
+  4. The freelancer receives the net earnings (`total budget - commission`) directly into their wallet.
+
+---
+
+3. PAYMENTS & CHECKOUT (STRIPE / PAYPAL OR WALLET)
+---------------------------------------------------
+- If a client has sufficient balance in their local platform wallet, they can choose to pay via "Wallet Balance".
+- If their wallet balance is insufficient, or they choose to pay directly with a credit card:
+  - The checkout offers **Stripe** or **PayPal** payment gateways.
+  - Choosing Stripe/PayPal executes a simulated instant card charge.
+  - The system automatically credits the client's wallet with the required transaction amount (e.g., the 50% upfront deposit or 100% full payment) to cover the charge.
+  - The transaction then runs smoothly without throwing "Insufficient wallet balance" errors, recording proper credit card deposit and escrow transfer logs in `wallet_transactions`.
+================================================================================

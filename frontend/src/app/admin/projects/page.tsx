@@ -19,7 +19,9 @@ export default function ProjectsPage() {
     handleUpdateProjectStatus,
     handleDeleteProject,
     vettingApps,
-    updateVettingStatus
+    updateVettingStatus,
+    pendingProposals,
+    handleUpdateProposalVettingStatus
   } = useAdmin();
 
   return (
@@ -38,6 +40,8 @@ export default function ProjectsPage() {
       handleDeleteProject={handleDeleteProject}
       vettingApps={vettingApps}
       updateVettingStatus={updateVettingStatus}
+      pendingProposals={pendingProposals}
+      handleUpdateProposalVettingStatus={handleUpdateProposalVettingStatus}
     />
   );
 }

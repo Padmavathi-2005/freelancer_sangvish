@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useRef 
 import { useRouter, usePathname } from "next/navigation";
 import { initSocket, disconnectSocket } from "@/utils/socket";
 
-const API_URL = "http://localhost:5000/api";
+import { API_URL } from "@/config/api";
 
 // Types
 interface Category {
@@ -158,6 +158,12 @@ interface DashboardContextType {
   setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean | null>>;
   onboardingCompleted: boolean;
   setOnboardingCompleted: React.Dispatch<React.SetStateAction<boolean>>;
+  forceShowOnboarding: boolean;
+  setForceShowOnboarding: React.Dispatch<React.SetStateAction<boolean>>;
+  showOnboardingModal: boolean;
+  setShowOnboardingModal: React.Dispatch<React.SetStateAction<boolean>>;
+  vettingStatus: string;
+  setVettingStatus: React.Dispatch<React.SetStateAction<string>>;
   onboardingStep: "role_selection" | "freelancer_flow" | "client_flow" | "loading";
   setOnboardingStep: React.Dispatch<React.SetStateAction<"role_selection" | "freelancer_flow" | "client_flow" | "loading">>;
   selectedRole: "freelancer" | "client" | null;
@@ -205,6 +211,9 @@ interface DashboardContextType {
   resumeUrl: string; setResumeUrl: (v: string) => void;
   selectedSkillIds: number[]; setSelectedSkillIds: React.Dispatch<React.SetStateAction<number[]>>;
   selectedLanguageIds: number[]; setSelectedLanguageIds: React.Dispatch<React.SetStateAction<number[]>>;
+  selectedLanguages: Array<{ language_id: number; proficiency: string }>;
+  setSelectedLanguages: React.Dispatch<React.SetStateAction<Array<{ language_id: number; proficiency: string }>>>;
+  handleUpdateLanguageProficiency: (langId: number, proficiency: string) => void;
   step1Error: string; setStep1Error: (v: string) => void;
   step1Success: boolean; setStep1Success: (v: boolean) => void;
 
@@ -255,9 +264,13 @@ interface DashboardContextType {
   primaryColor: string; setPrimaryColor: (v: string) => void;
   secondaryColor: string; setSecondaryColor: (v: string) => void;
   siteTheme: string; setSiteTheme: (v: string) => void;
+  siteName: string; setSiteName: (v: string) => void;
+  siteLogo: string; setSiteLogo: (v: string) => void;
 
   // Core Dashboard State (merged from Dashboard.tsx)
   userName: string; setUserName: React.Dispatch<React.SetStateAction<string>>;
+  profileImage: string | null; setProfileImage: React.Dispatch<React.SetStateAction<string | null>>;
+  handleProfileImageUpload: (file: File) => Promise<void>;
   gigs: any[]; setGigs: React.Dispatch<React.SetStateAction<any[]>>;
   currencies: any[]; setCurrencies: React.Dispatch<React.SetStateAction<any[]>>;
   loadingGigs: boolean; setLoadingGigs: React.Dispatch<React.SetStateAction<boolean>>;
@@ -298,6 +311,8 @@ interface DashboardContextType {
   isApplying: boolean; setIsApplying: React.Dispatch<React.SetStateAction<boolean>>;
   applyingGig: any | null; setApplyingGig: React.Dispatch<React.SetStateAction<any | null>>;
   orderRequirements: string; setOrderRequirements: (v: string) => void;
+  orderMilestones: any[]; setOrderMilestones: React.Dispatch<React.SetStateAction<any[]>>;
+  orderPaymentMethod: string; setOrderPaymentMethod: (v: string) => void;
   orderSubmitting: boolean; setOrderSubmitting: React.Dispatch<React.SetStateAction<boolean>>;
   orderSuccess: boolean; setOrderSuccess: (v: boolean) => void;
   orderError: string; setOrderError: (v: string) => void;
@@ -342,11 +357,14 @@ interface DashboardContextType {
   loadingClientJobs: boolean; setLoadingClientJobs: React.Dispatch<React.SetStateAction<boolean>>;
   isCreatingJob: boolean; setIsCreatingJob: React.Dispatch<React.SetStateAction<boolean>>;
   editingDraftJobId: number | null; setEditingDraftJobId: React.Dispatch<React.SetStateAction<number | null>>;
+  pendingInviteFreelancer: any | null; setPendingInviteFreelancer: React.Dispatch<React.SetStateAction<any | null>>;
   
   // Custom dashboard detail states
   selectedProjectDetails: any | null; setSelectedProjectDetails: React.Dispatch<React.SetStateAction<any | null>>;
   selectedGigOrderDetails: any | null; setSelectedGigOrderDetails: React.Dispatch<React.SetStateAction<any | null>>;
   selectedFreelancerProfile: any | null; setSelectedFreelancerProfile: React.Dispatch<React.SetStateAction<any | null>>;
+  selectedFreelancerFullProfile: any | null;
+  loadingFullProfile: boolean;
   loadingProfileDetails: boolean; setLoadingProfileDetails: React.Dispatch<React.SetStateAction<boolean>>;
   projectProposals: any[]; setProjectProposals: React.Dispatch<React.SetStateAction<any[]>>;
   loadingProjectProposals: boolean; setLoadingProjectProposals: React.Dispatch<React.SetStateAction<boolean>>;
@@ -376,6 +394,9 @@ interface DashboardContextType {
   activeJobProposals: any[]; setActiveJobProposals: React.Dispatch<React.SetStateAction<any[]>>;
   loadingActiveJobProposals: boolean; setLoadingActiveJobProposals: React.Dispatch<React.SetStateAction<boolean>>;
   appliedJobIds: Set<number>;
+  proposalLimitReached: boolean;
+  proposalLimitMsg: string;
+  fetchProposalLimitStatus: () => Promise<void>;
 
   // Messaging & Chat States
   conversations: any[]; setConversations: React.Dispatch<React.SetStateAction<any[]>>;
@@ -494,6 +515,13 @@ interface DashboardContextType {
   fetchWalletInfo: () => Promise<void>;
   handleWithdrawSubmit: (e: React.FormEvent) => Promise<void>;
   handleDepositSubmit: (e: React.FormEvent) => Promise<void>;
+  freelancerContracts: any[];
+  recommendedClients: any[];
+  fetchFreelancerContracts: () => Promise<void>;
+  fetchRecommendedClients: () => Promise<void>;
+  requestContractPayment: (contractId: number) => Promise<void>;
+  approveContractPayment: (contractId: number) => Promise<void>;
+  startWorkContract: (contractId: number) => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -505,6 +533,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // Authentication & Onboarding States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [onboardingCompleted, setOnboardingCompleted] = useState<boolean>(false);
+  const [forceShowOnboarding, setForceShowOnboarding] = useState<boolean>(false);
+  const [showOnboardingModal, setShowOnboardingModal] = useState<boolean>(false);
+  const [hasFreelancerProfile, setHasFreelancerProfile] = useState<boolean>(false);
+  const [hasClientProfile, setHasClientProfile] = useState<boolean>(false);
+  const [vettingStatus, setVettingStatus] = useState<string>("Approved"); // default Approved unless backend says otherwise
   const [onboardingStep, setOnboardingStep] = useState<"role_selection" | "freelancer_flow" | "client_flow" | "loading">("loading");
   const [selectedRole, setSelectedRole] = useState<"freelancer" | "client" | null>(null);
   const [activeView, setActiveView] = useState<"dashboard" | "marketplace">("dashboard");
@@ -552,6 +585,26 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [resumeUrl, setResumeUrl] = useState<string>("");
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
   const [selectedLanguageIds, setSelectedLanguageIds] = useState<number[]>([]);
+  const [selectedLanguages, setSelectedLanguages] = useState<Array<{ language_id: number; proficiency: string }>>([]);
+
+  useEffect(() => {
+    setSelectedLanguages(prev => {
+      const currentIds = prev.map(l => l.language_id);
+      const hasChanged = selectedLanguageIds.length !== currentIds.length || !selectedLanguageIds.every(id => currentIds.includes(id));
+      if (!hasChanged) return prev;
+      return selectedLanguageIds.map(id => {
+        const existing = prev.find(p => p.language_id === id);
+        return {
+          language_id: id,
+          proficiency: existing ? existing.proficiency : 'Basic'
+        };
+      });
+    });
+  }, [selectedLanguageIds]);
+
+  const handleUpdateLanguageProficiency = (langId: number, proficiency: string) => {
+    setSelectedLanguages(prev => prev.map(l => l.language_id === langId ? { ...l, proficiency } : l));
+  };
   const [step1Error, setStep1Error] = useState<string>("");
   const [step1Success, setStep1Success] = useState<boolean>(false);
 
@@ -600,15 +653,35 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [projectDocs, setProjectDocs] = useState("");
   const [portfolioSuccess, setPortfolioSuccess] = useState(false);
 
-  // Styling Settings State
   const [primaryColor, setPrimaryColor] = useState("#10b981");
   const [secondaryColor, setSecondaryColor] = useState("#06b6d4");
-  const [siteTheme, setSiteTheme] = useState("light");
+  const [siteTheme, setSiteThemeState] = useState("light");
+  const [siteName, setSiteName] = useState("Buy2Lancer");
+  const [siteLogo, setSiteLogo] = useState("/public/logo.png");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("siteTheme");
+      if (saved === "light" || saved === "dark") {
+        setSiteThemeState(saved);
+      }
+    }
+  }, []);
+
+  const setSiteTheme = (theme: string) => {
+    setSiteThemeState(theme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("siteTheme", theme);
+    }
+  };
 
   // Core Dashboard State
   const [userName, setUserName] = useState("Liam");
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [gigs, setGigs] = useState<any[]>([]);
   const [currencies, setCurrencies] = useState<any[]>([]);
+  const [freelancerContracts, setFreelancerContracts] = useState<any[]>([]);
+  const [recommendedClients, setRecommendedClients] = useState<any[]>([]);
   const [loadingGigs, setLoadingGigs] = useState(false);
   const [isCreatingGig, setIsCreatingGig] = useState(false);
   
@@ -647,6 +720,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [isApplying, setIsApplying] = useState(false);
   const [applyingGig, setApplyingGig] = useState<any | null>(null);
   const [orderRequirements, setOrderRequirements] = useState("");
+  const [orderMilestones, setOrderMilestones] = useState<any[]>([]);
+  const [orderPaymentMethod, setOrderPaymentMethod] = useState("wallet");
   const [orderSubmitting, setOrderSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderError, setOrderError] = useState("");
@@ -690,14 +765,45 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [loadingClientJobs, setLoadingClientJobs] = useState(false);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [editingDraftJobId, setEditingDraftJobId] = useState<number | null>(null);
+  const [pendingInviteFreelancer, setPendingInviteFreelancer] = useState<any | null>(null);
   
   // Custom dashboard detail states
   const [selectedProjectDetails, setSelectedProjectDetails] = useState<any | null>(null);
   const [selectedGigOrderDetails, setSelectedGigOrderDetails] = useState<any | null>(null);
   const [selectedFreelancerProfile, setSelectedFreelancerProfile] = useState<any | null>(null);
+  const [selectedFreelancerFullProfile, setSelectedFreelancerFullProfile] = useState<any | null>(null);
+  const [loadingFullProfile, setLoadingFullProfile] = useState(false);
   const [loadingProfileDetails, setLoadingProfileDetails] = useState(false);
   const [projectProposals, setProjectProposals] = useState<any[]>([]);
   const [loadingProjectProposals, setLoadingProjectProposals] = useState(false);
+
+  useEffect(() => {
+    if (!selectedFreelancerProfile || !selectedFreelancerProfile.user_id) {
+      setSelectedFreelancerFullProfile(null);
+      return;
+    }
+    const fetchFullProfile = async () => {
+      setLoadingFullProfile(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/profile/${selectedFreelancerProfile.user_id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSelectedFreelancerFullProfile(data);
+        } else {
+          setSelectedFreelancerFullProfile(null);
+        }
+      } catch (err) {
+        console.error("Failed to fetch freelancer full profile:", err);
+        setSelectedFreelancerFullProfile(null);
+      } finally {
+        setLoadingFullProfile(false);
+      }
+    };
+    fetchFullProfile();
+  }, [selectedFreelancerProfile]);
 
   // Freelancer Browse Jobs states
   const [allJobs, setAllJobs] = useState<any[]>([]);
@@ -720,6 +826,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   
   const [freelancerProposals, setFreelancerProposals] = useState<any[]>([]);
   const [loadingFreelancerProposals, setLoadingFreelancerProposals] = useState(false);
+  const [proposalLimitReached, setProposalLimitReached] = useState(false);
+  const [proposalLimitMsg, setProposalLimitMsg] = useState("");
 
   const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
   const [activeJobProposals, setActiveJobProposals] = useState<any[]>([]);
@@ -778,6 +886,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     linkedin_url: "",
     portfolio_website: "",
     resume_url: "",
+    slug: "",
+    display_name: ""
   });
 
   // Skills State
@@ -812,6 +922,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       "/dashboard/recommended-freelancers": "client_recommended_freelancers",
       "/dashboard/notifications": "notifications",
       "/dashboard/wallet": "wallet",
+      "/dashboard/my-projects": "my_projects",
+      "/dashboard/wishlist": "wishlist",
+      "/dashboard/reports": "reports",
+      "/dashboard/subscription": "subscription",
     };
     return routeMap[pathname] || "workspace";
   }, [pathname]);
@@ -831,6 +945,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       client_recommended_freelancers: "/dashboard/recommended-freelancers",
       notifications: "/dashboard/notifications",
       wallet: "/dashboard/wallet",
+      my_projects: "/dashboard/my-projects",
+      wishlist: "/dashboard/wishlist",
+      reports: "/dashboard/reports",
+      subscription: "/dashboard/subscription",
     };
     const path = routeMap[tab];
     if (path) {
@@ -859,21 +977,26 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Dynamic values
   const stepsStatus = useMemo(() => {
-    return [
-      { number: 1, label: "Basics", done: Boolean(profileBasics.professional_title) },
-      { number: 2, label: "Career", done: experiences.length > 0 || educations.length > 0 },
-      { number: 3, label: "Verification", done: emailVerified || phoneVerified },
-      { number: 4, label: "Portfolio", done: certifications.length > 0 || selectedSkills.length > 0 }
-    ];
-  }, [profileBasics, experiences, educations, emailVerified, phoneVerified, certifications, selectedSkills]);
+    if (userRole === "client") {
+      return [
+        { number: 1, label: "Company Basics", done: Boolean(companyName?.trim()) },
+        { number: 2, label: "Company Details", done: Boolean(companyWebsite?.trim() || companyDescription?.trim()) },
+        { number: 3, label: "Hiring Contact", done: Boolean(hiringContactName?.trim() && hiringContactDesignation?.trim()) }
+      ];
+    } else {
+      return [
+        { number: 1, label: "Basics", done: Boolean(profileBasics?.professional_title) },
+        { number: 2, label: "Career", done: experiences.length > 0 || educations.length > 0 },
+        { number: 3, label: "Verification", done: emailVerified || phoneVerified },
+        { number: 4, label: "Portfolio", done: certifications.length > 0 || selectedSkills.length > 0 }
+      ];
+    }
+  }, [userRole, companyName, companyWebsite, companyDescription, hiringContactName, hiringContactDesignation, profileBasics, experiences, educations, emailVerified, phoneVerified, certifications, selectedSkills]);
 
   const profileCompletionProgress = useMemo(() => {
-    let score = 0;
-    if (stepsStatus[0].done) score += 25;
-    if (stepsStatus[1].done) score += 25;
-    if (stepsStatus[2].done) score += 25;
-    if (stepsStatus[3].done) score += 25;
-    return score;
+    if (stepsStatus.length === 0) return 0;
+    const doneCount = stepsStatus.filter(s => s.done).length;
+    return Math.round((doneCount / stepsStatus.length) * 100);
   }, [stepsStatus]);
 
   // Connect to Socket.io and bind events
@@ -903,9 +1026,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
               triggerToast("success", notif.title, notif.message);
             });
 
+            socketInstance.on("vetting_status_updated", (payload: any) => {
+              console.log("⚡ Real-time vetting status update:", payload);
+              if (payload.vetting_status) {
+                setVettingStatus(payload.vetting_status);
+                localStorage.setItem("vetting_status", payload.vetting_status);
+              }
+            });
+
             socketInstance.on("new_message", (chatMessage: any) => {
               console.log("⚡ Real-time message:", chatMessage);
-              if (selectedConvIdRef.current === chatMessage.conversation_id && activeTabRef.current === "inbox") {
+              if (selectedConvIdRef.current === chatMessage.conversation_id) {
                 setChatMessages((prev) => {
                   if (prev.some(m => m.message_id === chatMessage.message_id)) return prev;
                   return [...prev, chatMessage];
@@ -918,6 +1049,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
             return () => {
               socketInstance.off("new_notification");
+              socketInstance.off("vetting_status_updated");
               socketInstance.off("new_message");
               disconnectSocket();
             };
@@ -961,6 +1093,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       if (savedEdu) setEducations(JSON.parse(savedEdu));
       if (savedCert) setCertifications(JSON.parse(savedCert));
       if (savedSkills) setSelectedSkills(JSON.parse(savedSkills));
+
+      // Load vetting status from localStorage
+      const savedVettingStatus = localStorage.getItem("vetting_status");
+      if (savedVettingStatus) {
+        setVettingStatus(savedVettingStatus);
+      }
     }
   }, []);
 
@@ -977,6 +1115,33 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Load actual profile details on authenticated mount or role switch
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+      fetchUnreadCount();
+      fetchConversations();
+
+      if (userRole === "client") {
+        fetchClientProfile();
+        fetchClientJobs();
+      } else if (userRole === "freelancer") {
+        fetchOnboardingDetails();
+        fetchFreelancerApplications();
+        fetchFreelancerContracts();
+        fetchFreelancerProposals();
+        fetchProposalLimitStatus();
+      }
+    }
+  }, [userRole, isAuthenticated]);
+
+  // Synchronize proposal limit check from server when proposals or authentication status changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProposalLimitStatus();
+    }
+  }, [freelancerProposals, isAuthenticated]);
+
   // Fetch settings dynamically
   useEffect(() => {
     const fetchSettings = async () => {
@@ -985,12 +1150,36 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         if (res.ok) {
           const data = await res.json();
           data.forEach((setting: any) => {
+            let val = setting.setting_value;
+            if (typeof val === "string") {
+              try {
+                const trimmed = val.trim();
+                if (trimmed.startsWith("{") || trimmed.startsWith("[") || trimmed === "true" || trimmed === "false" || (!isNaN(Number(trimmed)) && trimmed !== "")) {
+                  val = JSON.parse(val);
+                }
+              } catch (e) {
+                // Keep raw string silently
+              }
+            }
+
+            const formatHex = (colorStr: string, fallback: string) => {
+              if (!colorStr) return fallback;
+              const trimmed = colorStr.trim();
+              if (trimmed.startsWith("#")) return trimmed;
+              if (/^[0-9A-Fa-f]{3,8}$/.test(trimmed)) return "#" + trimmed;
+              return trimmed;
+            };
+
             if (setting.setting_key === "primary_color") {
-              setPrimaryColor(setting.setting_value?.color || "#10b981");
+               setPrimaryColor(formatHex(val?.color, "#10b981"));
             } else if (setting.setting_key === "secondary_color") {
-              setSecondaryColor(setting.setting_value?.color || "#06b6d4");
+               setSecondaryColor(formatHex(val?.color, "#06b6d4"));
             } else if (setting.setting_key === "theme") {
-              setSiteTheme(setting.setting_value?.theme || "light");
+              const localChoice = typeof window !== "undefined" ? localStorage.getItem("siteTheme") : null;
+              setSiteThemeState(localChoice || val?.theme || "light");
+            } else if (setting.setting_key === "site_settings") {
+              if (val?.site_name) setSiteName(val.site_name);
+              if (val?.site_logo) setSiteLogo(val.site_logo);
             }
           });
         }
@@ -1066,26 +1255,48 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       if (checkRes.ok) {
         const data = await checkRes.json();
         
-        if (data.hasFreelancerProfile && !data.hasClientProfile) {
-          setSelectedRole("freelancer");
-          setOnboardingCompleted(true);
-          localStorage.setItem("onboarding_role", "freelancer");
-          localStorage.setItem("onboarding_completed", "true");
+        setHasFreelancerProfile(!!data.hasFreelancerProfile);
+        setHasClientProfile(!!data.hasClientProfile);
+
+        const savedRole = localStorage.getItem("onboarding_role");
+        if (!savedRole) {
+          setOnboardingCompleted(false);
+          setShowOnboardingModal(true);
           setOnboardingStep("role_selection");
-        } else if (data.hasClientProfile && !data.hasFreelancerProfile) {
-          setSelectedRole("client");
-          setOnboardingCompleted(true);
-          localStorage.setItem("onboarding_role", "client");
-          localStorage.setItem("onboarding_completed", "true");
+          return;
+        }
+
+        const activeRole = savedRole;
+        setUserRole(activeRole);
+
+        const currentVetting = activeRole === "client" ? data.clientVettingStatus : data.freelancerVettingStatus;
+        const fallbackVetting = currentVetting || "Approved";
+        setVettingStatus(fallbackVetting);
+        localStorage.setItem("vetting_status", fallbackVetting);
+
+        const isCompleted = activeRole === "client" ? !!data.hasClientProfile : !!data.hasFreelancerProfile;
+        setOnboardingCompleted(isCompleted);
+        setShowOnboardingModal(!isCompleted);
+        localStorage.setItem("onboarding_completed", isCompleted ? "true" : "false");
+
+        if (!data.hasFreelancerProfile && !data.hasClientProfile) {
           setOnboardingStep("role_selection");
         } else {
-          setOnboardingStep("role_selection");
+          setOnboardingStep(activeRole === "client" ? "client_flow" : "freelancer_flow");
         }
       } else {
+        setOnboardingCompleted(false);
+        setShowOnboardingModal(true);
         setOnboardingStep("role_selection");
+        if (checkRes.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+        }
       }
     } catch (e) {
       console.error(e);
+      setOnboardingCompleted(false);
+      setShowOnboardingModal(true);
       setOnboardingStep("role_selection");
     }
   };
@@ -1103,6 +1314,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         if (data.onboardingCompleted) {
           setOnboardingCompleted(true);
           localStorage.setItem("onboarding_completed", "true");
+          setHasFreelancerProfile(true);
         }
       }
     } catch (e) {
@@ -1123,6 +1335,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           setUserPhone(data.user.phone || "");
           setEmailVerified(data.user.email_verified || false);
           setPhoneVerified(data.user.phone_verified || false);
+          const fullName = [data.user.first_name, data.user.last_name].filter(Boolean).join(" ");
+          if (fullName) {
+            setUserName(fullName);
+          }
+          if (data.user.profile_image) {
+            setProfileImage(data.user.profile_image);
+          }
         }
         if (data.profile) {
           setCategoryId(data.profile.category_id?.toString() || "");
@@ -1136,11 +1355,31 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           setLinkedinUrl(data.profile.linkedin_url || "");
           setPortfolioWebsite(data.profile.portfolio_website || "");
           setResumeUrl(data.profile.resume_url || "");
+
+          const loadedBasics = {
+            professional_title: data.profile.professional_title || "",
+            experience_level: data.profile.experience_level || "Intermediate",
+            hourly_rate: parseFloat(data.profile.hourly_rate) || 45,
+            availability_status: data.profile.availability_status || "Available",
+            total_experience_years: parseInt(data.profile.total_experience_years) || 3,
+            linkedin_url: data.profile.linkedin_url || "",
+            portfolio_website: data.profile.portfolio_website || "",
+            resume_url: data.profile.resume_url || "",
+            slug: data.user.slug || "",
+            display_name: data.user.display_name || data.user.name || ""
+          };
+          setProfileBasics(loadedBasics);
+          localStorage.setItem("profile_basics", JSON.stringify(loadedBasics));
         }
         if (data.skills) {
           setSelectedSkillIds(data.skills.map((s: any) => s.skill_id));
         }
         if (data.languages) {
+          const loadedLangs = data.languages.map((l: any) => ({
+            language_id: l.language_id,
+            proficiency: l.proficiency || 'Basic'
+          }));
+          setSelectedLanguages(loadedLangs);
           setSelectedLanguageIds(data.languages.map((l: any) => l.language_id));
         }
         if (data.experiences) setExperiences(data.experiences);
@@ -1239,7 +1478,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ language_ids: selectedLanguageIds })
+        body: JSON.stringify({ languages: selectedLanguages })
       });
 
       if (!langRes.ok) {
@@ -1509,12 +1748,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const handlePortfolioSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!projectTitle.trim() && !projectDesc.trim()) {
+      // Both are empty: treat as skipping the optional project and complete onboarding
+      await handleFinishOnboarding();
+      return;
+    }
     if (!projectTitle.trim() || !projectDesc.trim()) {
-      triggerToast("error", "Portfolio project title and description are required.");
+      triggerToast("error", "Please provide both project title and description to save your project, or click 'Skip Project'.");
       return;
     }
     try {
       const token = localStorage.getItem("token");
+      // Save portfolio project
       const res = await fetch(`${API_URL}/freelancer/onboarding/portfolio`, {
         method: "POST",
         headers: {
@@ -1531,9 +1776,29 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         setPortfolioSuccess(true);
+        // Now call complete onboarding to get vetting decision
         setTimeout(async () => {
-          setOnboardingCompleted(true);
-          localStorage.setItem("onboarding_completed", "true");
+          try {
+            const completeRes = await fetch(`${API_URL}/freelancer/onboarding/complete`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+            });
+            if (completeRes.ok) {
+              const completeData = await completeRes.json();
+              const status = completeData.vettingStatus || "Approved";
+              setVettingStatus(status);
+              localStorage.setItem("vetting_status", status);
+              setOnboardingCompleted(true);
+              localStorage.setItem("onboarding_completed", "true");
+            } else {
+              // fallback — complete locally
+              setOnboardingCompleted(true);
+              localStorage.setItem("onboarding_completed", "true");
+            }
+          } catch {
+            setOnboardingCompleted(true);
+            localStorage.setItem("onboarding_completed", "true");
+          }
         }, 1500);
       } else {
         const d = await res.json();
@@ -1575,9 +1840,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
       if (res.ok) {
         setClientSuccess(true);
-        setTimeout(() => {
+        setTimeout(async () => {
           setOnboardingCompleted(true);
           localStorage.setItem("onboarding_completed", "true");
+          if (token) {
+            await runOnboardingCheck(token);
+          }
         }, 1000);
       } else {
         const data = await res.json();
@@ -1590,12 +1858,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const handleSelectFreelancer = () => {
     setSelectedRole("freelancer");
+    setUserRole("freelancer");
     setOnboardingStep("freelancer_flow");
     localStorage.setItem("onboarding_role", "freelancer");
   };
 
   const handleSelectClient = () => {
     setSelectedRole("client");
+    setUserRole("client");
     setClientNotice(true);
     localStorage.setItem("onboarding_role", "client");
     setTimeout(() => {
@@ -1606,15 +1876,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleSkip = () => {
-    setOnboardingCompleted(true);
-    localStorage.setItem("onboarding_completed", "true");
+    setShowOnboardingModal(false);
+    setForceShowOnboarding(false);
   };
 
   // Fetch notifications
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/notifications", {
+      const res = await fetch("https://freelancer.sangvish.com/api/notifications", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1628,7 +1898,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const fetchUnreadCount = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/notifications/unread-count", {
+      const res = await fetch("https://freelancer.sangvish.com/api/notifications/unread-count", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1643,7 +1913,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleMarkAllRead = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/notifications/read-all", {
+      const res = await fetch("https://freelancer.sangvish.com/api/notifications/read-all", {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -1660,7 +1930,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleMarkSingleRead = async (notifId: number, notifType: string, refId: string | null) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/notifications/${notifId}/read`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/notifications/${notifId}/read`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -1677,7 +1947,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setActiveTab("inbox");
         setSelectedConvId(parseInt(refId));
       } else if (notifType === "proposal") {
-        setActiveTab("proposals");
+        const notif = notifications.find((n) => n.notification_id === notifId);
+        const title = notif?.title || "";
+        const message = notif?.message || "";
+        const isAccepted = title.toLowerCase().includes("accepted") || message.toLowerCase().includes("accepted");
+        if (isAccepted) {
+          setActiveTab("my_projects");
+        } else {
+          setActiveTab("proposals");
+        }
       } else if (notifType === "gig") {
         setActiveTab(userRole === "client" ? "client_orders" : "gig_applications");
       }
@@ -1690,7 +1968,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingClientJobs(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/jobs/client", {
+      const res = await fetch(`${API_URL}/jobs/client`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1707,7 +1985,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingAllJobs(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/jobs", {
+      const res = await fetch(`${API_URL}/jobs`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1719,12 +1997,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       setLoadingAllJobs(false);
     }
   };
-
   const fetchFreelancerProposals = async () => {
     try {
       setLoadingFreelancerProposals(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/proposals/my-proposals", {
+      const res = await fetch(`${API_URL}/proposals/my-proposals`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1737,11 +2014,32 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchProposalLimitStatus = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const res = await fetch(`${API_URL}/proposals/limit-check`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setProposalLimitReached(data.limitReached);
+        if (data.limitReached) {
+          setProposalLimitMsg(`Your monthly proposal limit of ${data.limit} has been reached for this billing cycle. Your limit resets on ${data.resetDate}.`);
+        } else {
+          setProposalLimitMsg("");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to check proposal limit status:", e);
+    }
+  };
+
   const fetchActiveJobProposals = async (jobId: number) => {
     try {
       setLoadingActiveJobProposals(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/proposals/job/${jobId}`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/proposals/job/${jobId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1757,7 +2055,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleUpdateProposalStatus = async (proposalId: number, status: "Accepted" | "Declined", jobId: number) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/proposals/${proposalId}/status`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/proposals/${proposalId}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -1814,7 +2112,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       setProposalSubmitting(true);
       setProposalError("");
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/proposals", {
+      const res = await fetch("https://freelancer.sangvish.com/api/proposals", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1842,6 +2140,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setNewMilestoneAmount("");
         setProposalUseMilestones(false);
         fetchFreelancerProposals();
+        fetchProposalLimitStatus();
+      } else if (res.status === 403) {
+        setProposalError(data.message || "Your monthly proposal limit has been reached.");
+        triggerToast("error", "Proposal Limit Exceeded", data.message || "Please upgrade your subscription plan.");
+        if (typeof window !== "undefined") {
+          setTimeout(() => {
+            window.location.href = "/pricing";
+          }, 4500);
+        }
       } else {
         setProposalError(data.message || "Failed to submit proposal.");
       }
@@ -1854,10 +2161,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const handleAddProposalMilestone = () => {
     if (!newMilestoneTitle.trim()) {
+      setProposalError("Milestone description is required.");
       triggerToast("error", "Milestone description is required.");
       return;
     }
     if (!newMilestoneAmount || Number(newMilestoneAmount) <= 0) {
+      setProposalError("Milestone amount must be a positive number.");
       triggerToast("error", "Milestone amount must be a positive number.");
       return;
     }
@@ -1865,10 +2174,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     
     const currentTotal = proposalMilestones.reduce((sum, m) => sum + m.amount, 0);
     if (currentTotal + amount > proposalBidAmount) {
-      triggerToast("error", `Total milestone amount ($${(currentTotal + amount).toLocaleString()}) cannot exceed the offered total bid amount ($${proposalBidAmount.toLocaleString()}).`);
+      const errMsg = `Total milestone amount ($${(currentTotal + amount).toLocaleString()}) cannot exceed the offered total bid amount ($${proposalBidAmount.toLocaleString()}).`;
+      setProposalError(errMsg);
+      triggerToast("error", errMsg);
       return;
     }
 
+    setProposalError("");
     setProposalMilestones((prev) => [...prev, { title: newMilestoneTitle.trim(), amount }]);
     setNewMilestoneTitle("");
     setNewMilestoneAmount("");
@@ -1882,7 +2194,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingConversations(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/messages/conversations", {
+      const res = await fetch("https://freelancer.sangvish.com/api/messages/conversations", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1899,7 +2211,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingChatMessages(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/messages/conversation/${convId}`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/messages/conversation/${convId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1912,6 +2224,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    if (selectedConvId) {
+      fetchChatMessages(selectedConvId);
+    } else {
+      setChatMessages([]);
+    }
+  }, [selectedConvId]);
+
   const handleSendChatMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedConvId || !newMessageText.trim()) return;
@@ -1919,7 +2239,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setSendingChatMessage(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/messages/send", {
+      const res = await fetch("https://freelancer.sangvish.com/api/messages/send", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1951,7 +2271,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setPostJobSubCategoryId("");
     if (catId) {
       try {
-        const res = await fetch("http://localhost:5000/api/admin/sub-categories");
+        const res = await fetch("https://freelancer.sangvish.com/api/admin/sub-categories");
         if (res.ok) {
           const data = await res.json();
           setPostJobSubCategories(data.filter((sub: any) => sub.category_id.toString() === catId));
@@ -1969,7 +2289,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setPostJobSelectedSkills([]);
     if (subCatId) {
       try {
-        const res = await fetch(`http://localhost:5000/api/admin/skills/subcategory/${subCatId}`);
+        const res = await fetch(`https://freelancer.sangvish.com/api/admin/skills/subcategory/${subCatId}`);
         if (res.ok) {
           setPostJobAvailableSkills(await res.json());
         }
@@ -1983,7 +2303,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const fetchPostJobLanguages = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/freelancer/languages");
+      const token = localStorage.getItem("token");
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/languages", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (res.ok) {
         setPostJobAvailableLanguages(await res.json());
       }
@@ -2008,7 +2331,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingGigs(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/gigs", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/gigs", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2025,7 +2348,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingClientGigs(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/client/gigs", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2042,7 +2365,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingApplications(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/gigs/applications", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/gigs/applications", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2059,7 +2382,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingClientApplications(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/client/gigs/applications", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs/applications", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2076,7 +2399,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setLoadingHiredFreelancers(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/users/client/hired-freelancers", {
+      const res = await fetch("https://freelancer.sangvish.com/api/users/client/hired-freelancers", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2101,7 +2424,34 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       setOrderSubmitting(true);
       setOrderError("");
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/client/gigs/apply", {
+
+      // Stripe / PayPal auto-deposit integration
+      const priceVal = parseFloat(applyingGig.price);
+      const upfrontAmount = priceVal;
+
+      if (orderPaymentMethod === "stripe" || orderPaymentMethod === "paypal") {
+        const walletRes = await fetch("https://freelancer.sangvish.com/api/wallet", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (walletRes.ok) {
+          const walletInfo = await walletRes.json();
+          const currentBalance = parseFloat(walletInfo.balance);
+          const needed = upfrontAmount - currentBalance;
+          if (needed > 0) {
+            // Auto fund wallet via simulated deposit
+            await fetch("https://freelancer.sangvish.com/api/wallet/deposit", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ amount: needed })
+            });
+          }
+        }
+      }
+
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/client/gigs/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2111,7 +2461,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           gig_id: applyingGig.gig_id,
           requirements: orderRequirements.trim(),
           price: parseFloat(applyingGig.price),
-          currency_id: applyingGig.currency_id
+          currency_id: applyingGig.currency_id,
+          milestones: orderMilestones
         })
       });
 
@@ -2119,12 +2470,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         setOrderSuccess(true);
         setOrderRequirements("");
+        setOrderMilestones([]);
+        setOrderPaymentMethod("wallet");
         setTimeout(() => {
           setIsApplying(false);
           setApplyingGig(null);
           setOrderSuccess(false);
           fetchFreelancerApplications();
           fetchClientApplications();
+          fetchWalletInfo();
         }, 1500);
       } else {
         setOrderError(data.message || "Failed to submit application.");
@@ -2139,7 +2493,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleUpdateApplicationStatus = async (applicationId: number, status: "Accepted" | "Rejected") => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:5000/api/freelancer/gigs/applications/${applicationId}`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/gigs/applications/${applicationId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -2162,7 +2516,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const fetchCurrencies = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/currencies", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/currencies", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2180,7 +2534,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const fetchGigCategories = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/admin/categories");
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/categories");
       if (res.ok) {
         setGigCategories(await res.json());
       }
@@ -2191,7 +2545,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const fetchGigSubCategories = async (catId?: string) => {
     try {
-      const res = await fetch("http://localhost:5000/api/admin/sub-categories");
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/sub-categories");
       if (res.ok) {
         const data = await res.json();
         if (catId) {
@@ -2207,7 +2561,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const fetchGigSkills = async (subCatId: string) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/skills/subcategory/${subCatId}`);
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/skills/subcategory/${subCatId}`);
       if (res.ok) {
         setGigAvailableSkills(await res.json());
       }
@@ -2220,7 +2574,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const formData = new FormData();
     formData.append("file", file);
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:5000/api/upload", {
+    const res = await fetch("https://freelancer.sangvish.com/api/upload", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -2239,26 +2593,66 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("token");
       if (!token) return;
-      const res = await fetch("http://localhost:5000/api/users/client-profile", {
+      const res = await fetch("https://freelancer.sangvish.com/api/users/client-profile", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
         const data = await res.json();
         if (data) {
-          setClientBasics({
-            company_name: data.company_name || "",
-            company_size: data.company_size || "1-10",
-            industry: data.industry || "Technology",
-            company_website: data.company_website || "",
-            company_description: data.company_description || "",
-            company_established_year: data.company_established_year || "",
-            hiring_contact_name: data.hiring_contact_name || "",
-            hiring_contact_designation: data.hiring_contact_designation || "",
-          });
+          if (data.profile) {
+            setClientBasics({
+              company_name: data.profile.company_name || "",
+              company_size: data.profile.company_size || "1-10",
+              industry: data.profile.industry || "Technology",
+              company_website: data.profile.company_website || "",
+              company_description: data.profile.company_description || "",
+              company_established_year: data.profile.company_established_year || "",
+              hiring_contact_name: data.profile.hiring_contact_name || "",
+              hiring_contact_designation: data.profile.hiring_contact_designation || "",
+            });
+          }
+          if (data.user) {
+            const fullName = [data.user.first_name, data.user.last_name].filter(Boolean).join(" ");
+            if (fullName) {
+              setUserName(fullName);
+            }
+            if (data.user.profile_image) {
+              setProfileImage(data.user.profile_image);
+            }
+          }
         }
       }
     } catch (err) {
       console.error("Failed to fetch client profile:", err);
+    }
+  };
+
+  const handleProfileImageUpload = async (file: File) => {
+    try {
+      console.log("📁 Starting profile image upload for file:", file.name, file.size, file.type);
+      const url = await uploadFile(file);
+      console.log("🌐 File uploaded successfully. Server URL returned:", url);
+      const token = localStorage.getItem("token");
+      const res = await fetch("https://freelancer.sangvish.com/api/users/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ profile_image: url })
+      });
+      if (res.ok) {
+        setProfileImage(url);
+        triggerToast("success", "Profile picture updated successfully!");
+        console.log("✅ Profile image saved in DB and state updated:", url);
+      } else {
+        const errText = await res.text();
+        console.error("❌ Failed to update profile picture in DB. Status:", res.status, errText);
+        triggerToast("error", "Failed to update profile picture.");
+      }
+    } catch (err: any) {
+      console.error("❌ Error in handleProfileImageUpload:", err);
+      triggerToast("error", err.message || "Failed to upload image");
     }
   };
 
@@ -2353,7 +2747,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       setGigPublishing(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/freelancer/gigs", {
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/gigs", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2427,60 +2821,73 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleSaveStep = async (stepNum: number) => {
-    let bodyData: any = {};
-    if (stepNum === 1) {
-      if (!profileBasics.professional_title.trim() || !profileBasics.experience_level) {
-        triggerToast("error", "Title and experience level are required.");
-        return;
-      }
-      bodyData = {
-        professional_title: profileBasics.professional_title,
-        experience_level: profileBasics.experience_level,
-        availability_status: profileBasics.availability_status,
-        total_experience_years: profileBasics.total_experience_years ? parseInt(String(profileBasics.total_experience_years)) : 0,
-        hourly_rate: profileBasics.hourly_rate ? parseFloat(String(profileBasics.hourly_rate)) : 0
-      };
-    } else if (stepNum === 2) {
-      bodyData = {
-        linkedin_url: profileBasics.linkedin_url || null,
-        portfolio_website: profileBasics.portfolio_website || null,
-        resume_url: profileBasics.resume_url || null
-      };
-    } else if (stepNum === 3) {
-      bodyData = {
-        experiences,
-        educations
-      };
-    } else if (stepNum === 4) {
-      bodyData = {
-        certifications
-      };
-    } else if (stepNum === 5) {
-      bodyData = {
-        skills: selectedSkills
-      };
-    }
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/users/profile-details", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify(bodyData)
-      });
-      if (res.ok) {
-        triggerToast("success", `Step ${stepNum} Saved successfully!`);
-        localStorage.setItem("profile_basics", JSON.stringify(profileBasics));
-        localStorage.setItem("profile_experiences", JSON.stringify(experiences));
-        localStorage.setItem("profile_education", JSON.stringify(educations));
-        localStorage.setItem("profile_certifications", JSON.stringify(certifications));
-        localStorage.setItem("profile_skills", JSON.stringify(selectedSkills));
+      if (stepNum === 1) {
+        if (!profileBasics.professional_title.trim() || !profileBasics.experience_level) {
+          triggerToast("error", "Title and experience level are required.");
+          return;
+        }
+        
+        const res = await fetch("https://freelancer.sangvish.com/api/freelancer/onboarding/profile", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            category_id: parseInt(categoryId) || 1,
+            sub_category_id: parseInt(subCategoryId) || 1,
+            professional_title: profileBasics.professional_title,
+            experience_level: profileBasics.experience_level,
+            availability_status: profileBasics.availability_status || "Available",
+            total_experience_years: profileBasics.total_experience_years ? parseInt(String(profileBasics.total_experience_years)) : 0,
+            hourly_rate: profileBasics.hourly_rate ? parseFloat(String(profileBasics.hourly_rate)) : 0,
+            linkedin_url: profileBasics.linkedin_url || null,
+            portfolio_website: profileBasics.portfolio_website || null,
+            resume_url: profileBasics.resume_url || null,
+            slug: profileBasics.slug || null,
+            display_name: profileBasics.display_name || null
+          })
+        });
+
+        if (res.ok) {
+          triggerToast("success", "Profile basics saved successfully!");
+          localStorage.setItem("profile_basics", JSON.stringify(profileBasics));
+        } else {
+          const data = await res.json();
+          triggerToast("error", data.message || "Failed to save profile basics.");
+        }
+      } else if (stepNum === 5) {
+        // Save skills selector
+        const res = await fetch("https://freelancer.sangvish.com/api/freelancer/onboarding/skills", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            skill_ids: selectedSkillIds
+          })
+        });
+
+        if (res.ok) {
+          triggerToast("success", "Skills saved successfully!");
+          localStorage.setItem("profile_skills", JSON.stringify(selectedSkills));
+        } else {
+          const data = await res.json();
+          triggerToast("error", data.message || "Failed to save skills.");
+        }
+      } else {
+        // Steps 2, 3, and 4 add/delete items dynamically. 
+        // We just return a success toast and skip calling any endpoints.
+        triggerToast("success", `Step ${stepNum} updated successfully!`);
       }
     } catch (e) {
       console.error(e);
+      triggerToast("error", "Failed to update profile step.");
     }
   };
 
@@ -2516,7 +2923,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/users/client-profile", {
+      const res = await fetch("https://freelancer.sangvish.com/api/users/client-profile", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2544,7 +2951,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/messages/conversation", {
+      const res = await fetch("https://freelancer.sangvish.com/api/messages/conversation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2575,6 +2982,25 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleRoleSwitch = (role: string) => {
     setUserRole(role);
     localStorage.setItem("onboarding_role", role);
+
+    const isCompleted = role === "client" ? hasClientProfile : hasFreelancerProfile;
+    setOnboardingCompleted(isCompleted);
+    localStorage.setItem("onboarding_completed", isCompleted ? "true" : "false");
+
+    if (!isCompleted) {
+      setOnboardingStep(role === "client" ? "client_flow" : "freelancer_flow");
+      if (role === "client") {
+        setClientWizardStep(1);
+      } else {
+        setWizardStep(1);
+      }
+    }
+
+    const token = localStorage.getItem("token");
+    if (token) {
+      runOnboardingCheck(token);
+    }
+
     triggerToast("success", "Active workspace switched", `Switched to ${role === "client" ? "Client" : "Freelancer"} mode.`);
   };
 
@@ -2623,9 +3049,28 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     await handlePortfolioSubmit(e);
   };
 
-  const handleFinishOnboarding = () => {
+  const handleFinishOnboarding = async () => {
+    // Called when user skips the portfolio step
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/freelancer/onboarding/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const status = data.vettingStatus || "Approved";
+        setVettingStatus(status);
+        localStorage.setItem("vetting_status", status);
+        setHasFreelancerProfile(true);
+      }
+    } catch (e) {
+      console.error("Failed to call complete onboarding:", e);
+    }
     setOnboardingCompleted(true);
+    setShowOnboardingModal(false);
     localStorage.setItem("onboarding_completed", "true");
+    setForceShowOnboarding(false);
   };
 
   const handleSaveClientStep = async (stepNum: number) => {
@@ -2645,7 +3090,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       try {
         setClientError("");
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/users/client-profile", {
+        const res = await fetch("https://freelancer.sangvish.com/api/users/client-profile", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -2667,9 +3112,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         if (res.ok) {
           setClientSuccess(true);
           triggerToast("success", "Client profile published successfully!");
-          setTimeout(() => {
+          setHasClientProfile(true);
+          setTimeout(async () => {
             setOnboardingCompleted(true);
+            setShowOnboardingModal(false);
             localStorage.setItem("onboarding_completed", "true");
+            setForceShowOnboarding(false);
+            if (token) {
+              await runOnboardingCheck(token);
+            }
           }, 1000);
         } else {
           const data = await res.json();
@@ -2688,7 +3139,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("token");
       if (!token) return;
       setLoadingWallet(true);
-      const res = await fetch("http://localhost:5000/api/wallet", {
+      const res = await fetch("https://freelancer.sangvish.com/api/wallet", {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -2713,7 +3164,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/wallet/withdraw", {
+      const res = await fetch("https://freelancer.sangvish.com/api/wallet/withdraw", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2747,7 +3198,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://localhost:5000/api/wallet/deposit", {
+      const res = await fetch("https://freelancer.sangvish.com/api/wallet/deposit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2770,9 +3221,133 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchFreelancerContracts = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/contracts", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setFreelancerContracts(await res.json());
+      }
+    } catch (e) {
+      console.error("Failed to fetch freelancer contracts:", e);
+    }
+  };
+
+  const fetchRecommendedClients = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("https://freelancer.sangvish.com/api/freelancer/recommended-clients", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setRecommendedClients(await res.json());
+      }
+    } catch (e) {
+      console.error("Failed to fetch recommended clients:", e);
+    }
+  };
+
+  const requestContractPayment = async (contractId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${contractId}/request-payment`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Payment request submitted to client!");
+        fetchFreelancerContracts();
+      } else {
+        triggerToast("error", data.message || "Failed to request payment.");
+      }
+    } catch (err) {
+      triggerToast("error", "Network error. Failed to request payment.");
+    }
+  };
+
+  const startWorkContract = async (contractId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`https://freelancer.sangvish.com/api/payments/contract/${contractId}/start-work`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Work started!", "Contract status updated to Work Started.");
+        fetchFreelancerContracts();
+      } else {
+        triggerToast("error", data.message || "Failed to update contract status.");
+      }
+    } catch (err) {
+      triggerToast("error", "Network error. Failed to update contract status.");
+    }
+  };
+
+  const approveContractPayment = async (contractId: number, paymentMethod: string = "wallet") => {
+    try {
+      const token = localStorage.getItem("token");
+
+      // Auto fund wallet via simulated deposit if paying with Stripe/PayPal
+      if (paymentMethod === "stripe" || paymentMethod === "paypal") {
+        const contract = freelancerContracts.find((c: any) => c.contract_id === contractId);
+        if (contract) {
+          const budget = parseFloat(contract.budget);
+          const hasMilestones = contract.milestones && contract.milestones.length > 0 && !(contract.milestones.length === 1 && contract.milestones[0].title === "Entire Project Scope");
+          const balanceAmount = hasMilestones ? (budget * 0.50) : 0;
+
+          if (balanceAmount > 0) {
+            const walletRes = await fetch("https://freelancer.sangvish.com/api/wallet", {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (walletRes.ok) {
+              const walletInfo = await walletRes.json();
+              const currentBalance = parseFloat(walletInfo.balance);
+              const needed = balanceAmount - currentBalance;
+              if (needed > 0) {
+                await fetch("https://freelancer.sangvish.com/api/wallet/deposit", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ amount: needed })
+                });
+              }
+            }
+          }
+        }
+      }
+
+      const res = await fetch(`https://freelancer.sangvish.com/api/freelancer/contracts/${contractId}/approve-payment`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Escrow payment released to freelancer successfully!");
+        fetchFreelancerContracts();
+        fetchWalletInfo();
+      } else {
+        triggerToast("error", data.message || "Failed to release payment.");
+      }
+    } catch (err) {
+      triggerToast("error", "Network error. Failed to release payment.");
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchWalletInfo();
+      fetchFreelancerContracts();
+      fetchRecommendedClients();
+      fetchGigs();
+      fetchCurrencies();
+      fetchGigCategories();
+      fetchPostJobLanguages();
     }
   }, [isAuthenticated]);
 
@@ -2786,6 +3361,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     isAuthenticated, setIsAuthenticated,
     onboardingCompleted, setOnboardingCompleted,
+    showOnboardingModal, setShowOnboardingModal,
+    vettingStatus, setVettingStatus,
     onboardingStep, setOnboardingStep,
     selectedRole, setSelectedRole,
     activeView, setActiveView,
@@ -2817,6 +3394,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     resumeUrl, setResumeUrl,
     selectedSkillIds, setSelectedSkillIds,
     selectedLanguageIds, setSelectedLanguageIds,
+    selectedLanguages, setSelectedLanguages,
+    handleUpdateLanguageProficiency,
     step1Error, setStep1Error,
     step1Success, setStep1Success,
     experiences, setExperiences,
@@ -2858,6 +3437,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     secondaryColor, setSecondaryColor,
     siteTheme, setSiteTheme,
     userName, setUserName,
+    profileImage, setProfileImage,
+    handleProfileImageUpload,
     gigs, setGigs,
     currencies, setCurrencies,
     loadingGigs, setLoadingGigs,
@@ -2895,6 +3476,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     orderSubmitting, setOrderSubmitting,
     orderSuccess, setOrderSuccess,
     orderError, setOrderError,
+    orderMilestones, setOrderMilestones,
+    orderPaymentMethod, setOrderPaymentMethod,
     uploadingImages, setUploadingImages,
     uploadingVideo, setUploadingVideo,
     uploadingDocs, setUploadingDocs,
@@ -2928,6 +3511,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     selectedProjectDetails, setSelectedProjectDetails,
     selectedGigOrderDetails, setSelectedGigOrderDetails,
     selectedFreelancerProfile, setSelectedFreelancerProfile,
+    selectedFreelancerFullProfile, loadingFullProfile,
     loadingProfileDetails, setLoadingProfileDetails,
     projectProposals, setProjectProposals,
     loadingProjectProposals, setLoadingProjectProposals,
@@ -2979,6 +3563,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     handleRemoveExperience, handleRemoveEducation, handleRemoveCertification,
     triggerToast, fetchNotifications, fetchUnreadCount, handleMarkAllRead, handleMarkSingleRead,
     fetchClientProfile, fetchClientJobs, fetchAllJobs, fetchFreelancerProposals,
+    fetchProposalLimitStatus, proposalLimitReached, proposalLimitMsg,
     fetchActiveJobProposals, handleUpdateProposalStatus, handleSubmitProposal,
     handleAddProposalMilestone, handleRemoveProposalMilestone, fetchConversations,
     fetchChatMessages, handleSendChatMessage, handlePostJobCategoryChange,
@@ -2991,17 +3576,23 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     handleGigToggleSkill, handleCreateGigSubmit, deleteExperience, deleteEducation,
     deleteCertification, handleSaveStep, handleSaveClientStepSettings,
     handleStartConversation, handleUpdateGigApplication, setActiveTab, activeTab,
+    siteName, setSiteName, siteLogo, setSiteLogo,
     handleRoleSwitch, handleToggleSkill, handleSkipStep2, updateOnboardingStep,
     handleSkipStep3, handleSaveStep3, handleAddProject, handleFinishOnboarding,
     handleSaveClientStep,
+    forceShowOnboarding, setForceShowOnboarding,
     walletInfo, loadingWallet,
     withdrawAmount, setWithdrawAmount,
     withdrawMethod, setWithdrawMethod,
     withdrawAccount, setWithdrawAccount,
     depositAmount, setDepositAmount,
-    fetchWalletInfo, handleWithdrawSubmit, handleDepositSubmit
+    fetchWalletInfo, handleWithdrawSubmit, handleDepositSubmit,
+    freelancerContracts, recommendedClients,
+    fetchFreelancerContracts, fetchRecommendedClients,
+    requestContractPayment, approveContractPayment, startWorkContract,
+    pendingInviteFreelancer, setPendingInviteFreelancer
   }), [
-    isAuthenticated, onboardingCompleted, onboardingStep, selectedRole, activeView,
+    isAuthenticated, onboardingCompleted, showOnboardingModal, forceShowOnboarding, onboardingStep, selectedRole, activeView,
     clientNotice, isSidebarOpen, categories, subCategories, availableSkills, languages,
     companyName, companySize, industry, companyWebsite, companyDescription,
     companyEstablishedYear, hiringContactName, hiringContactDesignation, clientWizardStep,
@@ -3014,13 +3605,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     userEmail, userPhone, emailVerified, phoneVerified, emailOtp, phoneOtp, emailOtpSent,
     phoneOtpSent, otpError, otpSuccess, projectTitle, projectDesc, projectImages,
     projectVideo, projectDocs, portfolioSuccess, primaryColor, secondaryColor, siteTheme,
-    userName, gigs, currencies, loadingGigs, isCreatingGig, gigTitle, gigDescription,
+    userName, profileImage, handleProfileImageUpload, gigs, currencies, loadingGigs, isCreatingGig, gigTitle, gigDescription,
     gigPrice, gigCurrencyId, gigDeliveryDays, gigRevisions, gigImages, gigVideoUrl,
     gigDocuments, gigCategoryId, gigSubCategoryId, gigSelectedSkills, gigError,
     gigSuccess, gigPublishing, gigCategories, gigSubCategories, gigAvailableSkills,
     userRole, clientGigs, loadingClientGigs, gigApplications, loadingApplications,
     clientApplications, loadingClientApplications, hiredFreelancers, loadingHiredFreelancers,
     isApplying, applyingGig, orderRequirements, orderSubmitting, orderSuccess, orderError,
+    orderMilestones, setOrderMilestones, orderPaymentMethod, setOrderPaymentMethod,
     uploadingImages, uploadingVideo, uploadingDocs, searchQuery, selectedCategory,
     postJobTitle, postJobBudget, postJobCategoryId, postJobSubCategoryId, postJobSubCategories,
     postJobDescription, postJobExpLevel, postJobStep, postJobType, postJobMilestoneType,
@@ -3039,11 +3631,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     notifications, unreadNotificationsCount, isNotificationsOpen, filteredFreelancers,
     profileStep, isEditingProfile, showPublishConfirmModal, clientBasics, profileBasics,
     selectedSkills, availableSkillsList, apiAlert, stepsStatus, profileCompletionProgress,
-    activeTab,
+    activeTab, siteName, siteLogo,
     handleRoleSwitch, handleToggleSkill, handleSkipStep2, updateOnboardingStep,
     handleSkipStep3, handleSaveStep3, handleAddProject, handleFinishOnboarding,
     handleSaveClientStep,
-    walletInfo, loadingWallet, withdrawAmount, withdrawMethod, withdrawAccount, depositAmount
+    walletInfo, loadingWallet, withdrawAmount, withdrawMethod, withdrawAccount, depositAmount,
+    freelancerContracts, recommendedClients,
+    requestContractPayment, approveContractPayment, startWorkContract,
+    selectedFreelancerFullProfile, loadingFullProfile,
+    pendingInviteFreelancer
   ]);
 
   return (

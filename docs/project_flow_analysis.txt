@@ -1,0 +1,123 @@
+================================================================================
+LANCERFLOW - PROJECT FLOW & ESCROW PAYMENT ANALYSIS & DESIGN
+================================================================================
+
+This document details the analysis of the custom Project/Job escrow and milestone flow,
+contrasting the current implementation ("How it is now") with the required design
+and rules to prevent bugs and ensure correct payment logic ("What needs to be improved").
+
+--------------------------------------------------------------------------------
+1. PROJECT CREATION FLOW
+--------------------------------------------------------------------------------
+* HOW IT IS NOW:
+  - Client creates a project (job) using the `createJob` controller in `jobController.js`.
+  - It validates basic parameters (title, description, budget) and limits the number of monthly postings based on the client's subscription plan.
+  - Project fields include: `project_type` ('Fixed' or 'Hourly') and `milestone_type` ('Fixed' or 'Milestone').
+  - Active jobs are posted in status 'Open'.
+
+* WHAT NEEDS TO BE IMPROVED:
+  - Vetting status constraint: Clients can only create/publish projects once their profile has completed onboarding AND has been approved by the Admin vetting system (if client vetting is enabled).
+  - Explicit validation: For Fixed-price projects where `milestone_type` is 'Milestone', the system should declare that milestone structures are expected upon hiring.
+
+--------------------------------------------------------------------------------
+2. FREELANCER PROPOSAL / APPLY FLOW
+--------------------------------------------------------------------------------
+* HOW IT IS NOW:
+  - Freelancers apply to 'Open' projects by creating a proposal in `proposalController.js`.
+  - They specify cover letter, bid_amount, delivery_days, and a list of custom milestones.
+  - Validation check in `createProposal` (line 105) checks if `milestoneTotal > bid_amount`. It does NOT enforce that they must be exactly equal.
+  - The plan limits are checked: Starter plan limits freelancers to 5 bids/month.
+
+* WHAT NEEDS TO BE IMPROVED:
+  - **Milestone Balance Rule**: The sum of all milestone prices defined by the freelancer MUST exactly equal the total bid amount (i.e. `milestoneTotal === bid_amount`). They cannot be less or more.
+  - Required Milestones: If the project type is Fixed and milestone type is Milestone, the freelancer must define at least one milestone during proposal creation.
+
+--------------------------------------------------------------------------------
+3. CLIENT ACCEPTANCE & CONTRACT CREATION (HIRING) FLOW
+--------------------------------------------------------------------------------
+* HOW IT IS NOW:
+  - When the client accepts a proposal, they fund the project bid amount (100% upfront).
+  - This is processed in `processProposalHireTransaction` inside `paymentController.js`.
+  - The client wallet is debited by the bid amount, and the admin system escrow wallet is credited.
+  - **CRITICAL BUG 1: UPFRONT PAYMENT**: During the hire transaction, the system immediately credits the freelancer's wallet balance:
+    ```javascript
+    await pool.query("UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2", [freelancerAmount, freelancerWallet.wallet_id]);
+    ```
+    This means the freelancer gets paid upfront immediately upon acceptance, bypasses escrow protection, and has full access to the funds before writing any code.
+  - **CRITICAL BUG 2: DOUBLE PAYOUT**: Later, when the client approves work and finishes the contract, the `approveContractPayment` endpoint credits the freelancer *again* with the full amount, paying them twice.
+  - **OTHER PROPOSALS LEFT HANGING**: The job status is updated to 'Closed', but other active proposals on the same job remain in 'Pending' state instead of being cleaned up.
+
+* WHAT NEEDS TO BE IMPROVED:
+  - **True Escrow Hold**: Upon accepting a proposal, the client's funds (100% of bid amount) are deducted and deposited into the admin escrow wallet (`is_system = TRUE`).
+  - **No Early Payout**: The freelancer's spendable wallet balance must NOT be credited during the hiring phase. The funds must remain locked in the system escrow wallet.
+  - **Auto-Decline Other Proposals**: When one proposal is accepted and the job is hired:
+    - All other pending proposals for that `job_id` must be automatically updated to status 'Declined' or 'Closed'.
+    - Notifications should be dispatched to those freelancers.
+  - The contract is created with status 'In Progress', and milestones are populated in the database table `contract_milestones`.
+
+--------------------------------------------------------------------------------
+4. FIXED-PRICE Escrow Payment Flow (No Milestones)
+--------------------------------------------------------------------------------
+* HOW IT IS NOW:
+  - A contract is created with a single default milestone "Entire Project Scope".
+  - The client deposits 100% upfront into system escrow.
+  - Completion is requested by the freelancer (`requestContractPayment`), setting contract status to 'Under Review'.
+  - Client approves work (`approveContractPayment`), which releases the full contract budget minus the platform commission (fee based on freelancer's active plan) from the escrow wallet to the freelancer's wallet.
+
+* WHAT NEEDS TO BE IMPROVED:
+  - Keep this flow robust. Ensure that the escrow release is only processed on final completion approval and that no premature releases occurred during the hiring phase.
+
+--------------------------------------------------------------------------------
+5. MILESTONE ESCROW PAYMENT FLOW (If Milestones are Used)
+--------------------------------------------------------------------------------
+* HOW IT IS NOW:
+  - Currently, there is NO mechanism in the backend for releasing milestone-by-milestone payments.
+  - The frontend `ProjectMilestoneTracker.tsx` simulates milestone payments by patching the `milestones` JSON column in the `proposals` table. It toggles `paid: true` in the JSON array without executing any database ledger debit/credit updates.
+  - If the client approves the final contract, the backend marks all milestones as completed/paid in a single batch, and releases the whole project budget as a lump sum.
+
+* WHAT NEEDS TO BE IMPROVED:
+  - **Step-by-Step Escrow Release**: Payments must be processed milestone-by-milestone.
+  - When the freelancer requests review for a milestone (milestone status becomes 'Completed'):
+    - The client reviews the deliverable.
+    - If satisfied, the client clicks "Pay" for that specific milestone.
+    - The backend endpoint deducts the milestone's budget amount from the escrow wallet:
+      - It calculates the platform fee (commission) on the milestone's amount.
+      - It credits the net amount (`milestone_amount - commission`) to the freelancer's spendable wallet balance.
+      - It updates the database table `contract_milestones` for that milestone: `status = 'Completed'`, `payment_status = 'Paid'`.
+      - It logs a `Milestone_Release` transaction in the ledger.
+  - When all milestones are paid, the overall contract is automatically marked as 'Completed'.
+
+--------------------------------------------------------------------------------
+6. REFUND & CANCELLATION RULES
+--------------------------------------------------------------------------------
+* HOW IT IS NOW:
+  - There is no database structure, endpoint, or policy check for requesting refunds, cancelling active contracts, or handling client disputes in the backend. The admin panel dispute hub uses static mockup data.
+
+* WHAT NEEDS TO BE IMPROVED:
+  - **Refund Limitation Policy**:
+    - A client is only allowed to request a refund/cancellation of a contract **before the first milestone has been completed (paid)**, or **before the project is completed**.
+    - Once a single milestone has been completed and paid to the freelancer, the project moves past the initiation phase, and a full refund is strictly blocked to protect the freelancer's completed work.
+    - If the project is marked as 'Completed', no refund requests are allowed.
+    - A refund cancels the contract, updates status to 'Cancelled', and returns all remaining locked escrow funds back to the client's wallet.
+
+--------------------------------------------------------------------------------
+7. SUMMARY OF REQUIRED CODE & DATABASE ALIGNMENTS
+--------------------------------------------------------------------------------
+To make this flow work correctly, the following database and controller alignments must be made:
+1. **Remove early payouts**: Edit `processProposalHireTransaction` in `paymentController.js` to comment out or delete the lines crediting the freelancer's wallet balance upfront.
+2. **Implement Milestone-by-Milestone API**: Create a backend endpoint `PATCH /api/payments/contract/milestone/:id/release` that deducts milestone amount from system escrow, calculates commission, credits freelancer, and marks milestone as 'Paid'.
+3. **Align Frontend and Backend Tables**: Refactor `ProjectMilestoneTracker.tsx` to read and write to the real database table `contract_milestones` instead of patching the JSON array inside the `proposals` table.
+4. **Implement Proposal Equalizer**: Update `proposalController.js` validation to ensure that `milestoneTotal === bid_amount`.
+5. **Implement Refund/Cancellation Endpoint**: Create a contract cancel/refund endpoint checking if `contract_milestones` has any records with `payment_status = 'Paid'`. If so, reject the refund request. Otherwise, execute the return of escrow funds to the client.
+
+--------------------------------------------------------------------------------
+8. DISPUTE & MEDIATION FLOW (NEW DESIGN)
+--------------------------------------------------------------------------------
+* HOW IT IS NOW:
+  - Disputes are represented with static mocked data in the admin panel. There is no active database schema, real-time socket events, or messaging integration to mediate conflicts.
+
+* WHAT NEEDS TO BE IMPROVED:
+  - **Inline Message-Based Resolution**: Instead of a separate, isolated mediation portal, the entire dispute workflow can be managed within the chat session (the existing message thread) between the Client and Freelancer.
+  - **3-Way Escalation Group Chat**: When either party escalates a dispute, the system updates the conversation to include the Admin as a third member. The Admin gains direct visibility into the timeline, history, and uploaded files, and can issue the final decision directly inside the messaging view using interactive cards.
+  - **Payment Hold State**: Escrowed funds are placed "On Hold" immediately when a dispute is opened, locking withdrawal actions until resolution.
+

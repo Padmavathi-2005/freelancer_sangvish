@@ -1,0 +1,358 @@
+================================================================================
+BUY2LANCER PLATFORM NOTIFICATION, SITE MESSAGE & EMAIL TEMPLATES
+================================================================================
+
+This document stores the copy texts and template structures for notifications,
+messages, and emails sent when actions occur across projects, gigs, and direct hires.
+
+--------------------------------------------------------------------------------
+1. HIRED FREELANCER TEMPLATES
+--------------------------------------------------------------------------------
+
+[A] IN-APP NOTIFICATION
+Title: Proposal Accepted! 🎉
+Message: Congratulations! Your proposal on the project "{project_title}" has been accepted by the client. A contract has been started.
+
+[B] PLATFORM CHAT MESSAGE (Automated from Site/Platform)
+Message: 
+[Site Name] Notification Center:
+You have been successfully hired by {client_name} for the project "{project_title}"!
+- Bid Amount: {bid_amount}
+- Delivery Timeline: {delivery_days} days
+A workspace and milestone contract have been created. Please coordinate with the client regarding the deliverables in this chat.
+Site Logo: {site_logo}
+
+[C] EMAIL TEMPLATE
+Subject: You've been hired on {site_name}! - {project_title}
+Body:
+Dear {freelancer_name},
+
+Great news! The client {client_name} has accepted your proposal and hired you for their project "{project_title}" on {site_name}.
+
+Project Details:
+- Project Name: {project_title}
+- Budget: {bid_amount}
+- Delivery Days: {delivery_days}
+
+Next Steps:
+Go to your Dashboard on {site_name} to view the contract details and track milestones.
+
+Best regards,
+The {site_name} Team
+Contact: {email_id}
+Logo: {site_logo}
+
+
+--------------------------------------------------------------------------------
+2. OTHER APPLICANTS (REJECTED) TEMPLATES
+--------------------------------------------------------------------------------
+
+[A] IN-APP NOTIFICATION
+Title: Project Status Update
+Message: The project "{project_title}" you applied to has been filled by another freelancer. Thank you for your proposal!
+
+[B] EMAIL TEMPLATE (Personalized reference)
+Subject: Update on your proposal for "{project_title}" on {site_name}
+Body:
+Dear {freelancer_name},
+
+Thank you for submitting a proposal of {bid_amount} for the project "{project_title}" on {site_name}.
+
+We wanted to let you know that the client has selected another freelancer for this project. Although you weren't chosen this time, your profile remains visible, and we encourage you to keep applying to other opportunities on {site_name}.
+
+Thanks for being a valued member of our community!
+
+Best regards,
+The {site_name} Team
+Contact: {email_id}
+Logo: {site_logo}
+
+
+--------------------------------------------------------------------------------
+3. PROJECT MILESTONE & CONTRACT STAGES
+--------------------------------------------------------------------------------
+
+[A] MILESTONE WORK SUBMITTED
+- IN-APP NOTIFICATION
+  Title: Work Submitted for Milestone 🚀
+  Message: Freelancer {freelancer_name} submitted work for milestone "{milestone_title}" (contract: "{contract_title}"). Please review and approve.
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] Work has been submitted and payment approval requested by the freelancer for milestone: "{milestone_title}" under contract: "{contract_title}".
+  - Freelancer: {freelancer_name}
+  - Client: Please review completed work and click "Approve & Release" inside the project milestones tracker.
+- EMAIL TEMPLATE
+  Subject: Milestone Work Submitted - {contract_title}
+  Body:
+  Dear {client_name},
+
+  Freelancer {freelancer_name} has submitted the completed deliverables for milestone "{milestone_title}" on the contract "{contract_title}".
+
+  Please log in to {site_name} to review the submitted work. If it meets your requirements, you can approve the milestone and release the funded escrow payment of {amount}.
+
+  Best regards,
+  The {site_name} Team
+
+[B] MILESTONE APPROVED & ESCROW RELEASED
+- IN-APP NOTIFICATION
+  Title: Milestone Payment Released! 💸
+  Message: Client approved and released {amount} for milestone: "{milestone_title}".
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] Payment of {amount} has been successfully approved and released for milestone: "{milestone_title}".
+  - Sender: {client_name}
+  - Recipient: {freelancer_name}
+  - Contract: {contract_title}
+- EMAIL TEMPLATE
+  Subject: Payment Released for Milestone - {contract_title}
+  Body:
+  Dear {freelancer_name},
+
+  Great news! The client {client_name} has approved the deliverables and released the payment of {amount} for the milestone "{milestone_title}" on the contract "{contract_title}".
+
+  The net amount has been credited to your platform wallet balance and is available for withdrawal.
+
+  Best regards,
+  The {site_name} Team
+
+[C] CONTRACT CANCELLED & ESCROW REFUNDED
+- IN-APP NOTIFICATION
+  Title: Contract Cancelled
+  Message: Client cancelled the contract "{contract_title}" and requested a full refund.
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] This contract has been cancelled and the escrow amount of {amount} has been fully refunded back to the client's wallet.
+  - Reason: Escrow refund due to contract cancellation
+- EMAIL TEMPLATE
+  Subject: Contract Cancelled & Refunded - {contract_title}
+  Body:
+  Dear {freelancer_name},
+
+  We are writing to notify you that the client {client_name} has cancelled the contract "{contract_title}" and requested a full refund of the escrow balance.
+
+  The contract is now closed, and all active milestones have been marked as cancelled.
+
+  Best regards,
+  The {site_name} Team
+
+[D] DISPUTE CONTESTED
+- IN-APP NOTIFICATION
+  Title: Dispute Contested ⚖️
+  Message: Freelancer contested the refund request for contract "{contract_title}". The dispute is now under review.
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message - Dispute Contested] Freelancer {freelancer_name} has contested the refund request and provided an explanation:
+  "{explanation}"
+  An admin mediator will review the case.
+- EMAIL TEMPLATE
+  Subject: Dispute Contested - Action Required - {contract_title}
+  Body:
+  Dear {client_name},
+
+  The freelancer {freelancer_name} has contested your refund request for the contract "{contract_title}".
+
+  The case has been escalated to our dispute resolution team. An admin mediator has been added to your contract chat room to help reach a fair verdict.
+
+  Best regards,
+  The {site_name} Team
+
+[E] DISPUTE RESOLVED - BUYER WINS
+- IN-APP NOTIFICATION
+  Title: Dispute Resolved: Buyer Wins ⚖️
+  Message: Dispute resolved for contract "{contract_title}". Escrow refunded to client.
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message - Dispute Resolved] Verdict: Buyer Wins. Dispute has been resolved. Entire escrow amount has been returned to the client.
+- EMAIL TEMPLATE
+  Subject: Dispute Resolved - {contract_title}
+  Body:
+  Dear {freelancer_name},
+
+  The dispute on contract "{contract_title}" has been resolved. The admin mediator has ruled in favor of the client, and the escrow amount has been refunded back to their wallet.
+
+  Best regards,
+  The {site_name} Team
+
+
+--------------------------------------------------------------------------------
+4. GIG ORDER & CUSTOM PROPOSAL STAGES
+--------------------------------------------------------------------------------
+
+[A] CUSTOM ORDER/NEGOTIATION REQUEST SENT
+- IN-APP NOTIFICATION
+  Title: New Custom Gig Offer Request ✉️
+  Message: Client {client_name} requested a custom proposal for your gig "{gig_title}".
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] Client {client_name} has requested a custom price/timeline negotiation for the gig "{gig_title}".
+  - Proposed Budget: {budget}
+  - Proposed Delivery: {delivery_days} days
+  - Description: {message_text}
+- EMAIL TEMPLATE
+  Subject: Custom Offer Request Received - {gig_title}
+  Body:
+  Dear {freelancer_name},
+
+  You have received a custom order negotiation request from client {client_name} for your gig "{gig_title}".
+
+  Proposed terms:
+  - Budget: {budget}
+  - Timeline: {delivery_days} days
+
+  Please log in to your dashboard to accept or propose counter-terms.
+
+  Best regards,
+  The {site_name} Team
+
+[B] CUSTOM PROPOSAL ACCEPTED/DECLINED
+- IN-APP NOTIFICATION
+  Title: Gig Proposal {status}
+  Message: Your custom proposal for "{gig_title}" has been {status} by the freelancer.
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] Freelancer {freelancer_name} has {status} the custom proposal for gig "{gig_title}".
+- EMAIL TEMPLATE
+  Subject: Gig Custom Proposal Update - {gig_title}
+  Body:
+  Dear {client_name},
+
+  We wanted to inform you that your custom proposal for the gig "{gig_title}" was {status} by the freelancer {freelancer_name}.
+
+  If accepted, you can proceed to fund the escrow to start the contract.
+
+  Best regards,
+  The {site_name} Team
+
+[C] PAYMENT RECEIVED & GIG ACTIVE
+- IN-APP NOTIFICATION
+  Title: Payment Received & Gig Active 💳
+  Message: Client {client_name} has funded the escrow for gig order "{gig_title}". Your order is now active.
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] Escrow payment of {amount} has been successfully deposited by the client. The contract is now active.
+  - Budget: {budget}
+  - Upfront Paid: {amount}
+- EMAIL TEMPLATE
+  Subject: Gig Order Started - {gig_title}
+  Body:
+  Dear {freelancer_name},
+
+  Great news! The client {client_name} has successfully completed the checkout and funded the escrow for gig order "{gig_title}".
+
+  You are authorized to begin working on the deliverables immediately.
+
+  Best regards,
+  The {site_name} Team
+
+[D] GIG WORK SUBMITTED FOR REVIEW
+- IN-APP NOTIFICATION
+  Title: Gig Delivery Submitted 🚀
+  Message: Freelancer {freelancer_name} has delivered the completed work for gig "{gig_title}".
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] completed work has been delivered by the freelancer for gig "{gig_title}".
+  - Freelancer: {freelancer_name}
+  - Client: Please review and approve the delivery.
+- EMAIL TEMPLATE
+  Subject: Gig Delivery Awaiting Review - {gig_title}
+  Body:
+  Dear {client_name},
+
+  Freelancer {freelancer_name} has submitted the completed deliverables for your gig order "{gig_title}".
+
+  Please log in to review the delivery. If satisfied, click "Approve Delivery" to release escrow payment.
+
+  Best regards,
+  The {site_name} Team
+
+[E] GIG ORDER CANCELLED
+- IN-APP NOTIFICATION
+  Title: Gig Order Cancelled
+  Message: Client cancelled the gig order "{gig_title}". Escrow has been refunded.
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] This gig order has been cancelled and the funded escrow has been returned to the client.
+- EMAIL TEMPLATE
+  Subject: Gig Order Cancelled - {gig_title}
+  Body:
+  Dear {freelancer_name},
+
+  The client {client_name} has cancelled the order for gig "{gig_title}". The escrow balance has been refunded back to the client.
+
+  Best regards,
+  The {site_name} Team
+
+
+--------------------------------------------------------------------------------
+5. DIRECT FREELANCER HIRING STAGE TEMPLATES
+--------------------------------------------------------------------------------
+
+[A] OFFER INVITATION SENT
+- IN-APP NOTIFICATION
+  Title: Direct Hire Offer Received ✉️
+  Message: Client {client_name} has sent you a direct hire invitation offer for project "{project_title}".
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] Client {client_name} has sent a direct hire offer invitation to {freelancer_name}.
+  - Project: {project_title}
+  - Offer Budget: {bid_amount}
+  - Offer Delivery: {delivery_days} days
+  - Invitation Message: {message_text}
+- EMAIL TEMPLATE
+  Subject: Direct Hire Offer Invitation - {project_title}
+  Body:
+  Dear {freelancer_name},
+
+  You have received a direct hire invitation offer from client {client_name} for the project "{project_title}".
+
+  Proposed Offer terms:
+  - Budget: {bid_amount}
+  - Timeline: {delivery_days} days
+
+  Please log in to your dashboard to review and accept/decline the invitation.
+
+  Best regards,
+  The {site_name} Team
+
+[B] DIRECT HIRE OFFER ACCEPTED
+- IN-APP NOTIFICATION
+  Title: Direct Hire Offer Accepted
+  Message: Freelancer {freelancer_name} accepted your direct hire offer for project "{project_title}". Awaiting escrow payment.
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] Freelancer {freelancer_name} has accepted the direct hire offer for project "{project_title}".
+  Client: Please fund the escrow payment to activate the contract and start the milestones.
+- EMAIL TEMPLATE
+  Subject: Direct Hire Offer Accepted - Action Required - {project_title}
+  Body:
+  Dear {client_name},
+
+  Freelancer {freelancer_name} has accepted your direct hire offer invitation for the project "{project_title}".
+
+  To activate the contract and start work, please log in and fund the escrow payment.
+
+  Best regards,
+  The {site_name} Team
+
+[C] DIRECT HIRE OFFER DECLINED
+- IN-APP NOTIFICATION
+  Title: Direct Hire Offer Declined
+  Message: Freelancer {freelancer_name} declined your direct hire offer for project "{project_title}".
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] Freelancer {freelancer_name} has declined the direct hire offer invitation for project "{project_title}".
+- EMAIL TEMPLATE
+  Subject: Direct Hire Offer Invitation Update - {project_title}
+  Body:
+  Dear {client_name},
+
+  This is to notify you that freelancer {freelancer_name} has declined your direct hire offer invitation for the project "{project_title}".
+
+  Best regards,
+  The {site_name} Team
+
+[D] ESCROW FUNDED & CONFIRM HIRE
+- IN-APP NOTIFICATION
+  Title: Direct Hire Active & Milestones Started! 🚀
+  Message: Client {client_name} funded escrow for direct hire contract "{project_title}".
+- PLATFORM CHAT MESSAGE
+  Message: [{site_name} Platform Message] Client has successfully funded the escrow payment of {amount}. The direct hire contract is now active and in progress.
+- EMAIL TEMPLATE
+  Subject: Direct Hire Activated - {project_title}
+  Body:
+  Dear {freelancer_name},
+
+  The client {client_name} has completed the escrow payment of {amount} for your direct hire contract "{project_title}".
+
+  The contract is now officially active, and you can begin work.
+
+  Best regards,
+  The {site_name} Team
+================================================================================

@@ -21,10 +21,56 @@ export const createJob = async (req, res) => {
       languages,
       max_hours,
       payment_mode,
-      status
+      status,
+      slug,
+      seo
     } = req.body;
 
     const isDraft = status === "Draft";
+
+    // Check monthly job posting limits (only for active published postings)
+    if (!isDraft) {
+      const { default: pool } = await import("../config/db.js");
+      
+      const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'package_options_settings'");
+      let packageOption = "Free listing for both type of users";
+      if (settingsRes.rows.length > 0) {
+        const parsed = typeof settingsRes.rows[0].setting_value === "string"
+          ? JSON.parse(settingsRes.rows[0].setting_value)
+          : settingsRes.rows[0].setting_value;
+        packageOption = parsed.package_option || "Free listing for both type of users";
+      }
+
+      const isPaidOption = packageOption === "Paid listing for both" || packageOption === "Paid listing for buyers";
+
+      if (isPaidOption) {
+        const planQuery = await pool.query(
+          `SELECT sp.job_posting_limit 
+           FROM users u 
+           LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id 
+           WHERE u.user_id = $1`,
+          [clientId]
+        );
+        const limit = planQuery.rows.length > 0 && planQuery.rows[0].job_posting_limit !== null 
+          ? parseInt(planQuery.rows[0].job_posting_limit) 
+          : 3;
+
+        const countQuery = await pool.query(
+          `SELECT COUNT(*) FROM jobs 
+           WHERE client_id = $1 
+             AND status != 'Draft'
+             AND created_at >= DATE_TRUNC('month', CURRENT_DATE)`,
+          [clientId]
+        );
+        const postedCount = parseInt(countQuery.rows[0].count || 0);
+
+        if (postedCount >= limit) {
+          return res.status(403).json({ 
+            message: `Monthly job posting limit reached (${postedCount}/${limit}). Please upgrade your subscription plan to publish more projects.` 
+          });
+        }
+      }
+    }
 
     // Validations
     if (!isDraft) {
@@ -64,7 +110,9 @@ export const createJob = async (req, res) => {
       languages,
       max_hours,
       payment_mode,
-      status || "Open"
+      status || "Open",
+      slug,
+      seo
     );
 
     return res.status(201).json({
@@ -99,7 +147,9 @@ export const updateJob = async (req, res) => {
       languages,
       max_hours,
       payment_mode,
-      status
+      status,
+      slug,
+      seo
     } = req.body;
 
     const isPublishing = status === "Open";
@@ -142,7 +192,9 @@ export const updateJob = async (req, res) => {
       languages,
       max_hours,
       payment_mode,
-      status || "Draft"
+      status || "Draft",
+      slug,
+      seo
     );
 
     if (!updatedJob) {
@@ -172,10 +224,76 @@ export const getClientJobs = async (req, res) => {
 
 export const getAllJobs = async (req, res) => {
   try {
-    const jobs = await Job.findAllActive();
+    const excludeUserId = req.user?.user_id;
+    const jobs = await Job.findAllActive(excludeUserId);
     return res.status(200).json(jobs);
   } catch (error) {
     console.error("Error fetching all jobs:", error);
     return res.status(500).json({ message: "Internal server error while fetching projects." });
+  }
+};
+
+export const validateJobSlug = async (req, res) => {
+  try {
+    const { slug, excludeJobId } = req.query;
+    if (!slug || !slug.trim()) {
+      return res.status(200).json({ available: false });
+    }
+
+    const { default: pool } = await import("../config/db.js");
+    let query = "SELECT COUNT(*) FROM jobs WHERE slug = $1";
+    const params = [slug.trim().toLowerCase()];
+
+    if (excludeJobId) {
+      query += " AND job_id != $2";
+      params.push(parseInt(excludeJobId));
+    }
+
+    const check = await pool.query(query, params);
+    const count = parseInt(check.rows[0].count || 0);
+
+    return res.status(200).json({ available: count === 0 });
+  } catch (error) {
+    console.error("Error validating job slug:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+export const getJobBySlugOrId = async (req, res) => {
+  try {
+    const { slugOrId } = req.params;
+    const { default: pool } = await import("../config/db.js");
+
+    // Check if parameter is a numeric ID
+    const isId = /^\d+$/.test(slugOrId);
+    
+    let query = `
+      SELECT 
+        j.*,
+        u.first_name || ' ' || COALESCE(u.last_name, '') as client_name,
+        u.email as client_email,
+        u.created_at as client_member_since,
+        cp.company_name,
+        cp.industry,
+        cp.company_website as website,
+        cat.category_name,
+        sub.sub_category_name
+      FROM jobs j
+      JOIN users u ON j.client_id = u.user_id
+      LEFT JOIN client_profiles cp ON u.user_id = cp.user_id
+      LEFT JOIN categories cat ON j.category_id = cat.category_id
+      LEFT JOIN sub_categories sub ON j.sub_category_id = sub.sub_category_id
+      WHERE ${isId ? "j.job_id = $1" : "j.slug = $1"}
+    `;
+    
+    const result = await pool.query(query, [isId ? parseInt(slugOrId) : slugOrId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Project not found." });
+    }
+
+    return res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error fetching job by slug/id:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };

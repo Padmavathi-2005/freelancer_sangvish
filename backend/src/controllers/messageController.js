@@ -23,6 +23,66 @@ export const initializeChat = async (userOneId, userTwoId, contextTitle) => {
   }
 };
 
+// Helper to initialize project-wide group chat
+export const initializeProjectGroupChat = async (clientId, freelancerId, jobId, contextTitle) => {
+  try {
+    // 1. Check if group chat already exists for this job_id
+    const existingGroupRes = await pool.query(
+      "SELECT conversation_id FROM conversations WHERE job_id = $1 AND is_group = TRUE",
+      [jobId]
+    );
+
+    let conversationId;
+    if (existingGroupRes.rows.length > 0) {
+      conversationId = existingGroupRes.rows[0].conversation_id;
+      
+      // Add freelancer as participant (if not already there)
+      await pool.query(
+        `INSERT INTO conversation_participants (conversation_id, user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (conversation_id, user_id) DO NOTHING`,
+        [conversationId, freelancerId]
+      );
+
+      // Post system message notifying that the freelancer joined the group chat
+      const freelancerNameRes = await pool.query(
+        "SELECT CONCAT(first_name, ' ', last_name) as name FROM users WHERE user_id = $1",
+        [freelancerId]
+      );
+      const name = freelancerNameRes.rows[0]?.name || "Freelancer";
+      const systemMsg = `System: ${name} has joined the project group chat.`;
+      await MessageModel.createMessage(conversationId, clientId, systemMsg);
+    } else {
+      // Create new group chat conversation
+      const groupName = `Project Group: ${contextTitle}`;
+      const insertConvRes = await pool.query(
+        `INSERT INTO conversations (is_group, group_name, job_id)
+         VALUES (TRUE, $1, $2)
+         RETURNING conversation_id`,
+        [groupName, jobId]
+      );
+      conversationId = insertConvRes.rows[0].conversation_id;
+
+      // Add client and freelancer as participants
+      await pool.query(
+        `INSERT INTO conversation_participants (conversation_id, user_id)
+         VALUES ($1, $2), ($1, $3)
+         ON CONFLICT (conversation_id, user_id) DO NOTHING`,
+        [conversationId, clientId, freelancerId]
+      );
+
+      // Post welcome message
+      const systemMsg = `System: Group chat initialized for project "${contextTitle}". Client and all hired freelancers will be added here.`;
+      await MessageModel.createMessage(conversationId, clientId, systemMsg);
+    }
+
+    return conversationId;
+  } catch (err) {
+    console.error("Error initializing project group chat:", err);
+    throw err;
+  }
+};
+
 export const getConversations = async (req, res) => {
   try {
     const userId = req.user.user_id;
@@ -45,7 +105,7 @@ export const getMessages = async (req, res) => {
 
     // Verify conversation exists and user is part of it
     const convRes = await pool.query(
-      "SELECT user_one_id, user_two_id FROM conversations WHERE conversation_id = $1",
+      "SELECT user_one_id, user_two_id, admin_id, is_group FROM conversations WHERE conversation_id = $1",
       [conversationId]
     );
 
@@ -53,9 +113,19 @@ export const getMessages = async (req, res) => {
       return res.status(404).json({ message: "Conversation not found." });
     }
 
-    const { user_one_id, user_two_id } = convRes.rows[0];
-    if (user_one_id !== userId && user_two_id !== userId) {
-      return res.status(403).json({ message: "Access denied. You are not part of this chat room." });
+    const { user_one_id, user_two_id, admin_id, is_group } = convRes.rows[0];
+    if (is_group) {
+      const partCheck = await pool.query(
+        "SELECT 1 FROM conversation_participants WHERE conversation_id = $1 AND user_id = $2",
+        [conversationId, userId]
+      );
+      if (partCheck.rows.length === 0) {
+        return res.status(403).json({ message: "Access denied. You are not a participant in this group chat." });
+      }
+    } else {
+      if (user_one_id !== userId && user_two_id !== userId && admin_id !== userId) {
+        return res.status(403).json({ message: "Access denied. You are not part of this chat room." });
+      }
     }
 
     const messages = await MessageModel.findMessagesByConversationId(conversationId);
@@ -80,7 +150,7 @@ export const sendMessage = async (req, res) => {
 
     // Verify conversation exists and sender is part of it
     const convRes = await pool.query(
-      "SELECT user_one_id, user_two_id FROM conversations WHERE conversation_id = $1",
+      "SELECT user_one_id, user_two_id, admin_id, is_group FROM conversations WHERE conversation_id = $1",
       [parseInt(conversation_id)]
     );
 
@@ -88,9 +158,19 @@ export const sendMessage = async (req, res) => {
       return res.status(404).json({ message: "Conversation not found." });
     }
 
-    const { user_one_id, user_two_id } = convRes.rows[0];
-    if (user_one_id !== senderId && user_two_id !== senderId) {
-      return res.status(403).json({ message: "Access denied. You cannot post to this chat room." });
+    const { user_one_id, user_two_id, admin_id, is_group } = convRes.rows[0];
+    if (is_group) {
+      const partCheck = await pool.query(
+        "SELECT 1 FROM conversation_participants WHERE conversation_id = $1 AND user_id = $2",
+        [parseInt(conversation_id), senderId]
+      );
+      if (partCheck.rows.length === 0) {
+        return res.status(403).json({ message: "Access denied. You cannot post to this group chat." });
+      }
+    } else {
+      if (user_one_id !== senderId && user_two_id !== senderId && admin_id !== senderId) {
+        return res.status(403).json({ message: "Access denied. You cannot post to this chat room." });
+      }
     }
 
     const message = await MessageModel.createMessage(
@@ -101,21 +181,10 @@ export const sendMessage = async (req, res) => {
 
     // Retrieve sender details to match returned message details format in UI
     const senderRes = await pool.query(
-      "SELECT first_name || ' ' || last_name as sender_name, profile_image as sender_profile_image FROM users WHERE user_id = $1",
+      "SELECT CONCAT(first_name, ' ', last_name) as sender_name, profile_image as sender_profile_image FROM users WHERE user_id = $1",
       [senderId]
     );
     const sender = senderRes.rows[0];
-
-    const recipientId = user_one_id === senderId ? user_two_id : user_one_id;
-
-    // Save persistent notification
-    const notif = await Notification.create({
-      userId: recipientId,
-      title: "New Message",
-      message: message_text.trim().length > 60 ? `${message_text.trim().substring(0, 60)}...` : message_text.trim(),
-      type: "message",
-      referenceId: conversation_id.toString()
-    });
 
     const chatMessage = {
       ...message,
@@ -123,10 +192,45 @@ export const sendMessage = async (req, res) => {
       sender_profile_image: sender.sender_profile_image
     };
 
-    // Emit Socket.io real-time events to recipient room
-    if (req.io) {
-      req.io.to(`user_${recipientId}`).emit("new_message", chatMessage);
-      req.io.to(`user_${recipientId}`).emit("new_notification", notif);
+    // Compile list of recipients
+    const recipients = [];
+    if (is_group) {
+      const partsRes = await pool.query(
+        "SELECT user_id FROM conversation_participants WHERE conversation_id = $1 AND user_id != $2",
+        [parseInt(conversation_id), senderId]
+      );
+      partsRes.rows.forEach(r => recipients.push(r.user_id));
+    } else {
+      if (senderId === user_one_id) {
+        recipients.push(user_two_id);
+        if (admin_id) recipients.push(admin_id);
+      } else if (senderId === user_two_id) {
+        recipients.push(user_one_id);
+        if (admin_id) recipients.push(admin_id);
+      } else if (senderId === admin_id) {
+        recipients.push(user_one_id);
+        recipients.push(user_two_id);
+      }
+    }
+
+    // Save persistent notification & emit socket events to each recipient
+    for (const recipientId of recipients) {
+      try {
+        const notif = await Notification.create({
+          userId: recipientId,
+          title: `New Message from ${sender.sender_name}`,
+          message: message_text.trim().length > 60 ? `${message_text.trim().substring(0, 60)}...` : message_text.trim(),
+          type: "message",
+          referenceId: conversation_id.toString()
+        });
+
+        if (req.io) {
+          req.io.to(`user_${recipientId}`).emit("new_message", chatMessage);
+          req.io.to(`user_${recipientId}`).emit("new_notification", notif);
+        }
+      } catch (notifErr) {
+        console.error(`Failed to dispatch message notification to ${recipientId}:`, notifErr);
+      }
     }
 
     return res.status(201).json({

@@ -1,8 +1,35 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { FiAward } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
+import { useRouter } from "next/navigation";
+
+// 5 distinct icon shapes to cycle through for company logos
+const COMPANY_ICON_POOL = [
+  <svg key="tri" className="w-5 h-5 text-slate-400/80 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2z" /></svg>,
+  <svg key="globe" className="w-5 h-5 text-slate-400/80 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><ellipse cx="12" cy="12" rx="8" ry="3" /></svg>,
+  <svg key="info" className="w-5 h-5 text-slate-400/80 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" /></svg>,
+  <svg key="grid2" className="w-5 h-5 text-slate-400/80 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" /><rect x="14" y="12" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="3" y="16" width="7" height="5" /></svg>,
+  <svg key="umb" className="w-5 h-5 text-slate-400/80 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 22V12m0 0a5 5 0 0 0 5-5H7a5 5 0 0 0 5 5zM12 12V6" /></svg>,
+];
+
+const FALLBACK_COMPANIES = ["Google", "Microsoft", "Amazon", "Meta", "Netflix", "Stripe", "Airbnb"];
 
 export default function Hero() {
+  const { t } = useLanguage();
+  const router = useRouter();
+
+  const [heroContent, setHeroContent] = useState({
+    hero_badge: "The Top 3% Global Freelancers",
+    hero_title: "Hire Expert Freelancers For Your Next Big Project",
+    hero_subtitle: "Connect with top-tier professionals. Execute faster with vetted talent tailored to your enterprise needs.",
+    hero_search_placeholder: "What skill are you looking for?",
+    hero_search_btn: "Search Talent",
+    hero_popular_label: "Popular: UI Design, React, AI Automation, SEO",
+  });
+
+  const [companies, setCompanies] = useState<string[]>(FALLBACK_COMPANIES);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [currentText, setCurrentText] = useState("");
@@ -11,31 +38,67 @@ export default function Hero() {
 
   const skillsToType = ["UI Design", "React", "AI Automation", "SEO", "Next.js", "Python"];
 
+  // Fetch hero settings from admin
+  useEffect(() => {
+    const fetchHeroSettings = async () => {
+      try {
+        const res = await fetch("https://freelancer.sangvish.com/api/settings");
+        if (res.ok) {
+          const settings = await res.json();
+          const heroSetting = settings.find((s: any) => s.setting_key === "frontend_hero_content");
+          if (heroSetting) {
+            let val = heroSetting.setting_value;
+            if (typeof val === "string") {
+              try { val = JSON.parse(val); } catch {}
+            }
+            if (val) {
+              setHeroContent({
+                hero_badge: val.hero_badge || "The Top 3% Global Freelancers",
+                hero_title: val.hero_title || "Hire Expert Freelancers For Your Next Big Project",
+                hero_subtitle: val.hero_subtitle || "Connect with top-tier professionals. Execute faster with vetted talent tailored to your enterprise needs.",
+                hero_search_placeholder: val.hero_search_placeholder || "What skill are you looking for?",
+                hero_search_btn: val.hero_search_btn || "Search Talent",
+                hero_popular_label: val.hero_popular_label || "Popular: UI Design, React, AI Automation, SEO",
+              });
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load hero settings:", e);
+      }
+    };
+    fetchHeroSettings();
+  }, []);
+
+  // Fetch real client company names for ticker
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const res = await fetch("https://freelancer.sangvish.com/api/client-companies");
+        if (res.ok) {
+          const data: string[] = await res.json();
+          if (data.length > 0) setCompanies(data);
+        }
+      } catch {}
+    };
+    fetchCompanies();
+  }, []);
+
+  // Typewriter effect
   useEffect(() => {
     let timer: any;
     const currentWord = skillsToType[currentWordIndex];
 
     if (isDeleting) {
-      // Erasing letter
-      timer = setTimeout(() => {
-        setCurrentText((prev) => prev.slice(0, -1));
-      }, 50);
+      timer = setTimeout(() => setCurrentText((prev) => prev.slice(0, -1)), 50);
     } else {
-      // Typing letter
-      timer = setTimeout(() => {
-        setCurrentText((prev) => currentWord.slice(0, prev.length + 1));
-      }, 120);
+      timer = setTimeout(() => setCurrentText((prev) => currentWord.slice(0, prev.length + 1)), 120);
     }
 
-    // Handle transition states
     if (!isDeleting && currentText === currentWord) {
-      // Fully typed, pause, then start deleting
       clearTimeout(timer);
-      timer = setTimeout(() => {
-        setIsDeleting(true);
-      }, 2000);
+      timer = setTimeout(() => setIsDeleting(true), 2000);
     } else if (isDeleting && currentText === "") {
-      // Fully deleted, pause, then move to next word
       clearTimeout(timer);
       setIsDeleting(false);
       setCurrentWordIndex((prev) => (prev + 1) % skillsToType.length);
@@ -47,97 +110,60 @@ export default function Hero() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const query = searchQuery.trim() || skillsToType[currentWordIndex];
-    alert(`Searching Freelancer database for: "${query}"...`);
+    window.location.href = `/talent?query=${encodeURIComponent(query)}`;
   };
 
   const handleQuickTagClick = (skill: string) => {
     setSearchQuery(skill);
   };
 
-  const companies = [
-    {
-      name: "Acme Corp",
-      icon: (
-        <svg className="w-5 h-5 text-slate-400/80 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2L2 22h20L12 2z" />
-        </svg>
-      ),
-    },
-    {
-      name: "Globex",
-      icon: (
-        <svg className="w-5 h-5 text-slate-400/80 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="8" />
-          <ellipse cx="12" cy="12" rx="8" ry="3" transform="rotate(30 12 12)" />
-        </svg>
-      ),
-    },
-    {
-      name: "Soylent",
-      icon: (
-        <svg className="w-5 h-5 text-slate-400/80 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-        </svg>
-      ),
-    },
-    {
-      name: "Initech",
-      icon: (
-        <svg className="w-5 h-5 text-slate-400/80 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="7" height="9" />
-          <rect x="14" y="12" width="7" height="9" />
-          <rect x="14" y="3" width="7" height="5" />
-          <rect x="3" y="16" width="7" height="5" />
-        </svg>
-      ),
-    },
-    {
-      name: "Umbrella",
-      icon: (
-        <svg className="w-5 h-5 text-slate-400/80 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 22V12m0 0a5 5 0 0 0 5-5H7a5 5 0 0 0 5 5zM12 12V6m0 0a3 3 0 0 1-3-3m3 3a3 3 0 0 0 3-3" />
-        </svg>
-      ),
-    },
-  ];
-
   return (
     <main className="flex-1 relative overflow-hidden bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#ffffff] lg:h-[calc(100vh-80px)] lg:min-h-[560px] lg:max-h-[720px] flex flex-col justify-between z-10 px-4 sm:px-6 lg:px-8">
-      
+
       {/* Animated gradient mesh blobs and grid overlay */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        {/* Grid pattern */}
         <div className="absolute inset-0 bg-grid-pattern opacity-60"></div>
-        
-        {/* Floating gradient circles */}
         <div className="absolute -top-12 -left-12 w-96 h-96 bg-[#e6f0ef]/50 rounded-full mix-blend-multiply filter blur-3xl opacity-75 animate-blob"></div>
         <div className="absolute top-1/4 -right-12 w-[30rem] h-[30rem] bg-teal-100/40 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000"></div>
         <div className="absolute -bottom-16 left-1/3 w-96 h-96 bg-emerald-100/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
 
-      {/* Main Grid Content Container (Vertically centered on desktop) */}
-      <div className="flex-1 flex items-center w-full relative z-10 max-w-7xl mx-auto pt-12 pb-8 lg:pt-16 lg:pb-12">
+      {/* Main Content */}
+      <div className="flex-1 flex items-center w-full relative z-10 max-w-[1600px] mx-auto pt-12 pb-8 lg:pt-16 lg:pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center w-full">
-          
-          {/* Left Column: Copy & Search */}
+
+          {/* Left Column */}
           <div className="lg:col-span-7 flex flex-col gap-3.5 text-center lg:text-left">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-semibold bg-[#e6f0ef] text-[#0a5a54] self-center lg:self-start border border-[#0a5a54]/10 uppercase tracking-wider">
-              🏆 The Top 3% Global Freelancers
+              <FiAward className="w-3.5 h-3.5 text-[#0a5a54]" />
+              {t("hero_badge", heroContent.hero_badge)}
             </span>
 
-            <h1 className="text-3xl sm:text-[2.5rem] lg:text-[2.85rem] xl:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] text-slate-900 font-display">
-              Hire <span className="text-[#0a5a54]">Expert Freelancers</span> <br />
-              For Your Next Big <br />
-              Project
+            <h1 className="text-3xl sm:text-[2.5rem] lg:text-[2.85rem] xl:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] text-slate-900 font-display whitespace-pre-line">
+              {(() => {
+                const titleText = t("hero_title", heroContent.hero_title);
+                const highlight = "Expert Freelancers";
+                if (titleText.includes(highlight)) {
+                  const parts = titleText.split(highlight);
+                  return (
+                    <>
+                      {parts[0]}
+                      <span className="text-[#0a5a54]">{highlight}</span>
+                      {parts[1]}
+                    </>
+                  );
+                }
+                return titleText;
+              })()}
             </h1>
 
             <p className="text-slate-600 text-sm sm:text-base max-w-lg mx-auto lg:mx-0 leading-relaxed font-normal">
-              Connect with top-tier professionals. Execute faster with vetted talent tailored to your enterprise needs.
+              {t("hero_subtitle", heroContent.hero_subtitle)}
             </p>
 
-            {/* Interactive Search Container */}
-            <form 
-              onSubmit={handleSearchSubmit} 
+            {/* Search */}
+            <form
+              onSubmit={handleSearchSubmit}
               className="w-full max-w-xl mx-auto lg:mx-0 mt-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col sm:flex-row gap-1.5 transition-all duration-300 focus-within:border-[#0a5a54]/40 focus-within:shadow-2xl focus-within:shadow-[#0a5a54]/5"
             >
               <div className="flex-1 flex items-center px-3 gap-2.5 relative">
@@ -152,12 +178,10 @@ export default function Hero() {
                   onBlur={() => setIsFocused(false)}
                   className="w-full text-slate-800 text-sm sm:text-base focus:outline-none bg-transparent py-2.5 z-10"
                 />
-                
-                {/* Fake Placeholder Overlay with Typewriter Animation */}
                 {!isFocused && !searchQuery && (
                   <div className="absolute left-[38px] text-slate-400 text-sm sm:text-base pointer-events-none select-none z-0 flex items-center">
-                    <span className="hidden sm:inline">What skill are you looking for? &nbsp;</span>
-                    <span className="sm:hidden">Search &nbsp;</span>
+                    <span className="hidden sm:inline">{t("hero_search_placeholder", heroContent.hero_search_placeholder)}&nbsp;</span>
+                    <span className="sm:hidden">{t("search", "Search")}&nbsp;</span>
                     <span className="text-slate-400/70 font-normal">e.g. </span>
                     <span className="text-[#0a5a54] font-semibold ml-1 relative">
                       {currentText}
@@ -166,18 +190,21 @@ export default function Hero() {
                   </div>
                 )}
               </div>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="bg-[#0a5a54] hover:bg-[#073f3a] text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all duration-200 shrink-0 active:scale-[0.98] cursor-pointer hover:shadow-lg hover:shadow-[#0a5a54]/10"
               >
-                Search Talent
+                {t("hero_search_btn", heroContent.hero_search_btn)}
               </button>
             </form>
 
             {/* Hot Skills */}
             <div className="flex flex-wrap gap-2.5 justify-center lg:justify-start items-center text-xs font-semibold text-slate-500 mt-2">
-              <span>Popular:</span>
-              {["UI Design", "React", "AI Automation", "SEO"].map((skill) => (
+              <span>{t("hero_popular_label", heroContent.hero_popular_label).split(":")[0]}:</span>
+              {(t("hero_popular_label", heroContent.hero_popular_label).includes(":")
+                ? t("hero_popular_label", heroContent.hero_popular_label).split(":")[1]
+                : t("hero_popular_label", heroContent.hero_popular_label)
+              ).split(",").map(s => s.trim()).filter(Boolean).map((skill) => (
                 <button
                   key={skill}
                   onClick={() => handleQuickTagClick(skill)}
@@ -189,41 +216,28 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Right Column: Visual Mockup Showcase */}
+          {/* Right Column: Visual Mockup */}
           <div className="lg:col-span-5 relative w-full flex justify-center items-center py-2 lg:py-0">
-            
-            {/* The Dark Green Container */}
             <div className="relative w-full aspect-[1.12] max-w-[290px] sm:max-w-[360px] xl:max-w-[395px] bg-[#042e2a] rounded-[2.2rem] p-4 sm:p-6 flex items-center justify-center shadow-xl overflow-visible">
-              
-              {/* Floating Grid/Pattern inside green box */}
               <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:16px_16px] rounded-[2.2rem]"></div>
-              
-              {/* Decorative blurs */}
               <div className="absolute -top-6 -right-6 w-32 h-32 bg-teal-400/20 rounded-full filter blur-2xl pointer-events-none"></div>
               <div className="absolute -bottom-6 -left-6 w-36 h-36 bg-emerald-400/20 rounded-full filter blur-2xl pointer-events-none"></div>
 
-              {/* The Tablet Mockup */}
+              {/* Tablet Mockup */}
               <div className="relative w-[92%] aspect-[1.28] bg-slate-900 rounded-xl p-1 border-4 border-slate-950 shadow-xl overflow-hidden flex items-center justify-center">
-                {/* Screen container */}
                 <div className="relative w-full h-full rounded overflow-hidden bg-slate-950">
-                  <img
-                    src="/tablet-work.png"
-                    alt="Mockup Screen"
-                    className="w-full h-full object-cover opacity-90 transition-transform duration-700 hover:scale-105"
-                  />
-                  {/* Dark overlay for screen styling */}
+                  <img src="/tablet-work.png" alt="Mockup Screen" className="w-full h-full object-cover opacity-90 transition-transform duration-700 hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#042e2a]/40 via-transparent to-transparent"></div>
                 </div>
               </div>
 
               {/* Floating Card: Sarah J. */}
               <div className="absolute top-[12%] -left-2 sm:-left-6 md:-left-[10%] z-20 animate-float-up">
-                <div className="bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl">
-                  <img
-                    src="/sarah-avatar.png"
-                    alt="Sarah J."
-                    className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0"
-                  />
+                <div 
+                  onClick={() => router.push('/freelancer/sarah-jenkins')}
+                  className="bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
+                >
+                  <img src="/sarah-avatar.png" alt="Sarah J." className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
                       <span className="font-extrabold text-slate-900 text-xs truncate">Sarah J.</span>
@@ -233,9 +247,7 @@ export default function Hero() {
                     </div>
                     <p className="text-[10px] font-semibold text-slate-500 truncate">Senior UI Designer</p>
                     <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
-                      <span className="text-[#0a5a54] flex items-center gap-0.5">
-                        ★ <span className="text-slate-800">4.9</span>
-                      </span>
+                      <span className="text-[#0a5a54] flex items-center gap-0.5">★ <span className="text-slate-800">4.9</span></span>
                       <span className="text-slate-700">$85/hr</span>
                     </div>
                   </div>
@@ -244,12 +256,11 @@ export default function Hero() {
 
               {/* Floating Card: David M. */}
               <div className="absolute bottom-[14%] -right-2 sm:-right-6 md:-right-[10%] z-20 animate-float-up">
-                <div className="bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl">
-                  <img
-                    src="/david-avatar.png"
-                    alt="David M."
-                    className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0"
-                  />
+                <div 
+                  onClick={() => router.push('/freelancer/david-m')}
+                  className="bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
+                >
+                  <img src="/david-avatar.png" alt="David M." className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
                       <span className="font-extrabold text-slate-900 text-xs truncate">David M.</span>
@@ -259,34 +270,30 @@ export default function Hero() {
                     </div>
                     <p className="text-[10px] font-semibold text-slate-500 truncate">AI Engineer</p>
                     <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
-                      <span className="text-[#0a5a54] flex items-center gap-0.5">
-                        ★ <span className="text-slate-800">5.0</span>
-                      </span>
+                      <span className="text-[#0a5a54] flex items-center gap-0.5">★ <span className="text-slate-800">5.0</span></span>
                       <span className="text-slate-700">$120/hr</span>
                     </div>
                   </div>
                 </div>
               </div>
-
             </div>
-
           </div>
 
         </div>
       </div>
 
-      {/* Trusted Companies Logo Carousel Section (Fixed to bottom of screen with added spacing) */}
+      {/* Trusted Companies Ticker */}
       <div className="w-full bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/50 pt-5 pb-3.5 overflow-hidden shrink-0 z-10 mt-6 lg:mt-8">
         <p className="text-center text-[10px] sm:text-xs font-bold tracking-[0.22em] text-slate-400/90 uppercase mb-5">
-          Trusted by Innovative Companies Worldwide
+          {t("trusted_title", "Trusted by Innovative Companies Worldwide")}
         </p>
         <div className="overflow-hidden relative w-full mask-gradient">
           <div className="animate-marquee flex items-center py-1.5">
-            {[...companies, ...companies, ...companies, ...companies].map((company, index) => (
+            {[...companies, ...companies, ...companies, ...companies].map((name, index) => (
               <div key={index} className="flex items-center gap-2.5 mx-10 sm:mx-16 shrink-0">
-                {company.icon}
+                {COMPANY_ICON_POOL[index % COMPANY_ICON_POOL.length]}
                 <span className="text-slate-400 font-extrabold text-xs sm:text-sm tracking-wider uppercase font-display">
-                  {company.name}
+                  {name}
                 </span>
               </div>
             ))}

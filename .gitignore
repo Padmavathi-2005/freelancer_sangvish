@@ -53,3 +53,9 @@ coverage/
 .npm
 .eslintcache
 .turbo
+
+# Backups and archives
+*.zip
+*.dump
+*.sql
+backend/backups/

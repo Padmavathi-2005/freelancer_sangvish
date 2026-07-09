@@ -1,0 +1,127 @@
+================================================================================
+LANCERFLOW - INLINE CHAT DISPUTE & MEDIATION WORKFLOW SPECIFICATION
+================================================================================
+
+This document outlines the detailed architecture and database/UI specifications 
+for executing the full contract dispute workflow entirely inside LancerFlow's 
+existing messaging (chat) system.
+
+--------------------------------------------------------------------------------
+1. ARCHITECTURAL CONCEPT: CHAT-CENTRIC MEDIATION
+--------------------------------------------------------------------------------
+Rather than redirecting clients and freelancers to a detached, clinical dispute 
+hub, LancerFlow handles disputes directly inside the existing text message thread 
+associated with the contract/job.
+
+This offers several immediate product advantages:
+* **Evidence Continuity**: All project context, messages, and files are already 
+  present in the chat history. No need to re-upload.
+* **Frictionless Resolution**: Direct conversational negotiation makes mutual 
+  settlements (e.g. partial refunds or deadlines extensions) 10x faster.
+* **3-Way Mediation**: When escalated, the Admin is simply "invited" to join the 
+  chat, turning the 2-way room into a secure 3-way conference.
+
+--------------------------------------------------------------------------------
+2. DATABASE SCHEMA ENHANCEMENTS
+--------------------------------------------------------------------------------
+
+To track states and links, we introduce two new tables:
+
+```sql
+-- 1. Disputes ledger
+CREATE TABLE disputes (
+    dispute_id SERIAL PRIMARY KEY,
+    contract_id INTEGER NOT NULL REFERENCES contracts(contract_id) ON DELETE CASCADE,
+    client_id INTEGER NOT NULL REFERENCES users(user_id),
+    freelancer_id INTEGER NOT NULL REFERENCES users(user_id),
+    conversation_id INTEGER NOT NULL REFERENCES conversations(conversation_id),
+    status VARCHAR(50) NOT NULL DEFAULT 'Open', -- 'Open', 'Contested', 'Escalated', 'Resolved'
+    reason VARCHAR(100) NOT NULL, -- e.g., 'Work Quality', 'Unresponsive', 'Incomplete'
+    description TEXT NOT NULL,
+    evidence_urls JSONB DEFAULT '[]', -- List of uploaded attachments
+    escalated_at TIMESTAMP,
+    resolved_at TIMESTAMP,
+    resolution_type VARCHAR(50), -- 'Buyer_Won', 'Freelancer_Won', 'Partial_Refund', 'Mutual_Close'
+    resolution_details TEXT,
+    buyer_refund_percentage NUMERIC(5,2) DEFAULT 0.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 2. Modify conversations to support multiple members (Group Chat conversion)
+-- If not already present, convert 1-to-1 rooms to group membership tables:
+CREATE TABLE conversation_members (
+    conversation_id INTEGER REFERENCES conversations(conversation_id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    role VARCHAR(50) NOT NULL DEFAULT 'Member', -- 'Member', 'Admin_Mediator'
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (conversation_id, user_id)
+);
+```
+
+--------------------------------------------------------------------------------
+3. STEP-BY-STEP WORKFLOW IN THE MESSAGING WINDOW
+--------------------------------------------------------------------------------
+
+### STEP 1: ACTIVE CONTRACT & TRIGGERING DISPUTE
+* A client goes to the Milestone Tracker or the active chat session, clicks a "Dispute Contract" button.
+* A modal opens requesting:
+  - Dispute Reason (e.g., Work not delivered, Poor quality, Unresponsive).
+  - Detailed explanation.
+  - Upload of additional screenshots/files (optional).
+* On submission:
+  1. Backend inserts a record in the `disputes` table.
+  2. Updates contract status to `'Under Dispute'`.
+  3. Deducted escrow funds are immediately placed "On Hold" (marked locked in wallets).
+  4. Inserts a special type message in the `messages` table linked to the `conversation_id`:
+     ```json
+     {
+       "sender_id": SYSTEM_USER_ID,
+       "type": "dispute_opened",
+       "content": "Client has opened a dispute.",
+       "metadata": {
+         "dispute_id": 12,
+         "reason": "Work Quality",
+         "description": "The responsive layouts do not align with the signed specifications on mobile viewports."
+       }
+     }
+     ```
+
+### STEP 2: INLINE RESPONSES (FREELANCER VIEW)
+* The socket listener broadcasts the message to the conversation.
+* The frontend chat parser renders a custom **Dispute Alert Card** in the message bubble timeline instead of raw text:
+  * **Visual**: Highlighted in Amber border with alert icons.
+  * **Freelancer Actions**: Two buttons are visible:
+    1. `[Accept Refund]` -> Automatically cancels contract, refunds client, closes dispute.
+    2. `[Contest Dispute]` -> Opens inline modal to type a counter-statement.
+* If contested, a system message is posted: `"Freelancer has contested the dispute. Counter statement: [Text]"`
+  * **Client Actions**: The card updates dynamically to show:
+    1. `[Propose Settlement]` (opens custom split settlement input)
+    2. `[Escalate to Admin]`
+
+### STEP 3: MUTUAL NEGOTIATION CARDS
+* If the Client proposes a partial refund (e.g. 50/50 split), an interactive **Settlement Proposition Card** is posted in the chat:
+  * `"Client has proposed a 50% / 50% split resolution. Freelancer gets $500, Client gets $500."`
+  * Buttons for Freelancer: `[Accept Settlement]` | `[Reject & Request Review]`.
+* If accepted, the transaction completes automatically and posts: `"Settlement accepted. Funds dispersed. Dispute Resolved."`
+
+### STEP 4: ESCALATION & ADMIN MEDIATION (3-WAY CHAT)
+* If either party clicks `[Escalate to Admin]`:
+  1. Dispute status changes to `'Escalated'`.
+  2. Backend adds the System Admin's user ID to `conversation_members` for this `conversation_id`.
+  3. System message posts: `"Dispute escalated. System Administrator [Admin Name] has joined the conversation to review the timeline."`
+* **Admin Review Experience**:
+  - The Admin logs into the admin panel, sees the alert under **Disputes & Alerts**, and clicks "Join Conversation".
+  - Admin is dropped directly into the active chat room, showing all prior chat history, shared files, and negotiation cards.
+* **Admin Resolve Panel**:
+  - While reading, the Admin has a sticky resolution dock on their screen with final verdict buttons:
+    1. **Resolve: Buyer Wins** (100% refund, warning to freelancer).
+    2. **Resolve: Freelancer Wins** (100% release to freelancer).
+    3. **Resolve: Split Refund** (Custom percentage input).
+    4. **Force Revision** (Sends back to revision state).
+* **Finalizing Resolution**:
+  - Once the Admin submits a verdict:
+    1. Escrow database transactions are executed.
+    2. Dispute is closed (`status = 'Resolved'`).
+    3. System posts a final receipt card in the chat window.
+    4. The Admin user is removed from the `conversation_members` table, concluding the mediation.

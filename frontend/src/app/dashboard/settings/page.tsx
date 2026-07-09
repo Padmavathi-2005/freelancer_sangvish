@@ -67,7 +67,11 @@ export default function SettingsPage() {
     deleteEducation,
     deleteCertification,
     setActiveTab,
-    userName
+    userName,
+    profileImage,
+    handleProfileImageUpload,
+    setSelectedFreelancerProfile,
+    userEmail
   } = useDashboard();
 
   // Map the newExp/newEdu/newCert to props expected by SettingsTab
@@ -156,6 +160,10 @@ export default function SettingsPage() {
       deleteCertification={deleteCertification}
       setActiveTab={setActiveTab}
       userName={userName}
+      profileImage={profileImage}
+      handleProfileImageUpload={handleProfileImageUpload}
+      setSelectedFreelancerProfile={setSelectedFreelancerProfile}
+      userEmail={userEmail}
     />
   );
 }

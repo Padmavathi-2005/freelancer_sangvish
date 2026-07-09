@@ -26,6 +26,18 @@ export interface DisputeCase {
   status: "Under Mediation" | "Resolved (Refunded Client)" | "Resolved (Released to Freelancer)" | "Resolved (Split)";
 }
 
+export interface AdminNotification {
+  id: string;
+  title: string;
+  message: string;
+  targetTab: string;
+  targetSubTab: string;
+  targetId: string;
+  read: boolean;
+  timestamp: string;
+}
+
+
 export interface Category {
   id?: string;
   category_id?: string | number;
@@ -85,6 +97,8 @@ interface AdminContextType {
   setActiveTab: (tab: string) => void;
   isSidebarOpen: boolean;
   setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  adminTheme: "light" | "dark";
+  setAdminTheme: (theme: "light" | "dark") => void;
 
   // User management states
   usersList: any[];
@@ -156,12 +170,16 @@ interface AdminContextType {
   setSettingsMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
 
   // Sub-tabs
-  categoriesSubTab: "categories" | "subcategories" | "skills";
-  setCategoriesSubTab: React.Dispatch<React.SetStateAction<"categories" | "subcategories" | "skills" >>;
-  projectsSubTab: "projects" | "vetting";
-  setProjectsSubTab: React.Dispatch<React.SetStateAction<"projects" | "vetting">>;
+  categoriesSubTab: "categories" | "subcategories" | "skills" | "languages" | "currencies" | "cleanup";
+  setCategoriesSubTab: React.Dispatch<React.SetStateAction<"categories" | "subcategories" | "skills" | "languages" | "currencies" | "cleanup">>;
+  projectsSubTab: "projects" | "vetting" | "proposals";
+  setProjectsSubTab: React.Dispatch<React.SetStateAction<"projects" | "vetting" | "proposals">>;
   transactionsSubTab: "transactions" | "disputes";
   setTransactionsSubTab: React.Dispatch<React.SetStateAction<"transactions" | "disputes">>;
+  adminNotifications: AdminNotification[];
+  setAdminNotifications: React.Dispatch<React.SetStateAction<AdminNotification[]>>;
+  highlightedDisputeId: string | null;
+  setHighlightedDisputeId: React.Dispatch<React.SetStateAction<string | null>>;
   usersSubTab: "users" | "admins";
   setUsersSubTab: React.Dispatch<React.SetStateAction<"users" | "admins">>;
   categoriesSearch: string;
@@ -172,6 +190,13 @@ interface AdminContextType {
   setSubcategoriesPage: React.Dispatch<React.SetStateAction<number>>;
   skillsPage: number;
   setSkillsPage: React.Dispatch<React.SetStateAction<number>>;
+  enableProposalVetting: boolean;
+  setEnableProposalVetting: (v: boolean) => void;
+  enableClientVetting: boolean;
+  setEnableClientVetting: (v: boolean) => void;
+  pendingProposals: any[];
+  fetchPendingProposals: () => Promise<void>;
+  handleUpdateProposalVettingStatus: (proposalId: number, status: "Approved" | "Rejected") => Promise<void>;
 
   // Categories CRUD
   categoriesList: Category[];
@@ -259,6 +284,30 @@ interface AdminContextType {
   setSecondaryColor: React.Dispatch<React.SetStateAction<string>>;
   siteTheme: string;
   setSiteTheme: React.Dispatch<React.SetStateAction<string>>;
+  defaultCurrency: string;
+  setDefaultCurrency: React.Dispatch<React.SetStateAction<string>>;
+  defaultLanguage: string;
+  setDefaultLanguage: React.Dispatch<React.SetStateAction<string>>;
+  frontendHeroContent: {
+    hero_badge: string;
+    hero_title: string;
+    hero_subtitle: string;
+    hero_search_placeholder: string;
+    hero_search_btn: string;
+    hero_popular_label: string;
+    search: string;
+  };
+  setFrontendHeroContent: React.Dispatch<React.SetStateAction<{
+    hero_badge: string;
+    hero_title: string;
+    hero_subtitle: string;
+    hero_search_placeholder: string;
+    hero_search_btn: string;
+    hero_popular_label: string;
+    search: string;
+  }>>;
+  disputeReasons: string[];
+  setDisputeReasons: React.Dispatch<React.SetStateAction<string[]>>;
   handleSaveSetting: (key: string, value: any, category?: string) => Promise<void>;
 
   // Admins List & CRUD
@@ -318,6 +367,7 @@ interface AdminContextType {
   totalSkillsPages: number;
 
   itemsPerPage: number;
+  setItemsPerPage: React.Dispatch<React.SetStateAction<number>>;
   adminWalletStats: any | null;
   loadingAdminWallet: boolean;
   fetchAdminWalletStats: () => Promise<void>;
@@ -326,10 +376,16 @@ interface AdminContextType {
   fetchWithdrawalRequests: () => Promise<void>;
   handleApproveWithdrawal: (id: number) => Promise<void>;
   handleRejectWithdrawal: (id: number) => Promise<void>;
+  handlePayToUser: (userId: number, amount: number, description: string) => Promise<{ success: boolean; message: string }>;
+  cmsPagesList: any[];
+  loadingCms: boolean;
+  fetchCmsPages: () => Promise<void>;
+  handleCreateCmsPage: (title: string, slug: string, status: string, contentType: string, content: string) => Promise<any>;
+  handleUpdateCmsPage: (id: number, title: string, slug: string, status: string, contentType: string, content: string) => Promise<any>;
+  handleDeleteCmsPage: (id: number) => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
-const itemsPerPage = 5;
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -337,6 +393,24 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const [adminTheme, setAdminThemeState] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("adminTheme") as "light" | "dark" | null;
+      if (savedTheme === "light" || savedTheme === "dark") {
+        setAdminThemeState(savedTheme);
+      }
+    }
+  }, []);
+
+  const setAdminTheme = (theme: "light" | "dark") => {
+    setAdminThemeState(theme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("adminTheme", theme);
+    }
+  };
 
   // User management states
   const [usersList, setUsersList] = useState<any[]>([]);
@@ -384,8 +458,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [settingsMenuOpen, setSettingsMenuOpen] = useState(false);
 
   // Subcategories & Skills management states
-  const [categoriesSubTab, setCategoriesSubTab] = useState<"categories" | "subcategories" | "skills">("categories");
-  const [projectsSubTab, setProjectsSubTab] = useState<"projects" | "vetting">("projects");
+  const [categoriesSubTab, setCategoriesSubTab] = useState<"categories" | "subcategories" | "skills" | "languages" | "currencies" | "cleanup">("categories");
+  const [projectsSubTab, setProjectsSubTab] = useState<"projects" | "vetting" | "proposals">("projects");
   const [transactionsSubTab, setTransactionsSubTab] = useState<"transactions" | "disputes">("transactions");
   const [usersSubTab, setUsersSubTab] = useState<"users" | "admins">("users");
   const [categoriesSearch, setCategoriesSearch] = useState("");
@@ -451,6 +525,69 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     { id: "v4", name: "Claire Dupont", role: "SEO Growth Hacker", rate: "$65/hr", experience: "4 years", skills: ["SEO", "Content Marketing", "Analytics"], status: "Pending" },
   ]);
 
+  const [adminNotifications, setAdminNotificationsState] = useState<AdminNotification[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("admin_notifications");
+      if (saved) {
+        try {
+          setAdminNotificationsState(JSON.parse(saved));
+          return;
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      // Default initial list
+      const defaults = [
+        {
+          id: "an1",
+          title: "New Dispute Arbitration Case",
+          message: "Client Alex Mercer opened a dispute for 'Mobile E-commerce Refactor'",
+          targetTab: "transactions",
+          targetSubTab: "disputes",
+          targetId: "d1",
+          read: false,
+          timestamp: "10 mins ago"
+        },
+        {
+          id: "an2",
+          title: "New Dispute Arbitration Case",
+          message: "Client Jessica Lin opened a dispute for 'Stripe API checkout setup'",
+          targetTab: "transactions",
+          targetSubTab: "disputes",
+          targetId: "d2",
+          read: false,
+          timestamp: "1 hour ago"
+        },
+        {
+          id: "an3",
+          title: "New Vetting Application Submitted",
+          message: "Ryan K. (Expert iOS Dev) submitted profile for admin vetting approval",
+          targetTab: "onboarding",
+          targetSubTab: "",
+          targetId: "vetting",
+          read: false,
+          timestamp: "3 hours ago"
+        }
+      ];
+      setAdminNotificationsState(defaults);
+      localStorage.setItem("admin_notifications", JSON.stringify(defaults));
+    }
+  }, []);
+
+  const setAdminNotifications = (val: React.SetStateAction<AdminNotification[]>) => {
+    setAdminNotificationsState((prev) => {
+      const next = typeof val === "function" ? val(prev) : val;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("admin_notifications", JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const [highlightedDisputeId, setHighlightedDisputeId] = useState<string | null>(null);
+
   // Dispute Cases state
   const [disputes, setDisputes] = useState<DisputeCase[]>([
     {
@@ -483,6 +620,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
   const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
 
+  // CMS Pages States
+  const [cmsPagesList, setCmsPagesList] = useState<any[]>([]);
+  const [loadingCms, setLoadingCms] = useState(false);
+
   // System Settings state
   const [platformFee, setPlatformFee] = useState(5);
   const [autoVetting, setAutoVetting] = useState(false);
@@ -490,6 +631,30 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [primaryColor, setPrimaryColor] = useState("#10b981");
   const [secondaryColor, setSecondaryColor] = useState("#06b6d4");
   const [siteTheme, setSiteTheme] = useState("light");
+  const [defaultCurrency, setDefaultCurrency] = useState("USD");
+  const [defaultLanguage, setDefaultLanguage] = useState("EN");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [enableProposalVetting, setEnableProposalVetting] = useState(false);
+  const [enableClientVetting, setEnableClientVetting] = useState(false);
+  const [disputeReasons, setDisputeReasons] = useState<string[]>([
+    "Work not delivered",
+    "Work quality is poor",
+    "Requirements not followed",
+    "Freelancer is unresponsive",
+    "Delivery is incomplete",
+    "Suspected fraud",
+    "Other"
+  ]);
+  const [pendingProposals, setPendingProposals] = useState<any[]>([]);
+  const [frontendHeroContent, setFrontendHeroContent] = useState({
+    hero_badge: "The Top 3% Global Freelancers",
+    hero_title: "Hire Expert Freelancers For Your Next Big Project",
+    hero_subtitle: "Connect with top-tier professionals. Execute faster with vetted talent tailored to your enterprise needs.",
+    hero_search_placeholder: "What skill are you looking for?",
+    hero_search_btn: "Search Talent",
+    hero_popular_label: "Popular: UI Design, React, AI Automation, SEO",
+    search: "Search"
+  });
 
   // Fetch Users
   const fetchUsers = async () => {
@@ -497,7 +662,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setUsersLoading(true);
-      const res = await fetch("http://localhost:5000/api/admin/users", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/users", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -516,7 +681,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/admin/users/${userId}/toggle-active`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/users/${userId}/toggle-active`, {
         method: "PUT",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -534,7 +699,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setProjectsLoading(true);
-      const res = await fetch("http://localhost:5000/api/admin/projects", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/projects", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -552,7 +717,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/admin/projects/${projectId}/status`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/projects/${projectId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -573,7 +738,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/admin/projects/${projectId}`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/projects/${projectId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -591,7 +756,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setGigsLoading(true);
-      const res = await fetch("http://localhost:5000/api/admin/gigs", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/gigs", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -609,7 +774,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/admin/gigs/${gigId}/status`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/gigs/${gigId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -630,7 +795,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/admin/gigs/${gigId}`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/gigs/${gigId}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -648,7 +813,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setGigOrdersLoading(true);
-      const res = await fetch("http://localhost:5000/api/admin/gig-orders", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/gig-orders", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -666,7 +831,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/admin/gig-orders/${orderId}/status`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/gig-orders/${orderId}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -688,7 +853,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setTransactionsLoading(true);
-      const res = await fetch("http://localhost:5000/api/admin/transactions", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/transactions", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -706,22 +871,65 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/settings");
+        const res = await fetch("https://freelancer.sangvish.com/api/settings");
         if (res.ok) {
           const data = await res.json();
           data.forEach((setting: any) => {
+            let val = setting.setting_value;
+            if (typeof val === "string") {
+              try {
+                const trimmed = val.trim();
+                if (trimmed.startsWith("{") || trimmed.startsWith("[") || trimmed === "true" || trimmed === "false" || (!isNaN(Number(trimmed)) && trimmed !== "")) {
+                  val = JSON.parse(val);
+                }
+              } catch (e) {
+                // Keep raw string silently
+              }
+            }
+
+            const formatHex = (colorStr: string, fallback: string) => {
+              if (!colorStr) return fallback;
+              const trimmed = colorStr.trim();
+              if (trimmed.startsWith("#")) return trimmed;
+              if (/^[0-9A-Fa-f]{3,8}$/.test(trimmed)) return "#" + trimmed;
+              return trimmed;
+            };
+
             if (setting.setting_key === "primary_color") {
-              setPrimaryColor(setting.setting_value?.color || "#10b981");
+              setPrimaryColor(formatHex(val?.color, "#10b981"));
             } else if (setting.setting_key === "secondary_color") {
-              setSecondaryColor(setting.setting_value?.color || "#06b6d4");
+              setSecondaryColor(formatHex(val?.color, "#06b6d4"));
             } else if (setting.setting_key === "theme") {
-              setSiteTheme(setting.setting_value?.theme || "light");
+              setSiteTheme(val?.theme || "light");
             } else if (setting.setting_key === "platform_fee") {
-              setPlatformFee(setting.setting_value?.fee ?? 5);
+              setPlatformFee(val?.fee ?? 5);
             } else if (setting.setting_key === "auto_vetting") {
-              setAutoVetting(setting.setting_value?.enabled ?? false);
+              setAutoVetting(val?.enabled ?? false);
             } else if (setting.setting_key === "maintenance_mode") {
-              setMaintenanceMode(setting.setting_value?.enabled ?? false);
+              setMaintenanceMode(val?.enabled ?? false);
+            } else if (setting.setting_key === "default_currency") {
+              setDefaultCurrency(val?.code || "USD");
+            } else if (setting.setting_key === "default_language") {
+              setDefaultLanguage(val?.code || "EN");
+            } else if (setting.setting_key === "pagination_limit") {
+              setItemsPerPage(val?.limit ?? 10);
+            } else if (setting.setting_key === "enable_proposal_vetting") {
+              setEnableProposalVetting(val?.enabled ?? false);
+            } else if (setting.setting_key === "enable_client_vetting") {
+              const isEnabled = typeof val === "object" ? val?.enabled : val;
+              setEnableClientVetting(isEnabled === true || isEnabled === "true");
+            } else if (setting.setting_key === "frontend_hero_content") {
+              setFrontendHeroContent({
+                hero_badge: val?.hero_badge || "The Top 3% Global Freelancers",
+                hero_title: val?.hero_title || "Hire Expert Freelancers For Your Next Big Project",
+                hero_subtitle: val?.hero_subtitle || "Connect with top-tier professionals. Execute faster with vetted talent tailored to your enterprise needs.",
+                hero_search_placeholder: val?.hero_search_placeholder || "What skill are you looking for?",
+                hero_search_btn: val?.hero_search_btn || "Search Talent",
+                hero_popular_label: val?.hero_popular_label || "Popular: UI Design, React, AI Automation, SEO",
+                search: val?.search || "Search"
+              });
+            } else if (setting.setting_key === "dispute_reasons") {
+              setDisputeReasons(Array.isArray(val) ? val : (val?.reasons || disputeReasons));
             }
           });
         }
@@ -746,7 +954,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
 
-      await fetch("http://localhost:5000/api/admin/settings", {
+      await fetch("https://freelancer.sangvish.com/api/admin/settings", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -793,7 +1001,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
       const fetchAdmins = async () => {
         try {
-          const res = await fetch("http://localhost:5000/api/admin/all", {
+          const res = await fetch("https://freelancer.sangvish.com/api/admin/all", {
             headers: { "Authorization": `Bearer ${token}` }
           });
           if (!res.ok) {
@@ -833,7 +1041,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const res = await fetch("http://localhost:5000/api/admin/create", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -858,7 +1066,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setNewAdminEmail("");
       setNewAdminPassword("");
       
-      const refreshRes = await fetch("http://localhost:5000/api/admin/all", {
+      const refreshRes = await fetch("https://freelancer.sangvish.com/api/admin/all", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (refreshRes.ok) {
@@ -877,7 +1085,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/delete/${id}`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/delete/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -901,7 +1109,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch("http://localhost:5000/api/admin/categories", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/categories", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -926,12 +1134,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      let url = "http://localhost:5000/api/admin/categories";
+      let url = "https://freelancer.sangvish.com/api/admin/categories";
       let method = "POST";
 
       if (categoryModalMode === "edit" && editingCategory) {
         const catId = editingCategory.id || editingCategory.category_id || "";
-        url = `http://localhost:5000/api/admin/categories/${catId}`;
+        url = `https://freelancer.sangvish.com/api/admin/categories/${catId}`;
         method = "PUT";
       }
 
@@ -969,7 +1177,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/categories/${id}`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/categories/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1014,7 +1222,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch("http://localhost:5000/api/admin/sub-categories", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/sub-categories", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1040,12 +1248,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      let url = "http://localhost:5000/api/admin/sub-categories";
+      let url = "https://freelancer.sangvish.com/api/admin/sub-categories";
       let method = "POST";
 
       if (subcategoryModalMode === "edit" && editingSubcategory) {
         const subId = editingSubcategory.sub_category_id || editingSubcategory.id || "";
-        url = `http://localhost:5000/api/admin/sub-categories/${subId}`;
+        url = `https://freelancer.sangvish.com/api/admin/sub-categories/${subId}`;
         method = "PUT";
       }
 
@@ -1082,7 +1290,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/sub-categories/${id}`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/sub-categories/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1128,7 +1336,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("adminToken");
     try {
       const deletePromises = selectedCategoryIds.map((id) =>
-        fetch(`http://localhost:5000/api/admin/categories/${id}`, {
+        fetch(`https://freelancer.sangvish.com/api/admin/categories/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         }).then(async (res) => {
@@ -1155,7 +1363,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("adminToken");
     try {
       const deletePromises = selectedSubcategoryIds.map((id) =>
-        fetch(`http://localhost:5000/api/admin/sub-categories/${id}`, {
+        fetch(`https://freelancer.sangvish.com/api/admin/sub-categories/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         }).then(async (res) => {
@@ -1180,7 +1388,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch("http://localhost:5000/api/admin/skills", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/skills", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1205,12 +1413,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     };
 
     try {
-      let url = "http://localhost:5000/api/admin/skills";
+      let url = "https://freelancer.sangvish.com/api/admin/skills";
       let method = "POST";
 
       if (skillModalMode === "edit" && editingSkill) {
         const skId = editingSkill.skill_id || editingSkill.id || "";
-        url = `http://localhost:5000/api/admin/skills/${skId}`;
+        url = `https://freelancer.sangvish.com/api/admin/skills/${skId}`;
         method = "PUT";
       }
 
@@ -1247,7 +1455,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     const token = localStorage.getItem("adminToken");
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/skills/${id}`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/skills/${id}`, {
         method: "DELETE",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1292,7 +1500,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("adminToken");
     try {
       const deletePromises = selectedSkillIds.map((id) =>
-        fetch(`http://localhost:5000/api/admin/skills/${id}`, {
+        fetch(`https://freelancer.sangvish.com/api/admin/skills/${id}`, {
           method: "DELETE",
           headers: { "Authorization": `Bearer ${token}` }
         }).then(async (res) => {
@@ -1330,7 +1538,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setLoadingAdminWallet(true);
-      const res = await fetch("http://localhost:5000/api/admin/wallet/stats", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/wallet/stats", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1348,7 +1556,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
       setLoadingWithdrawals(true);
-      const res = await fetch("http://localhost:5000/api/admin/wallet/withdrawals", {
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/wallet/withdrawals", {
         headers: { "Authorization": `Bearer ${token}` }
       });
       if (res.ok) {
@@ -1365,7 +1573,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/admin/wallet/withdrawals/${requestId}/approve`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/wallet/withdrawals/${requestId}/approve`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1386,7 +1594,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("adminToken");
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/admin/wallet/withdrawals/${requestId}/reject`, {
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/wallet/withdrawals/${requestId}/reject`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` }
       });
@@ -1403,7 +1611,118 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const pendingVettingCount = useMemo(() => vettingApps.filter((a) => a.status === "Pending").length, [vettingApps]);
+  const handlePayToUser = async (userId: number, amount: number, description: string) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return { success: false, message: "No token found" };
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/wallet/pay", {
+        method: "POST",
+        headers: { 
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ recipient_user_id: userId, amount, description })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        fetchAdminWalletStats();
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, message: data.message || "Failed to make transfer." };
+      }
+    } catch (err: any) {
+      console.error("Error paying to user:", err);
+      return { success: false, message: err.message || "Connection error." };
+    }
+  };
+
+  const fetchCmsPages = async () => {
+    try {
+      setLoadingCms(true);
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/cms/pages", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        setCmsPagesList(await res.json());
+      }
+    } catch (error) {
+      console.error("Failed to fetch CMS pages:", error);
+    } finally {
+      setLoadingCms(false);
+    }
+  };
+
+  const handleCreateCmsPage = async (title: string, slug: string, status: string, contentType: string, content: string) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/cms/pages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ title, slug, status, content_type: contentType, content })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchCmsPages();
+      }
+      return data;
+    } catch (error) {
+      console.error("Failed to create CMS page:", error);
+      return { message: "Network connection failed" };
+    }
+  };
+
+  const handleUpdateCmsPage = async (id: number, title: string, slug: string, status: string, contentType: string, content: string) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/cms/pages/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ title, slug, status, content_type: contentType, content })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchCmsPages();
+      }
+      return data;
+    } catch (error) {
+      console.error("Failed to update CMS page:", error);
+      return { message: "Network connection failed" };
+    }
+  };
+
+  const handleDeleteCmsPage = async (id: number) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/cms/pages/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        await fetchCmsPages();
+        alert("Page deleted successfully.");
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to delete page.");
+      }
+    } catch (error) {
+      console.error("Failed to delete CMS page:", error);
+    }
+  };
+
+  const pendingVettingCount = useMemo(() => {
+    return usersList.filter((u) => u.vetting_status === "Pending").length;
+  }, [usersList]);
   const activeDisputesCount = useMemo(() => disputes.filter((d) => d.status === "Under Mediation").length, [disputes]);
 
   useEffect(() => {
@@ -1419,6 +1738,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         fetchTransactions();
         fetchAdminWalletStats();
         fetchWithdrawalRequests();
+        fetchCmsPages();
+        fetchPendingProposals();
       }, 0);
     }
   }, [isAuthenticated]);
@@ -1428,42 +1749,114 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const routeMap: Record<string, string> = {
       "/admin": "overview",
       "/admin/taxonomies": "taxonomies",
-      "/admin/site-management": "site_management",
+      "/admin/cleanup": "cleanup",
+      "/admin/languages": "languages",
+      "/admin/site-settings": "site_settings",
+      "/admin/email-settings": "email_settings",
+      "/admin/frontend-content": "frontend_content",
+      "/admin/footer-links": "footer_links",
+      "/admin/social-login": "social_login",
       "/admin/transactions": "transactions",
       "/admin/projects": "projects",
+      "/admin/projects/add": "add_project",
       "/admin/project-orders": "project_orders",
       "/admin/gigs": "gigs_list",
       "/admin/gig-orders": "gig_orders",
       "/admin/users": "users",
+      "/admin/users/client": "admin_clients",
+      "/admin/users/labour": "admin_labours",
+      "/admin/users/engineer": "admin_engineers",
       "/admin/onboarding": "onboarding",
       "/admin/wallet-management": "wallet_management",
       "/admin/payment-settings": "payment_settings",
+      "/admin/dispute-reasons": "dispute_reasons",
+      "/admin/cms-pages": "cms_pages",
+      "/admin/backups": "backups",
     };
     return routeMap[pathname] || "overview";
   }, [pathname]);
 
   const setActiveTab = (tab: string) => {
+    if (tab === "languages" || tab === "currencies") {
+      setCategoriesSubTab(tab);
+      router.push("/admin/languages");
+      return;
+    }
+    if (tab === "cleanup") {
+      setCategoriesSubTab("cleanup");
+      router.push("/admin/cleanup");
+      return;
+    }
     const routeMap: Record<string, string> = {
       overview: "/admin",
       profile: "/admin",
       taxonomies: "/admin/taxonomies",
       categories: "/admin/taxonomies",
-      site_management: "/admin/site-management",
-      settings: "/admin/site-management",
+      cleanup: "/admin/cleanup",
+      languages: "/admin/languages",
+      site_management: "/admin/site-settings",
+      site_settings: "/admin/site-settings",
+      email_settings: "/admin/email-settings",
+      frontend_content: "/admin/frontend-content",
+      footer_links: "/admin/footer-links",
+      social_login: "/admin/social-login",
+      settings: "/admin/site-settings",
       transactions: "/admin/transactions",
       disputes: "/admin/transactions",
       projects: "/admin/projects",
+      add_project: "/admin/projects/add",
       project_orders: "/admin/project-orders",
       gigs_list: "/admin/gigs",
       gig_orders: "/admin/gig-orders",
       users: "/admin/users",
+      admin_clients: "/admin/users/client",
+      admin_labours: "/admin/users/labour",
+      admin_engineers: "/admin/users/engineer",
       onboarding: "/admin/onboarding",
       wallet_management: "/admin/wallet-management",
       payment_settings: "/admin/payment-settings",
+      dispute_reasons: "/admin/dispute-reasons",
+      cms_pages: "/admin/cms-pages",
+      backups: "/admin/backups",
     };
     const path = routeMap[tab];
     if (path) {
       router.push(path);
+    }
+  };
+
+  const fetchPendingProposals = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return;
+      const res = await fetch("https://freelancer.sangvish.com/api/admin/proposals/pending", {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setPendingProposals(await res.json());
+      }
+    } catch (err) {
+      console.error("Error fetching pending proposals:", err);
+    }
+  };
+
+  const handleUpdateProposalVettingStatus = async (proposalId: number, status: "Approved" | "Rejected") => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return;
+      const res = await fetch(`https://freelancer.sangvish.com/api/admin/proposals/${proposalId}/vetting`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+      if (res.ok) {
+        fetchPendingProposals();
+      }
+    } catch (err) {
+      console.error("Error updating proposal vetting status:", err);
     }
   };
 
@@ -1491,9 +1884,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const paginatedUsers = useMemo(() => {
     const start = (usersPage - 1) * itemsPerPage;
     return filteredUsers.slice(start, start + itemsPerPage);
-  }, [filteredUsers, usersPage]);
+  }, [filteredUsers, usersPage, itemsPerPage]);
 
-  const totalUsersPages = useMemo(() => Math.ceil(filteredUsers.length / itemsPerPage), [filteredUsers]);
+  const totalUsersPages = useMemo(() => Math.ceil(filteredUsers.length / itemsPerPage), [filteredUsers, itemsPerPage]);
 
   const filteredOnboardedUsers = useMemo(() => {
     return usersList.filter(u => {
@@ -1502,6 +1895,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
       if (onboardedFilterRole === "freelancer" && !u.freelancer_onboarding) return false;
       if (onboardedFilterRole === "client" && !u.client_onboarding) return false;
+      if (onboardedFilterRole === "pending_vetting") {
+        if (!u.freelancer_onboarding) return false;
+        if (u.vetting_status !== "Pending" && u.vetting_status !== null) return false;
+      }
 
       const searchStr = onboardedSearch.toLowerCase();
       const fullName = `${u.first_name || ""} ${u.last_name || ""}`.toLowerCase();
@@ -1515,9 +1912,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const paginatedOnboardedUsers = useMemo(() => {
     const start = (onboardedPage - 1) * itemsPerPage;
     return filteredOnboardedUsers.slice(start, start + itemsPerPage);
-  }, [filteredOnboardedUsers, onboardedPage]);
+  }, [filteredOnboardedUsers, onboardedPage, itemsPerPage]);
 
-  const totalOnboardedPages = useMemo(() => Math.ceil(filteredOnboardedUsers.length / itemsPerPage), [filteredOnboardedUsers]);
+  const totalOnboardedPages = useMemo(() => Math.ceil(filteredOnboardedUsers.length / itemsPerPage), [filteredOnboardedUsers, itemsPerPage]);
 
   const filteredProjects = useMemo(() => {
     return projectsList.filter(p => 
@@ -1529,9 +1926,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const paginatedProjects = useMemo(() => {
     const start = (projectsPage - 1) * itemsPerPage;
     return filteredProjects.slice(start, start + itemsPerPage);
-  }, [filteredProjects, projectsPage]);
+  }, [filteredProjects, projectsPage, itemsPerPage]);
 
-  const totalProjectsPages = useMemo(() => Math.ceil(filteredProjects.length / itemsPerPage), [filteredProjects]);
+  const totalProjectsPages = useMemo(() => Math.ceil(filteredProjects.length / itemsPerPage), [filteredProjects, itemsPerPage]);
 
   const filteredGigs = useMemo(() => {
     return gigsList.filter(g => 
@@ -1543,9 +1940,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const paginatedGigs = useMemo(() => {
     const start = (gigsPage - 1) * itemsPerPage;
     return filteredGigs.slice(start, start + itemsPerPage);
-  }, [filteredGigs, gigsPage]);
+  }, [filteredGigs, gigsPage, itemsPerPage]);
 
-  const totalGigsPages = useMemo(() => Math.ceil(filteredGigs.length / itemsPerPage), [filteredGigs]);
+  const totalGigsPages = useMemo(() => Math.ceil(filteredGigs.length / itemsPerPage), [filteredGigs, itemsPerPage]);
 
   const filteredGigOrders = useMemo(() => {
     return gigOrdersList.filter(o => 
@@ -1558,9 +1955,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const paginatedGigOrders = useMemo(() => {
     const start = (gigOrdersPage - 1) * itemsPerPage;
     return filteredGigOrders.slice(start, start + itemsPerPage);
-  }, [filteredGigOrders, gigOrdersPage]);
+  }, [filteredGigOrders, gigOrdersPage, itemsPerPage]);
 
-  const totalGigOrdersPages = useMemo(() => Math.ceil(filteredGigOrders.length / itemsPerPage), [filteredGigOrders]);
+  const totalGigOrdersPages = useMemo(() => Math.ceil(filteredGigOrders.length / itemsPerPage), [filteredGigOrders, itemsPerPage]);
 
   const filteredTransactions = useMemo(() => {
     return transactionsList.filter(t => 
@@ -1573,9 +1970,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const paginatedTransactions = useMemo(() => {
     const start = (transactionsPage - 1) * itemsPerPage;
     return filteredTransactions.slice(start, start + itemsPerPage);
-  }, [filteredTransactions, transactionsPage]);
+  }, [filteredTransactions, transactionsPage, itemsPerPage]);
 
-  const totalTransactionsPages = useMemo(() => Math.ceil(filteredTransactions.length / itemsPerPage), [filteredTransactions]);
+  const totalTransactionsPages = useMemo(() => Math.ceil(filteredTransactions.length / itemsPerPage), [filteredTransactions, itemsPerPage]);
 
   const filteredCategories = useMemo(() => {
     return categoriesList.filter(cat =>
@@ -1586,9 +1983,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const paginatedCategories = useMemo(() => {
     const start = (categoriesPage - 1) * itemsPerPage;
     return filteredCategories.slice(start, start + itemsPerPage);
-  }, [filteredCategories, categoriesPage]);
+  }, [filteredCategories, categoriesPage, itemsPerPage]);
 
-  const totalCategoriesPages = useMemo(() => Math.ceil(filteredCategories.length / itemsPerPage), [filteredCategories]);
+  const totalCategoriesPages = useMemo(() => Math.ceil(filteredCategories.length / itemsPerPage), [filteredCategories, itemsPerPage]);
 
   const filteredSubcategories = useMemo(() => {
     return subcategoriesList.filter(sub =>
@@ -1600,9 +1997,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const paginatedSubcategories = useMemo(() => {
     const start = (subcategoriesPage - 1) * itemsPerPage;
     return filteredSubcategories.slice(start, start + itemsPerPage);
-  }, [filteredSubcategories, subcategoriesPage]);
+  }, [filteredSubcategories, subcategoriesPage, itemsPerPage]);
 
-  const totalSubcategoriesPages = useMemo(() => Math.ceil(filteredSubcategories.length / itemsPerPage), [filteredSubcategories]);
+  const totalSubcategoriesPages = useMemo(() => Math.ceil(filteredSubcategories.length / itemsPerPage), [filteredSubcategories, itemsPerPage]);
 
   const filteredSkills = useMemo(() => {
     return skillsList.filter(sk =>
@@ -1615,9 +2012,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const paginatedSkills = useMemo(() => {
     const start = (skillsPage - 1) * itemsPerPage;
     return filteredSkills.slice(start, start + itemsPerPage);
-  }, [filteredSkills, skillsPage]);
+  }, [filteredSkills, skillsPage, itemsPerPage]);
 
-  const totalSkillsPages = useMemo(() => Math.ceil(filteredSkills.length / itemsPerPage), [filteredSkills]);
+  const totalSkillsPages = useMemo(() => Math.ceil(filteredSkills.length / itemsPerPage), [filteredSkills, itemsPerPage]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -1633,6 +2030,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   return (
     <AdminContext.Provider value={{
       isAuthenticated, setIsAuthenticated, activeTab, setActiveTab, isSidebarOpen, setIsSidebarOpen,
+      adminTheme, setAdminTheme,
       usersList, usersSearch, setUsersSearch, usersPage, setUsersPage, usersLoading, usersFilterRole, setUsersFilterRole,
       fetchUsers, handleToggleUserActive, onboardedSearch, setOnboardedSearch, onboardedFilterRole, setOnboardedFilterRole,
       onboardedPage, setOnboardedPage, projectsList, projectsSearch, setProjectsSearch, projectsPage, setProjectsPage,
@@ -1656,18 +2054,23 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       skillFormSubcategoryId, setSkillFormSubcategoryId, skillFormStatus, setSkillFormStatus, skillFormError, skillFormLoading,
       handleSkillSubmit, handleDeleteSkill, handleEditSkillClick, handleAddSkillClick, platformFee, setPlatformFee, autoVetting,
       setAutoVetting, maintenanceMode, setMaintenanceMode, primaryColor, setPrimaryColor, secondaryColor, setSecondaryColor,
-      siteTheme, setSiteTheme, handleSaveSetting, adminsList, adminUser, newAdminName, setNewAdminName, newAdminEmail, setNewAdminEmail,
+      siteTheme, setSiteTheme, defaultCurrency, setDefaultCurrency, defaultLanguage, setDefaultLanguage, handleSaveSetting, frontendHeroContent, setFrontendHeroContent, disputeReasons, setDisputeReasons, adminsList, adminUser, newAdminName, setNewAdminName, newAdminEmail, setNewAdminEmail,
       newAdminPassword, setNewAdminPassword, newAdminRole, setNewAdminRole, adminError, adminSuccess, adminLoading, handleCreateAdmin,
       handleDeleteAdmin, vettingApps, updateVettingStatus, disputes, resolveDispute, pendingVettingCount, activeDisputesCount,
+      adminNotifications, setAdminNotifications, highlightedDisputeId, setHighlightedDisputeId,
       userCounts, filteredUsers, paginatedUsers, totalUsersPages, filteredOnboardedUsers, paginatedOnboardedUsers, totalOnboardedPages,
       fetchError,
       filteredProjects, paginatedProjects, totalProjectsPages, filteredGigs, paginatedGigs, totalGigsPages, filteredGigOrders,
       paginatedGigOrders, totalGigOrdersPages, filteredTransactions, paginatedTransactions, totalTransactionsPages,
       filteredCategories, paginatedCategories, totalCategoriesPages, filteredSubcategories, paginatedSubcategories,
-      totalSubcategoriesPages, filteredSkills, paginatedSkills, totalSkillsPages, itemsPerPage,
+      totalSubcategoriesPages, filteredSkills, paginatedSkills, totalSkillsPages, itemsPerPage, setItemsPerPage,
       adminWalletStats, loadingAdminWallet, fetchAdminWalletStats,
       withdrawalRequests, loadingWithdrawals, fetchWithdrawalRequests,
-      handleApproveWithdrawal, handleRejectWithdrawal
+      handleApproveWithdrawal, handleRejectWithdrawal, handlePayToUser,
+      cmsPagesList, loadingCms, fetchCmsPages,
+      handleCreateCmsPage, handleUpdateCmsPage, handleDeleteCmsPage,
+      enableProposalVetting, setEnableProposalVetting, enableClientVetting, setEnableClientVetting, pendingProposals, fetchPendingProposals,
+      handleUpdateProposalVettingStatus
     }}>
       {children}
     </AdminContext.Provider>

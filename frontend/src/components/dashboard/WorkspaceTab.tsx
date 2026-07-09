@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
-import { FiCheckCircle, FiCircle, FiLock } from "react-icons/fi";
+import { FiCheckCircle, FiCircle, FiLock, FiAlertTriangle, FiClock } from "react-icons/fi";
 import ProjectMilestoneTracker from "./ProjectMilestoneTracker";
 import GigMilestoneTracker from "./GigMilestoneTracker";
+import { useDashboard } from "@/app/dashboard/DashboardContext";
 
 interface Milestone {
   id: string;
@@ -26,7 +27,7 @@ interface WorkspaceTabProps {
   isProfileIncomplete: boolean;
   stepsStatus: any[];
   profileCompletionProgress: number;
-  onOpenProfileWizard?: () => void;
+  onOpenProfileWizard?: (step?: number) => void;
   setActiveTab: (tab: any) => void;
   setProfileStep: (step: number) => void;
   clientJobs: any[];
@@ -52,22 +53,6 @@ interface WorkspaceTabProps {
   fetchClientApplications: () => Promise<void>;
   fetchHiredFreelancers: () => Promise<void>;
 }
-
-const monthlyEarnings = [
-  { month: "Jan", amount: 4800 },
-  { month: "Feb", amount: 6200 },
-  { month: "Mar", amount: 8400 },
-  { month: "Apr", amount: 7300 },
-  { month: "May", amount: 9800 },
-  { month: "Jun", amount: 11400 },
-];
-const maxEarning = Math.max(...monthlyEarnings.map((d) => d.amount));
-
-const activeContracts: Contract[] = [
-  { id: "c1", client: "Acme SaaS", project: "Web Application Redesign", budget: 10800, status: "In Progress", progress: 40 },
-  { id: "c2", client: "Fintech Lab", project: "Stripe API & Checkout Flow", budget: 5500, status: "Under Review", progress: 100 },
-  { id: "c3", client: "Nova AI", project: "AI Chat Agent Integration", budget: 8200, status: "In Progress", progress: 15 },
-];
 
 export default function WorkspaceTab({
   userRole,
@@ -101,77 +86,95 @@ export default function WorkspaceTab({
   fetchClientApplications,
   fetchHiredFreelancers,
 }: WorkspaceTabProps) {
-  // 1. Milestone Tracking State
-  const [milestones, setMilestones] = useState<Milestone[]>([
-    { id: "m1", title: "Project discovery & high-fidelity prototypes", dueDate: "June 25", amount: 1500, completed: true },
-    { id: "m2", title: "Setup Next.js 16 core structure & design system", dueDate: "July 02", amount: 2000, completed: true },
-    { id: "m3", title: "Integrate database schemas & auth modules", dueDate: "July 15", amount: 2500, completed: false },
-    { id: "m4", title: "Payment gateway & subscription flows setup", dueDate: "July 30", amount: 3000, completed: false },
-    { id: "m5", title: "Final deployment, QA audits & handoff", dueDate: "August 10", amount: 1800, completed: false },
-  ]);
+  const { freelancerContracts, approveContractPayment, vettingStatus, walletInfo } = useDashboard();
+  const balance = parseFloat(walletInfo?.wallet?.balance || "0.00");
 
-  const toggleMilestone = (id: string) => {
-    setMilestones((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, completed: !m.completed } : m))
-    );
-  };
+  const clientSpentAmount = useMemo(() => {
+    const contractsSum = freelancerContracts?.reduce((sum: number, c: any) => sum + parseFloat(c.budget || 0), 0) || 0;
+    const gigsSum = clientApplications?.reduce((sum: number, a: any) => sum + parseFloat(a.budget || 0), 0) || 0;
+    return contractsSum + gigsSum;
+  }, [freelancerContracts, clientApplications]);
 
-  const completedCount = useMemo(() => milestones.filter((m) => m.completed).length, [milestones]);
-  const progressPercent = useMemo(() => Math.round((completedCount / milestones.length) * 100), [completedCount, milestones]);
-  const completedAmount = useMemo(() => milestones.reduce((sum, m) => sum + (m.completed ? m.amount : 0), 0), [milestones]);
-  const totalAmount = useMemo(() => milestones.reduce((sum, m) => sum + m.amount, 0), [milestones]);
+  const freelancerEarnedAmount = useMemo(() => {
+    const contractsSum = freelancerContracts?.reduce((sum: number, c: any) => sum + parseFloat(c.budget || 0), 0) || 0;
+    const gigsSum = gigApplications?.reduce((sum: number, a: any) => sum + parseFloat(a.budget || 0), 0) || 0;
+    return contractsSum + gigsSum;
+  }, [freelancerContracts, gigApplications]);
 
-  // 2. Proposal Bid Simulator State
-  const [bidPrice, setBidPrice] = useState(4800);
-  const [timelineWeeks, setTimelineWeeks] = useState(4);
-  const platformFeePercent = 5; // LancerFlow elite fee is only 5%
-  const feeAmount = useMemo(() => (bidPrice * platformFeePercent) / 100, [bidPrice]);
-  const netEarnings = useMemo(() => bidPrice - feeAmount, [bidPrice, feeAmount]);
+  const displayClientProjects = useMemo(() => {
+    const ongoing = clientJobs.filter(j => j.status !== "Completed" && j.status !== "Closed");
+    return (ongoing.length > 0 ? ongoing : clientJobs).slice(0, 2);
+  }, [clientJobs]);
 
-  // 3. Mock Chat State
-  const [messages, setMessages] = useState([
-    { sender: "client", text: "Hey Liam! The prototyping milestone looks fantastic. Love the transitions.", time: "10:14 AM" },
-    { sender: "freelancer", text: "Thanks Sarah! Glad you like them. I am transitioning into the Next.js frontend structure today.", time: "10:18 AM" },
-    { sender: "client", text: "Excellent. Will we be on track for the July 15 database integration checkpoint?", time: "10:20 AM" },
-  ]);
-  const [inputMessage, setInputMessage] = useState("");
+  const displayClientContracts = useMemo(() => {
+    const ongoing = (freelancerContracts || []).filter((c: any) => c.status !== "Completed" && c.client_id !== undefined);
+    return (ongoing.length > 0 ? ongoing : (freelancerContracts || []).filter((x: any) => x.client_id !== undefined)).slice(0, 2);
+  }, [freelancerContracts]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputMessage.trim()) return;
+  const displayClientGigOrders = useMemo(() => {
+    const ongoing = clientApplications.filter(a => a.status !== "Completed");
+    return (ongoing.length > 0 ? ongoing : clientApplications).slice(0, 2);
+  }, [clientApplications]);
 
-    const newMsg = {
-      sender: "freelancer",
-      text: inputMessage,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    };
+  const displayFreelancerProposals = useMemo(() => {
+    const ongoing = freelancerProposals.filter(p => p.status === "Pending");
+    return (ongoing.length > 0 ? ongoing : freelancerProposals).slice(0, 2);
+  }, [freelancerProposals]);
 
-    setMessages((prev) => [...prev, newMsg]);
-    setInputMessage("");
+  const displayFreelancerContracts = useMemo(() => {
+    const ongoing = (freelancerContracts || []).filter((c: any) => c.status !== "Completed");
+    return (ongoing.length > 0 ? ongoing : (freelancerContracts || [])).slice(0, 2);
+  }, [freelancerContracts]);
 
-    // Simulate automated client response after 1.5 seconds
-    setTimeout(() => {
-      const clientReplies = [
-        "Sounds like a plan! Let me know if you hit any roadblocks.",
-        "Perfect, keep up the great work!",
-        "Awesome! I'll review and approve the milestones once completed.",
+  const displayFreelancerGigOrders = useMemo(() => {
+    const ongoing = gigApplications.filter(a => a.status !== "Completed");
+    return (ongoing.length > 0 ? ongoing : gigApplications).slice(0, 2);
+  }, [gigApplications]);
+
+  const dynamicMonthlyData = useMemo(() => {
+    const transactions = walletInfo?.transactions || [];
+    if (transactions.length === 0) {
+      return [
+        { month: "Jan", amount: 1200 },
+        { month: "Feb", amount: 2100 },
+        { month: "Mar", amount: 1800 },
+        { month: "Apr", amount: 3400 },
+        { month: "May", amount: 2900 },
+        { month: "Jun", amount: balance > 0 ? Math.round(balance) : 4100 },
       ];
-      const randomReply = clientReplies[Math.floor(Math.random() * clientReplies.length)];
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "client",
-          text: randomReply,
-          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-      ]);
-    }, 1500);
-  };
+    }
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const grouped: { [key: string]: number } = {};
+    
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mLabel = months[d.getMonth()];
+      grouped[mLabel] = 0;
+    }
+
+    transactions.forEach((tx: any) => {
+      const txDate = new Date(tx.created_at || tx.timestamp);
+      const mLabel = months[txDate.getMonth()];
+      if (grouped[mLabel] !== undefined) {
+        const amt = Math.abs(parseFloat(tx.amount || 0));
+        grouped[mLabel] += amt;
+      }
+    });
+
+    return Object.keys(grouped).map(m => ({
+      month: m,
+      amount: Math.round(grouped[m])
+    }));
+  }, [walletInfo, balance]);
+
+  const maxEarningVal = useMemo(() => {
+    return Math.max(...dynamicMonthlyData.map((d) => d.amount), 100);
+  }, [dynamicMonthlyData]);
 
   return (
     <div className="relative z-10 flex flex-col gap-8 w-full">
-      {/* Profile Completion Progress Card */}
-      {isProfileIncomplete && (
+      {profileCompletionProgress < 100 && (
         <div 
           onClick={() => {
             if (onOpenProfileWizard) {
@@ -189,7 +192,7 @@ export default function WorkspaceTab({
               <span className="text-[10px] font-black bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded uppercase tracking-wider group-hover:bg-primary/20 transition-all">Profile Status</span>
               <span className="text-xs font-black text-slate-800">{profileCompletionProgress}% Complete</span>
             </div>
-            <h2 className="text-base font-extrabold text-slate-800 group-hover:text-primary transition-colors">
+            <h2 className="text-sm font-extrabold text-slate-855 group-hover:text-primary transition-colors">
               {userRole === "client" ? "Complete your Client Profile step-by-step" : "Complete your Freelancer Profile step-by-step"}
             </h2>
             <p className="text-slate-500 text-xs mt-1 font-medium">
@@ -209,7 +212,7 @@ export default function WorkspaceTab({
                 key={step.number}
                 onClick={() => {
                   if (onOpenProfileWizard) {
-                    onOpenProfileWizard();
+                    onOpenProfileWizard(step.number);
                   } else {
                     setActiveTab("settings");
                     setProfileStep(step.number);
@@ -224,7 +227,7 @@ export default function WorkspaceTab({
                 {step.done ? (
                   <FiCheckCircle className="text-emerald-500 w-4 h-4 shrink-0" />
                 ) : (
-                  <FiCircle className="text-slate-350 w-4 h-4 shrink-0" />
+                  <FiCircle className="text-slate-355 w-4 h-4 shrink-0" />
                 )}
                 <span>{step.label}</span>
               </button>
@@ -234,13 +237,25 @@ export default function WorkspaceTab({
       )}
 
       <div className="relative w-full z-10">
-        {isProfileIncomplete && (
-          <div className="absolute inset-0 bg-slate-50/70 backdrop-blur-[6px] rounded-3xl flex flex-col items-center justify-center text-center p-8 z-30 select-none border border-slate-200/50 shadow-inner">
-            <div className="w-14 h-14 bg-white border border-slate-200/60 text-slate-800 rounded-full flex items-center justify-center shadow-md animate-bounce mb-4">
-              <FiLock className="w-6 h-6 text-slate-750" />
+        {((userRole === "freelancer" || userRole === "client") && vettingStatus !== "Approved") && (
+          <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[6px] rounded-3xl flex flex-col items-center justify-center text-center p-8 z-30 select-none border border-slate-200/50 shadow-inner min-h-[400px]">
+            <div className="w-12 h-12 bg-white border border-slate-200/60 text-slate-800 rounded-full flex items-center justify-center shadow-md animate-pulse mb-4">
+              <span className="text-base">⏳</span>
             </div>
-            <h3 className="text-lg font-extrabold text-slate-800 max-w-md">Workspace Hub Locked</h3>
-            <p className="text-slate-500 text-xs mt-1.5 max-w-sm font-semibold leading-relaxed">
+            <h3 className="text-sm font-extrabold text-slate-800 max-w-md">Verification Pending</h3>
+            <p className="text-slate-500 text-xxs mt-1.5 max-w-sm font-semibold leading-relaxed">
+              Your profile is currently under review by our administration team. You will be granted full access once your credentials have been approved.
+            </p>
+          </div>
+        )}
+
+        {isProfileIncomplete && !((userRole === "freelancer" || userRole === "client") && vettingStatus !== "Approved") && (
+          <div className="absolute inset-0 bg-slate-50/70 backdrop-blur-[6px] rounded-3xl flex flex-col items-center justify-center text-center p-8 z-30 select-none border border-slate-200/50 shadow-inner">
+            <div className="w-12 h-12 bg-white border border-slate-200/60 text-slate-800 rounded-full flex items-center justify-center shadow-md animate-bounce mb-4">
+              <FiLock className="w-5 h-5 text-slate-750" />
+            </div>
+            <h3 className="text-sm font-extrabold text-slate-800 max-w-md">Workspace Hub Locked</h3>
+            <p className="text-slate-500 text-xxs mt-1.5 max-w-sm font-semibold leading-relaxed">
               {userRole === "client"
                 ? "You must complete your client profile to unlock active project milestones, cost calculators, messaging threads, and contractor stats."
                 : "You must complete your freelancer profile to unlock active milestones, bidding simulators, messaging threads, and contract stats."}
@@ -255,325 +270,542 @@ export default function WorkspaceTab({
                   setProfileStep(firstIncomplete);
                 }
               }}
-              className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer mt-5 hover:scale-105"
+              className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer mt-5 hover:scale-105"
             >
               Complete Profile Wizard
             </button>
           </div>
         )}
 
-        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 items-start ${isProfileIncomplete ? "pointer-events-none opacity-40 select-none" : ""}`}>
-          {/* LEFT COLUMN: ACTIVE WORKSPACE (7 cols) */}
-          <div className="lg:col-span-7 flex flex-col gap-8">
-            {/* Milestone Progress Tracker */}
-            <section className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col gap-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    {userRole === "client" ? "Active Contractor Milestones" : "Acme SaaS Project Milestones"}
-                  </h2>
-                  <p className="text-slate-400 text-xs mt-1 font-semibold">
-                    {userRole === "client" ? "Review contract checkpoints and milestone approvals" : "Click a milestone checkpoint to toggle completion"}
-                  </p>
-                </div>
-
-                <div className="text-left sm:text-right">
-                  <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Milestones Paid: </span>
-                  <span className="text-sm font-extrabold text-cyan-600 block sm:inline-block sm:ml-1">${completedAmount.toLocaleString()} / ${totalAmount.toLocaleString()}</span>
-                </div>
-              </div>
-
-              {/* Custom Progress Bar */}
-              <div className="w-full flex flex-col gap-2">
-                <div className="flex justify-between items-center text-xs font-bold text-slate-500">
-                  <span>Contract Progress</span>
-                  <span className="text-slate-800">{progressPercent}%</span>
-                </div>
-                <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
-                  <div
-                    className="h-full bg-gradient-to-r from-primary to-cyan-500 transition-all duration-500 ease-out"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Checkpoint list */}
-              <div className="flex flex-col gap-3">
-                {milestones.map((m) => (
-                  <div
-                    key={m.id}
-                    onClick={() => toggleMilestone(m.id)}
-                    className={`flex items-center justify-between p-4 rounded-xl border cursor-pointer transition-all duration-200 ${m.completed
-                        ? "bg-primary-light/50 border-primary/20 hover:bg-primary-light"
-                        : "bg-slate-50/30 border-slate-200 hover:border-slate-300 hover:bg-slate-50/70"
-                      }`}
-                  >
-                    <div className="flex items-center gap-3.5 pr-4">
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 items-start ${(isProfileIncomplete || ((userRole === "freelancer" || userRole === "client") && vettingStatus !== "Approved")) ? "pointer-events-none opacity-40 select-none" : ""}`}>
+          {userRole === "client" ? (
+            <>
+              {/* LEFT COLUMN: CHARTS & ACTIONS */}
+              <div className="lg:col-span-7 flex flex-col gap-6">
+                {selectedProjectDetails ? (
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-505 opacity-80" />
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wide">Project Milestone & Escrow</h3>
                       <button
-                        type="button"
-                        className={`w-5.5 h-5.5 rounded-md flex items-center justify-center border transition-all duration-150 ${m.completed
-                            ? "bg-primary border-primary text-white"
-                            : "border-slate-300 bg-white hover:border-slate-400"
-                          }`}
+                        onClick={() => setSelectedProjectDetails(null)}
+                        className="text-[10px] text-teal-755 bg-teal-50 hover:bg-teal-100 font-bold border border-teal-150 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
                       >
-                        {m.completed && (
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
+                        Back to Dashboard
                       </button>
-                      <div>
-                        <p className={`text-sm font-bold leading-snug transition-all duration-200 ${m.completed ? "text-slate-400 line-through decoration-slate-300" : "text-slate-800"
-                          }`}>
-                          {m.title}
-                        </p>
-                        <span className="text-xxs text-slate-400 font-semibold mt-1 block">Due: {m.dueDate}</span>
-                      </div>
                     </div>
-                    <span className={`text-sm font-extrabold shrink-0 ${m.completed ? "text-primary/70" : "text-slate-800"}`}>
-                      ${m.amount.toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Proposal / Bidding Simulator */}
-            <section className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col gap-5">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {userRole === "client" ? "Active Cost & Budget Simulator" : "Active Bidding & Payout Simulator"}
-                </h2>
-                <p className="text-slate-400 text-xs mt-1 font-semibold">
-                  {userRole === "client" 
-                    ? "Configure project budget to see platform service fee and total contractor payout."
-                    : "Configure bid price to see platform fees and net freelancer payout."}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                {/* Left sliders */}
-                <div className="flex flex-col gap-5">
-                  <div>
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-xs font-bold text-slate-500">Bid Amount</span>
-                      <span className="text-sm font-extrabold text-slate-800">${bidPrice.toLocaleString()}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="1000"
-                      max="15000"
-                      step="200"
-                      value={bidPrice}
-                      onChange={(e) => setBidPrice(Number(e.target.value))}
-                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                    <ProjectMilestoneTracker
+                      job={selectedProjectDetails}
+                      onUpdateJob={(updatedJob) => setSelectedProjectDetails(updatedJob)}
+                      triggerToast={triggerToast}
+                      setSelectedFreelancerProfile={setSelectedFreelancerProfile}
                     />
                   </div>
-
-                  <div>
-                    <div className="flex justify-between items-center mb-1.5">
-                      <span className="text-xs font-bold text-slate-500">Timeline Duration</span>
-                      <span className="text-sm font-extrabold text-slate-800">{timelineWeeks} Weeks</span>
+                ) : selectedGigOrderDetails ? (
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wide">Gig Order Tracker</h3>
+                      <button
+                        onClick={() => setSelectedGigOrderDetails(null)}
+                        className="text-[10px] text-teal-755 bg-teal-55 hover:bg-teal-100 font-bold border border-teal-155 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
+                      >
+                        Back to Dashboard
+                      </button>
                     </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="12"
-                      step="1"
-                      value={timelineWeeks}
-                      onChange={(e) => setTimelineWeeks(Number(e.target.value))}
-                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                    <GigMilestoneTracker
+                      application={selectedGigOrderDetails}
+                      onUpdateApplication={(updatedApp) => setSelectedGigOrderDetails(updatedApp)}
+                      triggerToast={triggerToast}
+                      setSelectedFreelancerProfile={setSelectedFreelancerProfile}
                     />
                   </div>
-                </div>
-
-                {/* Right Summary */}
-                <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-5 flex flex-col gap-3.5 shadow-inner">
-                  <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
-                    <span>{userRole === "client" ? "Project Budget Total:" : "Gross Bidding Total:"}</span>
-                    <span className="text-slate-800 font-extrabold">${bidPrice.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
-                    <span>{userRole === "client" ? "LancerFlow Client Fee (5%):" : `LancerFlow Service Fee (${platformFeePercent}%):`}</span>
-                    <span className="text-rose-600 font-extrabold">-${feeAmount.toLocaleString()}</span>
-                  </div>
-                  <hr className="border-slate-200 my-1" />
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-bold text-slate-600">{userRole === "client" ? "Total Contractor Payout:" : "Your Take-Home Net:"}</span>
-                    <span className="text-base font-extrabold text-gradient-purple-cyan">${netEarnings.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Project Chat Box */}
-            <section className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col gap-4">
-              <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center font-extrabold text-white shadow-sm">
-                  SC
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-800">Sarah Chen</h3>
-                  <span className="text-xxs text-slate-400 font-bold uppercase tracking-wider">Product Lead @ Acme SaaS</span>
-                </div>
-              </div>
-
-              {/* Chat Thread */}
-              <div className="h-48 overflow-y-auto pr-1 flex flex-col gap-4 no-scrollbar">
-                {messages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex flex-col max-w-[85%] ${msg.sender === "freelancer" ? "self-end items-end" : "self-start items-start"
-                      }`}
-                  >
-                    <div
-                      className={`py-2.5 px-4 rounded-2xl text-sm leading-relaxed ${msg.sender === "freelancer"
-                          ? "bg-primary text-white rounded-tr-none shadow-sm"
-                          : "bg-slate-100 text-slate-800 rounded-tl-none border border-slate-200/50"
-                        }`}
-                    >
-                      {msg.text}
-                    </div>
-                    <span className="text-xxs text-slate-400 font-semibold mt-1">{msg.time}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Input field */}
-              <form onSubmit={handleSendMessage} className="flex gap-2 border-t border-slate-100 pt-4">
-                <input
-                  type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Type your message..."
-                  className="flex-1 bg-slate-50 border border-slate-200/80 rounded-xl py-2.5 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-primary/50 focus:bg-white transition-all"
-                />
-                <button
-                  type="submit"
-                  className="px-4.5 bg-gradient-to-r from-primary to-cyan-500 text-white rounded-xl shadow-md hover:brightness-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
-                >
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 20 20">
-                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                  </svg>
-                </button>
-              </form>
-            </section>
-          </div>
-
-          {/* RIGHT COLUMN: FINANCIALS & CONTRACTS (5 cols) */}
-          <div className="lg:col-span-5 flex flex-col gap-8">
-            {/* Stats widgets */}
-            <section className="grid grid-cols-2 gap-4">
-              <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md p-5 flex flex-col justify-between h-28 transition-all duration-300">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{userRole === "client" ? "Total Spends" : "Net Earnings"}</span>
-                <span className="text-2xl font-black text-slate-900">
-                  {userRole === "client" ? "$25,650" : `$${(14850 + completedAmount).toLocaleString()}`}
-                </span>
-              </div>
-              <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm hover:shadow-md p-5 flex flex-col justify-between h-28 transition-all duration-300">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{userRole === "client" ? "Active Projects" : "Active Bids"}</span>
-                <span className="text-2xl font-black text-slate-900">{userRole === "client" ? "3" : "4"}</span>
-              </div>
-            </section>
-
-            {/* Monthly Earnings Chart */}
-            <section className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col gap-6">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">{userRole === "client" ? "Monthly Spending Trend" : "Monthly Earning Trend"}</h2>
-                <p className="text-slate-400 text-xs mt-1 font-semibold">{userRole === "client" ? "Sleek expenditure projections & history" : "Sleek financial projections & history"}</p>
-              </div>
-
-              {/* Custom Bar Graph */}
-              <div className="h-40 flex items-end justify-between gap-3 pt-6 border-b border-slate-100">
-                {monthlyEarnings.map((data, idx) => {
-                  const heightPercent = Math.max(10, Math.round((data.amount / maxEarning) * 100));
-                  return (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
-                      <div className="relative w-full flex justify-center">
-                        {/* Tooltip on Hover */}
-                        <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-900 text-white text-xxs font-extrabold py-1 px-1.5 rounded shadow-md pointer-events-none z-20">
-                          ${data.amount.toLocaleString()}
-                        </span>
-                        {/* Interactive Bar */}
-                        <div
-                          className="w-full max-w-[28px] rounded-t-md bg-gradient-to-t from-primary/70 to-cyan-500/70 group-hover:from-primary group-hover:to-cyan-400 transition-all duration-300"
-                          style={{ height: `${heightPercent}px`, minHeight: "12px" }}
-                        />
-                      </div>
-                      <span className="text-xxs text-slate-400 font-bold group-hover:text-slate-800 transition-colors">
-                        {data.month}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
-            {/* Active Client/Freelancer Contracts Table */}
-            <section className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">{userRole === "client" ? "Active Freelancer Contracts" : "Active Client Contracts"}</h2>
-                <p className="text-slate-400 text-xs mt-1 font-semibold">Review status and milestone metrics.</p>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                {userRole === "client" ? (
-                  [
-                    { id: "c1", contractor: "Liam O'Connor", role: "Next.js Core Developer", project: "Web Application Redesign", budget: 10800, status: "In Progress", progress: 40 },
-                    { id: "c2", contractor: "Sophia Chen", role: "UI/UX Designer", project: "Figma Mockups & Prototype", budget: 5500, status: "Under Review", progress: 100 },
-                    { id: "c3", contractor: "Marcus Vance", role: "Growth Marketer", project: "SaaS SEO Campaign Setup", budget: 8200, status: "In Progress", progress: 15 },
-                  ].map((c) => (
-                    <div key={c.id} className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between gap-4 hover:border-slate-300 transition-all">
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider truncate">{c.contractor} • {c.role}</span>
-                        <span className="text-sm font-extrabold text-slate-800 truncate mt-0.5">{c.project}</span>
-                        <span className="text-xxs text-slate-500 font-semibold mt-1 block">Contract Budget: ${c.budget.toLocaleString()}</span>
-                      </div>
-
-                      <div className="flex flex-col items-end shrink-0 gap-1.5">
-                        <span className={`text-xxs font-extrabold px-2.5 py-0.5 rounded-full border ${c.progress === 100
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
-                            : c.status === "Under Review"
-                              ? "bg-amber-50 text-amber-700 border-amber-200/60"
-                              : "bg-cyan-50 text-cyan-700 border-cyan-200/60"
-                          }`}>
-                          {c.progress === 100 ? "Under Review" : c.status}
-                        </span>
-                        <span className="text-xxs text-slate-400 font-bold">{c.progress}% approved</span>
-                      </div>
-                    </div>
-                  ))
                 ) : (
-                  activeContracts.map((c) => (
-                    <div key={c.id} className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between gap-4 hover:border-slate-300 transition-all">
-                      <div className="flex flex-col min-w-0">
-                        <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider truncate">{c.client}</span>
-                        <span className="text-sm font-extrabold text-slate-800 truncate mt-0.5">{c.project}</span>
-                        <span className="text-xxs text-slate-500 font-semibold mt-1 block">Budget: ${c.budget.toLocaleString()}</span>
+                  <>
+                    {/* Spending History Chart */}
+                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4">
+                      <div className="text-left">
+                        <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">Spending History</h2>
+                        <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Escrow spends & gig expenditures grouped by month</p>
                       </div>
 
-                      <div className="flex flex-col items-end shrink-0 gap-1.5">
-                        <span className={`text-xxs font-extrabold px-2.5 py-0.5 rounded-full border ${c.status === "Completed"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
-                            : c.status === "Under Review"
-                              ? "bg-amber-50 text-amber-700 border-amber-200/60"
-                              : "bg-cyan-50 text-cyan-700 border-cyan-200/60"
-                          }`}>
-                          {c.status}
-                        </span>
+                      <div className="h-32 flex items-end justify-between gap-3 pt-4 border-b border-slate-100 pb-2">
+                        {dynamicMonthlyData.map((data, idx) => {
+                          const heightPercent = Math.max(10, Math.round((data.amount / maxEarningVal) * 100));
+                          return (
+                            <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group cursor-pointer">
+                              <div className="relative w-full flex justify-center">
+                                <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-950 text-white text-[9px] font-extrabold py-1 px-1.5 rounded shadow pointer-events-none z-20">
+                                  ${data.amount.toLocaleString()}
+                                </span>
+                                <div
+                                  className="w-full max-w-[18px] rounded-t-md bg-gradient-to-t from-primary/70 to-cyan-500/70 group-hover:from-primary group-hover:to-cyan-400 transition-all duration-300"
+                                  style={{ height: `${heightPercent}px`, minHeight: "10px" }}
+                                />
+                              </div>
+                              <span className="text-[9px] text-slate-400 font-bold group-hover:text-slate-800 transition-colors">
+                                {data.month}
+                              </span>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                  ))
+                    </section>
+
+                    {/* Posted Projects (showing 2) */}
+                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <div>
+                          <h2 className="text-xs font-black text-slate-805 uppercase tracking-wide">My Posted Projects</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Active posted briefs</p>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab("proposals")}
+                          className="text-[9px] text-teal-755 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
+                        >
+                          View All
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-2 text-left">
+                        {displayClientProjects.length > 0 ? (
+                          displayClientProjects.map((job) => (
+                            <div key={job.job_id} className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4">
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[8px] font-black text-teal-755 uppercase bg-teal-50 px-1 py-0.5 rounded border border-teal-100 w-max">{job.project_type}</span>
+                                <h4 className="text-xs font-bold text-slate-800 mt-1 truncate">{job.title}</h4>
+                              </div>
+                              <div className="flex flex-col items-end shrink-0">
+                                <span className="text-xs font-black text-slate-800">${parseFloat(job.budget || job.max_budget || 0).toLocaleString()}</span>
+                                <span className="text-[9px] font-black text-slate-450 uppercase tracking-wider mt-0.5">{job.status}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No posted projects</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+
+                    {/* Hired Freelancer & Gig Orders */}
+                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <div>
+                          <h2 className="text-xs font-black text-slate-800 uppercase tracking-wide">Purchased Gigs</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Ongoing service orders</p>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab("orders")}
+                          className="text-[9px] text-teal-755 bg-teal-55 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
+                        >
+                          View All
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-2 text-left">
+                        {displayClientGigOrders.length > 0 ? (
+                          displayClientGigOrders.map((app) => (
+                            <div 
+                              key={app.application_id}
+                              onClick={() => setSelectedGigOrderDetails(app)}
+                              className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4 hover:border-slate-350 transition-all cursor-pointer"
+                            >
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[8px] font-extrabold text-slate-450 uppercase tracking-wider">Order #{app.application_id}</span>
+                                <h4 className="text-xs font-bold text-slate-800 truncate mt-0.5">{app.gig_title || "Service Delivery"}</h4>
+                              </div>
+                              <div className="flex flex-col items-end shrink-0 gap-1">
+                                <span className="text-xs font-black text-slate-800">${parseFloat(app.budget || 0).toLocaleString()}</span>
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-cyan-50 text-cyan-700 border-cyan-100 uppercase">{app.status}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No purchased gigs</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+
+                    {/* Active Contracts */}
+                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <div>
+                          <h2 className="text-xs font-black text-slate-808 uppercase tracking-wide">Active Contracts</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Ongoing freelancer contracts</p>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab("proposals")}
+                          className="text-[9px] text-teal-755 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
+                        >
+                          View All
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-2 text-left">
+                        {displayClientContracts.length > 0 ? (
+                          displayClientContracts.map((c) => (
+                            <div 
+                              key={c.contract_id}
+                              onClick={() => setSelectedProjectDetails(c)}
+                              className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4 hover:border-slate-350 transition-all cursor-pointer"
+                            >
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[8px] font-bold text-slate-450 uppercase tracking-wider truncate">{c.freelancer_name || "Contractor Partner"}</span>
+                                <h4 className="text-xs font-bold text-slate-800 truncate mt-0.5">{c.title}</h4>
+                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Escrow: ${parseFloat(c.budget).toLocaleString()}</span>
+                              </div>
+                              <div className="flex flex-col items-end shrink-0 gap-1">
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-cyan-50 text-cyan-700 border-cyan-150 uppercase">{c.status}</span>
+                                <span className="text-[9px] text-slate-450 font-bold">{c.progress || 0}% approved</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No active contracts</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  </>
                 )}
               </div>
-            </section>
-          </div>
+
+              {/* RIGHT COLUMN: CLIENT SUMMARY & STATS */}
+              <div className="lg:col-span-5 flex flex-col gap-6">
+                <aside className="space-y-6">
+                  {/* Wallet Balance Banner Card */}
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-md flex flex-col justify-between min-h-[120px]">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl -mr-6 -mt-6"></div>
+                    <div className="flex justify-between items-start z-10">
+                      <div>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">LancerFlow Wallet</p>
+                        <h3 className="text-xs font-bold text-white/90 mt-0.5">Available Funds</h3>
+                      </div>
+                      <i className="fa-solid fa-wallet text-teal-500 text-sm"></i>
+                    </div>
+                    <div className="z-10 mt-4">
+                      <p className="text-xl font-black tracking-tight">${balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Active Virtual Balance</p>
+                    </div>
+                  </div>
+
+                  {/* Workspace Metrics Card */}
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4 text-slate-850">
+                    <div className="border-b border-slate-100 pb-2.5">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Workspace Metrics</h3>
+                      <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Dynamic client account totals</p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-650 text-xs shrink-0"><i className="fa-solid fa-receipt"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Total Expenditures</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">${clientSpentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 text-xs shrink-0"><i className="fa-solid fa-briefcase"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Posted Projects</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">{clientJobs.length}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 text-xs shrink-0"><i className="fa-solid fa-store"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Purchased Gigs</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">{clientApplications.length}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-xs shrink-0"><i className="fa-solid fa-user-check"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Hired Partners</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">{hiredFreelancers.length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* LEFT COLUMN: CHARTS & ACTIONS */}
+              <div className="lg:col-span-7 flex flex-col gap-6">
+                {selectedProjectDetails ? (
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wide">Project Milestone & Delivery</h3>
+                      <button
+                        onClick={() => setSelectedProjectDetails(null)}
+                        className="text-[10px] text-teal-755 bg-teal-50 hover:bg-teal-100 font-bold border border-teal-150 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
+                      >
+                        Back to Dashboard
+                      </button>
+                    </div>
+                    <ProjectMilestoneTracker
+                      job={selectedProjectDetails}
+                      onUpdateJob={(updatedJob) => setSelectedProjectDetails(updatedJob)}
+                      triggerToast={triggerToast}
+                      setSelectedFreelancerProfile={setSelectedFreelancerProfile}
+                    />
+                  </div>
+                ) : selectedGigOrderDetails ? (
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
+                      <h3 className="text-xs font-extrabold uppercase tracking-wide">Gig Order Delivery</h3>
+                      <button
+                        onClick={() => setSelectedGigOrderDetails(null)}
+                        className="text-[10px] text-teal-755 bg-teal-50 hover:bg-teal-100 font-bold border border-teal-155 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
+                      >
+                        Back to Dashboard
+                      </button>
+                    </div>
+                    <GigMilestoneTracker
+                      application={selectedGigOrderDetails}
+                      onUpdateApplication={(updatedApp) => setSelectedGigOrderDetails(updatedApp)}
+                      triggerToast={triggerToast}
+                      setSelectedFreelancerProfile={setSelectedFreelancerProfile}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    {/* Earning History Chart */}
+                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4">
+                      <div className="text-left">
+                        <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">Earning History</h2>
+                        <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Net escrow payout releases grouped by calendar month</p>
+                      </div>
+
+                      <div className="h-32 flex items-end justify-between gap-3 pt-4 border-b border-slate-100 pb-2">
+                        {dynamicMonthlyData.map((data, idx) => {
+                          const heightPercent = Math.max(10, Math.round((data.amount / maxEarningVal) * 100));
+                          return (
+                            <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group cursor-pointer">
+                              <div className="relative w-full flex justify-center">
+                                <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-955 text-white text-[9px] font-extrabold py-1 px-1.5 rounded shadow pointer-events-none z-20">
+                                  ${data.amount.toLocaleString()}
+                                </span>
+                                <div
+                                  className="w-full max-w-[18px] rounded-t-md bg-gradient-to-t from-primary/70 to-cyan-500/70 group-hover:from-primary group-hover:to-cyan-400 transition-all duration-300"
+                                  style={{ height: `${heightPercent}px`, minHeight: "10px" }}
+                                />
+                              </div>
+                              <span className="text-[9px] text-slate-400 font-bold group-hover:text-slate-800 transition-colors">
+                                {data.month}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+
+                    {/* Submitted Bids */}
+                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <div>
+                          <h2 className="text-xs font-black text-slate-800 uppercase tracking-wide">Submitted Bids</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Pending proposals & bids</p>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab("proposals")}
+                          className="text-[9px] text-teal-755 bg-teal-55 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
+                        >
+                          View All
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-2 text-left">
+                        {displayFreelancerProposals.length > 0 ? (
+                          displayFreelancerProposals.map((prop) => (
+                            <div key={prop.proposal_id} className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4">
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[8px] font-black text-cyan-750 uppercase bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-100 w-max">{prop.project_type || "Bid"}</span>
+                                <h4 className="text-xs font-bold text-slate-800 mt-1 truncate">{prop.project_title || "Project Application"}</h4>
+                              </div>
+                              <div className="flex flex-col items-end shrink-0">
+                                <span className="text-xs font-black text-slate-800">${parseFloat(prop.bid_amount || 0).toLocaleString()}</span>
+                                <span className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">{prop.status}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No submitted bids</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+
+                    {/* Orders Received */}
+                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <div>
+                          <h2 className="text-xs font-black text-slate-805 uppercase tracking-wide">Orders Received</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Ongoing service deliveries</p>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab("orders")}
+                          className="text-[9px] text-teal-755 bg-teal-55 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
+                        >
+                          View All
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-2 text-left">
+                        {displayFreelancerGigOrders.length > 0 ? (
+                          displayFreelancerGigOrders.map((app) => (
+                            <div 
+                              key={app.application_id}
+                              onClick={() => setSelectedGigOrderDetails(app)}
+                              className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4 hover:border-slate-350 transition-all cursor-pointer"
+                            >
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[8px] font-extrabold text-slate-450 uppercase tracking-wider">Order #{app.application_id}</span>
+                                <h4 className="text-xs font-bold text-slate-805 truncate mt-0.5">{app.gig_title || "Active Service Delivery"}</h4>
+                              </div>
+                              <div className="flex flex-col items-end shrink-0 gap-1">
+                                <span className="text-xs font-black text-slate-800">${parseFloat(app.budget || 0).toLocaleString()}</span>
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-100 uppercase">{app.status}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No gig orders received</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+
+                    {/* Active Contracts */}
+                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                      <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                        <div>
+                          <h2 className="text-xs font-black text-slate-808 uppercase tracking-wide">Active Contracts</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Current project contracts</p>
+                        </div>
+                        <button
+                          onClick={() => setActiveTab("proposals")}
+                          className="text-[9px] text-teal-755 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
+                        >
+                          View All
+                        </button>
+                      </div>
+
+                      <div className="flex flex-col gap-2 text-left">
+                        {displayFreelancerContracts.length > 0 ? (
+                          displayFreelancerContracts.map((c) => (
+                            <div 
+                              key={c.contract_id}
+                              onClick={() => setSelectedProjectDetails(c)}
+                              className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4 hover:border-slate-355 transition-all cursor-pointer"
+                            >
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[8px] font-bold text-slate-450 uppercase tracking-wider truncate">{c.client_name || "Client Buyer"}</span>
+                                <h4 className="text-xs font-bold text-slate-800 truncate mt-0.5">{c.title}</h4>
+                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Budget: ${parseFloat(c.budget).toLocaleString()}</span>
+                              </div>
+                              <div className="flex flex-col items-end shrink-0 gap-1">
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-cyan-50 text-cyan-700 border-cyan-155 uppercase">{c.status}</span>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
+                            <p className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">No active contracts</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  </>
+                )}
+              </div>
+
+              {/* RIGHT COLUMN: FREELANCER SUMMARY & STATS */}
+              <div className="lg:col-span-5 flex flex-col gap-6">
+                <aside className="space-y-6">
+                  {/* Wallet Balance Banner Card */}
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-md flex flex-col justify-between min-h-[120px]">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl -mr-6 -mt-6"></div>
+                    <div className="flex justify-between items-start z-10">
+                      <div>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">LancerFlow Wallet</p>
+                        <h3 className="text-xs font-bold text-white/90 mt-0.5">Available Funds</h3>
+                      </div>
+                      <i className="fa-solid fa-wallet text-teal-500 text-sm"></i>
+                    </div>
+                    <div className="z-10 mt-4">
+                      <p className="text-xl font-black tracking-tight">${balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Active Virtual Balance</p>
+                    </div>
+                  </div>
+
+                  {/* Workspace Metrics Card */}
+                  <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4 text-slate-850">
+                    <div className="border-b border-slate-100 pb-2.5">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Workspace Metrics</h3>
+                      <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Dynamic freelancer account totals</p>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-650 text-xs shrink-0"><i className="fa-solid fa-receipt"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Net Earnings</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">${freelancerEarnedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 text-xs shrink-0"><i className="fa-solid fa-paper-plane"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Active Bids</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">{freelancerProposals.length}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-650 text-xs shrink-0"><i className="fa-solid fa-store"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Active Gigs</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">{gigs.length}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600 text-xs shrink-0"><i className="fa-solid fa-truck-loading"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Gig Orders</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">{gigApplications.length}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-xs shrink-0"><i className="fa-solid fa-file-contract"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Active Contracts</span>
+                        </div>
+                        <span className="text-xs font-black text-slate-800">{(freelancerContracts || []).length}</span>
+                      </div>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
