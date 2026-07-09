@@ -341,13 +341,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   onClick={() => setActiveTab("gigs_list")}
                   className={subNavBtnClass("gigs_list")}
                 >
-                  Gig listing
+                  Gig listings
                 </button>
                 <button
                   onClick={() => setActiveTab("gig_orders")}
                   className={subNavBtnClass("gig_orders")}
                 >
-                  Gig orders
+                  Gig contracts
                 </button>
               </div>
             )}
