@@ -96,6 +96,59 @@ export default function SettingsTab({
 
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugValidating, setSlugValidating] = useState(false);
+  const [uploadingSeoImage, setUploadingSeoImage] = useState(false);
+
+  const processSeoImage = (file: File): Promise<File> => {
+    const MIN_W = 300, MIN_H = 200, MAX_W = 1200, MAX_H = 630;
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const { naturalWidth: w, naturalHeight: h } = img;
+        if (w < MIN_W || h < MIN_H) {
+          reject(new Error(`Image is too small (${w}×${h}px). Minimum required size is ${MIN_W}×${MIN_H}px.`));
+          return;
+        }
+        if (w <= MAX_W && h <= MAX_H) { resolve(file); return; }
+        const scale = Math.min(MAX_W / w, MAX_H / h);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(w * scale);
+        canvas.height = Math.round(h * scale);
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error("Resize failed")); return; }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+        }, "image/jpeg", 0.92);
+      };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Could not read image")); };
+      img.src = objectUrl;
+    });
+  };
+
+  const handleSeoImageUpload = async (file: File) => {
+    const token = localStorage.getItem("token");
+    try {
+      setUploadingSeoImage(true);
+      const processed = await processSeoImage(file);
+      const formData = new FormData();
+      formData.append("file", processed);
+      const res = await fetch(`${API_URL}/upload?category=seo`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setProfileBasics({ ...profileBasics, seo: { ...(profileBasics.seo || {}), image: data.url } });
+      triggerToast("success", "SEO preview image uploaded successfully!");
+    } catch (err: any) {
+      triggerToast("error", err.message || "Failed to upload SEO image");
+    } finally {
+      setUploadingSeoImage(false);
+    }
+  };
 
   // Slugify helper
   const slugifyText = (text: string) => {
@@ -838,6 +891,74 @@ export default function SettingsTab({
                       onChange={(e) => setProfileBasics({ ...profileBasics, resume_url: e.target.value })}
                       className="bg-slate-50/50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
                     />
+                  </div>
+                </div>
+
+                {/* SEO Configuration Section */}
+                <div className="border-t border-slate-100 pt-5 mt-3 flex flex-col gap-4 text-left">
+                  <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">SEO Search Metadata</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">SEO Meta Title</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. John Doe - Expert React Developer"
+                        value={profileBasics.seo?.meta_title || ""}
+                        onChange={(e) => setProfileBasics({
+                          ...profileBasics,
+                          seo: { ...(profileBasics.seo || {}), meta_title: e.target.value }
+                        })}
+                        className="bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">SEO Keywords</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. react, nodejs, developer"
+                        value={profileBasics.seo?.meta_keywords || ""}
+                        onChange={(e) => setProfileBasics({
+                          ...profileBasics,
+                          seo: { ...(profileBasics.seo || {}), meta_keywords: e.target.value }
+                        })}
+                        className="bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">SEO Meta Description</label>
+                      <textarea
+                        placeholder="e.g. Hire John Doe for premium React and web development services. Experienced, certified developer..."
+                        value={profileBasics.seo?.meta_description || ""}
+                        onChange={(e) => setProfileBasics({
+                          ...profileBasics,
+                          seo: { ...(profileBasics.seo || {}), meta_description: e.target.value }
+                        })}
+                        className="bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium h-20 resize-none"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5 text-left">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">SEO Social Preview Image</label>
+                      <div className="flex items-center gap-3">
+                        {profileBasics.seo?.image && (
+                          <img src={profileBasics.seo.image} alt="SEO Preview" className="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0" />
+                        )}
+                        <div className="flex-1 flex flex-col gap-1">
+                          <label className="cursor-pointer">
+                            <div className="bg-white border border-slate-200 hover:border-primary/50 hover:bg-primary/3 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all flex items-center justify-between gap-2">
+                              <span className={uploadingSeoImage ? "text-slate-400" : "text-slate-700"}>
+                                {uploadingSeoImage ? "Uploading..." : profileBasics.seo?.image ? "Change Image" : "Upload Image"}
+                              </span>
+                              {uploadingSeoImage && <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin shrink-0" />}
+                            </div>
+                            <input type="file" accept="image/*" className="hidden" disabled={uploadingSeoImage}
+                              onChange={(e) => { if (e.target.files?.[0]) handleSeoImageUpload(e.target.files[0]); }} />
+                          </label>
+                          <span className="text-[10px] text-slate-400 font-medium">Min 300×200px • Max auto-resized to 1200×630px</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -2194,6 +2315,74 @@ export default function SettingsTab({
                             onChange={(e) => setProfileBasics({ ...profileBasics, resume_url: e.target.value })}
                             className="bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
                           />
+                        </div>
+                      </div>
+
+                      {/* SEO Configuration Section */}
+                      <div className="border-t border-slate-100 pt-5 mt-3 flex flex-col gap-4 text-left">
+                        <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">SEO Search Metadata</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">SEO Meta Title</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. John Doe - Expert React Developer"
+                              value={profileBasics.seo?.meta_title || ""}
+                              onChange={(e) => setProfileBasics({
+                                ...profileBasics,
+                                seo: { ...(profileBasics.seo || {}), meta_title: e.target.value }
+                              })}
+                              className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">SEO Keywords</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. react, nodejs, developer"
+                              value={profileBasics.seo?.meta_keywords || ""}
+                              onChange={(e) => setProfileBasics({
+                                ...profileBasics,
+                                seo: { ...(profileBasics.seo || {}), meta_keywords: e.target.value }
+                              })}
+                              className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">SEO Meta Description</label>
+                            <textarea
+                              placeholder="e.g. Hire John Doe for premium React and web development services. Experienced, certified developer..."
+                              value={profileBasics.seo?.meta_description || ""}
+                              onChange={(e) => setProfileBasics({
+                                ...profileBasics,
+                                seo: { ...(profileBasics.seo || {}), meta_description: e.target.value }
+                              })}
+                              className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium h-20 resize-none"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5 text-left">
+                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">SEO Social Preview Image</label>
+                            <div className="flex items-center gap-3">
+                              {profileBasics.seo?.image && (
+                                <img src={profileBasics.seo.image} alt="SEO Preview" className="w-14 h-14 rounded-lg object-cover border border-slate-200 shrink-0" />
+                              )}
+                              <div className="flex-1 flex flex-col gap-1">
+                                <label className="cursor-pointer">
+                                  <div className="bg-white border border-slate-200 hover:border-primary/50 hover:bg-primary/3 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all flex items-center justify-between gap-2">
+                                    <span className={uploadingSeoImage ? "text-slate-400" : "text-slate-700"}>
+                                      {uploadingSeoImage ? "Uploading..." : profileBasics.seo?.image ? "Change Image" : "Upload Image"}
+                                    </span>
+                                    {uploadingSeoImage && <span className="w-3.5 h-3.5 border-2 border-primary/30 border-t-primary rounded-full animate-spin shrink-0" />}
+                                  </div>
+                                  <input type="file" accept="image/*" className="hidden" disabled={uploadingSeoImage}
+                                    onChange={(e) => { if (e.target.files?.[0]) handleSeoImageUpload(e.target.files[0]); }} />
+                                </label>
+                                <span className="text-[10px] text-slate-400 font-medium">Min 300×200px • Max auto-resized to 1200×630px</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
 

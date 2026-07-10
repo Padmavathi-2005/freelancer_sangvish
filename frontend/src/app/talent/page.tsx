@@ -211,6 +211,35 @@ function TalentSearchContent() {
     return true;
   });
 
+  // Log search queries for Analytics
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem("token") || "";
+        const deviceType = window.innerWidth < 768 ? "Mobile" : "Desktop";
+        await fetch(`${API_URL}/analytics/search`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            query_text: searchQuery.trim(),
+            search_type: "talent",
+            results_count: filteredFreelancers.length,
+            device_type: deviceType
+          })
+        });
+      } catch (err) {
+        console.error("Failed to log search analytics:", err);
+      }
+    }, 1200);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, filteredFreelancers.length]);
+
   // Sorting
   const sortedFreelancers = [...filteredFreelancers].sort((a: any, b: any) => {
     // Featured always sorted first!

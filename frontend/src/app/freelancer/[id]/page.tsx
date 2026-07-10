@@ -152,6 +152,64 @@ export default function FreelancerPublicProfilePage() {
     fetchPublicProfile();
   }, [id]);
 
+  // Inject Meta SEO tags dynamically
+  useEffect(() => {
+    if (!data || !data.user || !data.profile) return;
+
+    const resolveMediaUrl = (url: string) => {
+      if (!url) return "";
+      if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+        return url;
+      }
+      const cleanPath = url.startsWith("/") ? url : `/${url}`;
+      return `https://freelancer.sangvish.com${cleanPath}`;
+    };
+
+    const userObj = data.user;
+    const profileObj = data.profile;
+    const name = userObj.display_name || userObj.name || `${userObj.first_name || ""} ${userObj.last_name || ""}`.trim() || "Freelancer";
+
+    let seoTitle = `${name} | ${profileObj.professional_title || "Professional Specialist"}`;
+    let seoDesc = profileObj.bio ? profileObj.bio.substring(0, 150) + "..." : `Hire ${name} for your freelance needs on Buy2Lancer.`;
+    let seoImg = userObj.profile_picture || "";
+
+    if (profileObj.seo) {
+      try {
+        const parsedSeo = typeof profileObj.seo === 'string' ? JSON.parse(profileObj.seo) : profileObj.seo;
+        if (parsedSeo?.meta_title) seoTitle = parsedSeo.meta_title;
+        if (parsedSeo?.meta_description) seoDesc = parsedSeo.meta_description;
+        if (parsedSeo?.image || parsedSeo?.og_image) seoImg = parsedSeo.image || parsedSeo.og_image;
+      } catch (e) {
+        console.error("Error parsing freelancer SEO:", e);
+      }
+    }
+
+    const absoluteImg = resolveMediaUrl(seoImg || "/tablet-work.png");
+
+    // Update browser title
+    document.title = `${seoTitle} | Buy2Lancer`;
+
+    // Helper to create or update meta tags
+    const updateMetaTag = (property: string, content: string, isProperty = true) => {
+      const attribute = isProperty ? 'property' : 'name';
+      let tag = document.querySelector(`meta[${attribute}="${property}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute(attribute, property);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    };
+
+    updateMetaTag('description', seoDesc, false);
+    updateMetaTag('og:title', seoTitle);
+    updateMetaTag('og:description', seoDesc);
+    updateMetaTag('og:image', absoluteImg);
+    updateMetaTag('twitter:title', seoTitle, false);
+    updateMetaTag('twitter:description', seoDesc, false);
+    updateMetaTag('twitter:image', absoluteImg, false);
+  }, [data]);
+
   useEffect(() => {
     if (data && hireParam === "true") {
       setShowHireModal(true);

@@ -310,11 +310,41 @@ export default function ProposalsTab({
     return data.url;
   };
 
+  const processSeoImage = (file: File): Promise<File> => {
+    const MIN_W = 300, MIN_H = 200, MAX_W = 1200, MAX_H = 630;
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        const { naturalWidth: w, naturalHeight: h } = img;
+        if (w < MIN_W || h < MIN_H) {
+          reject(new Error(`Image is too small (${w}×${h}px). Minimum required size is ${MIN_W}×${MIN_H}px.`));
+          return;
+        }
+        if (w <= MAX_W && h <= MAX_H) { resolve(file); return; }
+        const scale = Math.min(MAX_W / w, MAX_H / h);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(w * scale);
+        canvas.height = Math.round(h * scale);
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error("Resize failed")); return; }
+          resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+        }, "image/jpeg", 0.92);
+      };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Could not read image")); };
+      img.src = objectUrl;
+    });
+  };
+
   const handleSeoImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     try {
       setUploadingSeoImage(true);
-      const url = await uploadFile(e.target.files[0]);
+      const processed = await processSeoImage(e.target.files[0]);
+      const url = await uploadFile(processed);
       setPostJobSeoImage(url);
       triggerToast("success", "SEO social preview image uploaded successfully!");
     } catch (err: any) {
@@ -1247,31 +1277,30 @@ export default function ProposalsTab({
                         
                         <div>
                           <label className="text-[10px] font-bold text-slate-505 uppercase block mb-1">Custom Sharing Image</label>
-                          <div className="flex gap-2">
-                            <input
-                              type="text"
-                              placeholder="Paste image URL or upload ->"
-                              value={postJobSeoImage}
-                              onChange={(e) => setPostJobSeoImage(e.target.value)}
-                              className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none font-semibold"
-                            />
-                            <label className="bg-white hover:bg-slate-50 border border-slate-250 text-slate-600 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-sm gap-1 hover:border-slate-350 select-none">
-                              {uploadingSeoImage ? (
-                                <div className="w-4 h-4 border-2 border-t-transparent border-primary rounded-full animate-spin"></div>
-                              ) : (
-                                <>
-                                  <i className="fa-solid fa-cloud-arrow-up text-[10px]"></i>
-                                  <span>Upload</span>
-                                </>
+                          <div className="flex flex-col gap-1">
+                            <div className="flex gap-2">
+                              {postJobSeoImage && (
+                                <img src={postJobSeoImage} alt="SEO Preview" className="w-10 h-10 rounded-lg object-cover border border-slate-200 shrink-0" />
                               )}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                disabled={uploadingSeoImage}
-                                onChange={handleSeoImageUpload}
-                                className="hidden"
-                              />
-                            </label>
+                              <label className="flex-1 cursor-pointer">
+                                <div className="bg-white border border-slate-200 hover:border-primary/60 hover:bg-primary/3 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 transition-all flex items-center justify-between gap-2">
+                                  <span className={uploadingSeoImage ? "text-slate-400" : ""}>
+                                    {uploadingSeoImage ? "Uploading..." : postJobSeoImage ? "Change Image" : "Upload Image"}
+                                  </span>
+                                  {uploadingSeoImage && (
+                                    <div className="w-3.5 h-3.5 border-2 border-t-transparent border-primary rounded-full animate-spin shrink-0" />
+                                  )}
+                                </div>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  disabled={uploadingSeoImage}
+                                  onChange={handleSeoImageUpload}
+                                  className="hidden"
+                                />
+                              </label>
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-medium">Min 300×200px &bull; Large images auto-resized to 1200×630px</span>
                           </div>
                         </div>
                       </div>

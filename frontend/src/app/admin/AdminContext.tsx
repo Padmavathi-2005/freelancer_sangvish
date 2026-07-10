@@ -318,6 +318,10 @@ interface AdminContextType {
   }>>;
   disputeReasons: string[];
   setDisputeReasons: React.Dispatch<React.SetStateAction<string[]>>;
+  clientDisputeReasons: string[];
+  setClientDisputeReasons: React.Dispatch<React.SetStateAction<string[]>>;
+  freelancerDisputeReasons: string[];
+  setFreelancerDisputeReasons: React.Dispatch<React.SetStateAction<string[]>>;
   handleSaveSetting: (key: string, value: any, category?: string) => Promise<void>;
 
   // Admins List & CRUD
@@ -390,8 +394,8 @@ interface AdminContextType {
   cmsPagesList: any[];
   loadingCms: boolean;
   fetchCmsPages: () => Promise<void>;
-  handleCreateCmsPage: (title: string, slug: string, status: string, contentType: string, content: string) => Promise<any>;
-  handleUpdateCmsPage: (id: number, title: string, slug: string, status: string, contentType: string, content: string) => Promise<any>;
+  handleCreateCmsPage: (title: string, slug: string, status: string, contentType: string, content: string, seo?: any) => Promise<any>;
+  handleUpdateCmsPage: (id: number, title: string, slug: string, status: string, contentType: string, content: string, seo?: any) => Promise<any>;
   handleDeleteCmsPage: (id: number) => Promise<void>;
   blogsList: any[];
   loadingBlogs: boolean;
@@ -754,6 +758,22 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     "Suspected fraud",
     "Other"
   ]);
+  const [clientDisputeReasons, setClientDisputeReasons] = useState<string[]>([
+    "Work not delivered",
+    "Work quality is poor",
+    "Requirements not followed",
+    "Freelancer is unresponsive",
+    "Delivery is incomplete",
+    "Suspected fraud",
+    "Other"
+  ]);
+  const [freelancerDisputeReasons, setFreelancerDisputeReasons] = useState<string[]>([
+    "Client is unresponsive",
+    "Client refuses to release milestone payment",
+    "Client is requesting out-of-scope work",
+    "Milestone requirements met but not approved",
+    "Other"
+  ]);
   const [pendingProposals, setPendingProposals] = useState<any[]>([]);
   const [frontendHeroContent, setFrontendHeroContent] = useState({
     hero_badge: "The Top 3% Global Freelancers",
@@ -1042,6 +1062,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
               });
             } else if (setting.setting_key === "dispute_reasons") {
               setDisputeReasons(Array.isArray(val) ? val : (val?.reasons || disputeReasons));
+            } else if (setting.setting_key === "client_dispute_reasons") {
+              setClientDisputeReasons(Array.isArray(val) ? val : (val?.reasons || clientDisputeReasons));
+            } else if (setting.setting_key === "freelancer_dispute_reasons") {
+              setFreelancerDisputeReasons(Array.isArray(val) ? val : (val?.reasons || freelancerDisputeReasons));
             }
           });
         }
@@ -1775,7 +1799,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const handleCreateCmsPage = async (title: string, slug: string, status: string, contentType: string, content: string) => {
+  const handleCreateCmsPage = async (title: string, slug: string, status: string, contentType: string, content: string, seo?: any) => {
     try {
       const token = localStorage.getItem("adminToken");
       const res = await fetch(`${API_URL}/admin/cms/pages`, {
@@ -1784,7 +1808,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ title, slug, status, content_type: contentType, content })
+        body: JSON.stringify({ title, slug, status, content_type: contentType, content, seo })
       });
       const data = await res.json();
       if (res.ok) {
@@ -1797,7 +1821,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const handleUpdateCmsPage = async (id: number, title: string, slug: string, status: string, contentType: string, content: string) => {
+  const handleUpdateCmsPage = async (id: number, title: string, slug: string, status: string, contentType: string, content: string, seo?: any) => {
     try {
       const token = localStorage.getItem("adminToken");
       const res = await fetch(`${API_URL}/admin/cms/pages/${id}`, {
@@ -1806,7 +1830,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ title, slug, status, content_type: contentType, content })
+        body: JSON.stringify({ title, slug, status, content_type: contentType, content, seo })
       });
       const data = await res.json();
       if (res.ok) {
@@ -1956,6 +1980,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       "/admin/taxonomies": "taxonomies",
       "/admin/cleanup": "cleanup",
       "/admin/languages": "languages",
+      "/admin/settings": "settings",
       "/admin/site-settings": "site_settings",
       "/admin/general-settings": "general_settings",
       "/admin/email-settings": "email_settings",
@@ -1975,10 +2000,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       "/admin/onboarding": "onboarding",
       "/admin/wallet-management": "wallet_management",
       "/admin/payment-settings": "payment_settings",
-      "/admin/dispute-reasons": "dispute_reasons",
       "/admin/cms-pages": "cms_pages",
       "/admin/blogs": "blogs",
       "/admin/backups": "backups",
+      "/admin/search-logs": "search_logs",
+      "/admin/seo-settings": "seo_settings",
     };
     return routeMap[pathname] || "overview";
   }, [pathname]);
@@ -2001,14 +2027,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       categories: "/admin/taxonomies",
       cleanup: "/admin/cleanup",
       languages: "/admin/languages",
-      site_management: "/admin/site-settings",
-      site_settings: "/admin/site-settings",
-      general_settings: "/admin/general-settings",
-      email_settings: "/admin/email-settings",
-      frontend_content: "/admin/frontend-content",
-      footer_links: "/admin/footer-links",
-      social_login: "/admin/social-login",
-      settings: "/admin/site-settings",
+      site_management: "/admin/settings?tab=site",
+      site_settings: "/admin/settings?tab=site",
+      general_settings: "/admin/settings?tab=general",
+      email_settings: "/admin/settings?tab=email",
+      frontend_content: "/admin/settings?tab=frontend",
+      footer_links: "/admin/settings?tab=footer",
+      social_login: "/admin/settings?tab=social",
+      settings: "/admin/settings",
       transactions: "/admin/transactions",
       disputes: "/admin/transactions",
       projects: "/admin/projects",
@@ -2022,11 +2048,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       admin_engineers: "/admin/users/engineer",
       onboarding: "/admin/onboarding",
       wallet_management: "/admin/wallet-management",
-      payment_settings: "/admin/payment-settings",
-      dispute_reasons: "/admin/dispute-reasons",
+      payment_settings: "/admin/settings?tab=payment",
+      dispute_reasons: "/admin/settings?tab=disputes",
       cms_pages: "/admin/cms-pages",
       blogs: "/admin/blogs",
       backups: "/admin/backups",
+      search_logs: "/admin/search-logs",
+      seo_settings: "/admin/settings?tab=seo",
     };
     const path = routeMap[tab];
     if (path) {
@@ -2264,7 +2292,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       skillFormSubcategoryId, setSkillFormSubcategoryId, skillFormStatus, setSkillFormStatus, skillFormError, skillFormLoading,
       handleSkillSubmit, handleDeleteSkill, handleEditSkillClick, handleAddSkillClick, platformFee, setPlatformFee, autoVetting,
       setAutoVetting, maintenanceMode, setMaintenanceMode, primaryColor, setPrimaryColor, secondaryColor, setSecondaryColor,
-      siteTheme, setSiteTheme, defaultCurrency, setDefaultCurrency, defaultLanguage, setDefaultLanguage, handleSaveSetting, frontendHeroContent, setFrontendHeroContent, disputeReasons, setDisputeReasons, adminsList, adminUser, newAdminName, setNewAdminName, newAdminEmail, setNewAdminEmail,
+      siteTheme, setSiteTheme, defaultCurrency, setDefaultCurrency, defaultLanguage, setDefaultLanguage, handleSaveSetting, frontendHeroContent, setFrontendHeroContent, disputeReasons, setDisputeReasons, clientDisputeReasons, setClientDisputeReasons, freelancerDisputeReasons, setFreelancerDisputeReasons, adminsList, adminUser, newAdminName, setNewAdminName, newAdminEmail, setNewAdminEmail,
       newAdminPassword, setNewAdminPassword, newAdminRole, setNewAdminRole, adminError, adminSuccess, adminLoading, handleCreateAdmin,
       handleDeleteAdmin, vettingApps, updateVettingStatus, disputes, resolveDispute, pendingVettingCount, activeDisputesCount,
       adminNotifications, setAdminNotifications, highlightedDisputeId, setHighlightedDisputeId,

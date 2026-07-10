@@ -13,7 +13,8 @@ export const FreelancerProfile = {
         availabilityStatus,
         linkedinUrl,
         portfolioWebsite,
-        resumeUrl
+        resumeUrl,
+        seo = null
     ) => {
 
         return await pool.query(
@@ -29,10 +30,11 @@ export const FreelancerProfile = {
                 availability_status,
                 linkedin_url,
                 portfolio_website,
-                resume_url
+                resume_url,
+                seo
             )
             VALUES
-            ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+            ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
             RETURNING *`,
             [
                 userId,
@@ -45,7 +47,8 @@ export const FreelancerProfile = {
                 availabilityStatus,
                 linkedinUrl,
                 portfolioWebsite,
-                resumeUrl
+                resumeUrl,
+                seo ? (typeof seo === 'string' ? seo : JSON.stringify(seo)) : null
             ]
         );
     },
@@ -90,7 +93,8 @@ export const FreelancerProfile = {
         availabilityStatus,
         linkedinUrl,
         portfolioWebsite,
-        resumeUrl
+        resumeUrl,
+        seo = null
     ) => {
         return await pool.query(
             `UPDATE freelancer_profiles
@@ -104,8 +108,9 @@ export const FreelancerProfile = {
                  linkedin_url = $8,
                  portfolio_website = $9,
                  resume_url = $10,
+                 seo = $11,
                  updated_at = NOW()
-             WHERE user_id = $11
+             WHERE user_id = $12
              RETURNING *`,
             [
                 categoryId,
@@ -118,6 +123,7 @@ export const FreelancerProfile = {
                 linkedinUrl,
                 portfolioWebsite,
                 resumeUrl,
+                seo ? (typeof seo === 'string' ? seo : JSON.stringify(seo)) : null,
                 userId
             ]
         );

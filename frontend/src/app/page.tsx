@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Categories from "@/components/Categories";
@@ -16,6 +16,44 @@ import CTA from "@/components/CTA";
 import Footer from "@/components/Footer";
 
 export default function Home() {
+  useEffect(() => {
+    const fetchSEO = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL
+          ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+          : "https://freelancer.sangvish.com/api";
+        const res = await fetch(`${API_URL}/seo?route=/`);
+        if (res.ok) {
+          const seo = await res.json();
+          if (seo.meta_title) document.title = seo.meta_title;
+          
+          let descMeta = document.querySelector('meta[name="description"]');
+          if (descMeta) {
+            descMeta.setAttribute("content", seo.meta_description || "");
+          } else {
+            descMeta = document.createElement("meta");
+            descMeta.setAttribute("name", "description");
+            descMeta.setAttribute("content", seo.meta_description || "");
+            document.head.appendChild(descMeta);
+          }
+          
+          let kwMeta = document.querySelector('meta[name="keywords"]');
+          if (kwMeta) {
+            kwMeta.setAttribute("content", seo.meta_keywords || "");
+          } else {
+            kwMeta = document.createElement("meta");
+            kwMeta.setAttribute("name", "keywords");
+            kwMeta.setAttribute("content", seo.meta_keywords || "");
+            document.head.appendChild(kwMeta);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load page SEO dynamic metadata:", err);
+      }
+    };
+    fetchSEO();
+  }, []);
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative">
       <Header />

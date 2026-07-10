@@ -19,6 +19,11 @@ export default function EmailSettingsTab({
   const [smtpUser, setSmtpUser] = useState("");
   const [smtpPass, setSmtpPass] = useState("");
 
+  // Email Branding states
+  const [emailLogo, setEmailLogo] = useState("");
+  const [emailSignature, setEmailSignature] = useState("");
+  const [emailCopyright, setEmailCopyright] = useState("");
+
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showToast, setShowToast] = useState(false);
@@ -59,6 +64,9 @@ export default function EmailSettingsTab({
           if (email.smtp_port) setSmtpPort(Number(email.smtp_port));
           if (email.smtp_user) setSmtpUser(email.smtp_user);
           if (email.smtp_pass) setSmtpPass(email.smtp_pass);
+          if (email.email_logo) setEmailLogo(email.email_logo);
+          if (email.email_signature) setEmailSignature(email.email_signature);
+          if (email.email_copyright) setEmailCopyright(email.email_copyright);
         }
       } catch (e) {
         console.error("Failed to load settings options", e);
@@ -79,7 +87,10 @@ export default function EmailSettingsTab({
         smtp_host: smtpHost,
         smtp_port: smtpPort,
         smtp_user: smtpUser,
-        smtp_pass: smtpPass
+        smtp_pass: smtpPass,
+        email_logo: emailLogo,
+        email_signature: emailSignature,
+        email_copyright: emailCopyright
       }, "email_settings");
 
       triggerToast("Settings Saved", "Email settings saved successfully!");
@@ -182,6 +193,52 @@ export default function EmailSettingsTab({
               placeholder="••••••••"
               className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
             />
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-slate-100 my-2"></div>
+
+      {/* Email Branding settings: Logo, Signature, Copyright */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-start gap-6 text-slate-800">
+        <div className="max-w-md">
+          <h4 className="text-sm font-extrabold text-slate-800 font-sans">Email Branding & Templates</h4>
+          <p className="text-xs text-slate-505 mt-1 font-medium">Customize the visual identity, signatures, and footer copyright displayed on outgoing emails.</p>
+        </div>
+        
+        <div className="w-full lg:w-auto flex flex-col gap-4 shrink-0">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Email Logo URL</span>
+            <input
+              type="text"
+              value={emailLogo}
+              onChange={(e) => setEmailLogo(e.target.value)}
+              placeholder="e.g. https://yourdomain.com/logo.png"
+              className="w-full lg:w-[456px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Email Sender Signature</span>
+            <textarea
+              value={emailSignature}
+              onChange={(e) => setEmailSignature(e.target.value)}
+              placeholder="Best regards,&#10;The Buy2Lancer Team"
+              rows={3}
+              className="w-full lg:w-[456px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition resize-none font-sans"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Footer Copyright Text</span>
+            <input
+              type="text"
+              value={emailCopyright}
+              onChange={(e) => setEmailCopyright(e.target.value)}
+              placeholder="© {{year}} {{site_name}}. All rights reserved."
+              className="w-full lg:w-[456px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
+            />
+            <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Use <code>&#123;&#123;year&#125;&#125;</code> and <code>&#123;&#123;site_name&#125;&#125;</code> for dynamic values.</p>
           </div>
         </div>
       </div>

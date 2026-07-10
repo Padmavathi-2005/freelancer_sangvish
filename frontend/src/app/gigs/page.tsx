@@ -29,6 +29,42 @@ function GigsSearchContent() {
   const [experienceLevel, setExperienceLevel] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("popular");
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Dynamic SEO Setup
+  useEffect(() => {
+    const fetchSEO = async () => {
+      try {
+        const res = await fetch(`${API_URL}/seo?route=/gigs`);
+        if (res.ok) {
+          const seo = await res.json();
+          if (seo.meta_title) document.title = seo.meta_title;
+          
+          let descMeta = document.querySelector('meta[name="description"]');
+          if (descMeta) {
+            descMeta.setAttribute("content", seo.meta_description || "");
+          } else {
+            descMeta = document.createElement("meta");
+            descMeta.setAttribute("name", "description");
+            descMeta.setAttribute("content", seo.meta_description || "");
+            document.head.appendChild(descMeta);
+          }
+          
+          let kwMeta = document.querySelector('meta[name="keywords"]');
+          if (kwMeta) {
+            kwMeta.setAttribute("content", seo.meta_keywords || "");
+          } else {
+            kwMeta = document.createElement("meta");
+            kwMeta.setAttribute("name", "keywords");
+            kwMeta.setAttribute("content", seo.meta_keywords || "");
+            document.head.appendChild(kwMeta);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load page SEO dynamic metadata:", err);
+      }
+    };
+    fetchSEO();
+  }, []);
   const itemsPerPage = 6;
 
   // Wishlist and Toast states
@@ -216,6 +252,35 @@ function GigsSearchContent() {
 
     return true;
   });
+
+  // Log search queries for Analytics
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+
+    const delayDebounce = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem("token") || "";
+        const deviceType = window.innerWidth < 768 ? "Mobile" : "Desktop";
+        await fetch(`${API_URL}/analytics/search`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            query_text: searchQuery.trim(),
+            search_type: "gigs",
+            results_count: filteredGigs.length,
+            device_type: deviceType
+          })
+        });
+      } catch (err) {
+        console.error("Failed to log search analytics:", err);
+      }
+    }, 1200);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, filteredGigs.length]);
 
   // Sorting
   const sortedGigs = [...filteredGigs].sort((a: any, b: any) => {

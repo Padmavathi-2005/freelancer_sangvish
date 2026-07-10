@@ -49,6 +49,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [siteLogo, setSiteLogo] = useState("");
   const [siteName, setSiteName] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [marketingMenuOpen, setMarketingMenuOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -118,14 +119,22 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       setSettingsMenuOpen(true);
       setProjectMenuOpen(false);
       setGigMenuOpen(false);
+      setMarketingMenuOpen(false);
     } else if (activeTab === "projects" || activeTab === "project_orders") {
       setProjectMenuOpen(true);
       setGigMenuOpen(false);
       setSettingsMenuOpen(false);
+      setMarketingMenuOpen(false);
     } else if (activeTab === "gigs_list" || activeTab === "gig_orders") {
       setGigMenuOpen(true);
       setProjectMenuOpen(false);
       setSettingsMenuOpen(false);
+      setMarketingMenuOpen(false);
+    } else if (activeTab === "search_logs" || activeTab === "seo_settings") {
+      setMarketingMenuOpen(true);
+      setSettingsMenuOpen(false);
+      setProjectMenuOpen(false);
+      setGigMenuOpen(false);
     }
   }, [activeTab]);
 
@@ -522,6 +531,60 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </button>
 
+          {/* Group 3.5: Marketing & Discovery */}
+          <div className="text-[9px] font-black tracking-widest uppercase text-slate-450 dark:text-slate-500 mt-4 mb-2 px-2.5 select-none">
+            Marketing & SEO
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={() => {
+                const nextVal = !marketingMenuOpen;
+                setMarketingMenuOpen(nextVal);
+                if (nextVal) {
+                  setProjectMenuOpen(false);
+                  setGigMenuOpen(false);
+                  setSettingsMenuOpen(false);
+                }
+              }}
+              className={navDropdownHeaderClass(marketingMenuOpen, ["search_logs", "seo_settings"])}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                  <FiGlobe className="w-4 h-4 shrink-0" />
+                  <span>Marketing & SEO</span>
+                </div>
+                <svg
+                  className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
+                    marketingMenuOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </button>
+            {marketingMenuOpen && (
+              <div className="pl-4 flex flex-col gap-1 mt-1 border-l border-slate-200/60 dark:border-slate-800 ml-4.5">
+                <button
+                  onClick={() => setActiveTab("search_logs")}
+                  className={subNavBtnClass("search_logs")}
+                >
+                  Search Analytics
+                </button>
+                <button
+                  onClick={() => setActiveTab("seo_settings")}
+                  className={subNavBtnClass("seo_settings")}
+                >
+                  SEO & Meta Preview
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Group 4: Site Content & Settings */}
           <div className="text-[9px] font-black tracking-widest uppercase text-slate-450 dark:text-slate-500 mt-4 mb-2 px-2.5 select-none">
             Content & Settings
@@ -547,87 +610,15 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </button>
 
-          <div className="flex flex-col gap-1">
-            <button
-              onClick={() => {
-                const nextVal = !settingsMenuOpen;
-                setSettingsMenuOpen(nextVal);
-                if (nextVal) {
-                  setProjectMenuOpen(false);
-                  setGigMenuOpen(false);
-                }
-              }}
-              className={navDropdownHeaderClass(settingsMenuOpen, ["general_settings", "site_settings", "email_settings", "settings", "payment_settings", "frontend_content", "dispute_reasons", "footer_links", "social_login"])}
-            >
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <FiSettings className="w-4 h-4 shrink-0" />
-                  <span>Settings</span>
-                </div>
-                <svg
-                  className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
-                    settingsMenuOpen ? "rotate-180" : ""
-                  }`}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </button>
-
-            {settingsMenuOpen && (
-              <div className={`pl-6 flex flex-col gap-1 border-l ml-6 mt-1 mb-2 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-                <button
-                  onClick={() => setActiveTab("general_settings")}
-                  className={subNavBtnClass("general_settings")}
-                >
-                  General Settings
-                </button>
-                <button
-                  onClick={() => setActiveTab("site_settings")}
-                  className={subNavBtnClass("site_settings", ["settings"])}
-                >
-                  Site Settings
-                </button>
-                <button
-                  onClick={() => setActiveTab("email_settings")}
-                  className={subNavBtnClass("email_settings")}
-                >
-                  Email Settings
-                </button>
-                <button
-                  onClick={() => setActiveTab("frontend_content")}
-                  className={subNavBtnClass("frontend_content")}
-                >
-                  Frontend Content
-                </button>
-                <button
-                  onClick={() => setActiveTab("footer_links")}
-                  className={subNavBtnClass("footer_links")}
-                >
-                  Footer & App Links
-                </button>
-                <button
-                  onClick={() => setActiveTab("social_login")}
-                  className={subNavBtnClass("social_login")}
-                >
-                  Social Login Settings
-                </button>
-                <button
-                  onClick={() => setActiveTab("payment_settings")}
-                  className={subNavBtnClass("payment_settings")}
-                >
-                  Payment Settings
-                </button>
-                <button
-                  onClick={() => setActiveTab("dispute_reasons")}
-                  className={subNavBtnClass("dispute_reasons")}
-                >
-                  Dispute Reasons
-                </button>
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => setActiveTab("settings")}
+            className={navBtnClass("settings", ["general_settings", "site_settings", "email_settings", "frontend_content", "footer_links", "social_login", "payment_settings", "dispute_reasons", "seo_settings"])}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <FiSettings className="w-4 h-4 shrink-0" />
+              <span>System Settings</span>
+            </div>
+          </button>
 
           {/* Group 5: System Maintenance */}
           <div className="text-[9px] font-black tracking-widest uppercase text-rose-500/80 dark:text-rose-450/70 mt-4 mb-2 px-2.5 select-none">

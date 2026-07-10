@@ -887,7 +887,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     portfolio_website: "",
     resume_url: "",
     slug: "",
-    display_name: ""
+    display_name: "",
+    seo: {
+      meta_title: "",
+      meta_description: "",
+      meta_keywords: ""
+    }
   });
 
   // Skills State
@@ -1356,6 +1361,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           setPortfolioWebsite(data.profile.portfolio_website || "");
           setResumeUrl(data.profile.resume_url || "");
 
+          let parsedSeo = { meta_title: "", meta_description: "", meta_keywords: "" };
+          if (data.profile.seo) {
+            try {
+              parsedSeo = typeof data.profile.seo === "string" ? JSON.parse(data.profile.seo) : data.profile.seo;
+            } catch (e) {
+              console.error("Error parsing profile seo data:", e);
+            }
+          }
           const loadedBasics = {
             professional_title: data.profile.professional_title || "",
             experience_level: data.profile.experience_level || "Intermediate",
@@ -1366,7 +1379,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             portfolio_website: data.profile.portfolio_website || "",
             resume_url: data.profile.resume_url || "",
             slug: data.user.slug || "",
-            display_name: data.user.display_name || data.user.name || ""
+            display_name: data.user.display_name || data.user.name || "",
+            seo: parsedSeo
           };
           setProfileBasics(loadedBasics);
           localStorage.setItem("profile_basics", JSON.stringify(loadedBasics));
@@ -2849,7 +2863,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             portfolio_website: profileBasics.portfolio_website || null,
             resume_url: profileBasics.resume_url || null,
             slug: profileBasics.slug || null,
-            display_name: profileBasics.display_name || null
+            display_name: profileBasics.display_name || null,
+            seo: profileBasics.seo || null
           })
         });
 

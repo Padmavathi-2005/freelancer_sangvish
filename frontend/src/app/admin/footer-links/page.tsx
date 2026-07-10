@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
-import FooterLinksTab from "@/components/admin/FooterLinksTab";
+import { redirect } from "next/navigation";
 
-export default function FooterLinksPage() {
-  return <FooterLinksTab />;
+export default function FooterLinksPageRedirect() {
+  redirect("/admin/settings?tab=footer");
 }

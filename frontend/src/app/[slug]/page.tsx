@@ -336,6 +336,73 @@ export default function DynamicCmsPage() {
     fetchPage();
   }, [slug]);
 
+  // Inject Meta SEO tags dynamically
+  useEffect(() => {
+    if (!pageData) return;
+
+    const resolveMediaUrl = (url: string) => {
+      if (!url) return "";
+      if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+        return url;
+      }
+      const cleanPath = url.startsWith("/") ? url : `/${url}`;
+      return `https://freelancer.sangvish.com${cleanPath}`;
+    };
+
+    let seoTitle = pageData.title || "Buy2Lancer Page";
+    let seoDesc = "Explore this page on Buy2Lancer Freelance Services Marketplace.";
+    let seoKeywords = "";
+    let seoImg = "/tablet-work.png";
+
+    if (pageData.seo) {
+      try {
+        const parsedSeo = typeof pageData.seo === 'string' ? JSON.parse(pageData.seo) : pageData.seo;
+        if (parsedSeo?.title) seoTitle = parsedSeo.title;
+        if (parsedSeo?.description) seoDesc = parsedSeo.description;
+        if (parsedSeo?.keywords) seoKeywords = parsedSeo.keywords;
+        if (parsedSeo?.image || parsedSeo?.og_image) seoImg = parsedSeo.image || parsedSeo.og_image;
+      } catch (e) {
+        console.error("Error parsing CMS page SEO:", e);
+      }
+    } else {
+      // Fallback description from content body text
+      if (pageData.content_type === "HTML" && pageData.content) {
+        const plainText = pageData.content.replace(/<[^>]*>/g, '').trim();
+        if (plainText) {
+          seoDesc = plainText.substring(0, 150) + "...";
+        }
+      }
+    }
+
+    const absoluteImg = resolveMediaUrl(seoImg || "/tablet-work.png");
+
+    // Update tab title
+    document.title = `${seoTitle} | Buy2Lancer`;
+
+    // Helper to create or update meta tags
+    const updateMetaTag = (property: string, content: string, isProperty = true) => {
+      const attribute = isProperty ? 'property' : 'name';
+      let tag = document.querySelector(`meta[${attribute}="${property}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute(attribute, property);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content);
+    };
+
+    updateMetaTag('description', seoDesc, false);
+    if (seoKeywords) {
+      updateMetaTag('keywords', seoKeywords, false);
+    }
+    updateMetaTag('og:title', seoTitle);
+    updateMetaTag('og:description', seoDesc);
+    updateMetaTag('og:image', absoluteImg);
+    updateMetaTag('twitter:title', seoTitle, false);
+    updateMetaTag('twitter:description', seoDesc, false);
+    updateMetaTag('twitter:image', absoluteImg, false);
+  }, [pageData]);
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full justify-between">

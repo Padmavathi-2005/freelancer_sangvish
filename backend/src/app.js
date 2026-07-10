@@ -24,6 +24,8 @@ import faqRoutes from './routes/faqRoutes.js';
 import landingSectionsRoutes from './routes/landingSectionsRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
+import analyticsRoutes from './routes/analyticsRoutes.js';
+import seoRoutes from './routes/seoRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,6 +63,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api', blogRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/seo', seoRoutes);
 
 
 app.use("/api/admin/categories",categoryRoutes);

@@ -1,65 +1,7 @@
 "use client";
 
-import React from "react";
-import GeneralSettingsTab from "@/components/admin/GeneralSettingsTab";
-import { useAdmin } from "../AdminContext";
+import { redirect } from "next/navigation";
 
-export default function GeneralSettingsPage() {
-  const {
-    platformFee,
-    setPlatformFee,
-    autoVetting,
-    setAutoVetting,
-    maintenanceMode,
-    setMaintenanceMode,
-    siteTheme,
-    setSiteTheme,
-    primaryColor,
-    setPrimaryColor,
-    secondaryColor,
-    setSecondaryColor,
-    defaultCurrency,
-    setDefaultCurrency,
-    defaultLanguage,
-    setDefaultLanguage,
-    itemsPerPage,
-    setItemsPerPage,
-    enableProposalVetting,
-    setEnableProposalVetting,
-    enableClientVetting,
-    setEnableClientVetting,
-    enableProjectVetting,
-    setEnableProjectVetting,
-    handleSaveSetting
-  } = useAdmin();
-
-  return (
-    <GeneralSettingsTab
-      platformFee={platformFee}
-      setPlatformFee={setPlatformFee}
-      autoVetting={autoVetting}
-      setAutoVetting={setAutoVetting}
-      maintenanceMode={maintenanceMode}
-      setMaintenanceMode={setMaintenanceMode}
-      siteTheme={siteTheme}
-      setSiteTheme={setSiteTheme}
-      primaryColor={primaryColor}
-      setPrimaryColor={setPrimaryColor}
-      secondaryColor={secondaryColor}
-      setSecondaryColor={setSecondaryColor}
-      defaultCurrency={defaultCurrency}
-      setDefaultCurrency={setDefaultCurrency}
-      defaultLanguage={defaultLanguage}
-      setDefaultLanguage={setDefaultLanguage}
-      itemsPerPage={itemsPerPage}
-      setItemsPerPage={setItemsPerPage}
-      enableProposalVetting={enableProposalVetting}
-      setEnableProposalVetting={setEnableProposalVetting}
-      enableClientVetting={enableClientVetting}
-      setEnableClientVetting={setEnableClientVetting}
-      enableProjectVetting={enableProjectVetting}
-      setEnableProjectVetting={setEnableProjectVetting}
-      handleSaveSetting={handleSaveSetting}
-    />
-  );
+export default function GeneralSettingsPageRedirect() {
+  redirect("/admin/settings?tab=general");
 }

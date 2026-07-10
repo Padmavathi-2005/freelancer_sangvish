@@ -46,7 +46,7 @@ const postSystemChatMessage = async (io, conversationId, senderId, payload) => {
 // 1. OPEN DISPUTE
 export const openDispute = async (req, res) => {
   try {
-    const clientId = req.user.user_id;
+    const userId = req.user.user_id;
     const contractId = parseInt(req.params.id);
     const { reason, description } = req.body;
 
@@ -61,13 +61,20 @@ export const openDispute = async (req, res) => {
     }
     const contract = contractRes.rows[0];
 
-    if (contract.client_id !== clientId) {
-      return res.status(403).json({ message: "Access denied. Only the client can raise a dispute." });
+    const isClient = contract.client_id === userId;
+    const isFreelancer = contract.freelancer_id === userId;
+
+    if (!isClient && !isFreelancer) {
+      return res.status(403).json({ message: "Access denied. Only contract participants can raise a dispute." });
     }
 
-    // A dispute can only be raised after the freelancer has completed and submitted work (meaning the status is 'Under Review')
-    if (contract.status !== "Under Review") {
-      return res.status(400).json({ message: "A dispute can only be opened after the freelancer has completed and submitted the work (contract status must be 'Under Review')." });
+    const raisedBy = isClient ? "client" : "freelancer";
+    const opponentId = isClient ? contract.freelancer_id : contract.client_id;
+
+    // Allowed statuses for dispute
+    const allowedStatuses = ["In Progress", "Work Started", "Work Completed", "Under Review"];
+    if (!allowedStatuses.includes(contract.status)) {
+      return res.status(400).json({ message: "A dispute can only be opened on active or submitted contracts." });
     }
 
     // Get or create conversation between client and freelancer
@@ -81,10 +88,10 @@ export const openDispute = async (req, res) => {
     try {
       // Create dispute record
       const disputeRes = await pool.query(
-        `INSERT INTO disputes (contract_id, client_id, freelancer_id, conversation_id, status, reason, description)
-         VALUES ($1, $2, $3, $4, 'Open', $5, $6)
+        `INSERT INTO disputes (contract_id, client_id, freelancer_id, conversation_id, status, reason, description, raised_by)
+         VALUES ($1, $2, $3, $4, 'Open', $5, $6, $7)
          RETURNING *`,
-        [contractId, contract.client_id, contract.freelancer_id, conversationId, reason, description]
+        [contractId, contract.client_id, contract.freelancer_id, conversationId, reason, description, raisedBy]
       );
       const dispute = disputeRes.rows[0];
 
@@ -101,20 +108,21 @@ export const openDispute = async (req, res) => {
         isDispute: true,
         type: "dispute_opened",
         dispute_id: dispute.dispute_id,
-        sender_id: clientId,
+        sender_id: userId,
         reason,
         description,
         status: "Open",
-        budget: parseFloat(contract.budget)
+        budget: parseFloat(contract.budget),
+        raised_by: raisedBy
       };
-      await postSystemChatMessage(req.io, conversationId, clientId, payload);
+      await postSystemChatMessage(req.io, conversationId, userId, payload);
 
-      // Notify freelancer
+      // Notify opponent
       try {
         await Notification.create({
-          userId: contract.freelancer_id,
+          userId: opponentId,
           title: "Contract Disputed",
-          message: `Client has raised a dispute on contract "${contract.title}". Check your chat for details.`,
+          message: `${isClient ? "Client" : "Freelancer"} has raised a dispute on contract "${contract.title}". Check your chat for details.`,
           type: "system",
           referenceId: contractId.toString()
         });
@@ -131,10 +139,10 @@ export const openDispute = async (req, res) => {
   }
 };
 
-// 2. RESPOND TO DISPUTE (Freelancer)
+// 2. RESPOND TO DISPUTE
 export const respondToDispute = async (req, res) => {
   try {
-    const freelancerId = req.user.user_id;
+    const userId = req.user.user_id;
     const disputeId = parseInt(req.params.id);
     const { action, explanation } = req.body; // 'Accept' or 'Contest'
 
@@ -148,8 +156,18 @@ export const respondToDispute = async (req, res) => {
     }
     const dispute = disputeRes.rows[0];
 
-    if (dispute.freelancer_id !== freelancerId) {
-      return res.status(403).json({ message: "Access denied. Only the hired freelancer can respond." });
+    const isFreelancer = dispute.freelancer_id === userId;
+    const isClient = dispute.client_id === userId;
+
+    if (!isFreelancer && !isClient) {
+      return res.status(403).json({ message: "Access denied. You are not a participant in this dispute." });
+    }
+
+    const responderRole = isClient ? 'client' : 'freelancer';
+    const raisedByRole = dispute.raised_by || 'client';
+
+    if (responderRole === raisedByRole) {
+      return res.status(403).json({ message: "Access denied. You cannot respond to a dispute you raised." });
     }
 
     if (dispute.status !== "Open") {
@@ -158,72 +176,109 @@ export const respondToDispute = async (req, res) => {
 
     const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [dispute.contract_id]);
     const contract = contractRes.rows[0];
+    const budget = parseFloat(contract.budget);
+
+    const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+    const sysWallet = sysRes.rows[0];
 
     if (action === "Accept") {
-      // Freelancer accepts: Full refund to client
-      const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
-      const sysWallet = sysRes.rows[0];
-      const clientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [dispute.client_id]);
-      const clientWallet = clientWalletRes.rows[0];
-      const budget = parseFloat(contract.budget);
-
       await pool.query("BEGIN");
       try {
-        // Debit system escrow, credit client
-        await pool.query("UPDATE wallets SET balance = balance - $1 WHERE wallet_id = $2", [budget, sysWallet.wallet_id]);
-        await pool.query("UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2", [budget, clientWallet.wallet_id]);
+        if (raisedByRole === "client") {
+          // Client raised it (wants refund), Freelancer accepts -> Refund Client
+          const clientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [dispute.client_id]);
+          const clientWallet = clientWalletRes.rows[0];
 
-        // Record transfer
-        await pool.query(
-          `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
-           VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
-          [sysWallet.wallet_id, clientWallet.wallet_id, budget, `Refund from dispute resolution: ${contract.title}`]
-        );
+          await pool.query("UPDATE wallets SET balance = balance - $1 WHERE wallet_id = $2", [budget, sysWallet.wallet_id]);
+          await pool.query("UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2", [budget, clientWallet.wallet_id]);
 
-        // Update contract & milestones
-        await pool.query("UPDATE contracts SET status = 'Cancelled', progress = 0, updated_at = NOW() WHERE contract_id = $1", [contract.contract_id]);
-        await pool.query("UPDATE contract_milestones SET status = 'Cancelled', payment_status = 'Refunded' WHERE contract_id = $1", [contract.contract_id]);
-        const proposalIdToCancel = contract.application_id || (await pool.query(
-          "SELECT proposal_id FROM proposals WHERE job_id = $1 AND freelancer_id = $2 AND status = 'Accepted'",
-          [contract.job_id, contract.freelancer_id]
-        )).rows[0]?.proposal_id;
+          await pool.query(
+            `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+             VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
+            [sysWallet.wallet_id, clientWallet.wallet_id, budget, `Refund from dispute resolution: ${contract.title}`]
+          );
 
-        if (proposalIdToCancel) {
-          await pool.query("UPDATE proposals SET status = 'Cancelled', updated_at = NOW() WHERE proposal_id = $1", [proposalIdToCancel]);
+          await pool.query("UPDATE contracts SET status = 'Cancelled', progress = 0, updated_at = NOW() WHERE contract_id = $1", [contract.contract_id]);
+          await pool.query("UPDATE contract_milestones SET status = 'Cancelled', payment_status = 'Refunded' WHERE contract_id = $1", [contract.contract_id]);
+          
+          const proposalIdToCancel = contract.application_id || (await pool.query(
+            "SELECT proposal_id FROM proposals WHERE job_id = $1 AND freelancer_id = $2 AND status = 'Accepted'",
+            [contract.job_id, contract.freelancer_id]
+          )).rows[0]?.proposal_id;
+
+          if (proposalIdToCancel) {
+            await pool.query("UPDATE proposals SET status = 'Cancelled', updated_at = NOW() WHERE proposal_id = $1", [proposalIdToCancel]);
+          }
+
+          await pool.query(
+            "UPDATE disputes SET status = 'Resolved', resolution_type = 'Buyer_Won', resolved_at = NOW(), resolution_details = $1 WHERE dispute_id = $2",
+            ["Freelancer accepted refund request.", disputeId]
+          );
+
+          await pool.query("COMMIT");
+
+          if (req.io && proposalIdToCancel) {
+            req.io.to(`user_${contract.freelancer_id}`).emit("proposal_status_updated", {
+              proposal_id: proposalIdToCancel,
+              status: "Cancelled"
+            });
+          }
+
+          const payload = {
+            isDispute: true,
+            type: "dispute_resolved",
+            dispute_id: disputeId,
+            verdict: "Buyer Wins",
+            details: "Freelancer accepted the refund request. Entire escrow amount has been returned to client."
+          };
+          await postSystemChatMessage(req.io, dispute.conversation_id, userId, payload);
+
+          return res.json({ message: "Refund accepted and contract cancelled." });
+        } else {
+          // Freelancer raised it (wants payout), Client accepts -> Release to Freelancer
+          let freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [dispute.freelancer_id]);
+          let freelancerWallet = freelancerWalletRes.rows[0];
+          if (!freelancerWallet) {
+            const ins = await pool.query("INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *", [dispute.freelancer_id]);
+            freelancerWallet = ins.rows[0];
+          }
+
+          await pool.query("UPDATE wallets SET balance = balance - $1 WHERE wallet_id = $2", [budget, sysWallet.wallet_id]);
+          await pool.query("UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2", [budget, freelancerWallet.wallet_id]);
+
+          await pool.query(
+            `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+             VALUES ($1, $2, $3, 'Milestone_Release', 'Completed', $4)`,
+            [sysWallet.wallet_id, freelancerWallet.wallet_id, budget, `Payout from dispute resolution: ${contract.title}`]
+          );
+
+          await pool.query("UPDATE contracts SET status = 'Completed', progress = 100, updated_at = NOW() WHERE contract_id = $1", [contract.contract_id]);
+          await pool.query("UPDATE contract_milestones SET status = 'Completed', payment_status = 'Paid' WHERE contract_id = $1", [contract.contract_id]);
+
+          await pool.query(
+            "UPDATE disputes SET status = 'Resolved', resolution_type = 'Seller_Won', resolved_at = NOW(), resolution_details = $1 WHERE dispute_id = $2",
+            ["Client accepted the payout release request.", disputeId]
+          );
+
+          await pool.query("COMMIT");
+
+          const payload = {
+            isDispute: true,
+            type: "dispute_resolved",
+            dispute_id: disputeId,
+            verdict: "Seller Wins",
+            details: "Client accepted the payout release request. Entire escrow budget has been released to freelancer."
+          };
+          await postSystemChatMessage(req.io, dispute.conversation_id, userId, payload);
+
+          return res.json({ message: "Payout release accepted and contract completed." });
         }
-
-        // Update dispute
-        await pool.query(
-          "UPDATE disputes SET status = 'Resolved', resolution_type = 'Buyer_Won', resolved_at = NOW(), resolution_details = $1 WHERE dispute_id = $2",
-          ["Freelancer accepted refund request.", disputeId]
-        );
-
-        await pool.query("COMMIT");
-
-        if (req.io && proposalIdToCancel) {
-          req.io.to(`user_${contract.freelancer_id}`).emit("proposal_status_updated", {
-            proposal_id: proposalIdToCancel,
-            status: "Cancelled"
-          });
-        }
-
-        // Post resolved chat card
-        const payload = {
-          isDispute: true,
-          type: "dispute_resolved",
-          dispute_id: disputeId,
-          verdict: "Buyer Wins",
-          details: "Freelancer accepted the refund request. Entire escrow amount has been returned to client."
-        };
-        await postSystemChatMessage(req.io, dispute.conversation_id, freelancerId, payload);
-
-        return res.json({ message: "Refund accepted and contract cancelled." });
       } catch (txErr) {
         await pool.query("ROLLBACK");
         throw txErr;
       }
     } else {
-      // Freelancer contests the dispute
+      // Contesting the dispute
       if (!explanation || !explanation.trim()) {
         return res.status(400).json({ message: "Explanation is required to contest dispute." });
       }
@@ -238,10 +293,10 @@ export const respondToDispute = async (req, res) => {
         isDispute: true,
         type: "dispute_contested",
         dispute_id: disputeId,
-        sender_id: freelancerId,
+        sender_id: userId,
         explanation
       };
-      await postSystemChatMessage(req.io, dispute.conversation_id, freelancerId, payload);
+      await postSystemChatMessage(req.io, dispute.conversation_id, userId, payload);
 
       return res.json({ message: "Dispute contested successfully." });
     }

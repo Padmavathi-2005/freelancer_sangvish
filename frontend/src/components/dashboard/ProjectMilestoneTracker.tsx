@@ -157,7 +157,11 @@ export default function ProjectMilestoneTracker({
         const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
-          const disputeSetting = data.find((s: any) => s.setting_key === "dispute_reasons");
+          const targetKey = userRole === "client" ? "client_dispute_reasons" : "freelancer_dispute_reasons";
+          let disputeSetting = data.find((s: any) => s.setting_key === targetKey);
+          if (!disputeSetting) {
+            disputeSetting = data.find((s: any) => s.setting_key === "dispute_reasons");
+          }
           if (disputeSetting) {
             let val = disputeSetting.setting_value;
             if (typeof val === "string") {
@@ -176,7 +180,7 @@ export default function ProjectMilestoneTracker({
       }
     };
     fetchReasons();
-  }, []);
+  }, [userRole]);
 
   const [disputeDescription, setDisputeDescription] = useState("");
   const [disputeLoading, setDisputeLoading] = useState(false);
@@ -2440,14 +2444,22 @@ export default function ProjectMilestoneTracker({
             const isHoursReqMet = minHoursRequired === 0 || totalLoggedHours >= minHoursRequired;
             return (
               <div className="flex flex-col items-end gap-1.5 ml-auto">
-                <button
-                  onClick={handleSubmitCompletion}
-                  disabled={!isHoursReqMet || isSubmittingCompletion}
-                  className="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-extrabold text-xs rounded-xl cursor-pointer disabled:opacity-50 transition-all flex items-center gap-1.5 border-0 shadow-sm"
-                >
-                  <i className="fa-solid fa-circle-check text-xs"></i>
-                  <span>Submit Work Completed</span>
-                </button>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDisputeModal(true)}
+                    className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                  >
+                    File a Dispute
+                  </button>
+                  <button
+                    onClick={handleSubmitCompletion}
+                    disabled={!isHoursReqMet || isSubmittingCompletion}
+                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-extrabold text-xs rounded-xl cursor-pointer disabled:opacity-50 transition-all flex items-center gap-1.5 border-0 shadow-sm"
+                  >
+                    <i className="fa-solid fa-circle-check text-xs"></i>
+                    <span>Submit Work Completed</span>
+                  </button>
+                </div>
                 {!isHoursReqMet && (
                   <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
                     Requires min {minHoursRequired} hours logged to complete (Currently: {totalLoggedHours.toFixed(1)} hrs)
@@ -2466,6 +2478,17 @@ export default function ProjectMilestoneTracker({
               >
                 <FiCheckCircle className="w-3.5 h-3.5" /> Approve Completion & Close Project
               </button>
+              <button
+                onClick={() => setShowDisputeModal(true)}
+                className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                File a Dispute
+              </button>
+            </div>
+          )}
+
+          {userRole === "freelancer" && (activeContract.status === "Work Completed" || activeContract.status === "Under Review") && (
+            <div className="flex gap-3 ml-auto">
               <button
                 onClick={() => setShowDisputeModal(true)}
                 className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"

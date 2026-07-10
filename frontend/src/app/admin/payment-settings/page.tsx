@@ -1,8 +1,7 @@
 "use client";
 
-import React from "react";
-import PaymentSettingsTab from "@/components/admin/PaymentSettingsTab";
+import { redirect } from "next/navigation";
 
-export default function PaymentSettingsPage() {
-  return <PaymentSettingsTab />;
+export default function PaymentSettingsPageRedirect() {
+  redirect("/admin/settings?tab=payment");
 }

@@ -30,7 +30,8 @@ export const saveFreelancerProfile = async (req, res) => {
             resume_url,
             availability_status,
             slug,
-            display_name
+            display_name,
+            seo
         } = req.body;
 
         if (!category_id || !sub_category_id || !professional_title || !experience_level || total_experience_years === undefined) {
@@ -64,7 +65,8 @@ export const saveFreelancerProfile = async (req, res) => {
                 availability_status || "Available",
                 linkedin_url || null,
                 portfolio_website || null,
-                resume_url || null
+                resume_url || null,
+                seo || null
             );
             profile = updateRes.rows[0];
         } else {
@@ -80,7 +82,8 @@ export const saveFreelancerProfile = async (req, res) => {
                 availability_status || "Available",
                 linkedin_url || null,
                 portfolio_website || null,
-                resume_url || null
+                resume_url || null,
+                seo || null
             );
             profile = createRes.rows[0];
         }

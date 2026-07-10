@@ -17,6 +17,42 @@ export default function BlogsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [allCategories, setAllCategories] = useState<string[]>([]);
 
+  // Dynamic SEO Setup
+  useEffect(() => {
+    const fetchSEO = async () => {
+      try {
+        const res = await fetch(`${API_URL}/seo?route=/blogs`);
+        if (res.ok) {
+          const seo = await res.json();
+          if (seo.meta_title) document.title = seo.meta_title;
+          
+          let descMeta = document.querySelector('meta[name="description"]');
+          if (descMeta) {
+            descMeta.setAttribute("content", seo.meta_description || "");
+          } else {
+            descMeta = document.createElement("meta");
+            descMeta.setAttribute("name", "description");
+            descMeta.setAttribute("content", seo.meta_description || "");
+            document.head.appendChild(descMeta);
+          }
+          
+          let kwMeta = document.querySelector('meta[name="keywords"]');
+          if (kwMeta) {
+            kwMeta.setAttribute("content", seo.meta_keywords || "");
+          } else {
+            kwMeta = document.createElement("meta");
+            kwMeta.setAttribute("name", "keywords");
+            kwMeta.setAttribute("content", seo.meta_keywords || "");
+            document.head.appendChild(kwMeta);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load page SEO dynamic metadata:", err);
+      }
+    };
+    fetchSEO();
+  }, []);
+
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {

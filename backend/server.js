@@ -57,9 +57,17 @@ try {
     // Startup migration for freelancer_profiles bio column
     await pool.query(`
       ALTER TABLE freelancer_profiles 
-      ADD COLUMN IF NOT EXISTS bio TEXT
+      ADD COLUMN IF NOT EXISTS bio TEXT,
+      ADD COLUMN IF NOT EXISTS seo JSONB DEFAULT NULL
     `);
-    console.log('✅ freelancer_profiles bio column check completed');
+    console.log('✅ freelancer_profiles bio and seo columns check completed');
+
+    // Startup migration for cms_pages seo column
+    await pool.query(`
+      ALTER TABLE cms_pages 
+      ADD COLUMN IF NOT EXISTS seo JSONB DEFAULT NULL
+    `);
+    console.log('✅ cms_pages seo column check completed');
 
     // Startup migration for gig_reviews
     await pool.query(`

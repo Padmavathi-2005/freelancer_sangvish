@@ -51,7 +51,10 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
         const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
-          const disputeSetting = data.find((s: any) => s.setting_key === "dispute_reasons");
+          let disputeSetting = data.find((s: any) => s.setting_key === "freelancer_dispute_reasons");
+          if (!disputeSetting) {
+            disputeSetting = data.find((s: any) => s.setting_key === "dispute_reasons");
+          }
           if (disputeSetting) {
             let val = disputeSetting.setting_value;
             if (typeof val === "string") {

@@ -14,7 +14,9 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     let folder = 'public/documents/onboard';
     if (file.mimetype.startsWith('image/')) {
-      if (req.query.category === 'settings' || req.query.type === 'settings') {
+      if (req.query.category === 'seo' || req.query.type === 'seo') {
+        folder = 'public/images/seo';
+      } else if (req.query.category === 'settings' || req.query.type === 'settings') {
         folder = 'public/images/settings';
       } else {
         folder = 'public/images/onboard';
@@ -47,7 +49,9 @@ router.post('/', upload.single('file'), (req, res) => {
     // Determine relative URL path for the client
     let relativeFolder = 'public/documents/onboard';
     if (req.file.mimetype.startsWith('image/')) {
-      if (req.query.category === 'settings' || req.query.type === 'settings') {
+      if (req.query.category === 'seo' || req.query.type === 'seo') {
+        relativeFolder = 'public/images/seo';
+      } else if (req.query.category === 'settings' || req.query.type === 'settings') {
         relativeFolder = 'public/images/settings';
       } else {
         relativeFolder = 'public/images/onboard';

@@ -34,7 +34,7 @@ export const getPageById = async (req, res) => {
 // POST /api/admin/cms/pages
 export const createPage = async (req, res) => {
   try {
-    const { title, slug, status, content_type, content } = req.body;
+    const { title, slug, status, content_type, content, seo } = req.body;
 
     // Check slug uniqueness
     const slugCheck = await pool.query(
@@ -46,10 +46,17 @@ export const createPage = async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO cms_pages (title, slug, status, content_type, content) 
-       VALUES ($1, $2, $3, $4, $5) 
+      `INSERT INTO cms_pages (title, slug, status, content_type, content, seo) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING *`,
-      [title, slug, status || "Draft", content_type || "Builder", content || "[]"]
+      [
+        title,
+        slug,
+        status || "Draft",
+        content_type || "Builder",
+        content || "[]",
+        seo ? (typeof seo === 'string' ? seo : JSON.stringify(seo)) : null
+      ]
     );
 
     res.status(201).json({
@@ -65,7 +72,7 @@ export const createPage = async (req, res) => {
 export const updatePage = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, slug, status, content_type, content } = req.body;
+    const { title, slug, status, content_type, content, seo } = req.body;
 
     // Check slug uniqueness excluding current page
     const slugCheck = await pool.query(
@@ -78,10 +85,18 @@ export const updatePage = async (req, res) => {
 
     const result = await pool.query(
       `UPDATE cms_pages 
-       SET title = $1, slug = $2, status = $3, content_type = $4, content = $5, updated_at = CURRENT_TIMESTAMP 
-       WHERE page_id = $6 
+       SET title = $1, slug = $2, status = $3, content_type = $4, content = $5, seo = $6, updated_at = CURRENT_TIMESTAMP 
+       WHERE page_id = $7 
        RETURNING *`,
-      [title, slug, status, content_type, content, id]
+      [
+        title,
+        slug,
+        status,
+        content_type,
+        content,
+        seo ? (typeof seo === 'string' ? seo : JSON.stringify(seo)) : null,
+        id
+      ]
     );
 
     if (result.rows.length === 0) {
@@ -121,7 +136,7 @@ export const getPageBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
     const result = await pool.query(
-      "SELECT title, content_type, content FROM cms_pages WHERE slug = $1 AND status = 'Published'",
+      "SELECT title, content_type, content, seo FROM cms_pages WHERE slug = $1 AND status = 'Published'",
       [slug]
     );
 

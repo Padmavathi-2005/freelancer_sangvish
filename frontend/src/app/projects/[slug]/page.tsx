@@ -116,9 +116,18 @@ export default function ProjectDetailsPage() {
   useEffect(() => {
     if (!job) return;
 
+    const resolveMediaUrl = (url: string) => {
+      if (!url) return "";
+      if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+        return url;
+      }
+      const cleanPath = url.startsWith("/") ? url : `/${url}`;
+      return `https://freelancer.sangvish.com${cleanPath}`;
+    };
+
     let seoTitle = job.title;
-    let seoDesc = job.description ? job.description.substring(0, 150) + "..." : "";
-    let seoImg = "";
+    let seoDesc = job.description ? job.description.replace(/<[^>]*>/g, '').substring(0, 150) + "..." : "";
+    let seoImg = "/tablet-work.png";
 
     if (job.seo) {
       try {
@@ -130,6 +139,8 @@ export default function ProjectDetailsPage() {
         console.error("Error parsing project SEO:", e);
       }
     }
+
+    const absoluteImg = resolveMediaUrl(seoImg || "/tablet-work.png");
 
     // Update title
     document.title = `${seoTitle} | LancerFlow`;
@@ -148,15 +159,11 @@ export default function ProjectDetailsPage() {
 
     updateMetaTag('og:title', seoTitle);
     updateMetaTag('og:description', seoDesc);
-    if (seoImg) {
-      updateMetaTag('og:image', seoImg);
-    }
+    updateMetaTag('og:image', absoluteImg);
     updateMetaTag('description', seoDesc, false);
     updateMetaTag('twitter:title', seoTitle, false);
     updateMetaTag('twitter:description', seoDesc, false);
-    if (seoImg) {
-      updateMetaTag('twitter:image', seoImg, false);
-    }
+    updateMetaTag('twitter:image', absoluteImg, false);
   }, [job]);
 
   const handleSubmitProposal = async (e: React.FormEvent) => {

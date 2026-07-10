@@ -1,15 +1,7 @@
 "use client";
 
-import React from "react";
-import SiteSettingsTab from "@/components/admin/SiteSettingsTab";
-import { useAdmin } from "../AdminContext";
+import { redirect } from "next/navigation";
 
-export default function SiteSettingsPage() {
-  const { handleSaveSetting } = useAdmin();
-
-  return (
-    <SiteSettingsTab
-      handleSaveSetting={handleSaveSetting}
-    />
-  );
+export default function SiteSettingsPageRedirect() {
+  redirect("/admin/settings?tab=site");
 }

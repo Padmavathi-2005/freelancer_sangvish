@@ -264,13 +264,14 @@ async function setupTables() {
       )
     `);
     console.log("✅ 'withdrawal_requests' table ready.");
-    // Add vetting_status and bio columns to freelancer_profiles if not exists
+    // Add vetting_status, bio, and seo columns to freelancer_profiles if not exists
     await pool.query(`
       ALTER TABLE freelancer_profiles
       ADD COLUMN IF NOT EXISTS vetting_status VARCHAR(50) DEFAULT 'Pending',
-      ADD COLUMN IF NOT EXISTS bio TEXT
+      ADD COLUMN IF NOT EXISTS bio TEXT,
+      ADD COLUMN IF NOT EXISTS seo JSONB DEFAULT NULL
     `);
-    console.log("✅ 'freelancer_profiles.vetting_status' and 'bio' columns ready.");
+    console.log("✅ 'freelancer_profiles.vetting_status', 'bio', and 'seo' columns ready.");
 
     // Create cms_pages table
     await pool.query(`
@@ -281,6 +282,7 @@ async function setupTables() {
         status VARCHAR(50) DEFAULT 'Draft',
         content_type VARCHAR(50) DEFAULT 'Builder',
         content TEXT NOT NULL,
+        seo JSONB DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -475,6 +477,12 @@ async function setupTables() {
       )
     `);
     console.log("✅ 'disputes' table ready.");
+
+    // Alter disputes to support raised_by column
+    await pool.query(`
+      ALTER TABLE disputes ADD COLUMN IF NOT EXISTS raised_by VARCHAR(50) DEFAULT 'client';
+    `);
+    console.log("✅ 'disputes.raised_by' column ready.");
 
     // Seed default languages mapping
     await pool.query(`
@@ -849,6 +857,38 @@ async function setupTables() {
       );
     }
 
+    const checkClientDisputes = await pool.query("SELECT category FROM settings WHERE setting_key = 'client_dispute_reasons'");
+    if (checkClientDisputes.rows.length === 0) {
+      const defaultClientReasons = [
+        "Work not delivered",
+        "Work quality is poor",
+        "Requirements not followed",
+        "Freelancer is unresponsive",
+        "Delivery is incomplete",
+        "Suspected fraud",
+        "Other"
+      ];
+      await pool.query(
+        "INSERT INTO settings (category, setting_key, setting_value) VALUES ('general', 'client_dispute_reasons', $1)",
+        [JSON.stringify(defaultClientReasons)]
+      );
+    }
+
+    const checkFreelancerDisputes = await pool.query("SELECT category FROM settings WHERE setting_key = 'freelancer_dispute_reasons'");
+    if (checkFreelancerDisputes.rows.length === 0) {
+      const defaultFreelancerReasons = [
+        "Client is unresponsive",
+        "Client refuses to release milestone payment",
+        "Client is requesting out-of-scope work",
+        "Milestone requirements met but not approved",
+        "Other"
+      ];
+      await pool.query(
+        "INSERT INTO settings (category, setting_key, setting_value) VALUES ('general', 'freelancer_dispute_reasons', $1)",
+        [JSON.stringify(defaultFreelancerReasons)]
+      );
+    }
+
     // Seed default subscription plans if empty
     const checkPlans = await pool.query("SELECT COUNT(*) FROM subscription_plans");
     if (parseInt(checkPlans.rows[0].count) === 0) {
@@ -885,6 +925,131 @@ async function setupTables() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS slug VARCHAR(255) UNIQUE;
     `);
     console.log("✅ 'users.slug' column ready.");
+
+    // Create search_logs table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS search_logs (
+        log_id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+        query_text VARCHAR(255) NOT NULL,
+        search_type VARCHAR(50) NOT NULL,
+        results_count INTEGER NOT NULL DEFAULT 0,
+        device_type VARCHAR(50) DEFAULT 'Desktop',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'search_logs' table ready.");
+
+    // Create seo_settings table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS seo_settings (
+        seo_id SERIAL PRIMARY KEY,
+        route_path VARCHAR(255) UNIQUE NOT NULL,
+        meta_title VARCHAR(150) NOT NULL,
+        meta_description VARCHAR(255) NOT NULL,
+        meta_keywords VARCHAR(255),
+        og_title VARCHAR(150),
+        og_description VARCHAR(255),
+        og_image VARCHAR(255),
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'seo_settings' table ready.");
+
+    // Seed default seo_settings
+    const defaultSeoRoutes = [
+      {
+        path: '/',
+        title: 'Buy2Lancer - Premium Freelance Services Marketplace',
+        desc: 'Find and hire elite professional freelancers for your project. Buy custom services in Programming, AI, Copywriting, Design, and Marketing.',
+        keywords: 'freelancer, freelance, contract development, custom software, graphics design',
+        og_title: 'Buy2Lancer - The Freelance Service Marketplace',
+        og_desc: 'Find and hire elite professional freelancers for your project.'
+      },
+      {
+        path: '/gigs',
+        title: 'Explore Custom Freelancer Gigs & Services | Buy2Lancer',
+        desc: 'Browse thousands of premade custom gigs offered by expert freelancers. Order services in Web Design, Writing, Video Editing, and more.',
+        keywords: 'buy services, buy gigs, order design, remote worker services',
+        og_title: 'Explore Custom Freelancer Gigs | Buy2Lancer',
+        og_desc: 'Browse thousands of premade custom gigs offered by expert freelancers.'
+      },
+      {
+        path: '/projects',
+        title: 'Find Custom Developer Projects & Client Jobs | Buy2Lancer',
+        desc: 'Post your custom project or bid on available jobs posted by clients globally. Connect with active projects needing developer talent.',
+        keywords: 'developer jobs, post projects, contract jobs, freelancer biddings',
+        og_title: 'Find Developer Projects & Client Jobs | Buy2Lancer',
+        og_desc: 'Post your custom project or bid on available jobs posted by clients.'
+      },
+      {
+        path: '/blogs',
+        title: 'Latest Freelance & Marketplace Industry Blogs | Buy2Lancer',
+        desc: 'Stay informed with standard freelance tips, industry trends, client advice, and marketplace growth insights.',
+        keywords: 'freelance blogs, marketing tips, freelancer advice, coding blogs',
+        og_title: 'Latest Freelance & Marketplace Blogs | Buy2Lancer',
+        og_desc: 'Stay informed with standard freelance tips and industry trends.'
+      },
+      {
+        path: '/wishlist',
+        title: 'Your Saved Freelance Gigs & Job Projects | Buy2Lancer',
+        desc: 'Keep track of the custom freelance services, gigs, and project listings that you have wishlisted or saved for later.',
+        keywords: 'wishlist, saved gigs, wishlisted projects, freelance jobs, saved services',
+        og_title: 'Saved Gigs & Projects | Buy2Lancer',
+        og_desc: 'View your wishlisted custom services and project listings.'
+      },
+      {
+        path: '/dashboard',
+        title: 'Client & Freelancer Workspace Dashboard | Buy2Lancer',
+        desc: 'Access your projects workspace, manage milestone payments, submit proposals, track current contracts, and message clients.',
+        keywords: 'user dashboard, project management, track payments, proposal submissions',
+        og_title: 'Workspace Dashboard | Buy2Lancer',
+        og_desc: 'Manage your active projects, milestone payments, and messages.'
+      },
+      {
+        path: '/about',
+        title: 'About Us - Elite Freelance Service Marketplace | Buy2Lancer',
+        desc: 'Learn about Buy2Lancer - the leading platform connecting business clients with professional tech, creative, and copywriting freelancers.',
+        keywords: 'about freelancer platform, freelance company info, hire experts, remote agency',
+        og_title: 'About Our Platform | Buy2Lancer',
+        og_desc: 'Connecting clients with elite freelance talent worldwide.'
+      },
+      {
+        path: '/contact',
+        title: 'Contact Us - Customer Support & Help Desk | Buy2Lancer',
+        desc: 'Need support? Get in touch with our customer assistance team regarding payments, disputes, vetting, or general account inquiries.',
+        keywords: 'contact support, customer help, dispute center, contact email',
+        og_title: 'Contact Us Support | Buy2Lancer',
+        og_desc: 'Get in touch with customer service for help with your projects.'
+      },
+      {
+        path: '/faq',
+        title: 'Frequently Asked Questions & Support FAQs | Buy2Lancer',
+        desc: 'Browse our list of frequently asked questions regarding buyer protection, dispute resolutions, secure escrow payments, and vetting.',
+        keywords: 'faq, help center, buyer protection, escrow terms, payout questions',
+        og_title: 'Frequently Asked Questions | Buy2Lancer',
+        og_desc: 'Help center and platform guidelines for buyers and sellers.'
+      },
+      {
+        path: '/subscription-plans',
+        title: 'Premium Membership & Bidding Credits | Buy2Lancer',
+        desc: 'Upgrade your freelancer profile to unlock premium badges, submit unlimited project proposals, and highlight your featured portfolio.',
+        keywords: 'membership subscription, freelancer credits, premium badges, proposal limit',
+        og_title: 'Freelancer Subscription Plans | Buy2Lancer',
+        og_desc: 'Upgrade your membership plan to unlock more proposals and benefits.'
+      }
+    ];
+
+    for (const r of defaultSeoRoutes) {
+      const check = await pool.query("SELECT 1 FROM seo_settings WHERE route_path = $1", [r.path]);
+      if (check.rows.length === 0) {
+        await pool.query(`
+          INSERT INTO seo_settings (route_path, meta_title, meta_description, meta_keywords, og_title, og_description, og_image)
+          VALUES ($1, $2, $3, $4, $5, $6, NULL)
+        `, [r.path, r.title, r.desc, r.keywords, r.og_title, r.og_desc]);
+        console.log(`🌱 Seeded default SEO metadata for route: ${r.path}`);
+      }
+    }
 
     // Helper to generate a URL-friendly slug
     const makeSlug = (text) => {

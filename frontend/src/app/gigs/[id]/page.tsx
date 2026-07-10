@@ -112,6 +112,10 @@ export default function GigDetailsPage() {
       }
     }
 
+    if (!seoImg) {
+      seoImg = resolveMediaUrl("/tablet-work.png");
+    }
+
     // Update document title
     document.title = `${seoTitle} | Buy2Lancer`;
 
@@ -135,9 +139,7 @@ export default function GigDetailsPage() {
     updateMetaTag('og:type', 'website');
     updateMetaTag('og:title', seoTitle);
     updateMetaTag('og:description', seoDesc);
-    if (seoImg) {
-      updateMetaTag('og:image', seoImg);
-    }
+    updateMetaTag('og:image', seoImg);
     updateMetaTag('og:url', window.location.href);
 
     // Twitter
