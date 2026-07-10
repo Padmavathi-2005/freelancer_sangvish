@@ -6,7 +6,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { convertPrice } from "@/utils/currencyHelper";
-import { FiBriefcase, FiClock, FiMapPin, FiGrid, FiArrowRight } from "react-icons/fi";
+import { FiBriefcase, FiClock, FiMapPin, FiGrid, FiArrowRight, FiStar } from "react-icons/fi";
 
 export default function RecentProjects() {
   const { t, currency } = useLanguage();

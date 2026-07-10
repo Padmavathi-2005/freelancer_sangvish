@@ -82,6 +82,7 @@ interface CategoryStat {
   category_name: string;
   category_image: string | null;
   freelancer_count: string;
+  description?: string | null;
 }
 
 const FALLBACK_CATEGORIES: CategoryStat[] = [
