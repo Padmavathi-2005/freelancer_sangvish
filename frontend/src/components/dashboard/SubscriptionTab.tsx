@@ -92,7 +92,7 @@ export default function SubscriptionTab() {
   if (error || !subInfo) {
     return (
       <div className="flex-1 p-6 bg-slate-50/50 flex flex-col gap-6">
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center shadow-sm max-w-lg mx-auto mt-10">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 text-center shadow-sm max-w-lg mx-auto mt-10">
           <h2 className="text-base font-extrabold text-slate-800">Subscription Unavailable</h2>
           <p className="text-xs text-slate-500 font-semibold mt-2">{error || "Could not retrieve your current plan information."}</p>
           <Link href="/pricing" className="mt-4 inline-block bg-teal-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl hover:bg-teal-800 transition">
@@ -142,7 +142,7 @@ export default function SubscriptionTab() {
         
         {/* MEMBERSHIP STATUS CARD */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-800 via-teal-700 to-cyan-600 p-6 text-white shadow-xl shadow-teal-900/10 min-h-[220px] flex flex-col justify-between">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-800 via-teal-700 to-cyan-600 p-6 text-white shadow-xl shadow-teal-900/10 min-h-[220px] flex flex-col justify-between">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-cyan-400/20 rounded-full blur-xl -ml-8 -mb-8"></div>
 
@@ -176,7 +176,7 @@ export default function SubscriptionTab() {
           </div>
 
           {/* Quick Upgrade/Change plan link */}
-          <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
             <div>
               <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
                 <FiCreditCard className="text-teal-650" /> Change Subscription
@@ -196,22 +196,22 @@ export default function SubscriptionTab() {
 
         {/* CREDITS / BIDS TRACKER */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between h-full min-h-[300px]">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between h-full min-h-[300px]">
             <div>
               <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
                 🪙 Bidding Credits & Usage details
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
-                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-center">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
                   <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Total Credits</span>
                   <p className="text-2xl font-black text-slate-800 mt-1">{totalBids}</p>
                 </div>
-                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-center">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
                   <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Credits Used</span>
                   <p className="text-2xl font-black text-teal-700 mt-1">{usedBids}</p>
                 </div>
-                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-center">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
                   <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Remaining Balance</span>
                   <p className="text-2xl font-black text-teal-800 mt-1">{remainingBids}</p>
                 </div>
@@ -233,7 +233,7 @@ export default function SubscriptionTab() {
             </div>
 
             {/* Reset info box */}
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 flex items-start gap-3 mt-6">
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-start gap-3 mt-6">
               <FiInfo className="text-teal-700 w-5 h-5 shrink-0 mt-0.5 animate-pulse" />
               <div>
                 <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">Next Reset Date</h4>
@@ -250,7 +250,7 @@ export default function SubscriptionTab() {
       </div>
 
       {/* PLAN DETAILS & PRIVILEGES */}
-      <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
           ✨ Active Plan Features & Benefits
         </h2>

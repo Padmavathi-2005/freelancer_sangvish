@@ -60,6 +60,7 @@ export default function FreelancerPublicProfilePage() {
   const [hireMessage, setHireMessage] = useState("");
   const [hiringSubmitting, setHiringSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [siteShortName, setSiteShortName] = useState("Lancer");
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -88,6 +89,32 @@ export default function FreelancerPublicProfilePage() {
     
     return parts.length > 0 ? `(${parts.join(" ")})` : "";
   };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const siteRaw = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;
+          if (siteRaw) {
+            let parsed = siteRaw;
+            if (typeof parsed === "string") {
+              try { parsed = JSON.parse(parsed); } catch {}
+            }
+            if (parsed.site_short_name) {
+              setSiteShortName(parsed.site_short_name);
+            } else if (parsed.site_name) {
+              setSiteShortName(parsed.site_name);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings in freelancer profile details:", e);
+      }
+    };
+    loadSettings();
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -251,11 +278,11 @@ export default function FreelancerPublicProfilePage() {
               <img
                 src={user.profile_image.startsWith("/") && !user.profile_image.startsWith("/public") ? `https://freelancer.sangvish.com${user.profile_image}` : user.profile_image}
                 alt={user.name || "Freelancer"}
-                className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl object-cover border-4 border-white shadow-xl"
+                className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-4 border-white shadow-xl"
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-teal-700/10 text-teal-800 flex items-center justify-center font-black text-3xl sm:text-4xl border-4 border-white shadow-xl">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl bg-teal-700/10 text-teal-800 flex items-center justify-center font-black text-3xl sm:text-4xl border-4 border-white shadow-xl">
                 {(user.name || user.email || "Freelancer").substring(0, 2).toUpperCase()}
               </div>
             )}
@@ -264,6 +291,12 @@ export default function FreelancerPublicProfilePage() {
             <div className="text-slate-800">
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
                 <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{user.name || user.email || "Freelancer"}</h1>
+                {user?.is_featured && (
+                  <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider animate-pulse shrink-0 flex items-center gap-1">
+                    <FiStar className="w-2.5 h-2.5 fill-white text-white shrink-0" />
+                    <span>{siteShortName}'s Choice</span>
+                  </span>
+                )}
                 <svg className="w-6 h-6 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
@@ -487,7 +520,7 @@ export default function FreelancerPublicProfilePage() {
           </div>
 
           {/* RIGHT COLUMN: Metadata Sidebar (Single clean visual sidebar) */}
-          <div className="bg-slate-50/40 border border-slate-100 rounded-3xl p-6 sm:p-8 flex flex-col gap-8 text-left">
+          <div className="bg-slate-50/40 border border-slate-100 rounded-xl p-6 sm:p-8 flex flex-col gap-8 text-left">
             
             {/* Contact details */}
             <div className="flex flex-col gap-4 text-left">
@@ -598,7 +631,7 @@ export default function FreelancerPublicProfilePage() {
                 return (
                   <div 
                     key={idx} 
-                    className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-350 transition-all duration-300 flex flex-col justify-between text-left"
+                    className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-350 transition-all duration-300 flex flex-col justify-between text-left"
                   >
                     <div>
                       {imgArr.length > 0 ? (
@@ -665,7 +698,7 @@ export default function FreelancerPublicProfilePage() {
                   <div 
                     key={idx} 
                     onClick={() => router.push(`/gigs/${gig.gig_id}`)}
-                    className="bg-white border border-slate-200/80 rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:border-teal-500/35 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between text-left cursor-pointer group"
+                    className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-teal-500/35 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between text-left cursor-pointer group"
                   >
                     <div>
                       {gigImages.length > 0 ? (
@@ -712,7 +745,7 @@ export default function FreelancerPublicProfilePage() {
                   Verified feedback submitted by clients who hired this freelancer.
                 </p>
               </div>
-              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/60 p-4 rounded-2xl shrink-0 self-start sm:self-center">
+              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/60 p-4 rounded-xl shrink-0 self-start sm:self-center">
                 <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-50 text-teal-700 text-lg font-black border border-teal-100">
                   ★ {(reviews.reduce((acc: number, r: any) => acc + Number(r.rating), 0) / reviews.length).toFixed(1)}
                 </div>
@@ -772,7 +805,7 @@ export default function FreelancerPublicProfilePage() {
       {/* Hire Modal Portal */}
       {showHireModal && (
         <div className="fixed inset-0 z-[99999] bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-lg overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative flex flex-col">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-lg overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative flex flex-col">
             <button
               onClick={() => {
                 setShowHireModal(false);

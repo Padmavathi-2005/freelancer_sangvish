@@ -213,7 +213,7 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
       </div>
 
       {/* Select Language Switcher */}
-      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-200/50">
+      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200/50">
         <span className="text-xs font-bold text-slate-500">Edit translations for:</span>
         <div className="flex items-center gap-1">
           {(availLanguages.length > 0 ? availLanguages : [
@@ -252,7 +252,7 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
             return (
               <div 
                 key={faq.faq_id} 
-                className="bg-white border border-slate-200 rounded-2xl p-5 flex flex-col md:flex-row gap-4 justify-between items-stretch shadow-sm"
+                className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row gap-4 justify-between items-stretch shadow-sm"
               >
                 {/* Inputs container */}
                 <div className="flex-1 flex flex-col gap-3">

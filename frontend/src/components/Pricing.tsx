@@ -167,7 +167,7 @@ export default function Pricing() {
 
 
         {/* Toggle Tiers Group */}
-        <div className="flex justify-center items-center gap-2 mb-10 bg-slate-100 p-1.5 rounded-2xl w-fit mx-auto border border-slate-200">
+        <div className="flex justify-center items-center gap-2 mb-10 bg-slate-100 p-1.5 rounded-xl w-fit mx-auto border border-slate-200">
           <button
             onClick={() => setSelectedRole("seller")}
             className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-none ${
@@ -176,7 +176,7 @@ export default function Pricing() {
                 : "bg-transparent text-slate-500 hover:text-[#063c38]"
             }`}
           >
-            💼 Freelancer Plans
+            Freelancer Plans
           </button>
           <button
             onClick={() => setSelectedRole("buyer")}
@@ -186,7 +186,7 @@ export default function Pricing() {
                 : "bg-transparent text-slate-500 hover:text-[#063c38]"
             }`}
           >
-            🏢 Client (Buyer) Plans
+            Client Plans
           </button>
         </div>
 
@@ -202,21 +202,20 @@ export default function Pricing() {
             const jobLimit = dbPlan.job_posting_limit ? parseInt(dbPlan.job_posting_limit as any) : 3;
             const featuredAllowance = dbPlan.featured_job_allowance ?? false;
 
-            let featuresList: string[] = [];
-            if (dbPlan.features) {
-              try {
-                featuresList = typeof dbPlan.features === "string"
-                  ? JSON.parse(dbPlan.features)
-                  : dbPlan.features;
-              } catch (e) {
-                console.error("Failed to parse plan features", e);
-              }
-            }
+            // Build real feature highlights from plan fields — skip negatives
+            const realFeatures: string[] = [];
+            const credits = dbPlan.credits ?? 0;
+            if (credits > 0) realFeatures.push(credits >= 9999 ? "Unlimited bids / month" : `${credits} bids / month`);
+            if (jobLimit > 0) realFeatures.push(jobLimit >= 9999 ? "Unlimited job postings / month" : `${jobLimit} job postings / month`);
+            if (discountValue > 0) realFeatures.push(`${discountValue}% gig order discount`);
+            if (featuredAllowance) realFeatures.push("Featured job badge");
+            const fee = dbPlan.transaction_fee_percent;
+            if (fee != null && fee !== "") realFeatures.push(`${fee}% transaction fee`);
 
             return (
               <div 
                 key={planId} 
-                className={`relative rounded-[2rem] p-8 flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] border ${cardWidthClass} ${
+                className={`relative rounded-xl p-8 flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] border ${cardWidthClass} ${
                   isPopular 
                     ? "bg-[#063c38] text-white border-transparent shadow-2xl shadow-[#0a5a54]/30 z-10 lg:-translate-y-4" 
                     : "bg-white text-slate-900 border-slate-200/60 shadow-lg shadow-slate-100/50"
@@ -253,8 +252,8 @@ export default function Pricing() {
                   </div>
 
                   {/* Card Features list */}
-                  <ul className="flex flex-col gap-4 border-t border-slate-100/10 pt-6">
-                    {featuresList.map((feature, idx) => (
+                  <ul className="flex flex-col gap-3 border-t border-slate-100/10 pt-6">
+                    {realFeatures.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2.5 text-xs font-semibold">
                         <FiCheck className={`w-4 h-4 mt-0.5 shrink-0 ${isPopular ? "text-emerald-400" : "text-teal-600"}`} />
                         <span className={isPopular ? "text-slate-100" : "text-slate-650"}>

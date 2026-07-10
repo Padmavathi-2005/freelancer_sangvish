@@ -1,5 +1,6 @@
 "use client";
 import { API_URL } from "@/config/api";
+import UpgradeOverlay from "@/components/dashboard/UpgradeOverlay";
 
 
 import React, { useState, useEffect } from "react";
@@ -257,7 +258,7 @@ export default function ProjectDetailsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Details */}
           <div className="lg:col-span-8 flex flex-col gap-6">
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col gap-5 relative overflow-hidden">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-5 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary to-cyan-500" />
               
               <div>
@@ -277,7 +278,7 @@ export default function ProjectDetailsPage() {
               </div>
 
               {/* Badges strip */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 border border-slate-100 p-4 rounded-xl">
                 <div>
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Project Type</span>
                   <span className="text-xs font-extrabold text-slate-800 mt-1 block flex items-center gap-1">
@@ -356,7 +357,7 @@ export default function ProjectDetailsPage() {
           <div className="lg:col-span-4 flex flex-col gap-6">
             
             {/* Budget / Hiring card */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-4 text-center">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-center">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Project Budget</span>
               <div className="flex items-center justify-center gap-1 text-primary font-black text-2xl">
                 <FiDollarSign className="w-6 h-6" />
@@ -377,7 +378,7 @@ export default function ProjectDetailsPage() {
             </div>
 
             {/* Proposal submit form */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-4">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
                 Submit Proposal
               </h3>
@@ -491,7 +492,7 @@ export default function ProjectDetailsPage() {
             </div>
 
             {/* Client info card */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-4 text-left">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
                 About Client
               </h3>
@@ -534,45 +535,12 @@ export default function ProjectDetailsPage() {
         </div>
       </main>
 
-      {/* Limit Exceeded Upgrade Popup Modal */}
-      {showLimitModal && (
-        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl relative text-center flex flex-col items-center gap-4 animate-scaleUp">
-            <button 
-              onClick={() => setShowLimitModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 transition cursor-pointer bg-transparent border-none"
-            >
-              <FiX className="w-5 h-5" />
-            </button>
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shadow-sm mt-2">
-              <FiAlertTriangle className="w-7 h-7" />
-            </div>
-            <h3 className="text-base font-black text-slate-900 tracking-tight mt-1">
-              Proposal Limit Exceeded
-            </h3>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed px-2">
-              {limitModalMessage}
-            </p>
-            <div className="flex w-full gap-3 mt-2">
-              <button
-                onClick={() => setShowLimitModal(false)}
-                className="flex-1 py-3 rounded-xl text-xs font-black text-slate-600 border border-slate-200 hover:bg-slate-50 transition cursor-pointer bg-transparent"
-              >
-                Maybe Later
-              </button>
-              <button
-                onClick={() => {
-                  setShowLimitModal(false);
-                  router.push("/pricing");
-                }}
-                className="flex-1 py-3 rounded-xl text-xs font-black text-white bg-teal-600 hover:bg-teal-700 transition shadow-md hover:shadow-teal-600/25 cursor-pointer border-none"
-              >
-                Upgrade Now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Limit Exceeded Upgrade Popup Overlay */}
+      <UpgradeOverlay 
+        isOpen={showLimitModal} 
+        onClose={() => setShowLimitModal(false)} 
+        message={limitModalMessage} 
+      />
 
       <Footer />
     </div>

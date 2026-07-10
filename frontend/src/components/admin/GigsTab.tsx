@@ -82,7 +82,7 @@ export default function GigsTab({
   ];
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
       <div>
         <h3 className="text-lg font-bold text-slate-800">Gig listings management</h3>
         <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Track, deactivate, delete, and monitor active service gig offerings cataloged on the platform.</p>

@@ -2,14 +2,14 @@
 import { API_URL } from "@/config/api";
 
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthModal } from "@/context/AuthModalContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
 import { convertPrice } from "@/utils/currencyHelper";
-import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiClock, FiActivity, FiUser, FiBriefcase, FiHeart } from "react-icons/fi";
+import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiClock, FiActivity, FiUser, FiBriefcase, FiHeart, FiStar } from "react-icons/fi";
 
 function ProjectsSearchContent() {
   const router = useRouter();
@@ -31,12 +31,15 @@ function ProjectsSearchContent() {
   const [projectType, setProjectType] = useState<string>("");
   const [projectDuration, setProjectDuration] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("latest");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Data states
   const [jobs, setJobs] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [siteShortName, setSiteShortName] = useState("Lancer");
 
   // Wishlist and Toast states
   const [wishlist, setWishlist] = useState<any[]>([]);
@@ -56,6 +59,32 @@ function ProjectsSearchContent() {
         console.error("Failed to parse projects wishlist:", e);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const siteRaw = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;
+          if (siteRaw) {
+            let parsed = siteRaw;
+            if (typeof parsed === "string") {
+              try { parsed = JSON.parse(parsed); } catch {}
+            }
+            if (parsed.site_short_name) {
+              setSiteShortName(parsed.site_short_name);
+            } else if (parsed.site_name) {
+              setSiteShortName(parsed.site_name);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings in projects page:", e);
+      }
+    };
+    loadSettings();
   }, []);
 
   const isInWishlist = (jobId: number) => {
@@ -193,6 +222,10 @@ function ProjectsSearchContent() {
 
   // Sorting
   const sortedJobs = [...filteredJobs].sort((a: any, b: any) => {
+    // Featured always sorted first!
+    if (a.is_featured && !b.is_featured) return -1;
+    if (!a.is_featured && b.is_featured) return 1;
+
     if (sortBy === "budget_desc") {
       return parseFloat(b.budget || b.max_budget || 0) - parseFloat(a.budget || a.max_budget || 0);
     }
@@ -202,6 +235,17 @@ function ProjectsSearchContent() {
     // Default latest sorting
     return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
   });
+
+  const paginatedJobs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedJobs.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedJobs, currentPage]);
+
+  const totalPages = Math.ceil(sortedJobs.length / itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedSubcategory, minBudget, maxBudget, experienceLevel, projectType, projectDuration, sortBy]);
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -277,7 +321,7 @@ function ProjectsSearchContent() {
 
         {/* Left Side: Filtering Sidebar */}
         <aside className="lg:col-span-3 space-y-6">
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xxs space-y-5 sticky top-20">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xxs space-y-5 sticky top-20">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
                 <FiSliders className="w-4 h-4 text-teal-700" />
@@ -301,7 +345,7 @@ function ProjectsSearchContent() {
                   setSelectedCategory(e.target.value);
                   setSelectedSubcategory("");
                 }}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">{t("all_categories_opt", "All Categories")}</option>
                 {categories.map((c) => (
@@ -319,7 +363,7 @@ function ProjectsSearchContent() {
                 <select
                   value={selectedSubcategory}
                   onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
                 >
                   <option value="">{t("all_subcategories_opt", "All Subcategories")}</option>
                   {activeSubcategories.map((s) => (
@@ -340,14 +384,14 @@ function ProjectsSearchContent() {
                   placeholder={t("min_budget_placeholder", "Min")}
                   value={minBudget}
                   onChange={(e) => setMinBudget(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
                 />
                 <input
                   type="number"
                   placeholder={t("max_budget_placeholder", "Max")}
                   value={maxBudget}
                   onChange={(e) => setMaxBudget(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
                 />
               </div>
             </div>
@@ -358,7 +402,7 @@ function ProjectsSearchContent() {
               <select
                 value={experienceLevel}
                 onChange={(e) => setExperienceLevel(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">{t("any_level_opt", "Any Level")}</option>
                 <option value="Entry">{t("entry_level_opt", "Entry Level")}</option>
@@ -373,7 +417,7 @@ function ProjectsSearchContent() {
               <select
                 value={projectType}
                 onChange={(e) => setProjectType(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">{t("all_types_opt", "All Types")}</option>
                 <option value="Fixed">{t("fixed_price_opt", "Fixed Price")}</option>
@@ -387,7 +431,7 @@ function ProjectsSearchContent() {
               <select
                 value={projectDuration}
                 onChange={(e) => setProjectDuration(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">{t("all_durations_opt", "All Durations")}</option>
                 <option value="short">{t("short_term_opt", "Short Term (< 1 month)")}</option>
@@ -401,7 +445,7 @@ function ProjectsSearchContent() {
         {/* Right Side: Search Results Listing */}
         <section className="lg:col-span-9 space-y-6">
           {/* Top Panel bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xxs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200/80 rounded-xl p-4 shadow-xxs">
             {/* Search Input */}
             <div className="flex-1 max-w-md relative select-none">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -412,7 +456,7 @@ function ProjectsSearchContent() {
                 placeholder={t("search_projects_placeholder", "Search for projects...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-3xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-808 placeholder-slate-400 outline-none focus:border-primary focus:bg-white transition-all"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-808 placeholder-slate-400 outline-none focus:border-primary focus:bg-white transition-all"
               />
             </div>
 
@@ -426,7 +470,7 @@ function ProjectsSearchContent() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-3xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
                 >
                   <option value="latest">{t("latest_posted_opt", "Latest Posted")}</option>
                   <option value="budget_desc">{t("budget_high_low_opt", "Budget: High to Low")}</option>
@@ -438,12 +482,12 @@ function ProjectsSearchContent() {
 
           {/* Loading status */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-[2rem] gap-4">
+            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl gap-4">
               <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
               <p className="text-xs font-bold text-slate-400">{t("loading_projects_message", "Loading active projects...")}</p>
             </div>
           ) : sortedJobs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-[2rem] text-center p-6">
+            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl text-center p-6">
               <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 text-2xl mb-4">
                 💼
               </div>
@@ -459,125 +503,159 @@ function ProjectsSearchContent() {
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {sortedJobs.map((job) => {
-                const finalBudget = parseFloat(job.budget || job.max_budget || 0);
-                return (
-                  <div
-                    key={job.job_id}
-                    onClick={() => router.push(`/projects/${job.slug || job.job_id}`)}
-                    className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-5 relative group cursor-pointer hover:border-primary/30"
-                  >
-                    {/* Wishlist Heart Toggle Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleToggleWishlist(job);
-                      }}
-                      className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-50/90 hover:bg-white shadow-md flex items-center justify-center border border-slate-200/50 transition-all z-20 cursor-pointer"
-                      title="Save to wishlist"
+            <div className="space-y-8">
+              <div className="space-y-4">
+                {paginatedJobs.map((job) => {
+                  const finalBudget = parseFloat(job.budget || job.max_budget || 0);
+                  return (
+                    <div
+                      key={job.job_id}
+                      onClick={() => router.push(`/projects/${job.slug || job.job_id}`)}
+                      className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-5 relative group cursor-pointer hover:border-primary/30"
                     >
-                      <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(job.job_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
-                    </button>
-
-                    <div>
-                      {/* Header row */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pr-10">
-                        <div className="flex gap-2">
-                          <span className="bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                            {job.category_name || "Project"}
-                          </span>
-                          {job.experience_level && (
-                            <span className="bg-slate-50 text-slate-605 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
-                              {job.experience_level}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 text-primary font-black text-sm">
-                          <span>
-                            {(() => {
-                              const budgetVal = parseFloat(job.budget || 0);
-                              const minVal = parseFloat(job.min_budget || 0);
-                              const maxVal = parseFloat(job.max_budget || 0);
-
-                              if (minVal > 0 && maxVal > 0) {
-                                const convMin = convertPrice(minVal, currency);
-                                const convMax = convertPrice(maxVal, currency);
-                                return `${convMin.symbol}${convMin.amount.toLocaleString()} – ${convMax.symbol}${convMax.amount.toLocaleString()}`;
-                              } else if (budgetVal > 0) {
-                                const conv = convertPrice(budgetVal, currency);
-                                return `${conv.symbol}${conv.amount.toLocaleString()}`;
-                              } else if (maxVal > 0) {
-                                const conv = convertPrice(maxVal, currency);
-                                return `${conv.symbol}${conv.amount.toLocaleString()}`;
-                              }
-                              return t("contact_for_budget", "Contact for Budget");
-                            })()}
-                            {job.project_type === "Hourly" && (job.budget || job.max_budget || job.min_budget) ? (
-                              <span className="text-xs font-bold text-slate-550">/hr</span>
-                            ) : ""}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Title */}
-                      <h3 className="text-base font-black text-slate-855 group-hover:text-primary transition-colors leading-snug">
-                        {job.title}
-                      </h3>
-
-                      {/* Description */}
-                      <p className="text-xs text-slate-500 font-bold leading-relaxed mt-2 line-clamp-3">
-                        {job.description}
-                      </p>
-
-                      {/* Skills badge list */}
-                      {Array.isArray(job.skills) && job.skills.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-4">
-                          {job.skills.map((skill: any, sIdx: number) => {
-                            const skillName = typeof skill === "object" && skill !== null ? skill.skill_name || skill.name || "" : skill;
-                            return (
-                              <span
-                                key={sIdx}
-                                className="bg-slate-50 text-slate-600 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-100"
-                              >
-                                {skillName}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Bottom bar */}
-                    <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-2">
-                      <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400">
-                        {job.project_type && (
-                          <span className="flex items-center gap-1">
-                            <FiBriefcase className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{job.project_type}</span>
-                          </span>
-                        )}
-                        {job.duration && (
-                          <span className="flex items-center gap-1">
-                            <FiClock className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{job.duration}</span>
-                          </span>
-                        )}
-                      </div>
-
+                      {/* Wishlist Heart Toggle Button */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          router.push(`/projects/${job.slug || job.job_id}`);
+                          handleToggleWishlist(job);
                         }}
-                        className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
+                        className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-50/90 hover:bg-white shadow-md flex items-center justify-center border border-slate-200/50 transition-all z-20 cursor-pointer"
+                        title="Save to wishlist"
                       >
-                        {t("submit_proposal_btn", "Submit Proposal")}
+                        <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(job.job_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
                       </button>
+
+                      <div>
+                        {/* Header row */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pr-10">
+                          <div className="flex gap-2">
+                            <span className="bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                              {job.category_name || "Project"}
+                            </span>
+                            {job.experience_level && (
+                              <span className="bg-slate-50 text-slate-605 border border-slate-200 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider">
+                                {job.experience_level}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 text-primary font-black text-sm">
+                            <span>
+                              {(() => {
+                                const budgetVal = parseFloat(job.budget || 0);
+                                const minVal = parseFloat(job.min_budget || 0);
+                                const maxVal = parseFloat(job.max_budget || 0);
+
+                                if (minVal > 0 && maxVal > 0) {
+                                  const convMin = convertPrice(minVal, currency);
+                                  const convMax = convertPrice(maxVal, currency);
+                                  return `${convMin.symbol}${convMin.amount.toLocaleString()} – ${convMax.symbol}${convMax.amount.toLocaleString()}`;
+                                } else if (budgetVal > 0) {
+                                  const conv = convertPrice(budgetVal, currency);
+                                  return `${conv.symbol}${conv.amount.toLocaleString()}`;
+                                } else if (maxVal > 0) {
+                                  const conv = convertPrice(maxVal, currency);
+                                  return `${conv.symbol}${conv.amount.toLocaleString()}`;
+                                }
+                                  return t("contact_for_budget", "Contact for Budget");
+                              })()}
+                              {job.project_type === "Hourly" && (job.budget || job.max_budget || job.min_budget) ? (
+                                <span className="text-xs font-bold text-slate-550">/hr</span>
+                              ) : ""}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Title */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-base font-black text-slate-855 group-hover:text-primary transition-colors leading-snug">
+                            {job.title}
+                          </h3>
+                          {job.is_featured && (
+                            <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider animate-pulse shrink-0 flex items-center gap-1">
+                              <FiStar className="w-2.5 h-2.5 fill-white text-white shrink-0" />
+                              <span>{siteShortName}'s Choice</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-xs text-slate-500 font-bold leading-relaxed mt-2 line-clamp-3">
+                          {job.description}
+                        </p>
+
+                        {/* Skills badge list */}
+                        {Array.isArray(job.skills) && job.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 mt-4">
+                            {job.skills.map((skill: any, sIdx: number) => {
+                              const skillName = typeof skill === "object" && skill !== null ? skill.skill_name || skill.name || "" : skill;
+                              return (
+                                <span
+                                  key={sIdx}
+                                  className="bg-slate-50 text-slate-605 px-2 py-0.5 rounded text-[10px] font-bold border border-slate-100"
+                                >
+                                  {skillName}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bottom bar */}
+                      <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-2">
+                        <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400">
+                          {job.project_type && (
+                            <span className="flex items-center gap-1">
+                              <FiBriefcase className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{job.project_type}</span>
+                            </span>
+                          )}
+                          {job.duration && (
+                            <span className="flex items-center gap-1">
+                              <FiClock className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{job.duration}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/projects/${job.slug || job.job_id}`);
+                          }}
+                          className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
+                        >
+                          {t("submit_proposal_btn", "Submit Proposal")}
+                        </button>
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-100 text-xs font-bold select-none text-slate-805">
+                  <span className="text-slate-400">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} – {Math.min(currentPage * itemsPerPage, sortedJobs.length)} of {sortedJobs.length} active projects
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    >
+                      {t("pagination_prev", "Previous")}
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    >
+                      {t("pagination_next", "Next")}
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
           )}
         </section>

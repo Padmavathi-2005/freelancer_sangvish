@@ -1,5 +1,6 @@
 "use client";
 import { API_URL } from "@/config/api";
+import { initSocket } from "@/utils/socket";
 
 
 import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
@@ -196,6 +197,8 @@ interface AdminContextType {
   setEnableProposalVetting: (v: boolean) => void;
   enableClientVetting: boolean;
   setEnableClientVetting: (v: boolean) => void;
+  enableProjectVetting: boolean;
+  setEnableProjectVetting: (v: boolean) => void;
   pendingProposals: any[];
   fetchPendingProposals: () => Promise<void>;
   handleUpdateProposalVettingStatus: (proposalId: number, status: "Approved" | "Rejected") => Promise<void>;
@@ -213,6 +216,11 @@ interface AdminContextType {
   setCategoryFormSlug: (v: string) => void;
   categoryFormDescription: string;
   setCategoryFormDescription: (v: string) => void;
+  categoryFormImage: string;
+  setSiteLogo?: any; // unused
+  setCategoryFormImage: (v: string) => void;
+  categoryFormVideo: string;
+  setCategoryFormVideo: (v: string) => void;
   categoryFormStatus: "Active" | "Inactive";
   setCategoryFormStatus: React.Dispatch<React.SetStateAction<"Active" | "Inactive">>;
   categoryFormError: string | null;
@@ -385,6 +393,12 @@ interface AdminContextType {
   handleCreateCmsPage: (title: string, slug: string, status: string, contentType: string, content: string) => Promise<any>;
   handleUpdateCmsPage: (id: number, title: string, slug: string, status: string, contentType: string, content: string) => Promise<any>;
   handleDeleteCmsPage: (id: number) => Promise<void>;
+  blogsList: any[];
+  loadingBlogs: boolean;
+  fetchBlogs: () => Promise<void>;
+  handleCreateBlog: (blogData: { title: string; slug?: string; summary?: string; content: string; cover_image?: string; category?: string; is_published: boolean }) => Promise<any>;
+  handleUpdateBlog: (id: number, blogData: { title: string; slug?: string; summary?: string; content: string; cover_image?: string; category?: string; is_published: boolean }) => Promise<any>;
+  handleDeleteBlog: (id: number) => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -477,6 +491,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [categoryFormName, setCategoryFormName] = useState("");
   const [categoryFormSlug, setCategoryFormSlug] = useState("");
   const [categoryFormDescription, setCategoryFormDescription] = useState("");
+  const [categoryFormImage, setCategoryFormImage] = useState("");
+  const [categoryFormVideo, setCategoryFormVideo] = useState("");
   const [categoryFormStatus, setCategoryFormStatus] = useState<"Active" | "Inactive">("Active");
   const [categoryFormError, setCategoryFormError] = useState<string | null>(null);
   const [categoryFormLoading, setCategoryFormLoading] = useState(false);
@@ -581,12 +597,98 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const setAdminNotifications = (val: React.SetStateAction<AdminNotification[]>) => {
     setAdminNotificationsState((prev) => {
       const next = typeof val === "function" ? val(prev) : val;
+      
+      const token = localStorage.getItem("adminToken");
+      if (token) {
+        const allReadNow = next.every(n => n.read);
+        const wasAllRead = prev.every(n => n.read);
+        if (allReadNow && !wasAllRead) {
+          fetch(`${API_URL}/notifications/read-all`, {
+            method: "PUT",
+            headers: { "Authorization": `Bearer ${token}` }
+          }).catch(e => console.error("Failed to mark all read:", e));
+        } else {
+          const readChanged = next.find(n => n.read && !prev.find(p => p.id === n.id)?.read);
+          if (readChanged) {
+            fetch(`${API_URL}/notifications/${readChanged.id}/read`, {
+              method: "PUT",
+              headers: { "Authorization": `Bearer ${token}` }
+            }).catch(e => console.error("Failed to mark notification read:", e));
+          }
+        }
+      }
+
       if (typeof window !== "undefined") {
         localStorage.setItem("admin_notifications", JSON.stringify(next));
       }
       return next;
     });
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const initAdminSession = async () => {
+        try {
+          const token = localStorage.getItem("adminToken");
+          if (!token) return;
+
+          const meRes = await fetch(`${API_URL}/admin/me`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (meRes.ok) {
+            const adminProfile = await meRes.json();
+            setAdminUser(prev => prev ? { ...prev, user_id: adminProfile.user_id } : adminProfile);
+            
+            if (adminProfile.user_id) {
+              const socket = initSocket(adminProfile.user_id);
+              socket.on("new_notification", (notif: any) => {
+                const mapped = {
+                  id: notif.notification_id.toString(),
+                  title: notif.title,
+                  message: notif.message,
+                  targetTab: notif.type === "proposal_vetting" ? "projects" : (notif.type === "vetting" ? "onboarding" : (notif.type === "dispute" ? "transactions" : "overview")),
+                  targetSubTab: notif.type === "proposal_vetting" ? "proposals" : (notif.type === "dispute" ? "disputes" : ""),
+                  targetId: notif.reference_id,
+                  read: notif.is_read,
+                  timestamp: "Just now"
+                };
+                setAdminNotificationsState(prev => {
+                  const exists = prev.some(n => n.id === mapped.id);
+                  if (exists) return prev;
+                  const updatedList = [mapped, ...prev];
+                  localStorage.setItem("admin_notifications", JSON.stringify(updatedList));
+                  return updatedList;
+                });
+              });
+            }
+          }
+
+          const notifRes = await fetch(`${API_URL}/notifications`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (notifRes.ok) {
+            const data = await notifRes.json();
+            const mappedList = data.map((notif: any) => ({
+              id: notif.notification_id.toString(),
+              title: notif.title,
+              message: notif.message,
+              targetTab: notif.type === "proposal_vetting" ? "projects" : (notif.type === "vetting" ? "onboarding" : (notif.type === "dispute" ? "transactions" : "overview")),
+              targetSubTab: notif.type === "proposal_vetting" ? "proposals" : (notif.type === "dispute" ? "disputes" : ""),
+              targetId: notif.reference_id,
+              read: notif.is_read,
+              timestamp: new Date(notif.created_at).toLocaleDateString()
+            }));
+            setAdminNotificationsState(mappedList);
+            localStorage.setItem("admin_notifications", JSON.stringify(mappedList));
+          }
+        } catch (err) {
+          console.error("Failed to load admin notifications/profile session:", err);
+        }
+      };
+
+      initAdminSession();
+    }
+  }, [isAuthenticated]);
 
   const [highlightedDisputeId, setHighlightedDisputeId] = useState<string | null>(null);
 
@@ -626,6 +728,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [cmsPagesList, setCmsPagesList] = useState<any[]>([]);
   const [loadingCms, setLoadingCms] = useState(false);
 
+  // Blogs States
+  const [blogsList, setBlogsList] = useState<any[]>([]);
+  const [loadingBlogs, setLoadingBlogs] = useState(false);
+
   // System Settings state
   const [platformFee, setPlatformFee] = useState(5);
   const [autoVetting, setAutoVetting] = useState(false);
@@ -638,6 +744,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [enableProposalVetting, setEnableProposalVetting] = useState(false);
   const [enableClientVetting, setEnableClientVetting] = useState(false);
+  const [enableProjectVetting, setEnableProjectVetting] = useState(false);
   const [disputeReasons, setDisputeReasons] = useState<string[]>([
     "Work not delivered",
     "Work quality is poor",
@@ -920,6 +1027,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
             } else if (setting.setting_key === "enable_client_vetting") {
               const isEnabled = typeof val === "object" ? val?.enabled : val;
               setEnableClientVetting(isEnabled === true || isEnabled === "true");
+            } else if (setting.setting_key === "enable_project_vetting") {
+              const isEnabled = typeof val === "object" ? val?.enabled : val;
+              setEnableProjectVetting(isEnabled === true || isEnabled === "true");
             } else if (setting.setting_key === "frontend_hero_content") {
               setFrontendHeroContent({
                 hero_badge: val?.hero_badge || "The Top 3% Global Freelancers",
@@ -1131,8 +1241,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem("adminToken");
     const payload = {
       category_name: categoryFormName.trim(),
-      category_image: null,
-      status: categoryFormStatus === "Active"
+      category_image: categoryFormImage.trim() || null,
+      status: categoryFormStatus === "Active",
+      description: categoryFormDescription.trim() || null,
+      category_video: categoryFormVideo.trim() || null
     };
 
     try {
@@ -1164,6 +1276,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setCategoryFormName("");
       setCategoryFormSlug("");
       setCategoryFormDescription("");
+      setCategoryFormImage("");
+      setCategoryFormVideo("");
       setCategoryFormStatus("Active");
       setEditingCategory(null);
       fetchCategories();
@@ -1202,6 +1316,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setCategoryFormName(category.category_name || category.name || "");
     setCategoryFormSlug(category.slug || "");
     setCategoryFormDescription(category.description || "");
+    setCategoryFormImage(category.category_image || "");
+    setCategoryFormVideo(category.category_video || "");
     const isActive = category.status === true || category.status === 1 || String(category.status).toLowerCase() === "active" || String(category.status).toLowerCase() === "true";
     setCategoryFormStatus(isActive ? "Active" : "Inactive");
     setCategoryFormError(null);
@@ -1214,6 +1330,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setCategoryFormName("");
     setCategoryFormSlug("");
     setCategoryFormDescription("");
+    setCategoryFormImage("");
+    setCategoryFormVideo("");
     setCategoryFormStatus("Active");
     setCategoryFormError(null);
     setIsCategoryModalOpen(true);
@@ -1722,6 +1840,90 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchBlogs = async () => {
+    try {
+      setLoadingBlogs(true);
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_URL}/admin/blogs`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        setBlogsList(await res.json());
+      }
+    } catch (error) {
+      console.error("Failed to fetch blogs:", error);
+    } finally {
+      setLoadingBlogs(false);
+    }
+  };
+
+  const handleCreateBlog = async (blogData: any) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_URL}/admin/blogs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(blogData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchBlogs();
+      }
+      return data;
+    } catch (error) {
+      console.error("Failed to create blog:", error);
+      return { message: "Network connection failed" };
+    }
+  };
+
+  const handleUpdateBlog = async (id: number, blogData: any) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_URL}/admin/blogs/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(blogData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        await fetchBlogs();
+      }
+      return data;
+    } catch (error) {
+      console.error("Failed to update blog:", error);
+      return { message: "Network connection failed" };
+    }
+  };
+
+  const handleDeleteBlog = async (id: number) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_URL}/admin/blogs/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        await fetchBlogs();
+        alert("Blog post deleted successfully.");
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to delete blog post.");
+      }
+    } catch (error) {
+      console.error("Failed to delete blog:", error);
+    }
+  };
+
   const pendingVettingCount = useMemo(() => {
     return usersList.filter((u) => u.vetting_status === "Pending").length;
   }, [usersList]);
@@ -1741,6 +1943,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         fetchAdminWalletStats();
         fetchWithdrawalRequests();
         fetchCmsPages();
+        fetchBlogs();
         fetchPendingProposals();
       }, 0);
     }
@@ -1754,6 +1957,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       "/admin/cleanup": "cleanup",
       "/admin/languages": "languages",
       "/admin/site-settings": "site_settings",
+      "/admin/general-settings": "general_settings",
       "/admin/email-settings": "email_settings",
       "/admin/frontend-content": "frontend_content",
       "/admin/footer-links": "footer_links",
@@ -1773,6 +1977,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       "/admin/payment-settings": "payment_settings",
       "/admin/dispute-reasons": "dispute_reasons",
       "/admin/cms-pages": "cms_pages",
+      "/admin/blogs": "blogs",
       "/admin/backups": "backups",
     };
     return routeMap[pathname] || "overview";
@@ -1798,6 +2003,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       languages: "/admin/languages",
       site_management: "/admin/site-settings",
       site_settings: "/admin/site-settings",
+      general_settings: "/admin/general-settings",
       email_settings: "/admin/email-settings",
       frontend_content: "/admin/frontend-content",
       footer_links: "/admin/footer-links",
@@ -1819,6 +2025,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       payment_settings: "/admin/payment-settings",
       dispute_reasons: "/admin/dispute-reasons",
       cms_pages: "/admin/cms-pages",
+      blogs: "/admin/blogs",
       backups: "/admin/backups",
     };
     const path = routeMap[tab];
@@ -2045,6 +2252,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setCategoriesSearch, categoriesPage, setCategoriesPage, subcategoriesPage, setSubcategoriesPage, skillsPage, setSkillsPage,
       categoriesList, isCategoryModalOpen, setIsCategoryModalOpen, categoryModalMode, setCategoryModalMode, editingCategory,
       categoryFormName, setCategoryFormName, categoryFormSlug, setCategoryFormSlug, categoryFormDescription, setCategoryFormDescription,
+      categoryFormImage, setCategoryFormImage, categoryFormVideo, setCategoryFormVideo,
       categoryFormStatus, setCategoryFormStatus, categoryFormError, categoryFormLoading, handleCategorySubmit, handleDeleteCategory,
       handleEditCategoryClick, handleAddCategoryClick, subcategoriesList, isSubcategoryModalOpen, setIsSubcategoryModalOpen,
       subcategoryModalMode, setSubcategoryModalMode, editingSubcategory, subcategoryFormName, setSubcategoryFormName,
@@ -2071,7 +2279,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       handleApproveWithdrawal, handleRejectWithdrawal, handlePayToUser,
       cmsPagesList, loadingCms, fetchCmsPages,
       handleCreateCmsPage, handleUpdateCmsPage, handleDeleteCmsPage,
-      enableProposalVetting, setEnableProposalVetting, enableClientVetting, setEnableClientVetting, pendingProposals, fetchPendingProposals,
+      blogsList, loadingBlogs, fetchBlogs,
+      handleCreateBlog, handleUpdateBlog, handleDeleteBlog,
+      enableProposalVetting, setEnableProposalVetting, enableClientVetting, setEnableClientVetting,
+      enableProjectVetting, setEnableProjectVetting, pendingProposals, fetchPendingProposals,
       handleUpdateProposalVettingStatus
     }}>
       {children}

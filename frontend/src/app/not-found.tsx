@@ -49,13 +49,13 @@ export default function NotFound() {
           
           <button
             onClick={() => router.back()}
-            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-850 text-slate-200 border border-slate-800 hover:border-slate-700 text-xs font-black transition-all cursor-pointer shadow-lg active:scale-95"
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-850 text-slate-200 border border-slate-800 hover:border-slate-700 text-xs font-black transition-all cursor-pointer shadow-lg active:scale-95"
           >
             ← Go Back
           </button>
 
           <Link href="/dashboard" className="w-full sm:w-auto">
-            <span className="w-full inline-block text-center px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white text-xs font-black transition-all cursor-pointer shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-95">
+            <span className="w-full inline-block text-center px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white text-xs font-black transition-all cursor-pointer shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-95">
               Enter Workspace Hub
             </span>
           </Link>

@@ -157,7 +157,7 @@ export default function UsersTab({
       </div>
 
       {usersSubTab === "users" ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left">
           <div>
             <h3 className="text-lg font-bold text-slate-800">User accounts directory</h3>
             <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Review profiles, active registration statuses, account verification flags and toggle lock/block states.</p>
@@ -165,15 +165,15 @@ export default function UsersTab({
 
           {/* Onboarding Counts Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Accounts</span>
               <span className="text-xl font-black text-slate-900 mt-1">{userCounts.total}</span>
             </div>
-            <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+            <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4 flex flex-col justify-between shadow-sm">
               <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Onboarded Freelancers</span>
               <span className="text-xl font-black text-purple-700 mt-1">{userCounts.freelancers}</span>
             </div>
-            <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+            <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col justify-between shadow-sm">
               <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Onboarded Clients</span>
               <span className="text-xl font-black text-blue-700 mt-1">{userCounts.clients}</span>
             </div>
@@ -228,13 +228,13 @@ export default function UsersTab({
       ) : (
         <div className="flex flex-col gap-8 animate-fadeIn text-left">
           {fetchError && (
-            <div className="p-4 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-semibold rounded-2xl">
+            <div className="p-4 bg-amber-50 border border-amber-200 text-amber-700 text-sm font-semibold rounded-xl">
               ⚠️ {fetchError}
             </div>
           )}
 
           {/* Admins List Section */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-4 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-4 shadow-sm">
             <div>
               <h3 className="text-lg font-bold text-slate-800">System Administrators</h3>
               <p className="text-slate-555 text-xs sm:text-sm mt-0.5">Below are the administrators registered on the platform.</p>
@@ -247,7 +247,7 @@ export default function UsersTab({
                 adminsList.map((adm) => (
                   <div 
                     key={adm.admin_id} 
-                    className="p-4 bg-slate-50/50 border border-slate-200 rounded-2xl flex items-center justify-between gap-4"
+                    className="p-4 bg-slate-50/50 border border-slate-200 rounded-xl flex items-center justify-between gap-4"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-teal-700/10 border border-teal-700/20 text-teal-750 font-extrabold flex items-center justify-center">
@@ -285,7 +285,7 @@ export default function UsersTab({
 
           {/* Create Admin Form (Only main admins can view/create) */}
           {adminUser?.role === "MAIN_ADMIN" ? (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm">
               <div>
                 <h3 className="text-lg font-bold text-slate-808">Create New Admin Account</h3>
                 <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Create a new administrative user with specific access controls.</p>
@@ -361,7 +361,7 @@ export default function UsersTab({
               </form>
             </div>
           ) : (
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-3xl text-slate-500 text-sm font-semibold italic text-center">
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-slate-500 text-sm font-semibold italic text-center">
               🔒 Sub-admin accounts do not have permission to register new administrators.
             </div>
           )}

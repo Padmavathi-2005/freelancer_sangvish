@@ -161,8 +161,8 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
   };
 
   const card = isDark
-    ? "bg-slate-900 border border-slate-800 rounded-2xl"
-    : "bg-white border border-slate-200 rounded-2xl shadow-sm";
+    ? "bg-slate-900 border border-slate-800 rounded-xl"
+    : "bg-white border border-slate-200 rounded-xl shadow-sm";
 
   const tableHeaderClass = isDark
     ? "bg-slate-850 text-slate-400 border-b border-slate-800"
@@ -202,7 +202,7 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
       {confirmDelete && typeof document !== "undefined" && ReactDOM.createPortal(
         <div className="fixed inset-0 bg-black/40 z-[99999] flex items-center justify-center p-4">
           <div
-            className={`w-full max-w-md rounded-2xl border p-6 shadow-2xl ${
+            className={`w-full max-w-md rounded-xl border p-6 shadow-2xl ${
               isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
             }`}
           >
@@ -326,7 +326,7 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
           </div>
         ) : backups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${isDark ? "bg-slate-800" : "bg-slate-100"}`}>
+            <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${isDark ? "bg-slate-800" : "bg-slate-100"}`}>
               <FiHardDrive className={`w-6 h-6 ${textMuted}`} />
             </div>
             <p className={`text-sm font-bold ${textMain}`}>No backups yet</p>
@@ -411,7 +411,7 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
 
       {/* Info Card */}
       <div
-        className={`rounded-2xl border p-4 flex items-start gap-3 ${
+        className={`rounded-xl border p-4 flex items-start gap-3 ${
           isDark ? "bg-amber-950/10 border-amber-900/40" : "bg-amber-50 border-amber-200"
         }`}
       >

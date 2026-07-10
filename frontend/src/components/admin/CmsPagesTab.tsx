@@ -260,7 +260,7 @@ export default function CmsPagesTab() {
   };
 
   // Styling helper classes
-  const panelClass = `p-6 rounded-2xl border transition-all duration-300 ${
+  const panelClass = `p-6 rounded-xl border transition-all duration-300 ${
     isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"
   }`;
   
@@ -622,7 +622,7 @@ export default function CmsPagesTab() {
                 </div>
 
                 {builderBlocks.length === 0 ? (
-                  <div className="border-2 border-dashed rounded-2xl py-20 flex flex-col items-center justify-center border-slate-300/50">
+                  <div className="border-2 border-dashed rounded-xl py-20 flex flex-col items-center justify-center border-slate-300/50">
                     <p className={`text-sm ${isDark ? "text-slate-500" : "text-slate-450"}`}>Canvas is empty. Add blocks to get started.</p>
                   </div>
                 ) : (
@@ -633,7 +633,7 @@ export default function CmsPagesTab() {
                       return (
                         <div
                           key={block.id}
-                          className={`rounded-2xl border transition-all ${
+                          className={`rounded-xl border transition-all ${
                             isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"
                           } ${isEditing ? "ring-2 ring-teal-500" : ""}`}
                         >

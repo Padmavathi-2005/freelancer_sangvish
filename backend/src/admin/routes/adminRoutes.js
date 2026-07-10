@@ -46,7 +46,8 @@ import {
     getBackups,
     createBackup,
     downloadBackup,
-    deleteBackup
+    deleteBackup,
+    getAdminProfile
 } from "../controllers/adminController.js";
 import {
     getSettings,
@@ -67,6 +68,9 @@ const router = express.Router();
 
 // login
 router.post("/login", loginAdmin);
+
+// get profile
+router.get("/me", adminAuth, getAdminProfile);
 
 // create admin (protected)
 router.post("/create", adminAuth, createAdmin);

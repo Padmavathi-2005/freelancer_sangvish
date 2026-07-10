@@ -64,7 +64,7 @@ export default function SuccessStories() {
         </h2>
 
         {/* Carousel Card Container */}
-        <div className="max-w-4xl mx-auto relative bg-slate-50/40 border border-slate-200/60 rounded-[2rem] shadow-lg shadow-slate-100/50 overflow-hidden">
+        <div className="max-w-4xl mx-auto relative bg-slate-50/40 border border-slate-200/60 rounded-xl shadow-lg shadow-slate-100/50 overflow-hidden">
           
           <div 
             className="flex transition-transform duration-700 ease-in-out w-full"

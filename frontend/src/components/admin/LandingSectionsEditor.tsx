@@ -304,7 +304,7 @@ export default function LandingSectionsEditor({
       </div>
 
       {/* Select Language Switcher */}
-      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-200/50">
+      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200/50">
         <span className="text-xs font-bold text-slate-500">Edit translations for:</span>
         <div className="flex items-center gap-1">
           {(availLanguages.length > 0 ? availLanguages : [
@@ -366,7 +366,7 @@ export default function LandingSectionsEditor({
       </div>
 
       {/* Form Content */}
-      <div className="mt-2 bg-slate-50/30 border border-slate-200/50 p-5 rounded-3xl">
+      <div className="mt-2 bg-slate-50/30 border border-slate-200/50 p-5 rounded-xl">
         
         {activeSubTab === "hero" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -707,7 +707,7 @@ export default function LandingSectionsEditor({
                     const dKey = `why_choose_feat${feat.key_suffix}_desc`;
 
                     return (
-                      <div key={feat.feature_id} className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 relative shadow-sm">
+                      <div key={feat.feature_id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 relative shadow-sm">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                           <span className="text-[10px] font-black text-[#0a5a54] uppercase tracking-wider">Benefit #{index + 1}</span>
                           <button
@@ -784,7 +784,7 @@ export default function LandingSectionsEditor({
                     const dKey = `how_it_works_step${step.key_suffix}_desc`;
 
                     return (
-                      <div key={step.step_id} className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 relative shadow-sm">
+                      <div key={step.step_id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 relative shadow-sm">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                           <span className="text-[10px] font-black text-[#0a5a54] uppercase tracking-wider">Step #{index + 1}</span>
                           <button

@@ -51,7 +51,7 @@ export default function NotificationsDropdown({
           <div className="fixed inset-0 z-40 cursor-default" onClick={() => setIsNotificationsOpen(false)}></div>
           
           {/* Dropdown panel */}
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl border border-slate-200/80 shadow-lg py-2 z-50 animate-fadeIn text-left text-slate-800">
+          <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200/80 shadow-lg py-2 z-50 animate-fadeIn text-left text-slate-800">
             <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
               <span className="text-xs font-black text-slate-800">Recent Notifications</span>
               {unreadNotificationsCount > 0 && (

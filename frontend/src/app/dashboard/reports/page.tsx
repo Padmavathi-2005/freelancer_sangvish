@@ -120,7 +120,7 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8 text-left animate-fadeIn print:bg-white print:p-0 print:space-y-4">
       {/* Header Panel */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:border-none print:shadow-none print:p-0">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:border-none print:shadow-none print:p-0">
         <div>
           <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase mb-1 block print:hidden">Financial Analytics</span>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
@@ -142,7 +142,7 @@ export default function ReportsPage() {
       {/* Grid Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main metric card */}
-        <div className="bg-gradient-to-br from-teal-800 to-teal-650 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col justify-between min-h-[140px] border border-teal-700">
+        <div className="bg-gradient-to-br from-teal-800 to-teal-650 rounded-xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col justify-between min-h-[140px] border border-teal-700">
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.04] rounded-full filter blur-xl"></div>
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-bold uppercase tracking-widest text-teal-100">
@@ -163,7 +163,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Escrow balance card */}
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[140px]">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col justify-between min-h-[140px]">
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
               {userRole === "client" ? "Escrow Payments" : "Pending Escrow"}
@@ -185,7 +185,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Wallet Balance Card */}
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between min-h-[140px]">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col justify-between min-h-[140px]">
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Wallet Balance</span>
             <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 border border-teal-100 flex items-center justify-center">
@@ -204,28 +204,28 @@ export default function ReportsPage() {
       </div>
 
       {/* Workspace Activity Breakdown */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm">
         <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-6">Contract & Service Volume</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-          <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+          <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Contracts</span>
             <span className="text-lg font-black text-slate-850 mt-1 block">
               {userRole === "client" ? clientStats.activeProjectsCount : freelancerStats.activeProjectsCount} Projects
             </span>
           </div>
-          <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+          <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Completed Contracts</span>
             <span className="text-lg font-black text-slate-855 mt-1 block">
               {userRole === "client" ? clientStats.completedProjectsCount : freelancerStats.completedProjectsCount} Projects
             </span>
           </div>
-          <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+          <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Ongoing Gig Orders</span>
             <span className="text-lg font-black text-slate-855 mt-1 block">
               {userRole === "client" ? clientStats.activeGigsCount : freelancerStats.activeGigsCount} Gigs
             </span>
           </div>
-          <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+          <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Completed Gigs</span>
             <span className="text-lg font-black text-slate-855 mt-1 block">
               {userRole === "client" ? clientStats.completedGigsCount : freelancerStats.completedGigsCount} Gigs
@@ -235,7 +235,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Transaction Statement ledger */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-6 sm:p-8 shadow-sm">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-5">
           <div>
             <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider">Ledger Statement</h3>

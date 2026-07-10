@@ -38,7 +38,7 @@ export default function FrontendContentTab({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left">
       
       {/* HEADER SECTION with Section Selector */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
@@ -75,7 +75,7 @@ export default function FrontendContentTab({
 
       {/* FLOATING SUCCESS TOAST */}
       {showToast && (
-        <div className="fixed top-6 right-6 z-50 bg-[#0c1312] border border-[#14322e] text-white px-5 py-3 rounded-2xl shadow-xl shadow-teal-950/10 flex items-center gap-3 animate-slideIn">
+        <div className="fixed top-6 right-6 z-50 bg-[#0c1312] border border-[#14322e] text-white px-5 py-3 rounded-xl shadow-xl shadow-teal-950/10 flex items-center gap-3 animate-slideIn">
           <span className="text-emerald-400 font-bold text-base">✓</span>
           <div className="flex flex-col">
             <span className="text-xs font-black text-white">{toastTitle}</span>

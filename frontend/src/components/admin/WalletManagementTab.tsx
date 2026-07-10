@@ -71,7 +71,7 @@ export default function WalletManagementTab() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         {/* System Escrow Wallet Balance */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
           <div className="flex justify-between items-center">
             <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Escrow Holdings</span>
             <span className="text-xs font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full border border-teal-100">PLATFORM</span>
@@ -87,7 +87,7 @@ export default function WalletManagementTab() {
         </div>
 
         {/* Total Active Escrow Contracts */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
           <div className="flex justify-between items-center">
             <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Active Project Escrows</span>
             <span className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100">CONTRACTS</span>
@@ -103,7 +103,7 @@ export default function WalletManagementTab() {
         </div>
 
         {/* Net Platform Commissions */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
           <div className="flex justify-between items-center">
             <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Net Platform Profit</span>
             <span className="text-xs font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100">COMMISSIONS</span>
@@ -121,7 +121,7 @@ export default function WalletManagementTab() {
       </div>
 
       {/* TABS & DETAILS */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
         
         {/* Navigation Tabs */}
         <div className="flex border-b border-slate-100 bg-slate-50/50 px-6 py-3 justify-between items-center">
@@ -452,7 +452,7 @@ export default function WalletManagementTab() {
               </div>
 
               {/* Right Column: Transfer Form */}
-              <div className="lg:col-span-5 border border-slate-200/80 rounded-2xl p-6 bg-slate-50/50 flex flex-col justify-between shadow-sm min-h-[350px]">
+              <div className="lg:col-span-5 border border-slate-200/80 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between shadow-sm min-h-[350px]">
                 
                 <div>
                   <h3 className="text-sm font-black uppercase text-slate-800 tracking-wider mb-4">2. Payment Details</h3>

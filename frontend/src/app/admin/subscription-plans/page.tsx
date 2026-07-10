@@ -322,7 +322,7 @@ export default function SubscriptionPlansPage() {
         {/* ── LEFT PANEL: Add / Edit Package Form ── */}
         <div className="w-full lg:w-80 shrink-0 flex flex-col gap-4">
           {/* Package options settings card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-sm font-extrabold text-slate-800">
               Package options settings
             </h3>
@@ -364,7 +364,7 @@ export default function SubscriptionPlansPage() {
           </div>
 
           {/* Form card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-extrabold text-slate-800">
                 {editingId ? "Edit Package" : "Add Package"}
@@ -576,7 +576,7 @@ export default function SubscriptionPlansPage() {
 
         {/* ── RIGHT PANEL: Packages Table ── */}
         <div className="flex-1 flex flex-col gap-4">
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             {/* Table Header */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 border-b border-slate-100">
               <h3 className="text-base font-extrabold text-slate-800">Packages</h3>
@@ -720,11 +720,13 @@ export default function SubscriptionPlansPage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-fadeIn">
-          <span className="text-emerald-400 font-bold text-base">✓</span>
-          <div className="flex flex-col">
-            <span className="text-xs font-black text-white">{toast.title}</span>
-            <span className="text-[10px] text-slate-300 font-semibold mt-0.5">{toast.text}</span>
+        <div className="fixed bottom-6 right-6 z-[9999] bg-gradient-to-r from-teal-700 to-teal-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 animate-fadeIn border border-teal-650 max-w-sm">
+          <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-emerald-400 font-black text-sm shrink-0">
+            ✓
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-xs font-black text-white leading-none">{toast.title}</span>
+            <span className="text-[10px] text-teal-100/90 font-semibold mt-1 leading-normal">{toast.text}</span>
           </div>
         </div>
       )}

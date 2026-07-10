@@ -1,6 +1,6 @@
 import { API_URL } from "@/config/api";
 import React, { useState, useMemo, useEffect } from "react";
-import { FiCheck } from "react-icons/fi";
+import { FiCheck, FiStar } from "react-icons/fi";
 import CustomSelect from "../CustomSelect";
 import ProjectMilestoneTracker from "./ProjectMilestoneTracker";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
@@ -138,35 +138,139 @@ export default function ProposalsTab({
   setPostJobSelectedLanguages,
 }: ProposalsTabProps) {
   const { pendingInviteFreelancer, setPendingInviteFreelancer } = useDashboard();
+  const [clientSubscription, setClientSubscription] = useState<any>(null);
+  const [siteShortName, setSiteShortName] = useState("Lancer");
+  const [togglingFeatureId, setTogglingFeatureId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch(`${API_URL}/users/me/subscription`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          setClientSubscription(await res.json());
+        }
+      } catch (err) {
+        console.error("Failed to fetch client subscription:", err);
+      }
+    };
+    if (userRole === "client") {
+      fetchSubscription();
+    }
+  }, [userRole]);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const siteRaw = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;
+          if (siteRaw) {
+            let parsed = siteRaw;
+            if (typeof parsed === "string") {
+              try { parsed = JSON.parse(parsed); } catch {}
+            }
+            if (parsed.site_short_name) {
+              setSiteShortName(parsed.site_short_name);
+            } else if (parsed.site_name) {
+              setSiteShortName(parsed.site_name);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings in ProposalsTab:", e);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  const handleToggleFeatureProject = async (job: any) => {
+    try {
+      setTogglingFeatureId(job.job_id);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/jobs/${job.job_id}/feature`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", data.message || "Project feature status updated successfully.");
+        await fetchClientJobs();
+      } else {
+        triggerToast("error", data.message || "Failed to update project feature status.");
+      }
+    } catch (err) {
+      console.error("Failed to toggle project feature status:", err);
+      triggerToast("error", "Network error occurred.");
+    } finally {
+      setTogglingFeatureId(null);
+    }
+  };
   const [selectedProposalDetails, setSelectedProposalDetails] = useState<any | null>(null);
   const [projectFilter, setProjectFilter] = useState<"all" | "pending" | "ongoing" | "dispute" | "completed" | "draft">("all");
   const [freelancerFilter, setFreelancerFilter] = useState<"all" | "pending" | "accepted" | "declined">("all");
 
+  const [searchProjectQuery, setSearchProjectQuery] = useState("");
+  const [projectPage, setProjectPage] = useState(1);
+  const projectsPerPage = 5;
+
+  const [searchProposalQuery, setSearchProposalQuery] = useState("");
+  const [proposalPage, setProposalPage] = useState(1);
+  const proposalsPerPage = 5;
+
   const filteredFreelancerProposals = useMemo(() => {
     return freelancerProposals.filter((proposal) => {
       const contractStatus = proposal.contract_status;
+      let matchStatus = true;
       if (freelancerFilter === "pending") {
-        return proposal.status === "Pending";
-      }
-      if (freelancerFilter === "accepted") {
-        return (
+        matchStatus = proposal.status === "Pending";
+      } else if (freelancerFilter === "accepted") {
+        matchStatus = (
           proposal.status === "Accepted" ||
           proposal.status === "Accepted_By_Freelancer" ||
           contractStatus === "Hired" ||
           contractStatus === "Work Started" ||
           contractStatus === "Completed"
         );
-      }
-      if (freelancerFilter === "declined") {
-        return (
+      } else if (freelancerFilter === "declined") {
+        matchStatus = (
           proposal.status === "Declined" ||
           proposal.status === "Cancelled" ||
           contractStatus === "Cancelled"
         );
       }
+
+      if (!matchStatus) return false;
+
+      if (searchProposalQuery.trim()) {
+        const query = searchProposalQuery.toLowerCase();
+        const matchTitle = proposal.job_title?.toLowerCase().includes(query);
+        const matchDesc = proposal.job_description?.toLowerCase().includes(query);
+        const matchClient = proposal.client_name?.toLowerCase().includes(query) || proposal.client_company_name?.toLowerCase().includes(query);
+        const matchCover = proposal.cover_letter?.toLowerCase().includes(query);
+        return matchTitle || matchDesc || matchClient || matchCover;
+      }
+
       return true;
     });
-  }, [freelancerProposals, freelancerFilter]);
+  }, [freelancerProposals, freelancerFilter, searchProposalQuery]);
+
+  const paginatedProposals = useMemo(() => {
+    const startIndex = (proposalPage - 1) * proposalsPerPage;
+    return filteredFreelancerProposals.slice(startIndex, startIndex + proposalsPerPage);
+  }, [filteredFreelancerProposals, proposalPage]);
+
+  const totalProposalPages = Math.ceil(filteredFreelancerProposals.length / proposalsPerPage);
+
+  useEffect(() => {
+    setProposalPage(1);
+  }, [freelancerFilter, searchProposalQuery]);
   const [postJobSlug, setPostJobSlug] = useState("");
   const [postJobSeoTitle, setPostJobSeoTitle] = useState("");
   const [postJobSeoDescription, setPostJobSeoDescription] = useState("");
@@ -289,24 +393,43 @@ export default function ProposalsTab({
       const cStatus = job.contract_status?.toLowerCase();
       const jStatus = job.status?.toLowerCase();
       
+      let matchStatus = true;
       if (projectFilter === "draft") {
-        return jStatus === "draft";
+        matchStatus = jStatus === "draft";
+      } else if (projectFilter === "pending") {
+        matchStatus = cStatus === "pending" || jStatus === "pending";
+      } else if (projectFilter === "ongoing") {
+        matchStatus = cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active";
+      } else if (projectFilter === "dispute") {
+        matchStatus = cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed";
+      } else if (projectFilter === "completed") {
+        matchStatus = cStatus === "completed" || jStatus === "completed";
       }
-      if (projectFilter === "pending") {
-        return cStatus === "pending" || jStatus === "pending";
+
+      if (!matchStatus) return false;
+
+      if (searchProjectQuery.trim()) {
+        const query = searchProjectQuery.toLowerCase();
+        const matchTitle = job.title?.toLowerCase().includes(query);
+        const matchDesc = job.description?.toLowerCase().includes(query);
+        const matchCategory = job.category_name?.toLowerCase().includes(query) || job.sub_category_name?.toLowerCase().includes(query);
+        return matchTitle || matchDesc || matchCategory;
       }
-      if (projectFilter === "ongoing") {
-        return cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active";
-      }
-      if (projectFilter === "dispute") {
-        return cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed";
-      }
-      if (projectFilter === "completed") {
-        return cStatus === "completed" || jStatus === "completed";
-      }
-      return true; // "all"
+
+      return true;
     });
-  }, [clientJobs, projectFilter]);
+  }, [clientJobs, projectFilter, searchProjectQuery]);
+
+  const paginatedProjects = useMemo(() => {
+    const startIndex = (projectPage - 1) * projectsPerPage;
+    return filteredJobs.slice(startIndex, startIndex + projectsPerPage);
+  }, [filteredJobs, projectPage]);
+
+  const totalProjectPages = Math.ceil(filteredJobs.length / projectsPerPage);
+
+  useEffect(() => {
+    setProjectPage(1);
+  }, [projectFilter, searchProjectQuery]);
 
   const resetWizardState = () => {
     setPostJobTitle("");
@@ -486,7 +609,7 @@ export default function ProposalsTab({
     if (isCreatingJob) {
       return (
         <div className="relative z-10 max-w-2xl mx-auto w-full animate-fadeIn text-slate-800 text-left">
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col gap-6">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-6">
             
             {/* Form Header */}
             <div className="border-b border-slate-100 pb-4 flex items-center justify-between gap-3">
@@ -1026,7 +1149,7 @@ export default function ProposalsTab({
                           return (
                             <div
                               key={langId}
-                              className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-3xl text-xxs font-extrabold select-none"
+                              className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-xl text-xxs font-extrabold select-none"
                             >
                               <span>{lang.language_name}</span>
                               <button
@@ -1154,7 +1277,7 @@ export default function ProposalsTab({
                       </div>
                       
                       {/* Live Preview Card */}
-                      <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col gap-3 text-left">
+                      <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3 text-left">
                         <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Social Share Preview Card:</span>
                         
                         <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm flex flex-col">
@@ -1232,7 +1355,7 @@ export default function ProposalsTab({
     if (selectedProjectDetails) {
       return (
         <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-800">
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
             <div>
               <button
                 onClick={() => setSelectedProjectDetails(null)}
@@ -1247,7 +1370,7 @@ export default function ProposalsTab({
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
             <h3 className="text-sm font-extrabold text-slate-855 border-b border-slate-100 pb-2">Project Overview</h3>
             <p className="text-slate-600 text-xs font-medium leading-relaxed">{selectedProjectDetails.description}</p>
@@ -1280,7 +1403,7 @@ export default function ProposalsTab({
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
             <h3 className="text-sm font-extrabold text-slate-855 border-b border-slate-100 pb-2">Milestone & Delivery Tracker</h3>
             <ProjectMilestoneTracker
@@ -1299,7 +1422,7 @@ export default function ProposalsTab({
     return (
       <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-850">
         {/* Header with Post button */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <i className="fa-solid fa-folder-open text-primary"></i> My Posted Projects
@@ -1308,71 +1431,78 @@ export default function ProposalsTab({
           </div>
           <button
             onClick={() => setIsCreatingJob(true)}
-            className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
+            className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2 animate-pulse"
           >
             <i className="fa-solid fa-plus"></i> Post a New Project
           </button>
         </div>
 
-        {/* Project Filters Tab Bar */}
+        {/* Project Filters Tab Bar & Search */}
         {!loadingClientJobs && clientJobs.length > 0 && (
-          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-1.5 flex flex-wrap gap-1 shadow-xs">
-            {[
-              { id: "all", label: "All Projects", icon: "fa-solid fa-list-check" },
-              { id: "pending", label: "Pending", icon: "fa-solid fa-clock text-amber-500" },
-              { id: "ongoing", label: "Ongoing", icon: "fa-solid fa-spinner text-emerald-600 animate-spin-slow" },
-              { id: "dispute", label: "Disputed", icon: "fa-solid fa-triangle-exclamation text-rose-500" },
-              { id: "completed", label: "Completed", icon: "fa-solid fa-circle-check text-teal-600" },
-              { id: "draft", label: "Drafts", icon: "fa-solid fa-file-signature text-slate-555" }
-            ].map((tab) => {
-              const count = clientJobs.filter(j => {
-                const cStatus = j.contract_status?.toLowerCase();
-                const jStatus = j.status?.toLowerCase();
-                if (tab.id === "draft") return jStatus === "draft";
-                if (tab.id === "pending") return cStatus === "pending" || jStatus === "pending";
-                if (tab.id === "ongoing") return cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active";
-                if (tab.id === "dispute") return cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed";
-                if (tab.id === "completed") return cStatus === "completed" || jStatus === "completed";
-                return true;
-              }).length;
+          <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-4">
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-1.5 flex flex-wrap gap-1 shadow-xs flex-1">
+              {[
+                { id: "all", label: "All Projects", icon: "fa-solid fa-list-check" },
+                { id: "pending", label: "Pending", icon: "fa-solid fa-clock text-amber-500" },
+                { id: "ongoing", label: "Ongoing", icon: "fa-solid fa-spinner text-emerald-600 animate-spin-slow" },
+                { id: "dispute", label: "Disputed", icon: "fa-solid fa-triangle-exclamation text-rose-500" },
+                { id: "completed", label: "Completed", icon: "fa-solid fa-circle-check text-teal-600" },
+                { id: "draft", label: "Drafts", icon: "fa-solid fa-file-signature text-slate-555" }
+              ].map((tab) => {
+                const count = clientJobs.filter(j => {
+                  const cStatus = j.contract_status?.toLowerCase();
+                  const jStatus = j.status?.toLowerCase();
+                  if (tab.id === "draft") return jStatus === "draft";
+                  if (tab.id === "pending") return cStatus === "pending" || jStatus === "pending";
+                  if (tab.id === "ongoing") return cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active";
+                  if (tab.id === "dispute") return cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed";
+                  if (tab.id === "completed") return cStatus === "completed" || jStatus === "completed";
+                  return true;
+                }).length;
 
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setProjectFilter(tab.id as any)}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all border-0 cursor-pointer ${
-                    projectFilter === tab.id
-                      ? "bg-white text-slate-800 shadow-sm border border-slate-200/60 font-bold"
-                      : "text-slate-500 hover:text-slate-800 hover:bg-white/40"
-                  }`}
-                >
-                  <i className={tab.icon}></i>
-                  <span>{tab.label}</span>
-                  <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                    projectFilter === tab.id ? "bg-slate-100 text-slate-700" : "bg-slate-200/50 text-slate-550"
-                  }`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setProjectFilter(tab.id as any)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all border-0 cursor-pointer ${
+                      projectFilter === tab.id
+                        ? "bg-white text-slate-800 shadow-sm border border-slate-200/60 font-bold"
+                        : "text-slate-500 hover:text-slate-800 hover:bg-white/40"
+                    }`}
+                  >
+                    <i className={tab.icon}></i>
+                    <span>{tab.label}</span>
+                    <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
+                      projectFilter === tab.id ? "bg-slate-100 text-slate-700" : "bg-slate-200/50 text-slate-550"
+                    }`}>{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="relative w-full xl:w-72 shrink-0">
+              <input
+                type="text"
+                value={searchProjectQuery}
+                onChange={(e) => setSearchProjectQuery(e.target.value)}
+                placeholder="Search projects..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-805 focus:outline-none focus:border-teal-700 focus:bg-white transition-all shadow-xs"
+              />
+              <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            </div>
           </div>
         )}
 
         {/* Listings */}
         {loadingClientJobs ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm">
+          <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-xl p-8 shadow-sm">
             <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
             <p className="text-slate-400 text-xs font-semibold">Loading your projects...</p>
           </div>
         ) : clientJobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-2xl p-8 shadow-inner gap-4">
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-xl p-8 shadow-inner gap-4">
             <div className="w-12 h-12 rounded-full bg-slate-105 flex items-center justify-center text-slate-400 text-xl">
               <i className="fa-solid fa-briefcase"></i>
-            </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-800 mb-1">No projects posted yet</h3>
-              <p className="text-slate-400 text-xs max-w-sm font-semibold">Post a project to describe your requirements and hire elite freelancers.</p>
             </div>
             <button
               onClick={() => setIsCreatingJob(true)}
@@ -1382,19 +1512,19 @@ export default function ProposalsTab({
             </button>
           </div>
         ) : filteredJobs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-200 rounded-2xl p-8 shadow-sm gap-4">
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-200 rounded-xl p-8 shadow-sm gap-4">
             <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-150 flex items-center justify-center text-slate-400 text-xl">
               <i className="fa-solid fa-filter"></i>
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-slate-805 mb-1">No projects in this category</h3>
-              <p className="text-slate-400 text-xs max-w-sm font-semibold">Try switching filter tabs or post a new project.</p>
+              <h3 className="text-sm font-extrabold text-slate-805 mb-1">No projects found</h3>
+              <p className="text-slate-400 text-xs max-w-sm font-semibold">Try switching filter tabs or check your search keyword.</p>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {filteredJobs.map((job) => (
-              <div key={job.job_id} className={`bg-white border rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col md:flex-row justify-between gap-6 relative overflow-hidden ${
+            {paginatedProjects.map((job) => (
+              <div key={job.job_id} className={`bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col md:flex-row justify-between gap-6 relative overflow-hidden ${
                 job.status === "Draft"
                   ? "border-amber-200/70 hover:border-amber-300"
                   : "border-slate-200/80 hover:border-slate-300"
@@ -1409,7 +1539,15 @@ export default function ProposalsTab({
                 <div className="flex-grow flex flex-col gap-4 text-left">
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex flex-col gap-1 cursor-pointer" onClick={() => job.status === "Draft" ? handleResumeDraft(job) : setSelectedProjectDetails(job)}>
-                      <h3 className="text-sm font-extrabold text-slate-850 hover:text-primary transition-colors">{job.title}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-sm font-extrabold text-slate-850 hover:text-primary transition-colors">{job.title}</h3>
+                        {job.is_featured && (
+                          <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider animate-pulse shrink-0 flex items-center gap-1">
+                            <FiStar className="w-2.5 h-2.5 fill-white text-white shrink-0" />
+                            <span>{siteShortName}'s Choice</span>
+                          </span>
+                        )}
+                      </div>
                       <span className="text-slate-400 text-[10px] font-bold">
                         Posted on {new Date(job.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </span>
@@ -1552,6 +1690,26 @@ export default function ProposalsTab({
                         <i className="fa-solid fa-bars-progress"></i>
                         <span>Milestones & Payments</span>
                       </button>
+                      {/* Feature Project Action Button */}
+                      {clientSubscription && clientSubscription.featured_project_limit > 0 && (
+                        <button
+                          type="button"
+                          disabled={togglingFeatureId !== null}
+                          onClick={() => handleToggleFeatureProject(job)}
+                          className={`w-full font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border border-transparent ${
+                            job.is_featured
+                              ? "bg-amber-500 hover:bg-amber-600 text-white"
+                              : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                          }`}
+                        >
+                          <i className="fa-solid fa-star"></i>
+                          <span>
+                            {job.is_featured 
+                              ? "Featured (Choice Active)" 
+                              : `Feature Project (${clientJobs.filter((j: any) => j.is_featured).length}/${clientSubscription.featured_project_limit})`}
+                          </span>
+                        </button>
+                      )}
                     </>
                   ) : (
                     <>
@@ -1570,11 +1728,55 @@ export default function ProposalsTab({
                         <i className="fa-solid fa-users-viewfinder"></i>
                         <span>Review Proposals</span>
                       </button>
+                      {/* Feature Project Action Button */}
+                      {clientSubscription && clientSubscription.featured_project_limit > 0 && (
+                        <button
+                          type="button"
+                          disabled={togglingFeatureId !== null}
+                          onClick={() => handleToggleFeatureProject(job)}
+                          className={`w-full font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border border-transparent ${
+                            job.is_featured
+                              ? "bg-amber-500 hover:bg-amber-600 text-white"
+                              : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                          }`}
+                        >
+                          <i className="fa-solid fa-star"></i>
+                          <span>
+                            {job.is_featured 
+                              ? "Featured (Choice Active)" 
+                              : `Feature Project (${clientJobs.filter((j: any) => j.is_featured).length}/${clientSubscription.featured_project_limit})`}
+                          </span>
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {totalProjectPages > 1 && (
+          <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 text-xs font-bold select-none">
+            <span className="text-slate-400">
+              Showing {(projectPage - 1) * projectsPerPage + 1} - {Math.min(projectPage * projectsPerPage, filteredJobs.length)} of {filteredJobs.length} projects
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setProjectPage(p => Math.max(1, p - 1))}
+                disabled={projectPage === 1}
+                className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setProjectPage(p => Math.min(totalProjectPages, p + 1))}
+                disabled={projectPage === totalProjectPages}
+                className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1641,7 +1843,7 @@ export default function ProposalsTab({
     return (
       <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-800">
         {/* Back header */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <button
               onClick={() => setSelectedProposalDetails(null)}
@@ -1659,7 +1861,7 @@ export default function ProposalsTab({
         </div>
 
         {/* Project Details Panel */}
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
           <h3 className="text-sm font-extrabold text-slate-800 border-b border-slate-100 pb-2 flex items-center gap-1.5">
             <i className="fa-solid fa-briefcase text-primary"></i>
@@ -1731,7 +1933,7 @@ export default function ProposalsTab({
         </div>
 
         {/* My Submitted Proposal Details */}
-        <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className={`absolute top-0 left-0 w-full h-1 ${detailTopBarColorClass} opacity-80`} />
           
           <div className="flex justify-between items-center border-b border-slate-100 pb-2">
@@ -1804,7 +2006,7 @@ export default function ProposalsTab({
   return (
     <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-800">
       {/* Header */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <i className="fa-solid fa-paper-plane text-primary"></i> My Submitted Proposals
@@ -1847,7 +2049,7 @@ export default function ProposalsTab({
             icon: "fa-circle-xmark"
           }
         ].map((stat, idx) => (
-          <div key={idx} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center justify-between gap-4">
+          <div key={idx} className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex items-center justify-between gap-4">
             <div>
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{stat.label}</span>
               <h3 className="text-xl font-black text-slate-800 mt-1">{stat.value}</h3>
@@ -1859,60 +2061,73 @@ export default function ProposalsTab({
         ))}
       </div>
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs & Search */}
       {!loadingFreelancerProposals && freelancerProposals.length > 0 && (
-        <div className="flex flex-wrap bg-slate-100 p-1 rounded-xl border border-slate-200 self-start select-none gap-1">
-          <button
-            onClick={() => setFreelancerFilter("all")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              freelancerFilter === "all" 
-                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            All Proposals ({freelancerProposals.length})
-          </button>
-          <button
-            onClick={() => setFreelancerFilter("pending")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              freelancerFilter === "pending" 
-                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            Pending Review ({freelancerProposals.filter((p) => p.status === "Pending").length})
-          </button>
-          <button
-            onClick={() => setFreelancerFilter("accepted")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              freelancerFilter === "accepted" 
-                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            Accepted & Hired ({freelancerProposals.filter((p) => p.status === "Accepted" || p.status === "Accepted_By_Freelancer" || p.contract_status === "Hired" || p.contract_status === "Work Started" || p.contract_status === "Completed").length})
-          </button>
-          <button
-            onClick={() => setFreelancerFilter("declined")}
-            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              freelancerFilter === "declined" 
-                ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
-                : "text-slate-500 hover:text-slate-800"
-            }`}
-          >
-            Declined & Cancelled ({freelancerProposals.filter((p) => p.status === "Declined" || p.status === "Cancelled" || p.contract_status === "Cancelled").length})
-          </button>
+        <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-4">
+          <div className="flex flex-wrap bg-slate-100 p-1.5 rounded-xl border border-slate-200/80 self-start select-none gap-1 flex-1">
+            <button
+              onClick={() => setFreelancerFilter("all")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
+                freelancerFilter === "all" 
+                  ? "bg-white text-slate-805 shadow-sm border border-slate-200/50" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              All Proposals ({freelancerProposals.length})
+            </button>
+            <button
+              onClick={() => setFreelancerFilter("pending")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
+                freelancerFilter === "pending" 
+                  ? "bg-white text-slate-805 shadow-sm border border-slate-200/50" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              Pending Review ({freelancerProposals.filter((p) => p.status === "Pending").length})
+            </button>
+            <button
+              onClick={() => setFreelancerFilter("accepted")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
+                freelancerFilter === "accepted" 
+                  ? "bg-white text-slate-805 shadow-sm border border-slate-200/50" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              Accepted & Hired ({freelancerProposals.filter((p) => p.status === "Accepted" || p.status === "Accepted_By_Freelancer" || p.contract_status === "Hired" || p.contract_status === "Work Started" || p.contract_status === "Completed").length})
+            </button>
+            <button
+              onClick={() => setFreelancerFilter("declined")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
+                freelancerFilter === "declined" 
+                  ? "bg-white text-slate-805 shadow-sm border border-slate-200/50" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              Declined & Cancelled ({freelancerProposals.filter((p) => p.status === "Declined" || p.status === "Cancelled" || p.contract_status === "Cancelled").length})
+            </button>
+          </div>
+
+          <div className="relative w-full xl:w-72 shrink-0">
+            <input
+              type="text"
+              value={searchProposalQuery}
+              onChange={(e) => setSearchProposalQuery(e.target.value)}
+              placeholder="Search proposals..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-805 focus:outline-none focus:border-teal-700 focus:bg-white transition-all shadow-xs"
+            />
+            <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          </div>
         </div>
       )}
 
       {/* Proposals list */}
       {loadingFreelancerProposals ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm">
+        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-xl p-8 shadow-sm">
           <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
           <p className="text-slate-400 text-xs font-semibold">Loading your proposals...</p>
         </div>
       ) : freelancerProposals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-2xl p-8 shadow-inner gap-4">
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-xl p-8 shadow-inner gap-4">
           <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
             <i className="fa-solid fa-paper-plane"></i>
           </div>
@@ -1928,18 +2143,18 @@ export default function ProposalsTab({
           </button>
         </div>
       ) : filteredFreelancerProposals.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-2xl p-8 shadow-inner gap-4">
-          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-200 rounded-xl p-8 shadow-sm gap-4">
+          <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-150 flex items-center justify-center text-slate-400 text-xl">
             <i className="fa-solid fa-filter"></i>
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-slate-800 mb-1">No proposals match this filter</h3>
-            <p className="text-slate-400 text-xs max-w-sm font-semibold">Try changing your active status filter to view other proposals.</p>
+            <h3 className="text-sm font-extrabold text-slate-800 mb-1">No proposals found</h3>
+            <p className="text-slate-400 text-xs max-w-sm font-semibold">Try switching filter tabs or check your search keyword.</p>
           </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {filteredFreelancerProposals.map((proposal) => {
+          {paginatedProposals.map((proposal) => {
             const contractStatus = proposal.contract_status;
             let displayStatus = proposal.status;
             let statusColorClass = "bg-amber-50 text-amber-700 border-amber-150";
@@ -1972,7 +2187,7 @@ export default function ProposalsTab({
             }
 
             return (
-              <div key={proposal.proposal_id} className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 relative overflow-hidden">
+              <div key={proposal.proposal_id} className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-full h-1 ${topBarColorClass}`} />
                 
                 <div className="flex justify-between items-start gap-4">
@@ -2057,6 +2272,30 @@ export default function ProposalsTab({
               </div>
             </div>
           )})}
+        </div>
+      )}
+
+      {totalProposalPages > 1 && (
+        <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 text-xs font-bold select-none">
+          <span className="text-slate-400">
+            Showing {(proposalPage - 1) * proposalsPerPage + 1} - {Math.min(proposalPage * proposalsPerPage, filteredFreelancerProposals.length)} of {filteredFreelancerProposals.length} proposals
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setProposalPage(p => Math.max(1, p - 1))}
+              disabled={proposalPage === 1}
+              className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setProposalPage(p => Math.min(totalProposalPages, p + 1))}
+              disabled={proposalPage === totalProposalPages}
+              className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

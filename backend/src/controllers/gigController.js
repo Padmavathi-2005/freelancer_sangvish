@@ -775,7 +775,7 @@ export const getClientGigById = async (req, res) => {
       SELECT 
         g.*,
         u.slug as freelancer_slug,
-        u.first_name || ' ' || u.last_name as freelancer_name,
+        u.first_name || COALESCE(' ' || u.last_name, '') as freelancer_name,
         u.profile_image as freelancer_image,
         u.email as freelancer_email,
         fp.professional_title as freelancer_title,
@@ -883,7 +883,7 @@ export const getSimilarGigs = async (req, res) => {
     const query = `
       SELECT 
         g.*,
-        u.first_name || ' ' || u.last_name as freelancer_name,
+        u.first_name || COALESCE(' ' || u.last_name, '') as freelancer_name,
         c.code as currency_code,
         c.symbol as currency_symbol,
         cat.category_name,

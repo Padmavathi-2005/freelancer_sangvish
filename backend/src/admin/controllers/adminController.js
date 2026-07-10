@@ -455,7 +455,34 @@ export const updateProjectStatus = async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ message: "Project not found" });
         }
-        res.json({ message: "Project status updated", project: result.rows[0] });
+
+        const project = result.rows[0];
+        try {
+            let title = "";
+            let message = "";
+            if (status === "Open") {
+                title = "Project Approved 🚀";
+                message = `Your project post "${project.title}" has been approved by the admin and is now live.`;
+            } else if (status === "Declined") {
+                title = "Project Declined ❌";
+                message = `Your project post "${project.title}" was declined by the admin.`;
+            }
+
+            if (title) {
+                const clientNotif = await pool.query(
+                    `INSERT INTO notifications (user_id, title, message, type, reference_id)
+                     VALUES ($1, $2, $3, 'project', $4) RETURNING *`,
+                    [project.client_id, title, message, project.job_id.toString()]
+                );
+                if (req.io && clientNotif.rows.length > 0) {
+                    req.io.to(`user_${project.client_id}`).emit("new_notification", clientNotif.rows[0]);
+                }
+            }
+        } catch (notifErr) {
+            console.error("Client project approval notification failed:", notifErr);
+        }
+
+        res.json({ message: "Project status updated", project });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -874,10 +901,17 @@ export const updateSubscriptionPlan = async (req, res) => {
              WHERE plan_id = $23 RETURNING *`,
             [
                 name.trim(), description || '', parseFloat(price || 0.00), period || '', featuresJson, button_text.trim(), is_popular ?? false, is_current ?? false, 
-                parseInt(gig_discount_percent || 0), parseInt(proposal_limit || 5), parseInt(job_posting_limit || 3), 
-                parseFloat(transaction_fee_percent || 5.0), featured_job_allowance ?? false,
-                plan_role || 'seller', plan_type || 'Day(s)', parseInt(plan_duration || 30), parseInt(credits || 10),
-                parseInt(profile_featured_duration || 0), parseInt(featured_project_limit || 0), parseInt(featured_project_duration || 0),
+                gig_discount_percent !== undefined && gig_discount_percent !== null ? parseInt(gig_discount_percent) : 0, 
+                proposal_limit !== undefined && proposal_limit !== null ? parseInt(proposal_limit) : 5, 
+                job_posting_limit !== undefined && job_posting_limit !== null ? parseInt(job_posting_limit) : 3, 
+                transaction_fee_percent !== undefined && transaction_fee_percent !== null ? parseFloat(transaction_fee_percent) : 5.0, 
+                featured_job_allowance ?? false,
+                plan_role || 'seller', plan_type || 'Day(s)', 
+                plan_duration !== undefined && plan_duration !== null ? parseInt(plan_duration) : 30, 
+                credits !== undefined && credits !== null ? parseInt(credits) : 10,
+                profile_featured_duration !== undefined && profile_featured_duration !== null ? parseInt(profile_featured_duration) : 0, 
+                featured_project_limit !== undefined && featured_project_limit !== null ? parseInt(featured_project_limit) : 0, 
+                featured_project_duration !== undefined && featured_project_duration !== null ? parseInt(featured_project_duration) : 0,
                 badge_image || null, is_enabled !== false, id
             ]
         );
@@ -916,10 +950,17 @@ export const createSubscriptionPlan = async (req, res) => {
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) RETURNING *`,
             [
                 name.trim(), description || '', parseFloat(price || 0.00), period || '', featuresJson, button_text.trim(), is_popular ?? false, is_current ?? false, 
-                parseInt(gig_discount_percent || 0), parseInt(proposal_limit || 5), parseInt(job_posting_limit || 3), 
-                parseFloat(transaction_fee_percent || 5.0), featured_job_allowance ?? false,
-                plan_role || 'seller', plan_type || 'Day(s)', parseInt(plan_duration || 30), parseInt(credits || 10),
-                parseInt(profile_featured_duration || 0), parseInt(featured_project_limit || 0), parseInt(featured_project_duration || 0),
+                gig_discount_percent !== undefined && gig_discount_percent !== null ? parseInt(gig_discount_percent) : 0, 
+                proposal_limit !== undefined && proposal_limit !== null ? parseInt(proposal_limit) : 5, 
+                job_posting_limit !== undefined && job_posting_limit !== null ? parseInt(job_posting_limit) : 3, 
+                transaction_fee_percent !== undefined && transaction_fee_percent !== null ? parseFloat(transaction_fee_percent) : 5.0, 
+                featured_job_allowance ?? false,
+                plan_role || 'seller', plan_type || 'Day(s)', 
+                plan_duration !== undefined && plan_duration !== null ? parseInt(plan_duration) : 30, 
+                credits !== undefined && credits !== null ? parseInt(credits) : 10,
+                profile_featured_duration !== undefined && profile_featured_duration !== null ? parseInt(profile_featured_duration) : 0, 
+                featured_project_limit !== undefined && featured_project_limit !== null ? parseInt(featured_project_limit) : 0, 
+                featured_project_duration !== undefined && featured_project_duration !== null ? parseInt(featured_project_duration) : 0,
                 badge_image || null, is_enabled !== false
             ]
         );
@@ -1161,9 +1202,9 @@ export const getPendingProposals = async (req, res) => {
                 p.*,
                 j.title as job_title,
                 j.client_id,
-                uc.first_name || ' ' || uc.last_name as client_name,
+                uc.first_name || COALESCE(' ' || uc.last_name, '') as client_name,
                 uc.email as client_email,
-                uf.first_name || ' ' || uf.last_name as freelancer_name,
+                uf.first_name || COALESCE(' ' || uf.last_name, '') as freelancer_name,
                 uf.email as freelancer_email,
                 fp.professional_title as freelancer_title,
                 fp.hourly_rate as freelancer_hourly_rate
@@ -1215,43 +1256,83 @@ export const updateProposalVettingStatus = async (req, res) => {
         try {
             if (status === 'Approved') {
                 // Notify client
-                await pool.query(
+                const clientNotif = await pool.query(
                     `INSERT INTO notifications (user_id, title, message, type, reference_id)
-                     VALUES ($1, 'New Proposal Approved', $2, 'proposal', $3)`,
+                     VALUES ($1, 'New Proposal Approved', $2, 'proposal', $3) RETURNING *`,
                     [
                         proposal.client_id,
                         `Admin approved a new proposal for your project "${proposal.job_title}".`,
                         proposal.job_id.toString()
                     ]
                 );
+                if (req.io && clientNotif.rows.length > 0) {
+                    req.io.to(`user_${proposal.client_id}`).emit("new_notification", clientNotif.rows[0]);
+                }
 
                 // Notify freelancer
-                await pool.query(
+                const freelancerNotif = await pool.query(
                     `INSERT INTO notifications (user_id, title, message, type, reference_id)
-                     VALUES ($1, 'Proposal Approved by Admin', $2, 'proposal', $3)`,
+                     VALUES ($1, 'Proposal Approved by Admin', $2, 'proposal', $3) RETURNING *`,
                     [
                         proposal.freelancer_id,
                         `Your proposal on project "${proposal.job_title}" has been approved by admin and is now visible to the client.`,
                         proposal.job_id.toString()
                     ]
                 );
+                if (req.io && freelancerNotif.rows.length > 0) {
+                    req.io.to(`user_${proposal.freelancer_id}`).emit("new_notification", freelancerNotif.rows[0]);
+                }
             } else {
                 // Notify freelancer
-                await pool.query(
+                const freelancerNotif = await pool.query(
                     `INSERT INTO notifications (user_id, title, message, type, reference_id)
-                     VALUES ($1, 'Proposal Rejected by Admin', $2, 'proposal', $3)`,
+                     VALUES ($1, 'Proposal Rejected by Admin', $2, 'proposal', $3) RETURNING *`,
                     [
                         proposal.freelancer_id,
                         `Your proposal on project "${proposal.job_title}" was declined by the admin.`,
                         proposal.job_id.toString()
                     ]
                 );
+                if (req.io && freelancerNotif.rows.length > 0) {
+                    req.io.to(`user_${proposal.freelancer_id}`).emit("new_notification", freelancerNotif.rows[0]);
+                }
             }
         } catch (notifErr) {
             console.error("Vetting notification dispatch failed:", notifErr);
         }
 
         res.json({ message: `Proposal vetting status updated to ${status}.`, proposal: { ...proposal, status: newStatus } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const getAdminProfile = async (req, res) => {
+    try {
+        const adminId = req.admin.admin_id;
+        const email = req.admin.email;
+
+        // Resolve virtual user_id in users table
+        const userCheck = await pool.query("SELECT user_id FROM users WHERE email = $1", [email]);
+        let userId = null;
+        if (userCheck.rows.length > 0) {
+            userId = userCheck.rows[0].user_id;
+        } else {
+            // Create user row if it does not exist yet (as fallback/proactive measure)
+            const insertUser = await pool.query(
+                "INSERT INTO users (first_name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id",
+                [req.admin.full_name || "Admin", email, "ADMIN_VIRTUAL_HASH"]
+            );
+            userId = insertUser.rows[0].user_id;
+        }
+
+        res.json({
+            admin_id: adminId,
+            email: email,
+            user_id: userId,
+            full_name: req.admin.full_name || "Admin",
+            role: req.admin.role
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

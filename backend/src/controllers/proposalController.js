@@ -53,54 +53,41 @@ export const createProposal = async (req, res) => {
     }
 
     // Check monthly proposal limits
-    const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'package_options_settings'");
-    let packageOption = "Free listing for both type of users";
-    if (settingsRes.rows.length > 0) {
-      const parsed = typeof settingsRes.rows[0].setting_value === "string"
-        ? JSON.parse(settingsRes.rows[0].setting_value)
-        : settingsRes.rows[0].setting_value;
-      packageOption = parsed.package_option || "Free listing for both type of users";
-    }
+    const planQuery = await pool.query(
+      `SELECT sp.credits, sp.plan_duration, u.created_at 
+       FROM users u 
+       LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id 
+       WHERE u.user_id = $1`,
+      [freelancerId]
+    );
+    const limit = planQuery.rows.length > 0 && planQuery.rows[0].credits !== null 
+      ? parseInt(planQuery.rows[0].credits) 
+      : 10;
 
-    const isPaidOption = packageOption === "Paid listing for both" || packageOption === "Paid listing for sellers";
+    const durationDays = planQuery.rows.length > 0 && planQuery.rows[0].plan_duration !== null 
+      ? parseInt(planQuery.rows[0].plan_duration) 
+      : 30;
 
-    if (isPaidOption) {
-      const planQuery = await pool.query(
-        `SELECT sp.credits, sp.plan_duration, u.created_at 
-         FROM users u 
-         LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id 
-         WHERE u.user_id = $1`,
-        [freelancerId]
-      );
-      const limit = planQuery.rows.length > 0 && planQuery.rows[0].credits !== null 
-        ? parseInt(planQuery.rows[0].credits) 
-        : 10;
+    const userCreatedAt = planQuery.rows.length > 0 ? planQuery.rows[0].created_at : new Date();
+    const cycleStart = getCurrentCycleStart(userCreatedAt, durationDays);
 
-      const durationDays = planQuery.rows.length > 0 && planQuery.rows[0].plan_duration !== null 
-        ? parseInt(planQuery.rows[0].plan_duration) 
-        : 30;
+    const countQuery = await pool.query(
+      `SELECT COUNT(*) FROM proposals 
+       WHERE freelancer_id = $1 
+         AND created_at >= $2`,
+      [freelancerId, cycleStart]
+    );
+    const submittedCount = parseInt(countQuery.rows[0].count || 0);
 
-      const userCreatedAt = planQuery.rows.length > 0 ? planQuery.rows[0].created_at : new Date();
-      const cycleStart = getCurrentCycleStart(userCreatedAt, durationDays);
+    if (submittedCount >= limit) {
+      const nextReset = new Date(cycleStart);
+      nextReset.setDate(nextReset.getDate() + durationDays);
+      const options = { year: 'numeric', month: 'short', day: '2-digit' };
+      const resetStr = nextReset.toLocaleDateString('en-US', options);
 
-      const countQuery = await pool.query(
-        `SELECT COUNT(*) FROM proposals 
-         WHERE freelancer_id = $1 
-           AND created_at >= $2`,
-        [freelancerId, cycleStart]
-      );
-      const submittedCount = parseInt(countQuery.rows[0].count || 0);
-
-      if (submittedCount >= limit) {
-        const nextReset = new Date(cycleStart);
-        nextReset.setDate(nextReset.getDate() + durationDays);
-        const options = { year: 'numeric', month: 'short', day: '2-digit' };
-        const resetStr = nextReset.toLocaleDateString('en-US', options);
-
-        return res.status(403).json({ 
-          message: `Your monthly bid proposal limit of ${limit} has been reached for this billing cycle. Your limit resets on ${resetStr}. Please upgrade your subscription plan to submit more bids.` 
-        });
-      }
+      return res.status(403).json({ 
+        message: `Your monthly bid proposal limit of ${limit} has been reached for this billing cycle. Your limit resets on ${resetStr}. Please upgrade your subscription plan to submit more bids.` 
+      });
     }
 
     // 3. Verify job exists and retrieve client details
@@ -195,6 +182,34 @@ export const createProposal = async (req, res) => {
         });
         if (req.io) {
           req.io.to(`user_${freelancerId}`).emit("new_notification", notif);
+        }
+
+        // Notify active admins
+        const adminsRes = await pool.query("SELECT * FROM admins WHERE is_active = true");
+        for (const adminRow of adminsRes.rows) {
+          let adminUserId;
+          const userCheck = await pool.query("SELECT user_id FROM users WHERE email = $1", [adminRow.email]);
+          if (userCheck.rows.length === 0) {
+            const insertUser = await pool.query(
+              "INSERT INTO users (first_name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id",
+              [adminRow.full_name || "Admin", adminRow.email, "ADMIN_VIRTUAL_HASH"]
+            );
+            adminUserId = insertUser.rows[0].user_id;
+          } else {
+            adminUserId = userCheck.rows[0].user_id;
+          }
+
+          const adminNotif = await Notification.create({
+            userId: adminUserId,
+            title: "New Proposal Vetting Required 🛡️",
+            message: `Freelancer submitted a proposal on project "${job.title}" which requires your vetting approval.`,
+            type: "proposal_vetting",
+            referenceId: proposal.proposal_id.toString()
+          });
+
+          if (req.io) {
+            req.io.to(`user_${adminUserId}`).emit("new_notification", adminNotif);
+          }
         }
       } else {
         const notif = await Notification.create({
@@ -851,27 +866,6 @@ export const getContractReview = async (req, res) => {
 export const checkProposalLimit = async (req, res) => {
   try {
     const freelancerId = req.user.user_id;
-
-    // Check package settings
-    const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'package_options_settings'");
-    let packageOption = "Free listing for both type of users";
-    if (settingsRes.rows.length > 0) {
-      const parsed = typeof settingsRes.rows[0].setting_value === "string"
-        ? JSON.parse(settingsRes.rows[0].setting_value)
-        : settingsRes.rows[0].setting_value;
-      packageOption = parsed.package_option || "Free listing for both type of users";
-    }
-    const isPaidOption = packageOption === "Paid listing for both" || packageOption === "Paid listing for sellers";
-
-    if (!isPaidOption) {
-      return res.status(200).json({
-        limitReached: false,
-        submittedCount: 0,
-        limit: 99999,
-        resetDate: null,
-        isPaidOption: false
-      });
-    }
 
     const planQuery = await pool.query(
       `SELECT sp.credits, sp.plan_duration, u.created_at 

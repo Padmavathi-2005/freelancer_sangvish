@@ -18,6 +18,7 @@ interface Freelancer {
   bio: string;
   verified: boolean;
   category: "development" | "design" | "marketing" | "ai";
+  is_featured?: boolean;
 }
 
 const freelancersData: Freelancer[] = [
@@ -116,6 +117,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
 
   const [freelancersList, setFreelancersList] = useState<Freelancer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [siteShortName, setSiteShortName] = useState("Lancer");
 
   const { 
     clientJobs, 
@@ -221,6 +223,32 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
   };
 
   useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const siteRaw = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;
+          if (siteRaw) {
+            let parsed = siteRaw;
+            if (typeof parsed === "string") {
+              try { parsed = JSON.parse(parsed); } catch {}
+            }
+            if (parsed.site_short_name) {
+              setSiteShortName(parsed.site_short_name);
+            } else if (parsed.site_name) {
+              setSiteShortName(parsed.site_name);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings in marketplace:", e);
+      }
+    };
+    loadSettings();
+  }, []);
+
+  useEffect(() => {
     const fetchFreelancers = async () => {
       try {
         const res = await fetch(`${API_URL}/freelancers/public/list`);
@@ -260,7 +288,8 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
               skills: Array.isArray(f.skills) ? f.skills : [],
               bio: f.bio || "No professional overview bio provided yet by this freelancer partner.",
               verified: f.vetting_status === "Approved",
-              category
+              category,
+              is_featured: f.is_featured === true || f.is_featured === "true"
             };
           });
           setFreelancersList(mapped);
@@ -280,13 +309,19 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
 
   // Filter freelancers based on search query and category
   const filteredFreelancers = useMemo(() => {
-    return displayList.filter((freelancer) => {
+    const list = displayList.filter((freelancer) => {
       const matchesCategory = selectedCategory === "all" || freelancer.category === selectedCategory;
       const matchesSearch =
         freelancer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         freelancer.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
         freelancer.skills.some((skill) => skill.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
+    });
+    // Sort featured first!
+    return [...list].sort((a: any, b: any) => {
+      if (a.is_featured && !b.is_featured) return -1;
+      if (!a.is_featured && b.is_featured) return 1;
+      return 0;
     });
   }, [searchQuery, selectedCategory, displayList]);
 
@@ -328,7 +363,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
       )}
 
       {/* Hero Section */}
-      <section className="relative w-full flex flex-col items-center justify-center text-center py-16 px-4 md:py-24 max-w-5xl mx-auto rounded-3xl overflow-hidden border border-slate-200 bg-white shadow-md">
+      <section className="relative w-full flex flex-col items-center justify-center text-center py-16 px-4 md:py-24 max-w-5xl mx-auto rounded-xl overflow-hidden border border-slate-200 bg-white shadow-md">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/5 via-cyan-500/5 to-transparent pointer-events-none" />
         
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20 mb-6 select-none">
@@ -428,7 +463,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
         {filteredFreelancers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredFreelancers.map((freelancer) => (
-              <div key={freelancer.id} className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-350 transition-all duration-300 flex flex-col justify-between gap-6 relative overflow-hidden group">
+              <div key={freelancer.id} className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-slate-350 transition-all duration-300 flex flex-col justify-between gap-6 relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500" />
                 
                 <div>
@@ -439,8 +474,13 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
                         {freelancer.name.split(" ").map(n => n[0]).join("")}
                       </div>
                       <div className="min-w-0 text-left">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <h3 className="font-extrabold text-slate-800 text-base leading-none truncate">{freelancer.name}</h3>
+                          {freelancer.is_featured && (
+                            <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider animate-pulse shrink-0">
+                              ⭐ {siteShortName}'s Choice
+                            </span>
+                          )}
                           {freelancer.verified && (
                             <span className="text-cyan-600 shrink-0" title="Verified Professional">
                               <svg className="w-4.5 h-4.5" viewBox="0 0 20 20" fill="currentColor">
@@ -501,7 +541,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-300 rounded-2xl p-8 shadow-inner">
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-300 rounded-xl p-8 shadow-inner">
             <svg className="w-12 h-12 text-slate-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -514,7 +554,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
       {/* Post Project Modal */}
       {showPostJobModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xl text-slate-800 text-left animate-scaleIn">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xl text-slate-800 text-left animate-scaleIn">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-150">
               <h3 className="text-lg font-extrabold text-slate-900">Post an Active Project</h3>
@@ -599,7 +639,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
       {/* Send Invite Modal */}
       {selectedFreelancerForInvite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xl text-slate-800 text-left relative animate-scaleIn">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xl text-slate-800 text-left relative animate-scaleIn">
             
             {/* Sticky Close Button */}
             <button

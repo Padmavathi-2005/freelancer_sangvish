@@ -192,7 +192,7 @@ export default function PaymentSettingsTab() {
       </div>
 
       {/* ───── PAYPAL GATEWAY ───── */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-base">🅿</div>
@@ -268,7 +268,7 @@ export default function PaymentSettingsTab() {
       </div>
 
       {/* ───── STRIPE GATEWAY ───── */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base">⚡</div>
@@ -344,7 +344,7 @@ export default function PaymentSettingsTab() {
       </div>
 
       {/* ───── ADMIN PAYOUT ACCOUNT ───── */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-base">🏦</div>
           <div>
@@ -409,7 +409,7 @@ export default function PaymentSettingsTab() {
       </div>
 
       {/* ───── FUTURE INTEGRATIONS ───── */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100">
           <h2 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
             <span>🔮</span> Future Payment Integrations

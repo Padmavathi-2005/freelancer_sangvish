@@ -120,10 +120,10 @@ export default function WhyChoose() {
             return (
               <div 
                 key={feat.feature_id} 
-                className="bg-slate-100/70 border border-slate-200/60 rounded-3xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:border-[#0a5a54]/30 hover:shadow-xl hover:shadow-slate-200/50 flex flex-col items-start gap-4 animate-fadeIn"
+                className="bg-slate-100/70 border border-slate-200/60 rounded-xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:border-[#0a5a54]/30 hover:shadow-xl hover:shadow-slate-200/50 flex flex-col items-start gap-4 animate-fadeIn"
               >
                 {/* Icon badge */}
-                <div className="w-11 h-11 rounded-2xl bg-[#e6f0ef] flex items-center justify-center shrink-0 shadow-inner">
+                <div className="w-11 h-11 rounded-xl bg-[#e6f0ef] flex items-center justify-center shrink-0 shadow-inner">
                   {renderIcon(feat.icon_name)}
                 </div>
                 

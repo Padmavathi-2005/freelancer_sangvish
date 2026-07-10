@@ -78,7 +78,7 @@ export default function SocialLoginTab() {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left max-w-4xl">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left max-w-4xl">
       {/* HEADER SECTION with Save Action */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
         <div>
@@ -97,7 +97,7 @@ export default function SocialLoginTab() {
       </div>
 
       {saveStatus && (
-        <div className={`p-4 rounded-2xl text-xs font-bold ${
+        <div className={`p-4 rounded-xl text-xs font-bold ${
           saveStatus.type === "success" ? "bg-emerald-50 border border-emerald-250 text-emerald-700" : "bg-rose-50 border border-rose-250 text-rose-700"
         }`}>
           {saveStatus.text}

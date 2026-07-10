@@ -219,7 +219,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
 
     if (app.status === "Pending") {
       return (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-3">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex items-start gap-3">
           <FiAlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-black text-amber-800">Awaiting Freelancer Acceptance</p>
@@ -234,7 +234,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
 
     if (app.status === "Rejected") {
       return (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5 flex items-start gap-3">
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 flex items-start gap-3">
           <FiAlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-black text-rose-800">Order Declined by Freelancer</p>
@@ -249,7 +249,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
     if (app.status === "Accepted") {
       if (paySuccess) {
         return (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex items-start gap-3">
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 flex items-start gap-3">
             <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-black text-emerald-800">Payment Confirmed — Contract Active!</p>
@@ -262,7 +262,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
       }
 
       return (
-        <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col gap-0 relative overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-xl shadow-sm flex flex-col gap-0 relative overflow-hidden">
           {/* Top accent bar */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-emerald-400" />
 
@@ -391,7 +391,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
     if (app.status === "Completed") {
       if (app.review_rating) {
         return (
-          <div className="bg-teal-50/50 border border-teal-150 rounded-2xl p-6 flex flex-col gap-3 text-left">
+          <div className="bg-teal-50/50 border border-teal-150 rounded-xl p-6 flex flex-col gap-3 text-left">
             <h4 className="text-xs font-black text-teal-850 flex items-center gap-1.5">
               <FiCheckCircle className="w-4 h-4 text-emerald-600" />
               <span>Service Reviewed Successfully</span>
@@ -414,7 +414,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
       }
 
       return (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 text-left">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left">
           <div>
             <h4 className="text-sm font-black text-slate-900">Share Your Experience</h4>
             <p className="text-slate-500 text-xs mt-1 font-medium">Leave a review for the freelancer and their delivered work.</p>
@@ -479,7 +479,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
     return (
       <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left">
         {/* Header */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <button
               onClick={() => { setSelectedGigOrderDetails(null); setPayError(""); setPaySuccess(false); }}
@@ -517,7 +517,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         </div>
 
         {/* Overview */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
           <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Order Specifications</h3>
           <div className="flex justify-between items-start gap-4 flex-wrap">
@@ -567,7 +567,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         </div>
 
         {/* Vertical Payment Steps Tracker */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
           <h3 className="text-sm font-extrabold text-slate-855 border-b border-slate-100 pb-2">Payment Status</h3>
           <div className="flex flex-col">
@@ -612,7 +612,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         </div>
 
         {selectedGigOrderDetails.status === "Accepted" && selectedGigOrderDetails.payment_status === "Paid" && (
-          <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-left">
               <p className="text-xs font-black text-slate-800">Is the service work completed?</p>
               <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-relaxed">
@@ -654,7 +654,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         {renderPaymentPanel(selectedGigOrderDetails)}
 
         {/* Milestone Tracker */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
           <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Milestones Tracker</h3>
           <GigMilestoneTracker
@@ -675,7 +675,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
   return (
     <div className="relative z-10 flex flex-col gap-8 w-full animate-fadeIn text-left">
       {/* Header */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <FiBriefcase className="w-5 h-5 text-primary shrink-0" />
@@ -687,12 +687,12 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
 
       {/* List */}
       {loadingClientApplications ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm">
+        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-xl p-8 shadow-sm">
           <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
           <p className="text-slate-404 text-xs font-semibold">Loading orders...</p>
         </div>
       ) : clientApplications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-2xl p-8 shadow-inner">
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-xl p-8 shadow-inner">
           <svg className="w-10 h-10 text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
@@ -714,7 +714,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
             return (
               <div
                 key={app.application_id}
-                className={`bg-white border rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden transition-all animate-fadeIn ${
+                className={`bg-white border rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden transition-all animate-fadeIn ${
                   needsPayment ? "border-primary/30 ring-1 ring-primary/10" : "border-slate-200/80 hover:border-slate-300"
                 }`}
               >
@@ -794,7 +794,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedGigOrderDetails(null); }}
           style={{ background: "rgba(15,23,42,0.55)", backdropFilter: "blur(4px)" }}
         >
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
             {/* Header */}
             <div className="bg-gradient-to-r from-teal-700 to-cyan-600 px-6 py-5 flex justify-between items-start rounded-t-2xl shrink-0">
               <div>
@@ -879,7 +879,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
 
               {/* Complete Order Button Action */}
               {selectedGigOrderDetails.status === "Accepted" && selectedGigOrderDetails.payment_status === "Paid" && (
-                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-left">
                     <p className="text-xs font-black text-slate-850">Is the service work completed?</p>
                     <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-relaxed">

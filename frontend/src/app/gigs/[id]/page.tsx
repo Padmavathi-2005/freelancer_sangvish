@@ -917,7 +917,7 @@ export default function GigDetailsPage() {
              <div className="flex flex-col gap-4">
                {gigImages.length > 0 ? (
                  <>
-                   <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/50">
+                   <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-100 border border-slate-200/50">
                      <img 
                        src={resolveMediaUrl(gigImages[activeImageIdx])} 
                        className="w-full h-full object-cover transition-all duration-300" 
@@ -954,7 +954,7 @@ export default function GigDetailsPage() {
                    )}
                  </>
                ) : (
-                 <div className="w-full aspect-video bg-gradient-to-tr from-teal-700/5 to-cyan-500/5 flex flex-col items-center justify-center text-slate-400 gap-1 rounded-2xl border border-slate-200">
+                 <div className="w-full aspect-video bg-gradient-to-tr from-teal-700/5 to-cyan-500/5 flex flex-col items-center justify-center text-slate-400 gap-1 rounded-xl border border-slate-200">
                    <FiShoppingBag className="w-12 h-12 text-slate-300 mb-2" />
                    <span className="font-extrabold text-slate-500 uppercase tracking-widest text-xs">Premium Service Showcase</span>
                  </div>
@@ -975,7 +975,7 @@ export default function GigDetailsPage() {
                
                {/* Core Skills & Expertise */}
                {gig.skills && gig.skills.length > 0 && (
-                 <div className="mt-4 bg-slate-50 rounded-2xl p-5 border border-slate-200/40">
+                 <div className="mt-4 bg-slate-50 rounded-xl p-5 border border-slate-200/40">
                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Core Expertise & Skills:</h4>
                    <div className="flex flex-wrap gap-2">
                      {gig.skills.map((skill: any, idx: number) => (
@@ -999,7 +999,7 @@ export default function GigDetailsPage() {
                    {gig.video_url && (
                      <div className="text-left">
                        <h3 className="text-sm font-black text-slate-900 mb-3 uppercase tracking-wider">Showcase Video</h3>
-                       <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black border border-slate-200 shadow-inner">
+                       <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-200 shadow-inner">
                          <video src={resolveMediaUrl(gig.video_url)} controls className="w-full h-full object-cover" />
                        </div>
                      </div>
@@ -1053,7 +1053,7 @@ export default function GigDetailsPage() {
                  {getGigFaqs().map((faq: any, idx: number) => (
                    <details 
                      key={idx} 
-                     className="group border border-slate-150 rounded-2xl p-4 [&_summary::-webkit-details-marker]:hidden cursor-pointer hover:bg-slate-50/50 transition-colors"
+                     className="group border border-slate-150 rounded-xl p-4 [&_summary::-webkit-details-marker]:hidden cursor-pointer hover:bg-slate-50/50 transition-colors"
                    >
                      <summary className="flex justify-between items-center focus:outline-none">
                        <span className="text-xs sm:text-sm font-black text-slate-800 text-left">
@@ -1120,7 +1120,7 @@ export default function GigDetailsPage() {
                    ))}
                  </div>
                ) : (
-                 <div className="text-center py-6 border border-dashed border-slate-150 rounded-2xl bg-slate-50/20">
+                 <div className="text-center py-6 border border-dashed border-slate-150 rounded-xl bg-slate-50/20">
                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">No Reviews Yet</p>
                  </div>
                )}
@@ -1132,7 +1132,7 @@ export default function GigDetailsPage() {
           <div className="flex flex-col gap-6 sticky top-6">
             
             {/* PACKAGE PRICING CARD */}
-            <div className="bg-white border border-slate-200 shadow-lg rounded-3xl overflow-hidden flex flex-col text-left">
+            <div className="bg-white border border-slate-200 shadow-lg rounded-xl overflow-hidden flex flex-col text-left">
               {/* Package Tabs */}
               <div className="flex border-b border-slate-155 bg-slate-50/80">
                 {hasCustomPlans ? (
@@ -1266,7 +1266,7 @@ export default function GigDetailsPage() {
                 )}
 
                 {hasPlanDiscount && (
-                  <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-3.5 text-xxs font-bold text-emerald-800 flex items-center gap-2 animate-fadeIn">
+                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 text-xxs font-bold text-emerald-800 flex items-center gap-2 animate-fadeIn">
                     <span>🎉 <strong>{gig.plan_name} Plan Discount</strong> automatically applied to this service!</span>
                   </div>
                 )}
@@ -1290,7 +1290,7 @@ export default function GigDetailsPage() {
             </div>
 
             {/* ABOUT THE SELLER CARD */}
-            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col gap-4 text-left">
+            <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
                 About the Seller
               </h3>
@@ -1371,7 +1371,7 @@ export default function GigDetailsPage() {
           </div>
 
           {similarGigs.length === 0 ? (
-            <div className="border border-dashed border-slate-200 rounded-3xl p-8 text-center bg-white">
+            <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-white">
               <FiShoppingBag className="w-8 h-8 text-slate-300 mx-auto mb-2" />
               <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">No Similar Gigs Found</p>
             </div>
@@ -1396,7 +1396,7 @@ export default function GigDetailsPage() {
                       setActiveImageIdx(0);
                       router.push(`/gigs/${sg.slug || sg.gig_id}`);
                     }}
-                    className="bg-[#f3f4f6]/40 border border-slate-200/70 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-teal-500/35 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between cursor-pointer group"
+                    className="bg-[#f3f4f6]/40 border border-slate-200/70 rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-teal-500/35 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between cursor-pointer group"
                   >
                     <div>
                       {/* Image container with badges overlaid */}
@@ -1470,7 +1470,7 @@ export default function GigDetailsPage() {
       {/* Order Gig Application Modal Portal */}
       {isApplying && createPortal(
         <div className="fixed inset-0 z-[99999] bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative max-h-[95vh] flex flex-col">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative max-h-[95vh] flex flex-col">
             <button
               onClick={() => {
                 setIsApplying(false);
@@ -1505,7 +1505,7 @@ export default function GigDetailsPage() {
               <div className="flex-grow overflow-y-auto my-4 flex flex-col gap-5 pr-1.5 min-h-0 text-left">
                 
                 {/* Price Details banner */}
-                <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex justify-between items-center text-xs shrink-0 text-left">
+                <div className="bg-slate-50 border border-slate-150 rounded-xl p-4 flex justify-between items-center text-xs shrink-0 text-left">
                   <div>
                     <span className="text-slate-400 block font-bold uppercase tracking-wider text-[9px]">
                       Selected Package Price
@@ -1522,7 +1522,7 @@ export default function GigDetailsPage() {
 
                 {/* Price Negotiation Section */}
                 {gig.negotiation && (
-                  <div className="bg-amber-50/50 border border-amber-200/80 rounded-2xl p-4 flex flex-col gap-2 text-left">
+                  <div className="bg-amber-50/50 border border-amber-200/80 rounded-xl p-4 flex flex-col gap-2 text-left">
                     <label className="text-xs font-bold text-slate-700 block">Propose a Negotiated Price</label>
                     <p className="text-[10px] text-slate-505 font-semibold mb-1">
                       The freelancer allows budget proposals for this gig. Enter your offer below if you wish to negotiate:
@@ -1541,7 +1541,7 @@ export default function GigDetailsPage() {
                 )}
 
                 {/* Payment info notice */}
-                <div className="flex items-start gap-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl p-4 text-left">
+                <div className="flex items-start gap-3 bg-blue-50/80 border border-blue-200/80 rounded-xl p-4 text-left">
                   <FiInfo className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-xs font-black text-blue-800">Payment is requested after the freelancer accepts</p>
@@ -1552,7 +1552,7 @@ export default function GigDetailsPage() {
                 </div>
 
                 {/* Extra Features / Add-ons Builder */}
-                <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200/80 rounded-2xl p-4 text-left">
+                <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200/80 rounded-xl p-4 text-left">
                   <div className="flex justify-between items-center text-left">
                     <div>
                       <label className="text-xs font-black text-slate-800 uppercase tracking-wide">Extra Features / Add-ons</label>

@@ -1,5 +1,11 @@
 "use client";
-import { API_URL } from "@/config/api";
+import { API_URL, API_BASE_URL } from "@/config/api";
+
+const resolveLogoUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 
 import React, { useState, useEffect } from "react";
@@ -26,6 +32,9 @@ export default function Header() {
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(null);
+  const [siteLogo, setSiteLogo] = useState("");
+  const [siteName, setSiteName] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   const getCategoryLink = (catName: string, subCatName: string) => {
     if (typeof window !== "undefined") {
@@ -53,7 +62,10 @@ export default function Header() {
 
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== "undefined") {
+      setSiteLogo(localStorage.getItem("cached_site_logo") || "");
+      setSiteName(localStorage.getItem("cached_site_name") || "");
       const token = localStorage.getItem("token");
       const userStr = localStorage.getItem("user");
       if (token) {
@@ -109,6 +121,36 @@ export default function Header() {
       }
     };
     fetchTaxonomies();
+
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          data.forEach((setting: any) => {
+            if (setting.setting_key === "site_settings") {
+              let val = setting.setting_value;
+              if (typeof val === "string") {
+                try {
+                  val = JSON.parse(val);
+                } catch (e) {}
+              }
+              if (val?.site_logo) {
+                setSiteLogo(val.site_logo);
+                localStorage.setItem("cached_site_logo", val.site_logo);
+              }
+              if (val?.site_name) {
+                setSiteName(val.site_name);
+                localStorage.setItem("cached_site_name", val.site_name);
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load header brand settings", err);
+      }
+    };
+    fetchSettings();
   }, []);
 
   const handleHeaderLogout = () => {
@@ -133,15 +175,51 @@ export default function Header() {
             <div className="relative group/home shrink-0">
               <a href="/" className="flex items-center gap-2 select-none py-2">
                 {/* Logo Icon */}
-                <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-750 font-extrabold shadow-sm shrink-0">
-                  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                </div>
-                <span className="text-xl font-black tracking-tight font-display flex items-baseline gap-0.5">
-                  <span className="text-slate-800">Buy2</span>
-                  <span className="text-teal-700">Lancer</span>
-                </span>
+                {mounted && siteLogo ? (
+                  <img
+                    src={resolveLogoUrl(siteLogo)}
+                    alt={siteName || "Buy2Lancer"}
+                    className="h-8 w-auto max-w-[180px] object-contain shrink-0"
+                  />
+                ) : (
+                  <>
+                    <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-750 font-extrabold shadow-sm shrink-0">
+                      <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                    </div>
+                    <span className="text-xl font-black tracking-tight font-display flex items-baseline gap-0.5">
+                      {mounted && siteName ? (
+                        (() => {
+                          const words = siteName.split(" ");
+                          if (words.length > 1) {
+                            return (
+                              <>
+                                <span className="text-slate-800">{words[0]}</span>
+                                <span className="text-teal-700">{words.slice(1).join(" ")}</span>
+                              </>
+                            );
+                          }
+                          const match = siteName.match(/^([a-z0-9]+)([A-Z].*)$/i);
+                          if (match) {
+                            return (
+                              <>
+                                <span className="text-slate-800">{match[1]}</span>
+                                <span className="text-teal-700">{match[2]}</span>
+                              </>
+                            );
+                          }
+                          return <span className="text-slate-800">{siteName}</span>;
+                        })()
+                      ) : (
+                        <>
+                          <span className="text-slate-800">Buy2</span>
+                          <span className="text-teal-700">Lancer</span>
+                        </>
+                      )}
+                    </span>
+                  </>
+                )}
               </a>
 
               {/* Home Dropdown Options on Hover */}
@@ -230,7 +308,7 @@ export default function Header() {
                                       </a>
                                     ))}
                                   </div>
-                                  <div className="col-span-1 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-2xl p-4.5 flex flex-col justify-between min-h-[140px] text-left shadow-sm">
+                                  <div className="col-span-1 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-4.5 flex flex-col justify-between min-h-[140px] text-left shadow-sm">
                                     <div>
                                       <span className="text-[9px] font-black text-primary uppercase tracking-widest block mb-1">PROMOTED</span>
                                       <h5 className="text-xs font-black text-slate-800 leading-snug">Hire Expert Freelancers</h5>
@@ -266,6 +344,9 @@ export default function Header() {
               </a>
               <a href="/gigs" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
                 Explore Gigs
+              </a>
+              <a href="/blogs" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
+                Blogs
               </a>
 
             </nav>
@@ -403,6 +484,9 @@ export default function Header() {
           </a>
           <a href="/terms-conditions" className="text-slate-600 hover:text-primary font-medium px-4 py-2.5 rounded-lg text-base hover:bg-slate-200/50 transition-colors">
             {t("terms_conditions", "Terms & condition")}
+          </a>
+          <a href="/blogs" className="text-slate-600 hover:text-primary font-medium px-4 py-2.5 rounded-lg text-base hover:bg-slate-200/50 transition-colors">
+            Blogs
           </a>
 
           {/* Dynamic Custom CMS Pages list (excluding already mapped static ones to keep drawer clean) */}

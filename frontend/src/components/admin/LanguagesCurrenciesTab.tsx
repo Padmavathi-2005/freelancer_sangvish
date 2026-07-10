@@ -390,7 +390,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-6 right-6 z-55 px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border text-xs font-black transition-all ${
+        <div className={`fixed top-6 right-6 z-55 px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 border text-xs font-black transition-all ${
           toast.type === "success"
             ? "bg-slate-900 text-white border-slate-800"
             : "bg-rose-600 text-white border-rose-700"
@@ -402,7 +402,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
 
       {/* Sub Tab Toggle (only show if not translating and not forced) */}
       {!translatingLang && !forceTab && (
-        <div className="flex gap-2 bg-white border border-slate-200 rounded-2xl p-1 self-start shadow-sm select-none">
+        <div className="flex gap-2 bg-white border border-slate-200 rounded-xl p-1 self-start shadow-sm select-none">
           {(["languages", "currencies"] as const).map(tab => (
             <button
               key={tab}
@@ -431,7 +431,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
 
       {/* ── TRANSLATIONS EDITOR WORKSPACE ───────────────────────── */}
       {translatingLang ? (
-        <div className="flex flex-col gap-6 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">
+        <div className="flex flex-col gap-6 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
           {/* Editor Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-100">
             <div>
@@ -472,7 +472,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left: Add New Translation Key Form */}
-            <div className="bg-slate-50 border border-slate-200/60 rounded-2xl p-5 flex flex-col gap-4 self-start">
+            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-5 flex flex-col gap-4 self-start">
               <div>
                 <h3 className="text-xs font-black text-slate-800">Add Global Key</h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">Declare a new translation key globally across all languages.</p>
@@ -513,7 +513,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
 
             {/* Right: Key-Value Editors list */}
             <div className="lg:col-span-2 flex flex-col gap-4">
-              <div className="overflow-y-auto max-h-[500px] border border-slate-100 rounded-2xl pr-2">
+              <div className="overflow-y-auto max-h-[500px] border border-slate-100 rounded-xl pr-2">
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50 sticky top-0">
@@ -669,7 +669,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
               {/* Add / Edit Form */}
-              <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col gap-4 self-start">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4 self-start">
                 <div>
                   <h4 className="text-sm font-black text-slate-800">{langEditId ? "Edit Language" : "Add Language"}</h4>
                   <p className="text-xs text-slate-400 mt-0.5">Enter name, code, writing direction and details.</p>
@@ -765,7 +765,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               </div>
 
               {/* Languages Table */}
-              <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+              <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
                     <h4 className="text-sm font-black text-slate-800">All Languages</h4>
@@ -934,7 +934,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
               {/* Add / Edit Form */}
-              <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col gap-4 self-start">
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4 self-start">
                 <div>
                   <h4 className="text-sm font-black text-slate-800">{currEditId ? "Edit Currency" : "Add Currency"}</h4>
                   <p className="text-xs text-slate-400 mt-0.5">Enter currency code, display name and symbol.</p>
@@ -994,7 +994,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               </div>
 
               {/* Currencies Table */}
-              <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-5 shadow-sm flex flex-col gap-4">
+              <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
                     <h4 className="text-sm font-black text-slate-800">All Currencies</h4>
@@ -1125,7 +1125,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
           {/* ── Enabling translation modal ── */}
           {enablingLang && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[1px]">
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 w-96 shadow-2xl flex flex-col gap-4">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 w-96 shadow-2xl flex flex-col gap-4">
                 <div>
                   <h3 className="text-sm font-black text-slate-800">Enable Translation</h3>
                   <p className="text-xs text-slate-400 mt-1">

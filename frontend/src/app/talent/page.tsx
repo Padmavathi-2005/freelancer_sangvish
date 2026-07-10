@@ -2,7 +2,7 @@
 import { API_URL } from "@/config/api";
 
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -28,10 +28,14 @@ function TalentSearchContent() {
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [siteShortName, setSiteShortName] = useState("Lancer");
 
   // Wishlist and Toast states
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -47,6 +51,32 @@ function TalentSearchContent() {
         console.error("Failed to parse freelancers wishlist:", e);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const siteRaw = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;
+          if (siteRaw) {
+            let parsed = siteRaw;
+            if (typeof parsed === "string") {
+              try { parsed = JSON.parse(parsed); } catch {}
+            }
+            if (parsed.site_short_name) {
+              setSiteShortName(parsed.site_short_name);
+            } else if (parsed.site_name) {
+              setSiteShortName(parsed.site_name);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings in talent page:", e);
+      }
+    };
+    loadSettings();
   }, []);
 
   const isInWishlist = (userId: number) => {
@@ -183,6 +213,10 @@ function TalentSearchContent() {
 
   // Sorting
   const sortedFreelancers = [...filteredFreelancers].sort((a: any, b: any) => {
+    // Featured always sorted first!
+    if (a.is_featured && !b.is_featured) return -1;
+    if (!a.is_featured && b.is_featured) return 1;
+
     if (sortBy === "rate_desc") {
       return parseFloat(b.hourly_rate || 0) - parseFloat(a.hourly_rate || 0);
     }
@@ -194,6 +228,17 @@ function TalentSearchContent() {
     const scoreB = (b.vetting_status === "Approved" ? 100 : 0) + parseFloat(b.hourly_rate || 0) / 10;
     return scoreB - scoreA;
   });
+
+  const paginatedFreelancers = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedFreelancers.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedFreelancers, currentPage]);
+
+  const totalPages = Math.ceil(sortedFreelancers.length / itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedSubcategory, minRate, maxRate, experienceLevel, vettedOnly, filterSkill, sortBy]);
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -224,7 +269,7 @@ function TalentSearchContent() {
 
       {/* Search Type Switcher */}
       <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Category</span>
           <div className="flex gap-2">
             <button
@@ -265,11 +310,11 @@ function TalentSearchContent() {
       </div>
 
       {/* Main Grid Workspace */}
-      <main className="max-w-7xl mx-auto w-full py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+      <main className="max-w-[1600px] mx-auto w-full py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
         
         {/* Left Side: Filtering Sidebar */}
         <aside className="lg:col-span-3 space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6 sticky top-6">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 sticky top-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
                 <FiSliders className="w-4 h-4 text-teal-700" />
@@ -293,7 +338,7 @@ function TalentSearchContent() {
                   setSelectedCategory(e.target.value);
                   setSelectedSubcategory("");
                 }}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">All Categories</option>
                 {categories.map((c) => (
@@ -311,7 +356,7 @@ function TalentSearchContent() {
                 <select
                   value={selectedSubcategory}
                   onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
                 >
                   <option value="">All Subcategories</option>
                   {activeSubcategories.map((s) => (
@@ -332,14 +377,14 @@ function TalentSearchContent() {
                   placeholder="Min"
                   value={minRate}
                   onChange={(e) => setMinRate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
                 />
                 <input
                   type="number"
                   placeholder="Max"
                   value={maxRate}
                   onChange={(e) => setMaxRate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
                 />
               </div>
             </div>
@@ -350,7 +395,7 @@ function TalentSearchContent() {
               <select
                 value={experienceLevel}
                 onChange={(e) => setExperienceLevel(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">Any Level</option>
                 <option value="Entry">Entry Level</option>
@@ -367,7 +412,7 @@ function TalentSearchContent() {
                 placeholder="e.g. React, Figma..."
                 value={filterSkill}
                 onChange={(e) => setFilterSkill(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-3xl px-3 py-2 text-xs font-bold text-slate-750 focus:outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-750 focus:outline-none"
               />
             </div>
 
@@ -389,7 +434,7 @@ function TalentSearchContent() {
         {/* Right Side: Search Results Listing */}
         <section className="lg:col-span-9 space-y-6">
           {/* Top Panel bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
             {/* Search Input */}
             <div className="flex-1 max-w-md relative select-none">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -400,7 +445,7 @@ function TalentSearchContent() {
                 placeholder="Search for freelancers..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-3xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
               />
             </div>
 
@@ -414,7 +459,7 @@ function TalentSearchContent() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-3xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
                 >
                   <option value="recommended">Recommended</option>
                   <option value="rate_desc">Hourly Rate: High to Low</option>
@@ -426,12 +471,12 @@ function TalentSearchContent() {
 
           {/* Loading status */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-[2rem] gap-4">
+            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl gap-4">
               <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
               <p className="text-xs font-bold text-slate-400">Loading freelancers...</p>
             </div>
           ) : sortedFreelancers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-[2rem] text-center p-6">
+            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl text-center p-6">
               <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 text-2xl mb-4">
                 👋
               </div>
@@ -448,7 +493,7 @@ function TalentSearchContent() {
             </div>
           ) : (
             <div className="space-y-4">
-              {sortedFreelancers.map((f) => {
+              {paginatedFreelancers.map((f) => {
                 const hourlyRate = parseFloat(f.hourly_rate || 0);
                 const initials = f.name
                   ? f.name
@@ -462,21 +507,25 @@ function TalentSearchContent() {
                 return (
                   <div
                     key={f.user_id}
-                    className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start gap-5 relative group"
+                    className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start gap-5 relative group"
                   >
                     {/* Avatar */}
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-indigo-500 text-white flex items-center justify-center text-lg font-black shrink-0 shadow-inner select-none">
-                      {f.profile_image ? (
+                    <div
+                      className="w-14 h-14 rounded-xl text-white flex items-center justify-center text-lg font-black shrink-0 shadow-inner select-none relative overflow-hidden"
+                      style={{
+                        background: `linear-gradient(135deg, var(--color-primary, #10b981) 0%, var(--color-secondary, #06b6d4) 100%)`
+                      }}
+                    >
+                      <span>{initials}</span>
+                      {f.profile_image && (
                         <img
                           src={`https://freelancer.sangvish.com${f.profile_image}`}
                           alt={f.name}
-                          className="w-full h-full object-cover rounded-2xl"
+                          className="absolute inset-0 w-full h-full object-cover rounded-xl"
                           onError={(e: any) => {
                             e.target.style.display = "none";
                           }}
                         />
-                      ) : (
-                        <span>{initials}</span>
                       )}
                     </div>
 
@@ -486,6 +535,12 @@ function TalentSearchContent() {
                         <h3 className="text-base font-black text-slate-850 group-hover:text-primary transition-colors leading-tight">
                           {f.name}
                         </h3>
+                        {f.is_featured && (
+                          <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider animate-pulse shrink-0 flex items-center gap-1">
+                            <FiStar className="w-2.5 h-2.5 fill-white text-white shrink-0" />
+                            <span>{siteShortName}'s Choice</span>
+                          </span>
+                        )}
                         {f.vetting_status === "Approved" && (
                           <FiCheckCircle className="w-4.5 h-4.5 text-primary shrink-0" title="Vetted Contractor" />
                         )}
@@ -523,7 +578,7 @@ function TalentSearchContent() {
                     </div>
 
                     {/* Right / Pricing Action */}
-                    <div className="sm:border-l sm:border-slate-100 sm:pl-6 flex flex-col justify-between items-start sm:items-end gap-4 self-stretch min-w-[120px]">
+                    <div className="sm:border-l sm:border-slate-100 sm:pl-6 flex flex-col justify-between items-start sm:items-end gap-4 self-stretch min-w-[160px]">
                       <div className="text-left sm:text-right">
                         <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Hourly Rate</span>
                         <div className="flex items-baseline gap-0.5 text-slate-850 font-black text-lg mt-0.5">
@@ -546,7 +601,10 @@ function TalentSearchContent() {
                         </button>
                         <button
                           onClick={() => router.push(`/freelancer/${f.slug || f.user_id}`)}
-                          className="flex-1 bg-primary hover:bg-primary-hover text-white text-[10px] font-black py-2.5 rounded-xl shadow-sm transition cursor-pointer text-center border-none"
+                          className="flex-1 text-white text-[11px] font-extrabold py-2.5 rounded-xl shadow-md transition-all duration-300 cursor-pointer text-center border-none hover:shadow-lg hover:brightness-110 active:scale-95"
+                          style={{
+                            background: `linear-gradient(135deg, var(--color-primary, #10b981) 0%, var(--color-secondary, #06b6d4) 100%)`
+                          }}
                         >
                           View Profile
                         </button>
@@ -556,6 +614,30 @@ function TalentSearchContent() {
                   </div>
                 );
               })}
+
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-100 text-xs font-bold select-none text-slate-805">
+                  <span className="text-slate-400">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedFreelancers.length)} of {sortedFreelancers.length} professionals
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>

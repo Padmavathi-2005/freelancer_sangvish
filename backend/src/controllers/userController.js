@@ -425,7 +425,7 @@ export const subscribeToPlan = async (req, res) => {
 
             // Update user active plan
             await pool.query(
-                "UPDATE users SET active_plan_id = $1 WHERE user_id = $2",
+                "UPDATE users SET active_plan_id = $1, active_plan_subscribed_at = CURRENT_TIMESTAMP WHERE user_id = $2",
                 [parseInt(plan_id), userId]
             );
 

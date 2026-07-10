@@ -98,7 +98,7 @@ export default function GigOrdersTab({
   ];
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
       <div>
         <h3 className="text-lg font-bold text-slate-800">Gig orders & proposals</h3>
         <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Monitor and process client applications, orders, payments status and milestone reviews for active gigs.</p>

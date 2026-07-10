@@ -93,7 +93,7 @@ export default function EmailSettingsTab({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left">
       
       {/* HEADER SECTION with Save Action */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
@@ -189,7 +189,7 @@ export default function EmailSettingsTab({
       {/* FLOATING SUCCESS TOAST */}
       {showToast && (
         <div 
-          className="fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-white/10 animate-slideIn"
+          className="fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-white/10 animate-slideIn"
           style={{ backgroundColor: "var(--color-primary, #0f766e)", color: "#ffffff" }}
         >
           <span className="text-white font-bold text-base" style={{ color: "#ffffff" }}>✓</span>

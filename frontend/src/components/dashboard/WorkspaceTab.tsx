@@ -132,27 +132,18 @@ export default function WorkspaceTab({
   }, [gigApplications]);
 
   const dynamicMonthlyData = useMemo(() => {
-    const transactions = walletInfo?.transactions || [];
-    if (transactions.length === 0) {
-      return [
-        { month: "Jan", amount: 1200 },
-        { month: "Feb", amount: 2100 },
-        { month: "Mar", amount: 1800 },
-        { month: "Apr", amount: 3400 },
-        { month: "May", amount: 2900 },
-        { month: "Jun", amount: balance > 0 ? Math.round(balance) : 4100 },
-      ];
-    }
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const grouped: { [key: string]: number } = {};
-    
     const now = new Date();
+
+    // Build the last 6 calendar months, all starting at 0
+    const grouped: { [key: string]: number } = {};
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mLabel = months[d.getMonth()];
-      grouped[mLabel] = 0;
+      grouped[months[d.getMonth()]] = 0;
     }
 
+    // Add real transaction amounts on top
+    const transactions = walletInfo?.transactions || [];
     transactions.forEach((tx: any) => {
       const txDate = new Date(tx.created_at || tx.timestamp);
       const mLabel = months[txDate.getMonth()];
@@ -166,10 +157,11 @@ export default function WorkspaceTab({
       month: m,
       amount: Math.round(grouped[m])
     }));
-  }, [walletInfo, balance]);
+  }, [walletInfo]);
 
   const maxEarningVal = useMemo(() => {
-    return Math.max(...dynamicMonthlyData.map((d) => d.amount), 100);
+    const m = Math.max(...dynamicMonthlyData.map((d) => d.amount));
+    return m > 0 ? m : 1;
   }, [dynamicMonthlyData]);
 
   return (
@@ -185,7 +177,7 @@ export default function WorkspaceTab({
               setProfileStep(firstIncomplete);
             }
           }}
-          className="bg-gradient-to-r from-teal-600/5 to-cyan-500/5 border border-teal-650/30 hover:border-teal-600/70 hover:shadow-md cursor-pointer transition-all duration-200 rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm animate-fadeIn relative z-10 group"
+          className="bg-gradient-to-r from-teal-600/5 to-cyan-500/5 border border-teal-650/30 hover:border-teal-600/70 hover:shadow-md cursor-pointer transition-all duration-200 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm animate-fadeIn relative z-10 group"
         >
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1.5">
@@ -238,7 +230,7 @@ export default function WorkspaceTab({
 
       <div className="relative w-full z-10">
         {((userRole === "freelancer" || userRole === "client") && vettingStatus !== "Approved") && (
-          <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[6px] rounded-3xl flex flex-col items-center justify-center text-center p-8 z-30 select-none border border-slate-200/50 shadow-inner min-h-[400px]">
+          <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-[6px] rounded-xl flex flex-col items-center justify-center text-center p-8 z-30 select-none border border-slate-200/50 shadow-inner min-h-[400px]">
             <div className="w-12 h-12 bg-white border border-slate-200/60 text-slate-800 rounded-full flex items-center justify-center shadow-md animate-pulse mb-4">
               <span className="text-base">⏳</span>
             </div>
@@ -250,7 +242,7 @@ export default function WorkspaceTab({
         )}
 
         {isProfileIncomplete && !((userRole === "freelancer" || userRole === "client") && vettingStatus !== "Approved") && (
-          <div className="absolute inset-0 bg-slate-50/70 backdrop-blur-[6px] rounded-3xl flex flex-col items-center justify-center text-center p-8 z-30 select-none border border-slate-200/50 shadow-inner">
+          <div className="absolute inset-0 bg-slate-50/70 backdrop-blur-[6px] rounded-xl flex flex-col items-center justify-center text-center p-8 z-30 select-none border border-slate-200/50 shadow-inner">
             <div className="w-12 h-12 bg-white border border-slate-200/60 text-slate-800 rounded-full flex items-center justify-center shadow-md animate-bounce mb-4">
               <FiLock className="w-5 h-5 text-slate-750" />
             </div>
@@ -283,7 +275,7 @@ export default function WorkspaceTab({
               {/* LEFT COLUMN: CHARTS & ACTIONS */}
               <div className="lg:col-span-7 flex flex-col gap-6">
                 {selectedProjectDetails ? (
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
+                  <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-505 opacity-80" />
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
                       <h3 className="text-xs font-extrabold uppercase tracking-wide">Project Milestone & Escrow</h3>
@@ -302,7 +294,7 @@ export default function WorkspaceTab({
                     />
                   </div>
                 ) : selectedGigOrderDetails ? (
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
+                  <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
                       <h3 className="text-xs font-extrabold uppercase tracking-wide">Gig Order Tracker</h3>
@@ -323,23 +315,31 @@ export default function WorkspaceTab({
                 ) : (
                   <>
                     {/* Spending History Chart */}
-                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4">
+                    <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4">
                       <div className="text-left">
                         <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">Spending History</h2>
                         <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Escrow spends & gig expenditures grouped by month</p>
                       </div>
 
-                      <div className="h-32 flex items-end justify-between gap-3 pt-4 border-b border-slate-100 pb-2">
+                      <div className="relative h-32 flex items-end justify-between gap-3 pt-4 border-b border-slate-100 pb-2">
+                        {dynamicMonthlyData.every(d => d.amount === 0) && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No activity yet</span>
+                          </div>
+                        )}
                         {dynamicMonthlyData.map((data, idx) => {
-                          const heightPercent = Math.max(10, Math.round((data.amount / maxEarningVal) * 100));
+                          const hasData = data.amount > 0;
+                          const heightPercent = hasData ? Math.max(10, Math.round((data.amount / maxEarningVal) * 100)) : 10;
                           return (
                             <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group cursor-pointer">
                               <div className="relative w-full flex justify-center">
-                                <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-950 text-white text-[9px] font-extrabold py-1 px-1.5 rounded shadow pointer-events-none z-20">
-                                  ${data.amount.toLocaleString()}
-                                </span>
+                                {hasData && (
+                                  <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-950 text-white text-[9px] font-extrabold py-1 px-1.5 rounded shadow pointer-events-none z-20">
+                                    ${data.amount.toLocaleString()}
+                                  </span>
+                                )}
                                 <div
-                                  className="w-full max-w-[18px] rounded-t-md bg-gradient-to-t from-primary/70 to-cyan-500/70 group-hover:from-primary group-hover:to-cyan-400 transition-all duration-300"
+                                  className={`w-full max-w-[18px] rounded-t-md transition-all duration-300 ${hasData ? "bg-primary/80 group-hover:bg-secondary" : "bg-slate-100"}`}
                                   style={{ height: `${heightPercent}px`, minHeight: "10px" }}
                                 />
                               </div>
@@ -353,7 +353,7 @@ export default function WorkspaceTab({
                     </section>
 
                     {/* Posted Projects (showing 2) */}
-                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                    <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
                           <h2 className="text-xs font-black text-slate-805 uppercase tracking-wide">My Posted Projects</h2>
@@ -390,7 +390,7 @@ export default function WorkspaceTab({
                     </section>
 
                     {/* Hired Freelancer & Gig Orders */}
-                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                    <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
                           <h2 className="text-xs font-black text-slate-800 uppercase tracking-wide">Purchased Gigs</h2>
@@ -431,7 +431,7 @@ export default function WorkspaceTab({
                     </section>
 
                     {/* Active Contracts */}
-                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                    <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
                           <h2 className="text-xs font-black text-slate-808 uppercase tracking-wide">Active Contracts</h2>
@@ -479,7 +479,7 @@ export default function WorkspaceTab({
               <div className="lg:col-span-5 flex flex-col gap-6">
                 <aside className="space-y-6">
                   {/* Wallet Balance Banner Card */}
-                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-md flex flex-col justify-between min-h-[120px]">
+                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-md flex flex-col justify-between min-h-[120px]">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl -mr-6 -mt-6"></div>
                     <div className="flex justify-between items-start z-10">
                       <div>
@@ -495,7 +495,7 @@ export default function WorkspaceTab({
                   </div>
 
                   {/* Workspace Metrics Card */}
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4 text-slate-850">
+                  <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4 text-slate-850">
                     <div className="border-b border-slate-100 pb-2.5">
                       <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Workspace Metrics</h3>
                       <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Dynamic client account totals</p>
@@ -543,7 +543,7 @@ export default function WorkspaceTab({
               {/* LEFT COLUMN: CHARTS & ACTIONS */}
               <div className="lg:col-span-7 flex flex-col gap-6">
                 {selectedProjectDetails ? (
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
+                  <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
                       <h3 className="text-xs font-extrabold uppercase tracking-wide">Project Milestone & Delivery</h3>
@@ -562,7 +562,7 @@ export default function WorkspaceTab({
                     />
                   </div>
                 ) : selectedGigOrderDetails ? (
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
+                  <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
                       <h3 className="text-xs font-extrabold uppercase tracking-wide">Gig Order Delivery</h3>
@@ -583,23 +583,31 @@ export default function WorkspaceTab({
                 ) : (
                   <>
                     {/* Earning History Chart */}
-                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4">
+                    <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4">
                       <div className="text-left">
                         <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">Earning History</h2>
                         <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Net escrow payout releases grouped by calendar month</p>
                       </div>
 
-                      <div className="h-32 flex items-end justify-between gap-3 pt-4 border-b border-slate-100 pb-2">
+                      <div className="relative h-32 flex items-end justify-between gap-3 pt-4 border-b border-slate-100 pb-2">
+                        {dynamicMonthlyData.every(d => d.amount === 0) && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No earnings yet</span>
+                          </div>
+                        )}
                         {dynamicMonthlyData.map((data, idx) => {
-                          const heightPercent = Math.max(10, Math.round((data.amount / maxEarningVal) * 100));
+                          const hasData = data.amount > 0;
+                          const heightPercent = hasData ? Math.max(10, Math.round((data.amount / maxEarningVal) * 100)) : 10;
                           return (
                             <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group cursor-pointer">
                               <div className="relative w-full flex justify-center">
-                                <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-955 text-white text-[9px] font-extrabold py-1 px-1.5 rounded shadow pointer-events-none z-20">
-                                  ${data.amount.toLocaleString()}
-                                </span>
+                                {hasData && (
+                                  <span className="absolute -top-7 scale-0 group-hover:scale-100 transition-all duration-200 bg-slate-950 text-white text-[9px] font-extrabold py-1 px-1.5 rounded shadow pointer-events-none z-20">
+                                    ${data.amount.toLocaleString()}
+                                  </span>
+                                )}
                                 <div
-                                  className="w-full max-w-[18px] rounded-t-md bg-gradient-to-t from-primary/70 to-cyan-500/70 group-hover:from-primary group-hover:to-cyan-400 transition-all duration-300"
+                                  className={`w-full max-w-[18px] rounded-t-md transition-all duration-300 ${hasData ? "bg-primary/80 group-hover:bg-secondary" : "bg-slate-100"}`}
                                   style={{ height: `${heightPercent}px`, minHeight: "10px" }}
                                 />
                               </div>
@@ -613,7 +621,7 @@ export default function WorkspaceTab({
                     </section>
 
                     {/* Submitted Bids */}
-                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                    <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
                           <h2 className="text-xs font-black text-slate-800 uppercase tracking-wide">Submitted Bids</h2>
@@ -650,7 +658,7 @@ export default function WorkspaceTab({
                     </section>
 
                     {/* Orders Received */}
-                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                    <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
                           <h2 className="text-xs font-black text-slate-805 uppercase tracking-wide">Orders Received</h2>
@@ -691,7 +699,7 @@ export default function WorkspaceTab({
                     </section>
 
                     {/* Active Contracts */}
-                    <section className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
+                    <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
                           <h2 className="text-xs font-black text-slate-808 uppercase tracking-wide">Active Contracts</h2>
@@ -738,7 +746,7 @@ export default function WorkspaceTab({
               <div className="lg:col-span-5 flex flex-col gap-6">
                 <aside className="space-y-6">
                   {/* Wallet Balance Banner Card */}
-                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-md flex flex-col justify-between min-h-[120px]">
+                  <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 p-5 text-white shadow-md flex flex-col justify-between min-h-[120px]">
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl -mr-6 -mt-6"></div>
                     <div className="flex justify-between items-start z-10">
                       <div>
@@ -754,7 +762,7 @@ export default function WorkspaceTab({
                   </div>
 
                   {/* Workspace Metrics Card */}
-                  <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4 text-slate-850">
+                  <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4 text-slate-850">
                     <div className="border-b border-slate-100 pb-2.5">
                       <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Workspace Metrics</h3>
                       <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Dynamic freelancer account totals</p>

@@ -17,7 +17,7 @@ export default function NotificationsTab({
   return (
     <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-800">
       {/* Header */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <FiBell className="w-5 h-5 text-primary shrink-0" />
@@ -37,7 +37,7 @@ export default function NotificationsTab({
       </div>
 
       {/* Notifications List */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-3">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-3">
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center gap-4">
             <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shadow-md text-slate-400">

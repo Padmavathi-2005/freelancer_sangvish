@@ -270,7 +270,7 @@ export default function InboxTab({
   return (
     <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch w-full animate-fadeIn min-h-[480px]">
       {/* CONVERSATION LIST (4 cols) */}
-      <div className="md:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm flex flex-col gap-4 overflow-hidden max-h-[580px]">
+      <div className="md:col-span-4 bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex flex-col gap-4 overflow-hidden max-h-[580px]">
         <div className="border-b border-slate-100 pb-2">
           <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide">Conversations</h3>
         </div>
@@ -370,13 +370,18 @@ export default function InboxTab({
       </div>
 
       {/* CHAT ROOM (8 cols) */}
-      <div className="md:col-span-8 bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col overflow-hidden max-h-[580px]">
+      <div className="md:col-span-8 bg-white border border-slate-200/80 rounded-xl shadow-sm flex flex-col overflow-hidden max-h-[580px]">
         {selectedConvId ? (
           <>
             {/* Header */}
             <div className="p-4 border-b border-slate-200/60 flex justify-between items-center bg-slate-50/60">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-500 to-indigo-500 flex items-center justify-center font-black text-white text-xs shadow-sm shrink-0 overflow-hidden relative">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-sm shrink-0 overflow-hidden relative"
+                  style={{
+                    background: `linear-gradient(135deg, var(--color-primary, #10b981) 0%, var(--color-secondary, #06b6d4) 100%)`
+                  }}
+                >
                   {activeConv?.is_group ? (
                     <i className="fa-solid fa-users text-white text-sm"></i>
                   ) : (
@@ -460,7 +465,7 @@ export default function InboxTab({
                         key={idx}
                         className="flex justify-center my-3 w-full select-none"
                       >
-                        <div className={`border rounded-2xl p-4 shadow-sm text-left max-w-md w-full bg-slate-50/50 ${
+                        <div className={`border rounded-xl p-4 shadow-sm text-left max-w-md w-full bg-slate-50/50 ${
                           disputeData.type === "dispute_resolved"
                             ? "bg-emerald-50 border-emerald-250"
                             : disputeData.type === "dispute_escalated"
@@ -662,7 +667,7 @@ export default function InboxTab({
                           isOwn ? "self-end items-end" : "self-start items-start"
                         } mb-3`}
                       >
-                        <div className="bg-gradient-to-br from-amber-50 to-orange-50/30 border border-amber-200/80 rounded-2xl p-4 shadow-sm text-left max-w-md">
+                        <div className="bg-gradient-to-br from-amber-50 to-orange-50/30 border border-amber-200/80 rounded-xl p-4 shadow-sm text-left max-w-md">
                           <div className="flex items-center justify-between border-b border-amber-200 pb-2 mb-2">
                             <span className="text-[10px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded uppercase tracking-wider">
                               Custom Payment Offer
@@ -741,7 +746,7 @@ export default function InboxTab({
 
                     return (
                       <div key={idx} className="flex justify-center my-3.5 w-full select-none">
-                        <div className="bg-gradient-to-r from-teal-50/70 to-emerald-50/70 border border-emerald-200 rounded-2xl px-5 py-3 text-xxs font-bold text-teal-950 max-w-[85%] text-left shadow-sm leading-relaxed whitespace-pre-wrap">
+                        <div className="bg-gradient-to-r from-teal-50/70 to-emerald-50/70 border border-emerald-200 rounded-xl px-5 py-3 text-xxs font-bold text-teal-950 max-w-[85%] text-left shadow-sm leading-relaxed whitespace-pre-wrap">
                           <span className="font-black text-teal-800 uppercase tracking-widest text-[9px] block mb-1.5 flex items-center gap-1.5">
                             <i className="fa-solid fa-circle-info text-teal-700"></i> {isPlatformMsg ? "Platform Notification" : "System Notification"}
                           </span>
@@ -820,7 +825,7 @@ export default function InboxTab({
 
                         {/* Bubble - Styled like WhatsApp */}
                         <div
-                          className={`p-3 rounded-2xl text-xs font-medium leading-relaxed shadow-sm text-left whitespace-pre-line ${
+                          className={`p-3 rounded-xl text-xs font-medium leading-relaxed shadow-sm text-left whitespace-pre-line ${
                             isOwn
                               ? "bg-[#d9fdd3] text-slate-850 rounded-tr-none border border-[#e1f3d4]"
                               : isPlatformMsg
@@ -992,7 +997,7 @@ export default function InboxTab({
       {/* Custom Offer Modal */}
       {isCustomOfferModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative">
             <button
               onClick={() => {
                 setIsCustomOfferModalOpen(false);
@@ -1111,7 +1116,7 @@ export default function InboxTab({
       {/* Dispute Response custom modal */}
       {showDisputeResponseModal && typeof window !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[9999] bg-slate-900/40 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 shadow-2xl rounded-3xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative text-slate-805">
+          <div className="bg-white border border-slate-200 shadow-2xl rounded-xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative text-slate-805">
             <button
               onClick={() => {
                 setShowDisputeResponseModal(false);

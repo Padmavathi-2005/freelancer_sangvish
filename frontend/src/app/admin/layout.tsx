@@ -1,10 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdminProvider, useAdmin } from "./AdminContext";
 import { FiMenu, FiX, FiBell, FiAlertTriangle, FiCheckCircle, FiUser, FiLayers, FiSettings, FiDollarSign, FiBriefcase, FiZap, FiUsers, FiClipboard, FiCreditCard, FiFileText, FiGlobe, FiHardDrive } from "react-icons/fi";
+import { API_URL, API_BASE_URL } from "@/config/api";
+
+const resolveLogoUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -38,6 +45,62 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   } = useAdmin();
 
   const [isAdminNotificationsOpen, setIsAdminNotificationsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [siteLogo, setSiteLogo] = useState("");
+  const [siteName, setSiteName] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== "undefined") {
+      setSiteLogo(localStorage.getItem("cached_site_logo") || "");
+      setSiteName(localStorage.getItem("cached_site_name") || "");
+    }
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          data.forEach((setting: any) => {
+            if (setting.setting_key === "site_settings") {
+              let val = setting.setting_value;
+              if (typeof val === "string") {
+                try {
+                  val = JSON.parse(val);
+                } catch (e) {}
+              }
+              if (val?.site_logo) {
+                setSiteLogo(val.site_logo);
+                localStorage.setItem("cached_site_logo", val.site_logo);
+              }
+              if (val?.site_name) {
+                setSiteName(val.site_name);
+                localStorage.setItem("cached_site_name", val.site_name);
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load layout brand settings", err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsAdminNotificationsOpen(false);
+      }
+    };
+    if (isAdminNotificationsOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isAdminNotificationsOpen]);
+
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -51,8 +114,18 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const isDark = adminTheme === "dark";
 
   useEffect(() => {
-    if (activeTab === "site_management" || activeTab === "payment_settings" || activeTab === "frontend_content" || activeTab === "dispute_reasons" || activeTab === "footer_links" || activeTab === "social_login") {
+    if (activeTab === "general_settings" || activeTab === "site_settings" || activeTab === "site_management" || activeTab === "payment_settings" || activeTab === "frontend_content" || activeTab === "dispute_reasons" || activeTab === "footer_links" || activeTab === "social_login") {
       setSettingsMenuOpen(true);
+      setProjectMenuOpen(false);
+      setGigMenuOpen(false);
+    } else if (activeTab === "projects" || activeTab === "project_orders") {
+      setProjectMenuOpen(true);
+      setGigMenuOpen(false);
+      setSettingsMenuOpen(false);
+    } else if (activeTab === "gigs_list" || activeTab === "gig_orders") {
+      setGigMenuOpen(true);
+      setProjectMenuOpen(false);
+      setSettingsMenuOpen(false);
     }
   }, [activeTab]);
 
@@ -140,7 +213,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     isDark ? "text-slate-100" : "text-slate-900"
   }`;
 
-  const statsCardClass = `border rounded-2xl p-5 flex flex-col justify-between h-28 shadow-sm transition-colors duration-300 ${
+  const statsCardClass = `border rounded-xl p-5 flex flex-col justify-between h-28 shadow-sm transition-colors duration-300 ${
     isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200/80 text-slate-850"
   }`;
 
@@ -186,12 +259,26 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         <div className={sidebarHeaderClass}>
           <Link 
             href="/"
-            className={`${sidebarTitleClass} hover:opacity-80 transition-opacity cursor-pointer`}
+            className="flex items-center gap-2.5 hover:opacity-80 transition-all cursor-pointer min-w-0"
           >
-            Freelancer Panel
+            {mounted && siteLogo ? (
+              <img 
+                src={resolveLogoUrl(siteLogo)} 
+                alt={siteName || "Logo"} 
+                className="h-8 w-auto object-contain shrink-0" 
+              />
+            ) : (
+              <>
+                <div className="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
+                  L
+                </div>
+                <span className="text-sm font-black tracking-tight text-slate-805 dark:text-teal-400 truncate">
+                  {mounted && siteName ? siteName : "Freelancer Panel"}
+                </span>
+              </>
+            )}
           </Link>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-bold bg-teal-50 text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full uppercase tracking-wider">Root</span>
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={() => setIsSidebarOpen(false)}
               className={closeSidebarBtnClass}
@@ -265,7 +352,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
           <div className="flex flex-col gap-1">
             <button
-              onClick={() => setProjectMenuOpen(!projectMenuOpen)}
+              onClick={() => {
+                const nextVal = !projectMenuOpen;
+                setProjectMenuOpen(nextVal);
+                if (nextVal) {
+                  setGigMenuOpen(false);
+                  setSettingsMenuOpen(false);
+                }
+              }}
               className={navDropdownHeaderClass(projectMenuOpen, ["projects", "project_orders"])}
             >
               <div className="flex items-center justify-between w-full">
@@ -316,7 +410,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
           <div className="flex flex-col gap-1">
             <button
-              onClick={() => setGigMenuOpen(!gigMenuOpen)}
+              onClick={() => {
+                const nextVal = !gigMenuOpen;
+                setGigMenuOpen(nextVal);
+                if (nextVal) {
+                  setProjectMenuOpen(false);
+                  setSettingsMenuOpen(false);
+                }
+              }}
               className={navDropdownHeaderClass(gigMenuOpen, ["gigs_list", "gig_orders"])}
             >
               <div className="flex items-center justify-between w-full">
@@ -436,10 +537,27 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </button>
 
+          <button
+            onClick={() => setActiveTab("blogs")}
+            className={navBtnClass("blogs")}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <FiFileText className="w-4 h-4 shrink-0" />
+              <span>Manage Blogs</span>
+            </div>
+          </button>
+
           <div className="flex flex-col gap-1">
             <button
-              onClick={() => setSettingsMenuOpen(!settingsMenuOpen)}
-              className={navDropdownHeaderClass(settingsMenuOpen, ["site_settings", "email_settings", "settings", "payment_settings", "frontend_content", "dispute_reasons", "footer_links", "social_login"])}
+              onClick={() => {
+                const nextVal = !settingsMenuOpen;
+                setSettingsMenuOpen(nextVal);
+                if (nextVal) {
+                  setProjectMenuOpen(false);
+                  setGigMenuOpen(false);
+                }
+              }}
+              className={navDropdownHeaderClass(settingsMenuOpen, ["general_settings", "site_settings", "email_settings", "settings", "payment_settings", "frontend_content", "dispute_reasons", "footer_links", "social_login"])}
             >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-3">
@@ -459,6 +577,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
             {settingsMenuOpen && (
               <div className={`pl-6 flex flex-col gap-1 border-l ml-6 mt-1 mb-2 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+                <button
+                  onClick={() => setActiveTab("general_settings")}
+                  className={subNavBtnClass("general_settings")}
+                >
+                  General Settings
+                </button>
                 <button
                   onClick={() => setActiveTab("site_settings")}
                   className={subNavBtnClass("site_settings", ["settings"])}
@@ -585,7 +709,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           
           <div className="flex items-center gap-3">
             {/* Notifications Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsAdminNotificationsOpen(!isAdminNotificationsOpen)}
                 className={`p-2 rounded-xl border transition-all duration-300 cursor-pointer flex items-center justify-center relative ${
@@ -604,7 +728,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               {isAdminNotificationsOpen && (
-                <div className={`absolute right-0 mt-3 w-[23rem] rounded-2xl border shadow-xl p-4 flex flex-col gap-3 select-none animate-fadeIn ${
+                <div className={`absolute right-0 mt-3 w-[23rem] rounded-xl border shadow-xl p-4 flex flex-col gap-3 select-none animate-fadeIn ${
                   isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
                 }`}>
                   <div className="flex items-center justify-between border-b pb-2.5 border-slate-100 dark:border-slate-850">
@@ -640,6 +764,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                               setHighlightedDisputeId(notif.targetId);
                             } else if (notif.targetTab === "onboarding") {
                               setActiveTab("onboarding");
+                            } else if (notif.targetTab === "projects") {
+                              setActiveTab("projects");
+                              if (notif.targetSubTab === "proposals") {
+                                setProjectsSubTab("proposals");
+                              }
                             }
                           }}
                           className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all duration-200 flex flex-row items-start gap-3.5 ${
@@ -661,14 +790,16 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <span className="text-[10px] font-black flex items-center justify-between gap-2 text-slate-400 dark:text-slate-400">
+                            <span className={`text-[10px] font-black flex items-center justify-between gap-2 ${
+                              isDark ? "text-slate-400" : "text-slate-500"
+                            }`}>
                               <span className="truncate">{notif.title}</span>
                               <span className="shrink-0">{notif.timestamp}</span>
                             </span>
                             <p className={`text-xs leading-relaxed mt-1.5 ${
                               notif.read
-                                ? "text-slate-500 dark:text-slate-450 font-bold"
-                                : "text-slate-900 dark:text-slate-50 font-black"
+                                ? (isDark ? "text-slate-400 font-bold" : "text-slate-500 font-semibold")
+                                : (isDark ? "text-slate-200 font-black" : "text-slate-800 font-extrabold")
                             }`}>{notif.message}</p>
                           </div>
                         </div>

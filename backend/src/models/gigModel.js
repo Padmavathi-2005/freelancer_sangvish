@@ -118,7 +118,9 @@ export const Gig = {
     let query = `
       SELECT 
         g.*,
-        u.first_name || ' ' || u.last_name as freelancer_name,
+        u.first_name || COALESCE(' ' || u.last_name, '') as freelancer_name,
+        u.slug as freelancer_slug,
+        u.profile_image as freelancer_image,
         c.code as currency_code,
         c.symbol as currency_symbol,
         c.name as currency_name,
@@ -210,7 +212,7 @@ export const Gig = {
       SELECT 
         ga.*,
         g.title as gig_title,
-        u.first_name || ' ' || u.last_name as freelancer_name,
+        u.first_name || COALESCE(' ' || u.last_name, '') as freelancer_name,
         u.email as freelancer_email,
         c.code as currency_code,
         c.symbol as currency_symbol,

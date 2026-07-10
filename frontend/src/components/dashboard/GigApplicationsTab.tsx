@@ -237,7 +237,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
     return (
       <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-805">
         {/* Header */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <button
               onClick={() => { setSelectedGigOrder(null); }}
@@ -275,7 +275,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
         </div>
 
         {/* Specifications */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
           <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Order Specifications</h3>
           <div className="flex justify-between items-start gap-4 flex-wrap">
@@ -311,7 +311,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
         </div>
 
         {/* Steps Tracker */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
           <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Work & Payment Status</h3>
           <div className="flex flex-col">
@@ -354,7 +354,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
         </div>
 
         {/* Action Panel */}
-        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
           {app.status === "Pending" && (
             <>
               <div className="text-left">
@@ -491,7 +491,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
 
         {/* Milestone Tracker */}
         {isPaid && (
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
             <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Milestones Tracker</h3>
             <GigMilestoneTracker
@@ -509,7 +509,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
         {/* Dispute Modal Portal */}
         {showDisputeModal && typeof document !== "undefined" && createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[0.5px] p-4 overflow-y-auto">
-            <div className="relative bg-white border border-slate-200 shadow-2xl rounded-3xl max-w-md w-full animate-fadeIn overflow-hidden text-left text-slate-800 p-6 flex flex-col gap-5">
+            <div className="relative bg-white border border-slate-200 shadow-2xl rounded-xl max-w-md w-full animate-fadeIn overflow-hidden text-left text-slate-800 p-6 flex flex-col gap-5">
               <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-sm font-extrabold text-slate-800">Raise Escrow Dispute</h3>
@@ -565,7 +565,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
   return (
     <div className="relative z-10 flex flex-col gap-8 w-full animate-fadeIn text-left">
       {/* Header */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <FiBriefcase className="w-5 h-5 text-primary shrink-0" />
@@ -623,12 +623,12 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
 
       {/* List */}
       {loadingApplications ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm">
+        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-xl p-8 shadow-sm">
           <div className="w-8 h-8 border-4 border-t-emerald-500 border-slate-200 rounded-full animate-spin"></div>
           <p className="text-slate-404 text-xs font-semibold">Loading orders...</p>
         </div>
       ) : gigApplications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-2xl p-8 shadow-inner">
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-xl p-8 shadow-inner">
           <svg className="w-10 h-10 text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -636,7 +636,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
           <p className="text-slate-404 text-xs max-w-sm font-semibold">When clients order your active gigs, they will appear here.</p>
         </div>
       ) : filteredApplications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-200 rounded-2xl p-8 shadow-sm">
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-200 rounded-xl p-8 shadow-sm">
           <FiBriefcase className="w-10 h-10 text-slate-300 mb-3" />
           <h3 className="text-sm font-extrabold text-slate-800 mb-1">No {activeFilterTab} orders found</h3>
           <p className="text-slate-404 text-xs max-w-sm font-semibold">You don't have any orders matching this category currently.</p>
@@ -647,7 +647,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
             <div
               key={app.application_id}
               onClick={() => setSelectedGigOrder(app)}
-              className="bg-white border border-slate-200/80 hover:border-slate-300 transition-all rounded-2xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden cursor-pointer"
+              className="bg-white border border-slate-200/80 hover:border-slate-300 transition-all rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden cursor-pointer"
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500 opacity-80" />
               

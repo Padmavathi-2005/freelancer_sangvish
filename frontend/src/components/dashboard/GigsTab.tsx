@@ -729,7 +729,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
   return (
     isCreatingGig ? (
       <div className="relative z-10 max-w-3xl mx-auto w-full animate-fadeIn text-left">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 text-slate-800">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 text-slate-800">
           
           {/* Form Header */}
           <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
@@ -955,7 +955,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       <button
                         type="button"
                         onClick={() => setGigPaymentType("fixed")}
-                        className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                        className={`p-4 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                           gigPaymentType === "fixed"
                             ? "border-primary bg-primary/5 text-primary shadow-sm"
                             : "border-slate-200 bg-white hover:border-slate-350 text-slate-500"
@@ -968,7 +968,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       <button
                         type="button"
                         onClick={() => setGigPaymentType("milestone")}
-                        className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                        className={`p-4 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                           gigPaymentType === "milestone"
                             ? "border-primary bg-primary/5 text-primary shadow-sm"
                             : "border-slate-200 bg-white hover:border-slate-350 text-slate-500"
@@ -983,7 +983,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                   {/* Pricing Options */}
                   {gigPaymentType === "fixed" && (
-                    <div className="sm:col-span-2 flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-2xl p-5">
+                    <div className="sm:col-span-2 flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-xl p-5">
                       <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
                         <div>
                           <label className="text-xs font-black block text-slate-800">Tiered Pricing Packages</label>
@@ -1092,7 +1092,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         /* TIERED PLANS / PACKAGES CONFLICT (FIVERR FLOW) */
                         <div className="flex flex-col gap-4 animate-fadeIn">
                           {/* Plan Toggles / Packages Selectors */}
-                          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white border border-slate-200 p-4 rounded-2xl">
+                          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white border border-slate-200 p-4 rounded-xl">
                             <div className="flex flex-wrap gap-2">
                               {(["Basic", "Standard", "Premium"] as const).map((tab) => {
                                 const isTabEnabled = tab === "Basic" || (tab === "Standard" ? enabledPlans.Standard : enabledPlans.Premium);
@@ -1155,7 +1155,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                             const pIndex = activePlanTab === "Basic" ? 0 : activePlanTab === "Standard" ? 1 : 2;
                             const p = gigPlans[pIndex];
                             return (
-                              <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-4">
+                              <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-4">
                                 <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                     Configure {activePlanTab} Package
@@ -1254,7 +1254,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           })()}
 
                           {/* Custom Features Matrix */}
-                          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-4 mt-2">
+                          <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-4 mt-2">
                             <div>
                               <span className="text-xs font-black text-slate-800">Customize Included Features Matrix</span>
                               <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">Add features and choose whether they are included (checkmark) or set a specific text value for each plan.</p>
@@ -1429,7 +1429,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                   {/* Milestone Builder */}
                   {gigPaymentType === "milestone" && (
-                    <div className="sm:col-span-2 flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-2xl p-5">
+                    <div className="sm:col-span-2 flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-xl p-5">
                       <div>
                         <h4 className="text-xs font-black text-slate-800">Define Service Milestones</h4>
                         <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">Specify tasks and deliverables. The total price of the Gig will be the sum of these milestones.</p>
@@ -1849,7 +1849,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                   {gigFaqs.length > 0 && (
                     <div className="flex flex-col gap-3">
                       {gigFaqs.map((faq, idx) => (
-                        <div key={idx} className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex flex-col gap-3 relative group/faq">
+                        <div key={idx} className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl flex flex-col gap-3 relative group/faq">
                           <button
                             type="button"
                             onClick={() => {
@@ -1978,7 +1978,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     </div>
                     
                     {/* Live Preview Card */}
-                    <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col gap-3 text-left">
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3 text-left">
                       <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Social Share Preview Card:</span>
                       
                       <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm flex flex-col">
@@ -2049,7 +2049,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
       <div className="relative z-10 w-full animate-fadeIn flex flex-col gap-6 text-slate-800 text-left">
         
         {/* Header Info */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-lg font-black text-slate-800">My Service Gigs</h2>
             <p className="text-slate-404 text-xs mt-0.5">List and offer pre-priced services directly to clients.</p>
@@ -2063,12 +2063,12 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
         </div>
 
         {loadingGigs ? (
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-16 flex flex-col items-center justify-center text-center gap-3.5 shadow-sm">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-16 flex flex-col items-center justify-center text-center gap-3.5 shadow-sm">
             <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
             <p className="text-slate-404 text-xs font-semibold">Loading your service gigs...</p>
           </div>
         ) : gigs.length === 0 ? (
-          <div className="bg-white border border-slate-200/80 rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-4.5 shadow-sm">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-12 flex flex-col items-center justify-center text-center gap-4.5 shadow-sm">
             <div className="w-16 h-16 rounded-full bg-primary/5 text-primary flex items-center justify-center text-2xl font-bold animate-pulse">
               <i className="fa-solid fa-briefcase"></i>
             </div>
@@ -2095,7 +2095,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 <div 
                   key={gig.gig_id} 
                   onClick={() => setSelectedGigForDetails(gig)}
-                  className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-350 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between relative group cursor-pointer"
+                  className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-350 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between relative group cursor-pointer"
                 >
                   
                   <span className={`absolute top-3.5 right-3.5 z-10 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-sm border ${
@@ -2318,7 +2318,7 @@ export function GigConsoleModal({
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] bg-slate-900/35 flex items-center justify-center p-4">
-      <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative max-h-[90vh] flex flex-col">
+      <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative max-h-[90vh] flex flex-col">
         <button
           onClick={() => setSelectedGigForDetails(null)}
           className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-500 hover:text-slate-855 cursor-pointer"
@@ -2355,7 +2355,7 @@ export function GigConsoleModal({
           <div>
             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Gig Description</h4>
             <div 
-              className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs leading-relaxed text-slate-700 font-medium whitespace-pre-wrap font-sans"
+              className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs leading-relaxed text-slate-700 font-medium whitespace-pre-wrap font-sans"
               dangerouslySetInnerHTML={{ __html: selectedGigForDetails.description }}
             />
           </div>
@@ -2364,7 +2364,7 @@ export function GigConsoleModal({
           {selectedGigForDetails.video_url && (
             <div>
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Showcase Video</h4>
-              <div className="w-full max-w-md rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm relative aspect-video">
+              <div className="w-full max-w-md rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm relative aspect-video">
                 <video src={selectedGigForDetails.video_url} controls className="w-full h-full object-cover" />
               </div>
             </div>
@@ -2396,7 +2396,7 @@ export function GigConsoleModal({
           )}
 
           {/* Attributes & Settings */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50/50 border border-slate-200/60 rounded-2xl p-4 shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 shrink-0">
             <div>
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Price Package</span>
               <span className="text-xs font-black text-slate-800 mt-1 block">
@@ -2442,7 +2442,7 @@ export function GigConsoleModal({
           {selectedGigForDetails.payment_type === "milestone" && selectedGigForDetails.milestones && (
             <div className="flex flex-col gap-2 shrink-0 text-left">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Milestone Breakdown</h4>
-              <div className="flex flex-col gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+              <div className="flex flex-col gap-2 bg-slate-50 border border-slate-200 rounded-xl p-4">
                 {(typeof selectedGigForDetails.milestones === "string" 
                   ? JSON.parse(selectedGigForDetails.milestones) 
                   : selectedGigForDetails.milestones
@@ -2678,7 +2678,7 @@ export function GigConsoleModal({
             <img 
               src={lightboxImage} 
               alt="Enlarged Showcase" 
-              className="max-w-full max-h-[80vh] rounded-2xl object-contain shadow-2xl select-none"
+              className="max-w-full max-h-[80vh] rounded-xl object-contain shadow-2xl select-none"
               onClick={(e) => e.stopPropagation()}
             />
           </div>

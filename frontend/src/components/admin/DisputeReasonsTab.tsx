@@ -69,7 +69,7 @@ export default function DisputeReasonsTab({
     <div className="flex flex-col gap-6 animate-fadeIn text-left text-slate-800">
       
       {/* Title Header */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
             ⚠️ Dispute Reasons Settings
@@ -81,7 +81,7 @@ export default function DisputeReasonsTab({
       </div>
 
       {/* Main Content card */}
-      <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-6 relative overflow-hidden">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-6 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-700 to-cyan-500" />
         
         {saveStatus && (

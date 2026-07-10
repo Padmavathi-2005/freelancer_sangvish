@@ -202,7 +202,7 @@ export default function PricingPlansEditor({ triggerToast }: PricingPlansEditorP
             return (
               <div
                 key={plan.plan_id}
-                className={`border rounded-3xl p-6 flex flex-col justify-between gap-5 transition bg-white relative ${
+                className={`border rounded-xl p-6 flex flex-col justify-between gap-5 transition bg-white relative ${
                   isRecommended 
                     ? "border-teal-700 shadow-lg shadow-teal-500/5 ring-1 ring-teal-700" 
                     : "border-slate-200 shadow-sm hover:border-slate-300"

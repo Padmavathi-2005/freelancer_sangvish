@@ -167,8 +167,11 @@ export const Job = {
         sub.sub_category_name,
         c.status AS contract_status,
         c.progress AS contract_progress,
-        c.contract_id
+        c.contract_id,
+        COALESCE(j.is_featured = TRUE AND j.featured_at + (sp.featured_project_duration * INTERVAL '1 day') >= CURRENT_TIMESTAMP, false) as is_featured
       FROM jobs j
+      JOIN users u ON j.client_id = u.user_id
+      LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
       LEFT JOIN categories cat ON j.category_id = cat.category_id
       LEFT JOIN sub_categories sub ON j.sub_category_id = sub.sub_category_id
       LEFT JOIN (
@@ -177,7 +180,7 @@ export const Job = {
         ORDER BY job_id, created_at DESC
       ) c ON j.job_id = c.job_id
       WHERE j.client_id = $1
-      ORDER BY j.created_at DESC
+      ORDER BY COALESCE(j.is_featured = TRUE AND j.featured_at + (sp.featured_project_duration * INTERVAL '1 day') >= CURRENT_TIMESTAMP, false) DESC, j.created_at DESC
     `;
     const result = await pool.query(query, [parseInt(clientId)]);
     return result.rows;
@@ -192,10 +195,12 @@ export const Job = {
         cp.company_name,
         cp.industry,
         cat.category_name,
-        sub.sub_category_name
+        sub.sub_category_name,
+        COALESCE(j.is_featured = TRUE AND j.featured_at + (sp.featured_project_duration * INTERVAL '1 day') >= CURRENT_TIMESTAMP, false) as is_featured
       FROM jobs j
       JOIN users u ON j.client_id = u.user_id
       LEFT JOIN client_profiles cp ON u.user_id = cp.user_id
+      LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
       LEFT JOIN categories cat ON j.category_id = cat.category_id
       LEFT JOIN sub_categories sub ON j.sub_category_id = sub.sub_category_id
       WHERE j.status = 'Open'
@@ -207,7 +212,7 @@ export const Job = {
       values.push(parseInt(excludeUserId));
     }
     
-    query += ` ORDER BY j.created_at DESC`;
+    query += ` ORDER BY COALESCE(j.is_featured = TRUE AND j.featured_at + (sp.featured_project_duration * INTERVAL '1 day') >= CURRENT_TIMESTAMP, false) DESC, j.created_at DESC`;
     
     const result = await pool.query(query, values);
     return result.rows;

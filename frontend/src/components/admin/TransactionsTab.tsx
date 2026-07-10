@@ -106,7 +106,7 @@ export default function TransactionsTab({
       </div>
 
       {transactionsSubTab === "transactions" ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left">
           <div>
             <h3 className="text-lg font-bold text-slate-800">Transaction & contract escrows</h3>
             <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Track secure escrow deposits, progress percentages, and active milestones payout releases.</p>
@@ -139,14 +139,14 @@ export default function TransactionsTab({
           />
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
           <div>
             <h3 className="text-lg font-bold text-slate-805">Disputes & Arbitration Hub</h3>
             <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Review client complaints, freelancer counters, and execute escrow payouts or refunds.</p>
           </div>
 
           {disputes.length === 0 ? (
-            <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-2xl">
+            <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl">
               <p className="text-slate-505 text-sm font-semibold">All dispute folders are currently resolved.</p>
             </div>
           ) : (
@@ -159,7 +159,7 @@ export default function TransactionsTab({
                       setHighlightedDisputeId(null);
                     }
                   }}
-                  className={`p-6 bg-white border rounded-2xl flex flex-col gap-5 shadow-sm transition-all duration-300 ${
+                  className={`p-6 bg-white border rounded-xl flex flex-col gap-5 shadow-sm transition-all duration-300 ${
                     disp.id === highlightedDisputeId
                       ? "ring-2 ring-rose-500 border-rose-500 bg-rose-500/[0.02] scale-[1.01] shadow-md shadow-rose-500/5 animate-pulse"
                       : "border-slate-200"

@@ -31,12 +31,14 @@ router.get('/categories-stats', async (req, res) => {
                 c.category_id,
                 c.category_name,
                 c.category_image,
+                c.description,
+                c.category_video,
                 COUNT(fp.user_id) AS freelancer_count
             FROM categories c
             LEFT JOIN freelancer_profiles fp
                 ON fp.category_id = c.category_id
                 AND fp.onboarding_completed = true
-            GROUP BY c.category_id, c.category_name, c.category_image
+            GROUP BY c.category_id, c.category_name, c.category_image, c.description, c.category_video
             ORDER BY freelancer_count DESC
         `);
         res.json(result.rows);

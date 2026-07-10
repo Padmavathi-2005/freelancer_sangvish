@@ -13,6 +13,7 @@ export default function RecentProjects() {
   const router = useRouter();
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [siteShortName, setSiteShortName] = useState("Lancer");
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -30,6 +31,32 @@ export default function RecentProjects() {
       }
     };
     fetchProjects();
+  }, []);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const siteRaw = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;
+          if (siteRaw) {
+            let parsed = siteRaw;
+            if (typeof parsed === "string") {
+              try { parsed = JSON.parse(parsed); } catch {}
+            }
+            if (parsed.site_short_name) {
+              setSiteShortName(parsed.site_short_name);
+            } else if (parsed.site_name) {
+              setSiteShortName(parsed.site_name);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings in recent projects:", e);
+      }
+    };
+    loadSettings();
   }, []);
 
   const dummyProjects = [
@@ -95,7 +122,13 @@ export default function RecentProjects() {
     },
   ];
 
-  const activeProjectsList = projects.slice(0, 6);
+  const activeProjectsList = [...projects]
+    .sort((a: any, b: any) => {
+      if (a.is_featured && !b.is_featured) return -1;
+      if (!a.is_featured && b.is_featured) return 1;
+      return 0;
+    })
+    .slice(0, 6);
 
   if (!loading && activeProjectsList.length === 0) {
     return null;
@@ -138,7 +171,7 @@ export default function RecentProjects() {
             style={{ gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))" }}
           >
             {Array.from({ length: skeletonCount }).map((_, i) => (
-              <div key={i} className="border border-slate-200/60 rounded-3xl p-5 flex flex-col gap-3 animate-pulse bg-slate-50">
+              <div key={i} className="border border-slate-200/60 rounded-xl p-5 flex flex-col gap-3 animate-pulse bg-slate-50">
                 <div className="flex justify-between gap-2">
                   <div className="h-4 bg-slate-200 rounded w-24" />
                   <div className="h-4 bg-slate-200 rounded w-12" />
@@ -177,7 +210,7 @@ export default function RecentProjects() {
                 <div
                   key={job.job_id}
                   onClick={() => router.push(`/projects?query=${encodeURIComponent(job.title)}`)}
-                  className="group border border-slate-200/60 rounded-3xl p-5 transition-all duration-300 hover:scale-[1.015] hover:border-teal-500/25 hover:shadow-xl hover:shadow-slate-200/60 cursor-pointer bg-slate-50/50 hover:bg-white flex flex-col justify-between gap-4"
+                  className="group border border-slate-200/60 rounded-xl p-5 transition-all duration-300 hover:scale-[1.015] hover:border-teal-500/25 hover:shadow-xl hover:shadow-slate-200/60 cursor-pointer bg-slate-50/50 hover:bg-white flex flex-col justify-between gap-4"
                 >
                   {/* Top */}
                   <div className="flex flex-col gap-3">
@@ -190,9 +223,17 @@ export default function RecentProjects() {
                       </span>
                     </div>
 
-                    <h3 className="text-sm font-black text-slate-900 leading-snug line-clamp-2 group-hover:text-teal-800 transition-colors">
-                      {job.title}
-                    </h3>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <h3 className="text-sm font-black text-slate-900 leading-snug line-clamp-2 group-hover:text-teal-800 transition-colors">
+                        {job.title}
+                      </h3>
+                      {job.is_featured && (
+                        <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider animate-pulse shrink-0 flex items-center gap-1">
+                          <FiStar className="w-2.5 h-2.5 fill-white text-white shrink-0" />
+                          <span>{siteShortName}'s Choice</span>
+                        </span>
+                      )}
+                    </div>
 
                     <p className="text-slate-500 text-[11px] line-clamp-2 leading-relaxed font-medium">
                       {job.description}

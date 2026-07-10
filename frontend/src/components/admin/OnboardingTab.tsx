@@ -278,7 +278,7 @@ export default function OnboardingTab({
   }, [filteredOnboardedUsers]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
       <div>
         <h3 className="text-lg font-bold text-slate-800">Onboarding Directory</h3>
         <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Directory of clients and freelancers who have submitted or completed onboarding setup.</p>
@@ -286,15 +286,15 @@ export default function OnboardingTab({
 
       {/* Onboarded Counts Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-purple-50/50 border border-purple-100 rounded-2xl p-5 flex flex-col justify-between h-24 shadow-sm">
+        <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-5 flex flex-col justify-between h-24 shadow-sm">
           <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Onboarded Freelancers</span>
           <span className="text-2xl font-black text-purple-700 mt-1">{userCounts.freelancers}</span>
         </div>
-        <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-5 flex flex-col justify-between h-24 shadow-sm">
+        <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 flex flex-col justify-between h-24 shadow-sm">
           <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Onboarded Clients</span>
           <span className="text-2xl font-black text-blue-700 mt-1">{userCounts.clients}</span>
         </div>
-        <div className={`border rounded-2xl p-5 flex flex-col justify-between h-24 shadow-sm ${pendingVettingCount > 0 ? "bg-amber-50/50 border-amber-100" : "bg-slate-50/50 border-slate-100"}`}>
+        <div className={`border rounded-xl p-5 flex flex-col justify-between h-24 shadow-sm ${pendingVettingCount > 0 ? "bg-amber-50/50 border-amber-100" : "bg-slate-50/50 border-slate-100"}`}>
           <span className={`text-[10px] font-bold uppercase tracking-widest ${pendingVettingCount > 0 ? "text-amber-600" : "text-slate-400"}`}>Pending Vetting</span>
           <span className={`text-2xl font-black mt-1 ${pendingVettingCount > 0 ? "text-amber-700" : "text-slate-400"}`}>{pendingVettingCount}</span>
         </div>

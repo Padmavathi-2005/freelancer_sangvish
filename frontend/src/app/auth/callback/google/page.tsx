@@ -85,7 +85,7 @@ export default function GoogleCallbackPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 text-slate-900 font-sans p-6 text-center">
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-8 max-w-md w-full shadow-lg">
+      <div className="bg-white border border-slate-200 rounded-xl p-8 max-w-md w-full shadow-lg">
         {error ? (
           <div className="space-y-4">
             <div className="w-12 h-12 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 text-xl mx-auto">

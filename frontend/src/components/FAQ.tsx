@@ -72,7 +72,7 @@ export default function FAQ() {
             return (
               <div
                 key={item.faq_id}
-                className={`border rounded-2xl transition-all duration-300 ${
+                className={`border rounded-xl transition-all duration-300 ${
                   isOpen
                     ? "border-[#0a5a54]/40 bg-white shadow-md shadow-slate-100"
                     : "border-slate-200 bg-slate-50/30 hover:border-slate-300 hover:bg-slate-50/70"

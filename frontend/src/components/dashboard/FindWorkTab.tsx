@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
 import { FiChevronLeft, FiChevronRight, FiAlertTriangle, FiX } from "react-icons/fi";
+import UpgradeOverlay from "./UpgradeOverlay";
 
 interface FindWorkTabProps {
   userRole: string | null;
@@ -90,7 +91,7 @@ export default function FindWorkTab({
     return (
       <div className="relative z-10 flex flex-col gap-8 w-full animate-fadeIn text-left text-slate-800">
         {/* Search and Header */}
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-left w-full sm:w-auto">
             <h2 className="text-lg font-bold text-slate-900">Explore Top Freelancers</h2>
             <p className="text-slate-400 text-xs mt-1 font-semibold">Review credentials, skills, and client ratings to choose the best fit.</p>
@@ -140,7 +141,7 @@ export default function FindWorkTab({
         {filteredFreelancers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredFreelancers.map((freelancer) => (
-              <div key={freelancer.id} className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col justify-between gap-6 relative overflow-hidden group">
+              <div key={freelancer.id} className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col justify-between gap-6 relative overflow-hidden group">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
 
                 <div>
@@ -221,7 +222,7 @@ export default function FindWorkTab({
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-2xl p-8 shadow-inner">
+          <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-xl p-8 shadow-inner">
             <svg className="w-10 h-10 text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -236,7 +237,7 @@ export default function FindWorkTab({
   return (
     <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-800">
       {/* Search and Header */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="text-left w-full sm:w-auto">
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <i className="fa-solid fa-magnifying-glass text-primary"></i> Find Projects & Bids
@@ -332,7 +333,7 @@ export default function FindWorkTab({
 
       {/* Job Cards */}
       {loadingAllJobs ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm">
+        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-xl p-8 shadow-sm">
           <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
           <p className="text-slate-400 text-xs font-semibold">Loading available projects...</p>
         </div>
@@ -346,7 +347,7 @@ export default function FindWorkTab({
           jobSelectedCategory === "all" || job.category_name === jobSelectedCategory;
         return matchesSearch && matchesCategory;
       }).length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-2xl p-8 shadow-inner gap-3">
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-xl p-8 shadow-inner gap-3">
           <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
             <i className="fa-solid fa-briefcase"></i>
           </div>
@@ -386,7 +387,7 @@ export default function FindWorkTab({
                 <div
                   key={job.job_id}
                   onClick={handleCardClick}
-                  className={`bg-white border rounded-2xl p-6 shadow-sm transition-all duration-300 flex flex-col gap-4 relative overflow-hidden ${
+                  className={`bg-white border rounded-xl p-6 shadow-sm transition-all duration-300 flex flex-col gap-4 relative overflow-hidden ${
                     isApplied
                       ? "border-emerald-200 bg-emerald-50/20"
                       : "border-slate-200/80 hover:shadow-md cursor-pointer hover:border-teal-600/40"
@@ -544,45 +545,12 @@ export default function FindWorkTab({
           }
         </div>
       )}
-      {/* Limit Exceeded Upgrade Popup Modal */}
-      {showLimitModal && (
-        <div className="fixed inset-0 bg-black/55 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl relative text-center flex flex-col items-center gap-4 animate-scaleUp">
-            <button 
-              onClick={() => setShowLimitModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-650 transition cursor-pointer bg-transparent border-none"
-            >
-              <FiX className="w-5 h-5" />
-            </button>
-            <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shadow-sm mt-2">
-              <FiAlertTriangle className="w-7 h-7" />
-            </div>
-            <h3 className="text-base font-black text-slate-900 tracking-tight mt-1">
-              Proposal Limit Exceeded
-            </h3>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed px-2">
-              {proposalLimitMsg || "Your monthly proposal limit has been reached."}
-            </p>
-            <div className="flex w-full gap-3 mt-2">
-              <button
-                onClick={() => setShowLimitModal(false)}
-                className="flex-1 py-3 rounded-xl text-xs font-black text-slate-600 border border-slate-200 hover:bg-slate-50 transition cursor-pointer bg-transparent"
-              >
-                Maybe Later
-              </button>
-              <button
-                onClick={() => {
-                  setShowLimitModal(false);
-                  window.location.href = "/pricing";
-                }}
-                className="flex-1 py-3 rounded-xl text-xs font-black text-white bg-teal-600 hover:bg-teal-700 transition shadow-md hover:shadow-teal-600/25 cursor-pointer border-none"
-              >
-                Upgrade Now
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Limit Exceeded Upgrade Popup Overlay */}
+      <UpgradeOverlay 
+        isOpen={showLimitModal} 
+        onClose={() => setShowLimitModal(false)} 
+        message={proposalLimitMsg} 
+      />
     </div>
   );
 }

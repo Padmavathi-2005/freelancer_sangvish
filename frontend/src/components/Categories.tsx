@@ -94,7 +94,7 @@ const FALLBACK_CATEGORIES: CategoryStat[] = [
 // ─── Skeleton card ───────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden animate-pulse">
+    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden animate-pulse">
       <div className="h-32 bg-slate-100" />
       <div className="p-4 flex flex-col gap-2">
         <div className="h-4 bg-slate-200 rounded w-3/4" />
@@ -117,12 +117,12 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
   return (
     <div
       onClick={onClick}
-      className="group rounded-2xl border border-slate-200 bg-white overflow-hidden cursor-pointer
+      className="group rounded-xl border border-slate-200 bg-white overflow-hidden cursor-pointer
                  transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70
                  hover:border-[#0F766E]/30 flex flex-col"
     >
       {/* Image / icon area */}
-      <div className="relative h-32 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+      <div className="relative h-44 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
         {imgSrc ? (
           <img
             src={imgSrc}
@@ -145,10 +145,10 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
 
       {/* Content */}
       <div className="p-4 flex flex-col gap-3 flex-1">
-        <div>
-          <h3 className="text-sm font-bold text-slate-900 leading-snug">{cat.category_name}</h3>
-          <p className="text-xs text-slate-400 mt-0.5">
-            {count > 0 ? `${count.toLocaleString()} Freelancer${count === 1 ? "" : "s"}` : "Open for Freelancers"}
+        <div className="flex flex-col flex-1">
+          <h3 className="text-sm font-bold text-slate-900 leading-snug mb-1">{cat.category_name}</h3>
+          <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed min-h-[34px]">
+            {cat.description || "Browse custom services and top-tier freelancers across all industries."}
           </p>
         </div>
 
@@ -162,7 +162,7 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
           }}
           className="mt-auto w-full flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-3 rounded-xl
                      bg-[#0F766E] text-white
-                     hover:bg-gradient-to-r hover:from-[#0F766E] hover:to-[#06b6d4]
+                     hover:bg-[#06b6d4]
                      transition-all duration-300 group-hover:shadow-md group-hover:shadow-[#0F766E]/20"
         >
           Browse
@@ -217,11 +217,11 @@ export default function Categories() {
 
           {/* View all — primary filled, secondary on hover */}
           <button
-            onClick={() => router.push("/talent")}
+            onClick={() => router.push("/categories")}
             className="flex-shrink-0 inline-flex items-center gap-2
                        text-sm font-bold text-white bg-[#0F766E]
                        px-5 py-2.5 rounded-xl
-                       hover:bg-gradient-to-r hover:from-[#0F766E] hover:to-[#06b6d4]
+                        hover:bg-[#06b6d4]
                        shadow-md shadow-[#0F766E]/20
                        transition-all duration-300 active:scale-[0.98]"
           >

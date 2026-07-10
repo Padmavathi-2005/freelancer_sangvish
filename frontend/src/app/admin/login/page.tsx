@@ -98,7 +98,7 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Card Frame */}
-        <div className="bg-white border border-slate-200/80 rounded-[2.2rem] p-6 sm:p-10 shadow-2xl shadow-slate-200/50 flex flex-col gap-6">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-10 shadow-2xl shadow-slate-200/50 flex flex-col gap-6">
           <div className="text-center sm:text-left border-b border-slate-100 pb-5">
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 leading-tight font-display">
               Admin Login

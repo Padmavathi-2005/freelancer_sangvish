@@ -238,7 +238,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
     <div className="flex flex-col gap-8 animate-fadeIn max-w-full overflow-hidden text-left">
       
       {/* 1. Admin Profile Header Card */}
-      <div className="relative overflow-hidden bg-white border border-slate-200 rounded-[2rem] p-6 lg:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="relative overflow-hidden bg-white border border-slate-200 rounded-xl p-6 lg:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="absolute top-0 right-0 w-80 h-80 bg-radial from-teal-700/5 to-transparent rounded-full -mr-20 -mt-20 -z-10" />
         <div className="flex items-center gap-5">
           <div className="w-16 h-16 rounded-[1.25rem] bg-gradient-to-tr from-teal-750 to-cyan-600 text-white font-extrabold flex items-center justify-center text-3xl shadow-md select-none transform transition hover:scale-105 duration-300">
@@ -258,7 +258,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 shrink-0 bg-slate-50 border border-slate-200/60 p-4 rounded-2xl">
+        <div className="flex items-center gap-4 shrink-0 bg-slate-50 border border-slate-200/60 p-4 rounded-xl">
           <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">Session Status</span>
@@ -273,7 +273,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 1: Platform Revenue */}
         <div 
           onClick={() => navigateToTab("wallet_management")}
-          className="bg-white border border-slate-200 hover:border-emerald-200 rounded-[1.75rem] p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-emerald-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
@@ -297,7 +297,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 2: Neutral Escrow Holding */}
         <div 
           onClick={() => navigateToTab("wallet_management")}
-          className="bg-white border border-slate-200 hover:border-blue-200 rounded-[1.75rem] p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-blue-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
@@ -319,7 +319,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 3: Ongoing Projects */}
         <div 
           onClick={() => navigateToTab("projects")}
-          className="bg-white border border-slate-200 hover:border-teal-200 rounded-[1.75rem] p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-teal-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-teal-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
@@ -341,7 +341,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 4: Disputes Cases */}
         <div 
           onClick={() => navigateToTab("transactions", "disputes")}
-          className="bg-white border border-slate-200 hover:border-rose-200 rounded-[1.75rem] p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-rose-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-rose-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
@@ -367,7 +367,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
 
       {/* 3. Vetting Warning Banner if any applications are pending */}
       {pendingVettingCount > 0 && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-amber-50/60 border border-amber-200/50 rounded-2xl p-4 text-amber-800">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-amber-50/60 border border-amber-200/50 rounded-xl p-4 text-amber-800">
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚡</span>
             <div>
@@ -390,7 +390,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* SVG Area Chart Card (Span 8) */}
-        <div className="lg:col-span-8 bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between text-left">
+        <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between text-left">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
               <h3 className="text-base font-extrabold text-slate-800">Platform Revenue Stream</h3>
@@ -550,7 +550,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         </div>
 
         {/* User Demographics split (Span 4) */}
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm flex flex-col justify-between text-left">
+        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between text-left">
           <div>
             <h3 className="text-base font-extrabold text-slate-800">User Demographic</h3>
             <p className="text-[11px] text-slate-400 font-bold mt-0.5">
@@ -580,11 +580,11 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
 
             {/* Demographics details list */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-slate-50 border border-slate-200/50 rounded-2xl">
+              <div className="p-3 bg-slate-50 border border-slate-200/50 rounded-xl">
                 <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider">Freelancers</span>
                 <p className="text-base font-black text-slate-800 mt-1">{userCounts.freelancers || 0}</p>
               </div>
-              <div className="p-3 bg-slate-50 border border-slate-200/50 rounded-2xl">
+              <div className="p-3 bg-slate-50 border border-slate-200/50 rounded-xl">
                 <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider">Clients</span>
                 <p className="text-base font-black text-slate-800 mt-1">{userCounts.clients || 0}</p>
               </div>
@@ -601,7 +601,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
       </div>
 
       {/* 5. Dynamic Platform Audit logs */}
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-6 lg:p-8 shadow-sm text-left">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 lg:p-8 shadow-sm text-left">
         <div className="flex justify-between items-center mb-6">
           <div>
             <h3 className="text-base font-extrabold text-slate-800">System Activity Ledger</h3>
@@ -619,7 +619,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
           {activityLogs.map((log, idx) => (
             <div 
               key={idx} 
-              className="p-3.5 bg-slate-50/50 hover:bg-slate-50 rounded-2xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-700 transition hover:border-slate-200"
+              className="p-3.5 bg-slate-50/50 hover:bg-slate-50 rounded-xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-slate-700 transition hover:border-slate-200"
             >
               <div className="flex items-start sm:items-center gap-3">
                 <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-md uppercase tracking-wider shrink-0 ${

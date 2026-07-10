@@ -1,81 +1,26 @@
 "use client";
 import { API_URL } from "@/config/api";
 
-
 import React, { useState, useEffect } from "react";
-import CustomSelect from "@/components/CustomSelect";
+import { FiGlobe, FiUploadCloud, FiExternalLink } from "react-icons/fi";
 
 interface SiteSettingsTabProps {
-  platformFee: number;
-  setPlatformFee: (v: number) => void;
-  autoVetting: boolean;
-  setAutoVetting: (v: boolean) => void;
-  maintenanceMode: boolean;
-  setMaintenanceMode: (v: boolean) => void;
-  siteTheme: string;
-  setSiteTheme: (v: string) => void;
-  primaryColor: string;
-  setPrimaryColor: (v: string) => void;
-  secondaryColor: string;
-  setSecondaryColor: (v: string) => void;
-  defaultCurrency: string;
-  setDefaultCurrency: (v: string) => void;
-  defaultLanguage: string;
-  setDefaultLanguage: (v: string) => void;
-  itemsPerPage: number;
-  setItemsPerPage: (v: number) => void;
-  enableProposalVetting: boolean;
-  setEnableProposalVetting: (v: boolean) => void;
-  enableClientVetting: boolean;
-  setEnableClientVetting: (v: boolean) => void;
   handleSaveSetting: (key: string, value: any, category?: string) => Promise<void>;
 }
 
 export default function SiteSettingsTab({
-  platformFee,
-  setPlatformFee,
-  autoVetting,
-  setAutoVetting,
-  maintenanceMode,
-  setMaintenanceMode,
-  siteTheme,
-  setSiteTheme,
-  primaryColor,
-  setPrimaryColor,
-  secondaryColor,
-  setSecondaryColor,
-  defaultCurrency,
-  setDefaultCurrency,
-  defaultLanguage,
-  setDefaultLanguage,
-  itemsPerPage,
-  setItemsPerPage,
-  enableProposalVetting,
-  setEnableProposalVetting,
-  enableClientVetting,
-  setEnableClientVetting,
   handleSaveSetting
 }: SiteSettingsTabProps) {
 
-  // Local state copies to hold modifications before manual saving
-  const [fee, setLocalFee] = useState(platformFee);
-  const [theme, setLocalTheme] = useState(siteTheme);
-  const [pColor, setLocalPrimaryColor] = useState(primaryColor);
-  const [sColor, setLocalSecondaryColor] = useState(secondaryColor);
-  const [vetting, setLocalAutoVetting] = useState(autoVetting);
-  const [maintenance, setLocalMaintenanceMode] = useState(maintenanceMode);
-  const [localCurrency, setLocalCurrency] = useState(defaultCurrency);
-  const [localLanguage, setLocalLanguage] = useState(defaultLanguage);
-  const [localLimit, setLocalLimit] = useState(itemsPerPage);
-  const [proposalVetting, setLocalProposalVetting] = useState(enableProposalVetting);
-  const [clientVetting, setLocalClientVetting] = useState(enableClientVetting);
-
-  const [availLanguages, setAvailLanguages] = useState<{ name: string; code: string }[]>([]);
-  const [availCurrencies, setAvailCurrencies] = useState<{ name: string; code: string; symbol: string }[]>([]);
-
-  // Site name/logo states
+  // Site name/logo/favicon/OG details states
   const [siteName, setSiteName] = useState("Buy2Lancer");
   const [siteLogo, setSiteLogo] = useState("/public/logo.png");
+  const [siteFavicon, setSiteFavicon] = useState("/public/favicon.ico");
+  const [siteOgImage, setSiteOgImage] = useState("/public/og-image.png");
+  const [siteDescription, setSiteDescription] = useState("LancerFlow Freelance Marketplace");
+  const [siteKeywords, setSiteKeywords] = useState("freelance, marketplace, gig, order");
+  const [siteShortName, setSiteShortName] = useState("Lancer");
+
   const [appStoreUrl, setAppStoreUrl] = useState("https://apps.apple.com");
   const [googlePlayUrl, setGooglePlayUrl] = useState("https://play.google.com");
   const [instagramUrl, setInstagramUrl] = useState("https://instagram.com");
@@ -88,12 +33,12 @@ export default function SiteSettingsTab({
   const [toastTitle, setToastTitle] = useState("Settings Saved");
   const [toastText, setToastText] = useState("Platform configuration updated successfully.");
 
-  const [uploading, setUploading] = useState(false);
+  const [uploadingField, setUploadingField] = useState<"logo" | "favicon" | "og_image" | null>(null);
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "logo" | "favicon" | "og_image") => {
     if (!e.target.files || e.target.files.length === 0) return;
     try {
-      setUploading(true);
+      setUploadingField(target);
       const file = e.target.files[0];
       const formData = new FormData();
       formData.append("file", file);
@@ -113,13 +58,16 @@ export default function SiteSettingsTab({
       }
       
       const data = await res.json();
-      setSiteLogo(data.url);
-      triggerToast("Upload Success", "Site logo image uploaded successfully!");
+      if (target === "logo") setSiteLogo(data.url);
+      else if (target === "favicon") setSiteFavicon(data.url);
+      else if (target === "og_image") setSiteOgImage(data.url);
+      
+      triggerToast("Upload Success", `${target.toUpperCase()} uploaded successfully!`);
     } catch (err: any) {
       console.error(err);
-      triggerToast("Upload Failed", err.message || "Could not upload logo.");
+      triggerToast("Upload Failed", err.message || `Could not upload image.`);
     } finally {
-      setUploading(false);
+      setUploadingField(null);
     }
   };
 
@@ -134,12 +82,6 @@ export default function SiteSettingsTab({
   useEffect(() => {
     const loadOptions = async () => {
       try {
-        const langRes = await fetch(`${API_URL}/languages/active`);
-        if (langRes.ok) setAvailLanguages(await langRes.json());
-        
-        const currRes = await fetch(`${API_URL}/admin/currencies`);
-        if (currRes.ok) setAvailCurrencies(await currRes.json());
-
         const settingsRes = await fetch(`${API_URL}/settings`);
         if (settingsRes.ok) {
             const data = await settingsRes.json();
@@ -160,6 +102,11 @@ export default function SiteSettingsTab({
 
             if (site.site_name) setSiteName(site.site_name);
             if (site.site_logo) setSiteLogo(site.site_logo);
+            if (site.site_favicon) setSiteFavicon(site.site_favicon);
+            if (site.site_og_image) setSiteOgImage(site.site_og_image);
+            if (site.site_description) setSiteDescription(site.site_description);
+            if (site.site_keywords) setSiteKeywords(site.site_keywords);
+            if (site.site_short_name) setSiteShortName(site.site_short_name);
 
             const rawAppStore = data.find((s: any) => s.setting_key === "app_store_url")?.setting_value;
             const rawGooglePlay = data.find((s: any) => s.setting_key === "google_play_url")?.setting_value;
@@ -178,50 +125,6 @@ export default function SiteSettingsTab({
     loadOptions();
   }, []);
 
-  useEffect(() => {
-    setLocalFee(platformFee);
-  }, [platformFee]);
-
-  useEffect(() => {
-    setLocalTheme(siteTheme);
-  }, [siteTheme]);
-
-  useEffect(() => {
-    setLocalPrimaryColor(primaryColor);
-  }, [primaryColor]);
-
-  useEffect(() => {
-    setLocalSecondaryColor(secondaryColor);
-  }, [secondaryColor]);
-
-  useEffect(() => {
-    setLocalAutoVetting(autoVetting);
-  }, [autoVetting]);
-
-  useEffect(() => {
-    setLocalMaintenanceMode(maintenanceMode);
-  }, [maintenanceMode]);
-
-  useEffect(() => {
-    setLocalCurrency(defaultCurrency);
-  }, [defaultCurrency]);
-
-  useEffect(() => {
-    setLocalLanguage(defaultLanguage);
-  }, [defaultLanguage]);
-
-  useEffect(() => {
-    setLocalLimit(itemsPerPage);
-  }, [itemsPerPage]);
-
-  useEffect(() => {
-    setLocalProposalVetting(enableProposalVetting);
-  }, [enableProposalVetting]);
-
-  useEffect(() => {
-    setLocalClientVetting(enableClientVetting);
-  }, [enableClientVetting]);
-
   // Bulk manual save action for Site Settings
   const handleBulkSave = async () => {
     setSaving(true);
@@ -229,38 +132,23 @@ export default function SiteSettingsTab({
     setShowToast(false);
 
     try {
-      // 1. Save settings to DB
-      await handleSaveSetting("platform_fee", { fee }, "site_settings");
-      await handleSaveSetting("theme", { theme }, "site_settings");
-      await handleSaveSetting("primary_color", { color: pColor }, "site_settings");
-      await handleSaveSetting("secondary_color", { color: sColor }, "site_settings");
-      await handleSaveSetting("auto_vetting", { enabled: vetting }, "site_settings");
-      await handleSaveSetting("enable_proposal_vetting", { enabled: proposalVetting }, "site_settings");
-      await handleSaveSetting("enable_client_vetting", clientVetting, "site_settings");
-      await handleSaveSetting("maintenance_mode", { enabled: maintenance }, "site_settings");
-      await handleSaveSetting("default_currency", { code: localCurrency }, "site_settings");
-      await handleSaveSetting("default_language", { code: localLanguage }, "site_settings");
-      await handleSaveSetting("pagination_limit", { limit: localLimit }, "site_settings");
-      await handleSaveSetting("site_settings", { site_name: siteName, site_logo: siteLogo }, "site_settings");
+      // Save settings to DB
+      await handleSaveSetting("site_settings", { 
+        site_name: siteName, 
+        site_logo: siteLogo,
+        site_favicon: siteFavicon,
+        site_og_image: siteOgImage,
+        site_description: siteDescription,
+        site_keywords: siteKeywords,
+        site_short_name: siteShortName
+      }, "site_settings");
+
       await handleSaveSetting("app_store_url", appStoreUrl, "site_settings");
       await handleSaveSetting("google_play_url", googlePlayUrl, "site_settings");
       await handleSaveSetting("instagram_url", instagramUrl, "site_settings");
       await handleSaveSetting("linkedin_url", linkedinUrl, "site_settings");
 
-      // 2. Propagate settings to AdminContext global state instantly
-      setPlatformFee(fee);
-      setSiteTheme(theme);
-      setPrimaryColor(pColor);
-      setSecondaryColor(sColor);
-      setAutoVetting(vetting);
-      setMaintenanceMode(maintenance);
-      setEnableProposalVetting(proposalVetting);
-      setEnableClientVetting(clientVetting);
-      setDefaultCurrency(localCurrency);
-      setDefaultLanguage(localLanguage);
-      setItemsPerPage(localLimit);
-
-      triggerToast("Settings Saved", "Site settings saved successfully!");
+      triggerToast("Settings Saved", "Site identity and SEO settings saved successfully!");
       setSaveStatus({ type: "success", text: "✓ Site settings saved successfully!" });
       setTimeout(() => setSaveStatus(null), 4000);
     } catch (e) {
@@ -270,19 +158,35 @@ export default function SiteSettingsTab({
     }
   };
 
+  const inputClass = "w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm";
+  const labelClass = "text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1";
+
+  // Helper to format/preview image URLs
+  const formatImgSrc = (url: string) => {
+    if (!url) return "";
+    if (url.startsWith("/") && !url.startsWith("/public")) {
+      const apiDomain = API_URL.replace("/api", "");
+      return `${apiDomain}${url}`;
+    }
+    return url;
+  };
+
   return (
-    <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left">
       
       {/* HEADER SECTION with Save Action */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
         <div>
-          <h3 className="text-lg font-bold text-slate-805">Site Visual & System Settings</h3>
-          <p className="text-slate-505 text-xs mt-0.5">Control platform fees, themes, custom colors, vetting automations, and system access.</p>
+          <h3 className="text-lg font-bold text-slate-805 flex items-center gap-2">
+            <FiGlobe className="w-5 h-5 text-slate-500" />
+            <span>Site Identity & SEO Settings</span>
+          </h3>
+          <p className="text-slate-505 text-xs mt-0.5 font-semibold">Configure site name, logo, favicon, social graph details, and meta descriptions for SEO.</p>
         </div>
         <button
           onClick={handleBulkSave}
           disabled={saving}
-          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-6 py-3 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer"
+          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-6 py-3 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer border-none"
         >
           {saving ? "Saving..." : "Save Settings"}
         </button>
@@ -299,303 +203,258 @@ export default function SiteSettingsTab({
         </div>
       )}
 
-      {/* Service Fee slider */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800">Platform Escrow Service Fee (%)</h4>
-          <p className="text-xs text-slate-505 mt-1">Configure service charge percentages extracted on final payout milestones releases.</p>
-        </div>
+      {/* BRANDING ASSETS SECTION */}
+      <div className="border-b border-slate-100 pb-8">
+        <h4 className="text-sm font-extrabold text-slate-855 mb-1">Branding Assets</h4>
+        <p className="text-xs text-slate-505 mb-6 font-semibold">Upload your corporate identity logo, browser favicon, and default sharing thumbnail.</p>
         
-        <div className="w-full md:w-64 flex flex-col gap-2">
-          <div className="flex justify-between items-center text-xs font-semibold">
-            <span className="text-slate-500">Percentage</span>
-            <span className="text-teal-700 font-bold">{fee}%</span>
-          </div>
-          <input
-            type="range"
-            min="1"
-            max="100"
-            step="1"
-            value={fee}
-            onChange={(e) => setLocalFee(Number(e.target.value))}
-            className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-700"
-          />
-        </div>
-      </div>
-
-      {/* Site Theme configuration */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800">Site Visual Theme</h4>
-          <p className="text-xs text-slate-505 mt-1">Toggle between a premium Light (White) theme and the default dark mode.</p>
-        </div>
-        
-        <CustomSelect
-          options={[
-            { value: "light", label: "White (Light) Theme" },
-            { value: "dark", label: "Vibrant Dark Theme" }
-          ]}
-          value={theme}
-          onChange={(val) => setLocalTheme(val as string)}
-          className="w-64"
-        />
-      </div>
-
-      {/* Site Brand Colors configuration */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800">Visual Brand Colors</h4>
-          <p className="text-xs text-slate-505 mt-1">Customize the primary (base accent) and secondary (complementary accent) brand colors used in the layout.</p>
-        </div>
-        
-        <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-4 sm:items-center shrink-0">
-          <div className="flex flex-col gap-1.5 min-w-[200px] sm:min-w-[220px]">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Primary Color</span>
-            <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          {/* SITE LOGO UPLOADER */}
+          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Logo</span>
+            
+            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-36 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
+              {siteLogo ? (
+                <div className="w-full h-full p-4 flex items-center justify-center relative">
+                  <img 
+                    src={formatImgSrc(siteLogo)} 
+                    className="max-h-full max-w-full object-contain transition group-hover:scale-105"
+                    alt="Logo Preview" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/public/logo.png";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
+                      {uploadingField === "logo" ? "Uploading..." : "Change Logo"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-slate-400">
+                  <FiUploadCloud className="w-8 h-8 text-slate-350" />
+                  <span className="text-[10px] font-bold">Upload site logo</span>
+                </div>
+              )}
               <input
-                type="color"
-                value={pColor}
-                onChange={(e) => setLocalPrimaryColor(e.target.value)}
-                className="w-10 h-10 border border-slate-200 rounded-xl cursor-pointer bg-transparent p-0 overflow-hidden shrink-0"
-              />
-              <input
-                type="text"
-                value={pColor}
-                onChange={(e) => setLocalPrimaryColor(e.target.value)}
-                placeholder="#10b981"
-                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 uppercase focus:outline-none focus:border-teal-700 transition"
+                type="file"
+                accept="image/*"
+                disabled={uploadingField !== null}
+                onChange={(e) => handleImageUpload(e, "logo")}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
               />
             </div>
+
+            <input
+              type="text"
+              value={siteLogo}
+              onChange={(e) => setSiteLogo(e.target.value)}
+              placeholder="/public/logo.png"
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-500 focus:outline-none focus:border-teal-700 transition"
+            />
           </div>
 
-          <div className="flex flex-col gap-1.5 min-w-[200px] sm:min-w-[220px]">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Secondary Color</span>
-            <div className="flex items-center gap-2">
+          {/* SITE FAVICON UPLOADER */}
+          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Favicon</span>
+            
+            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-36 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
+              {siteFavicon ? (
+                <div className="w-full h-full p-6 flex items-center justify-center relative">
+                  <img 
+                    src={formatImgSrc(siteFavicon)} 
+                    className="h-10 w-10 object-contain transition group-hover:scale-105"
+                    alt="Favicon Preview" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/public/favicon.ico";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
+                      {uploadingField === "favicon" ? "Uploading..." : "Change Favicon"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-slate-400">
+                  <FiUploadCloud className="w-8 h-8 text-slate-350" />
+                  <span className="text-[10px] font-bold">Upload site favicon</span>
+                </div>
+              )}
               <input
-                type="color"
-                value={sColor}
-                onChange={(e) => setLocalSecondaryColor(e.target.value)}
-                className="w-10 h-10 border border-slate-200 rounded-xl cursor-pointer bg-transparent p-0 overflow-hidden shrink-0"
-              />
-              <input
-                type="text"
-                value={sColor}
-                onChange={(e) => setLocalSecondaryColor(e.target.value)}
-                placeholder="#06b6d4"
-                className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-mono text-slate-800 uppercase focus:outline-none focus:border-teal-700 transition"
+                type="file"
+                accept="image/*"
+                disabled={uploadingField !== null}
+                onChange={(e) => handleImageUpload(e, "favicon")}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
               />
             </div>
+
+            <input
+              type="text"
+              value={siteFavicon}
+              onChange={(e) => setSiteFavicon(e.target.value)}
+              placeholder="/public/favicon.ico"
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-500 focus:outline-none focus:border-teal-700 transition"
+            />
           </div>
+
+          {/* OG SHARING IMAGE UPLOADER */}
+          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Social OG Image</span>
+            
+            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-36 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
+              {siteOgImage ? (
+                <div className="w-full h-full flex items-center justify-center relative">
+                  <img 
+                    src={formatImgSrc(siteOgImage)} 
+                    className="w-full h-full object-cover transition group-hover:scale-105"
+                    alt="OG Preview" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/public/og-image.png";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
+                      {uploadingField === "og_image" ? "Uploading..." : "Change OG Image"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-slate-400">
+                  <FiUploadCloud className="w-8 h-8 text-slate-350" />
+                  <span className="text-[10px] font-bold">Upload OG image</span>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploadingField !== null}
+                onChange={(e) => handleImageUpload(e, "og_image")}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+
+            <input
+              type="text"
+              value={siteOgImage}
+              onChange={(e) => setSiteOgImage(e.target.value)}
+              placeholder="/public/og-image.png"
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-500 focus:outline-none focus:border-teal-700 transition"
+            />
+          </div>
+
         </div>
       </div>
 
-      {/* Site settings: Name & Logo */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800 font-sans">Site Identity</h4>
-          <p className="text-xs text-slate-505 mt-1">Configure the platform name and logo path used across messages, notifications, and emails.</p>
-        </div>
-        
-        <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-4 sm:items-center shrink-0">
-          <div className="flex flex-col gap-1.5 min-w-[200px] sm:min-w-[220px]">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Name</span>
+      {/* GENERAL IDENTITY & SEO METADATA */}
+      <div className="border-b border-slate-100 pb-8">
+        <h4 className="text-sm font-extrabold text-slate-855 mb-1">General Identity & SEO Metadata</h4>
+        <p className="text-xs text-slate-505 mb-6 font-semibold">Define search engine parameters and name identifiers used dynamically by crawler indexers.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="flex flex-col gap-1.5">
+            <span className={labelClass}>Site Name</span>
             <input
               type="text"
               value={siteName}
               onChange={(e) => setSiteName(e.target.value)}
               placeholder="Buy2Lancer"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
+              className={inputClass}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className={labelClass}>Site Short Name (e.g. for Lancer's Choice tag)</span>
+            <input
+              type="text"
+              value={siteShortName}
+              onChange={(e) => setSiteShortName(e.target.value)}
+              placeholder="Lancer"
+              className={inputClass}
             />
           </div>
 
-          <div className="flex flex-col gap-1.5 min-w-[200px] sm:min-w-[220px]">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Logo</span>
-            <div className="flex items-center gap-3">
-              {siteLogo && (
-                <div className="w-12 h-12 rounded-xl border border-slate-200 overflow-hidden shrink-0 bg-slate-50 flex items-center justify-center">
-                  <img src={siteLogo.startsWith("/") && !siteLogo.startsWith("/public") ? `https://freelancer.sangvish.com${siteLogo}` : siteLogo} className="w-full h-full object-contain" alt="Logo Preview" />
-                </div>
-              )}
-              <div className="flex-1 flex flex-col gap-1">
-                <label className="bg-slate-100 hover:bg-slate-200/80 border border-slate-200 px-4 py-2 text-center rounded-xl text-[10px] font-black uppercase text-slate-700 cursor-pointer transition flex items-center justify-center gap-2">
-                  {uploading ? (
-                    <div className="w-3.5 h-3.5 border-2 border-t-transparent border-teal-700 rounded-full animate-spin"></div>
-                  ) : (
-                    <>
-                      <i className="fa-solid fa-cloud-arrow-up"></i>
-                      <span>Upload Logo</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={uploading}
-                    onChange={handleLogoUpload}
-                    className="hidden"
-                  />
-                </label>
-                <input
-                  type="text"
-                  value={siteLogo}
-                  onChange={(e) => setSiteLogo(e.target.value)}
-                  placeholder="/public/logo.png"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-1 text-[9px] font-mono text-slate-500 focus:outline-none focus:border-teal-700 transition mt-1"
-                />
-              </div>
-            </div>
+          <div className="flex flex-col gap-1.5">
+            <span className={labelClass}>Share / Meta Description</span>
+            <textarea
+              value={siteDescription}
+              onChange={(e) => setSiteDescription(e.target.value)}
+              placeholder="Buy2Lancer is a leading web portal linking freelancers and clients..."
+              rows={4}
+              className="w-full bg-slate-50 border border-slate-202 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className={labelClass}>Meta Keywords (comma separated)</span>
+            <textarea
+              value={siteKeywords}
+              onChange={(e) => setSiteKeywords(e.target.value)}
+              placeholder="freelance, marketplace, buy, services, client, gigs"
+              rows={4}
+              className="w-full bg-slate-50 border border-slate-202 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm"
+            />
           </div>
         </div>
       </div>
 
-      {/* Auto vetting toggle */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800 font-sans">Auto-Approve Freelancer Profiles</h4>
-          <p className="text-xs text-slate-505 mt-1">When enabled, new freelancer accounts are automatically approved upon completing onboarding, bypassing the admin review queue.</p>
-        </div>
-        
-        <button
-          onClick={() => setLocalAutoVetting(!vetting)}
-          className={`w-12 h-6.5 rounded-full p-1 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center ${
-            vetting ? "bg-teal-700" : "bg-slate-200"
-          }`}
-        >
-          <div className={`w-4.5 h-4.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            vetting ? "translate-x-5.5" : "translate-x-0"
-          }`} />
-        </button>
-      </div>
+      {/* PLATFORM APP & SOCIAL LINKS */}
+      <div>
+        <h4 className="text-sm font-extrabold text-slate-855 mb-1 flex items-center gap-2">
+          <FiExternalLink className="w-4 h-4 text-slate-500" />
+          <span>Platform App & Social Links</span>
+        </h4>
+        <p className="text-xs text-slate-505 mb-6 font-semibold">Manage external marketplace links for your downloadable mobile apps and corporate social handles.</p>
 
-      {/* Proposal vetting toggle */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800 font-sans">Review Freelancer Proposals</h4>
-          <p className="text-xs text-slate-505 mt-1">When enabled, all proposals submitted by freelancers must be reviewed and approved by an administrator before they are visible to clients.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <span className={labelClass}>App Store Link</span>
+            <input
+              type="text"
+              value={appStoreUrl}
+              onChange={(e) => setAppStoreUrl(e.target.value)}
+              placeholder="https://apps.apple.com"
+              className={inputClass}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className={labelClass}>Google Play Store Link</span>
+            <input
+              type="text"
+              value={googlePlayUrl}
+              onChange={(e) => setGooglePlayUrl(e.target.value)}
+              placeholder="https://play.google.com"
+              className={inputClass}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className={labelClass}>Instagram Handle URL</span>
+            <input
+              type="text"
+              value={instagramUrl}
+              onChange={(e) => setInstagramUrl(e.target.value)}
+              placeholder="https://instagram.com"
+              className={inputClass}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <span className={labelClass}>LinkedIn Organization URL</span>
+            <input
+              type="text"
+              value={linkedinUrl}
+              onChange={(e) => setLinkedinUrl(e.target.value)}
+              placeholder="https://linkedin.com"
+              className={inputClass}
+            />
+          </div>
         </div>
-        
-        <button
-          onClick={() => setLocalProposalVetting(!proposalVetting)}
-          className={`w-12 h-6.5 rounded-full p-1 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center ${
-            proposalVetting ? "bg-teal-700" : "bg-slate-200"
-          }`}
-        >
-          <div className={`w-4.5 h-4.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            proposalVetting ? "translate-x-5.5" : "translate-x-0"
-          }`} />
-        </button>
-      </div>
-
-      {/* Client vetting toggle */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800 font-sans">Review Client Profiles</h4>
-          <p className="text-xs text-slate-505 mt-1">When enabled, new client profiles must be reviewed and approved by an administrator before they are permitted to post jobs.</p>
-        </div>
-        
-        <button
-          onClick={() => setLocalClientVetting(!clientVetting)}
-          className={`w-12 h-6.5 rounded-full p-1 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center ${
-            clientVetting ? "bg-teal-700" : "bg-slate-200"
-          }`}
-        >
-          <div className={`w-4.5 h-4.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            clientVetting ? "translate-x-5.5" : "translate-x-0"
-          }`} />
-        </button>
-      </div>
-
-      {/* Default Currency configuration */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800">Default Platform Currency</h4>
-          <p className="text-xs text-slate-505 mt-1">Select the primary system currency used across dashboards, wallets, and invoices by default.</p>
-        </div>
-        
-        <select
-          value={localCurrency}
-          onChange={(e) => setLocalCurrency(e.target.value)}
-          className="w-full sm:w-64 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition"
-        >
-          {availCurrencies.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.name} ({c.code})
-            </option>
-          ))}
-          {availCurrencies.length === 0 && (
-            <option value="USD">US Dollar (USD)</option>
-          )}
-        </select>
-      </div>
-
-      {/* Default Language configuration */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800">Default Site Language</h4>
-          <p className="text-xs text-slate-505 mt-1">Select the primary display translation dictionary loaded for anonymous guests and new signups.</p>
-        </div>
-        
-        <select
-          value={localLanguage}
-          onChange={(e) => setLocalLanguage(e.target.value)}
-          className="w-full sm:w-64 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition"
-        >
-          {availLanguages.map((l) => (
-            <option key={l.code} value={l.code}>
-              {l.name} ({l.code})
-            </option>
-          ))}
-          {availLanguages.length === 0 && (
-            <option value="EN">English (EN)</option>
-          )}
-        </select>
-      </div>
-
-      {/* Pagination Settings configuration */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800">Default Pagination Limit</h4>
-          <p className="text-xs text-slate-505 mt-1">Configure the global number of records loaded per page across all directory and table listings.</p>
-        </div>
-        
-        <select
-          value={localLimit}
-          onChange={(e) => setLocalLimit(Number(e.target.value))}
-          className="w-full sm:w-64 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-black"
-        >
-          <option value={3}>3 rows per page</option>
-          <option value={5}>5 rows per page</option>
-          <option value={10}>10 rows per page</option>
-          <option value={20}>20 rows per page</option>
-          <option value={50}>50 rows per page</option>
-          <option value={100}>100 rows per page</option>
-        </select>
-      </div>
-      
-      <div className="border-t border-slate-100 pt-6 mt-2"></div>
-
-      {/* Maintenance mode toggle */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800">Platform System Maintenance Mode</h4>
-          <p className="text-xs text-slate-505 mt-1">Restricts client registrations and contractor job bidding temporarily for structural updates.</p>
-        </div>
-        
-        <button
-          onClick={() => setLocalMaintenanceMode(!maintenance)}
-          className={`w-12 h-6.5 rounded-full p-1 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center ${
-            maintenance ? "bg-rose-500" : "bg-slate-200"
-          }`}
-        >
-          <div className={`w-4.5 h-4.5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-            maintenance ? "translate-x-5.5" : "translate-x-0"
-          }`} />
-        </button>
       </div>
 
       {/* FLOATING SUCCESS TOAST */}
       {showToast && (
         <div 
-          className="fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-white/10 animate-slideIn"
+          className="fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-white/10 animate-slideIn"
           style={{ backgroundColor: "var(--color-primary, #0f766e)", color: "#ffffff" }}
         >
           <span className="text-white font-bold text-base" style={{ color: "#ffffff" }}>✓</span>

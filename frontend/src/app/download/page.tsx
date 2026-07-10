@@ -87,7 +87,7 @@ export default function DownloadPage() {
                   <img src={links.app_mockup_image.startsWith("/") && !links.app_mockup_image.startsWith("/public") ? `https://freelancer.sangvish.com${links.app_mockup_image}` : links.app_mockup_image} className="w-full h-full object-cover" alt="App Mockup Screen" />
                 </div>
               ) : (
-                <div className="flex-1 bg-gradient-to-b from-primary/10 to-slate-950 rounded-[2.5rem] overflow-hidden p-6 flex flex-col justify-between items-center text-center relative pt-12">
+                <div className="flex-1 bg-gradient-to-b from-primary/10 to-slate-950 rounded-xl overflow-hidden p-6 flex flex-col justify-between items-center text-center relative pt-12">
                   <div className="w-full flex justify-between items-center text-slate-400 text-[10px] font-bold">
                     <span>9:41 AM</span>
                     <div className="flex gap-1 items-center">
@@ -96,7 +96,7 @@ export default function DownloadPage() {
                   </div>
                   
                   <div className="flex flex-col items-center gap-4 my-auto">
-                    <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shadow-lg border border-slate-100">
+                    <div className="w-16 h-16 rounded-xl bg-white flex items-center justify-center shadow-lg border border-slate-100">
                       <span className="font-extrabold text-2xl text-primary font-display">L</span>
                     </div>
                     <div>
@@ -124,7 +124,7 @@ export default function DownloadPage() {
           <div className="col-span-1 lg:col-span-7 space-y-8 text-left">
             
             {/* Card 1: App downloads */}
-            <div className="bg-white border border-slate-200/50 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-slate-250 transition-all duration-300 space-y-6">
+            <div className="bg-white border border-slate-200/50 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-slate-250 transition-all duration-300 space-y-6">
               <div>
                 <span className="bg-primary/5 border border-primary/10 text-primary text-[10px] font-black tracking-widest uppercase py-1.5 px-4 rounded-full shadow-sm shrink-0 inline-block mb-1 select-none">
                   Buy2Lancer App
@@ -143,7 +143,7 @@ export default function DownloadPage() {
                   href={links.app_store_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-slate-900 hover:bg-slate-950 text-white flex items-center gap-3.5 px-6 py-4 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-950/20 select-none no-underline border-none active:scale-98"
+                  className="bg-slate-900 hover:bg-slate-950 text-white flex items-center gap-3.5 px-6 py-4 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-950/20 select-none no-underline border-none active:scale-98"
                 >
                   <FaApple className="w-8 h-8 text-white shrink-0" />
                   <div className="text-left leading-tight">
@@ -157,7 +157,7 @@ export default function DownloadPage() {
                   href={links.google_play_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-slate-900 hover:bg-slate-950 text-white flex items-center gap-3.5 px-6 py-4 rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-950/20 select-none no-underline border-none active:scale-98"
+                  className="bg-slate-900 hover:bg-slate-950 text-white flex items-center gap-3.5 px-6 py-4 rounded-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-950/20 select-none no-underline border-none active:scale-98"
                 >
                   <FaGooglePlay className="w-7 h-7 text-white shrink-0" />
                   <div className="text-left leading-tight">
@@ -169,7 +169,7 @@ export default function DownloadPage() {
             </div>
 
             {/* Card 2: Social channels */}
-            <div className="bg-white border border-slate-200/50 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-slate-250 transition-all duration-300 space-y-6">
+            <div className="bg-white border border-slate-200/50 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-slate-250 transition-all duration-300 space-y-6">
               <div>
                 <span className="bg-secondary/5 border border-secondary/10 text-secondary text-[10px] font-black tracking-widest uppercase py-1.5 px-4 rounded-full shadow-sm shrink-0 inline-block mb-1 select-none">
                   Social Channels
@@ -188,7 +188,7 @@ export default function DownloadPage() {
                   href={links.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-2xl hover:text-white hover:bg-gradient-to-tr hover:from-[#f9ce3f] hover:via-[#e1306c] hover:to-[#833ab4] hover:border-transparent text-slate-700 font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
+                  className="flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-xl hover:text-white hover:bg-gradient-to-tr hover:from-[#f9ce3f] hover:via-[#e1306c] hover:to-[#833ab4] hover:border-transparent text-slate-700 font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
                 >
                   <FiInstagram className="w-5 h-5 shrink-0" />
                   <span>Instagram</span>
@@ -199,7 +199,7 @@ export default function DownloadPage() {
                   href={links.linkedin_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-2xl hover:text-white hover:bg-[#0077B5] hover:border-transparent text-slate-700 font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
+                  className="flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-xl hover:text-white hover:bg-[#0077B5] hover:border-transparent text-slate-700 font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
                 >
                   <FiLinkedin className="w-5 h-5 shrink-0" />
                   <span>LinkedIn</span>

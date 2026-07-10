@@ -240,7 +240,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
   return (
     <div className="relative z-10 flex flex-col gap-8 w-full animate-fadeIn text-left">
       {/* Header */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <FiBriefcase className="w-5 h-5 text-primary shrink-0" />
@@ -267,12 +267,12 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
       {/* Grid */}
       {loadingClientGigs ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm">
+        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-xl p-8 shadow-sm">
           <div className="w-8 h-8 border-4 border-t-emerald-500 border-slate-200 rounded-full animate-spin"></div>
           <p className="text-slate-404 text-xs font-semibold">Loading available services...</p>
         </div>
       ) : filteredGigs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-2xl p-8 shadow-inner">
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-xl p-8 shadow-inner">
           <svg className="w-10 h-10 text-slate-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.008 1.24l.885 1.77a2.25 2.25 0 002.007 1.24h1.98a2.25 2.25 0 002.007-1.24l.885-1.77a2.25 2.25 0 012.007-1.24h3.86m-18 0h18" />
           </svg>
@@ -287,7 +287,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
               onClick={() => {
                 router.push(`/gigs/${g.slug || g.gig_id}`);
               }}
-              className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col justify-between gap-6 relative overflow-hidden cursor-pointer group"
+              className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300 flex flex-col justify-between gap-6 relative overflow-hidden cursor-pointer group"
             >
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
               
@@ -389,7 +389,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
       {/* Order Gig Application Modal */}
       {isApplying && applyingGig && createPortal(
         <div className="fixed inset-0 z-[99999] bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative max-h-[95vh] flex flex-col">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative max-h-[95vh] flex flex-col">
             <button
               onClick={() => {
                 setIsApplying(false);
@@ -424,7 +424,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
               <div className="flex-grow overflow-y-auto my-4 flex flex-col gap-5 pr-1.5 min-h-0">
                 {/* Price Details banner */}
-                <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex justify-between items-center text-xs shrink-0">
+                <div className="bg-slate-50 border border-slate-150 rounded-xl p-4 flex justify-between items-center text-xs shrink-0">
                   <div>
                     <span className="text-slate-400 block font-bold uppercase tracking-wider text-[9px]">
                     {applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0 ? "Discounted Price" : "Fixed Package Price"}
@@ -452,7 +452,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
               {/* Price Negotiation Section */}
               {applyingGig.negotiation && (
-                <div className="bg-amber-50/50 border border-amber-200/80 rounded-2xl p-4 flex flex-col gap-2">
+                <div className="bg-amber-50/50 border border-amber-200/80 rounded-xl p-4 flex flex-col gap-2">
                   <label className="text-xs font-bold text-slate-700 block">Propose a Negotiated Price</label>
                   <p className="text-[10px] text-slate-500 font-semibold mb-1">
                     The freelancer allows budget proposals for this gig. Enter your offer below if you wish to negotiate:
@@ -472,7 +472,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
 
               {/* Payment info notice */}
-              <div className="flex items-start gap-3 bg-blue-50/80 border border-blue-200/80 rounded-2xl p-4">
+              <div className="flex items-start gap-3 bg-blue-50/80 border border-blue-200/80 rounded-xl p-4">
                 <svg className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" /></svg>
                 <div>
                   <p className="text-xs font-black text-blue-800">Payment is requested after the freelancer accepts</p>
@@ -484,7 +484,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
 
               {/* Extra Features / Add-ons Builder */}
-              <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200/80 rounded-2xl p-4">
+              <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200/80 rounded-xl p-4">
                 <div className="flex justify-between items-center">
                   <div>
                     <label className="text-xs font-black text-slate-800 uppercase tracking-wide">Extra Features / Add-ons</label>
@@ -769,7 +769,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
       {/* GIG DETAILS MODAL */}
       {isViewingDetails && selectedGigForDetails && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[3px] z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scaleIn flex flex-col">
+          <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scaleIn flex flex-col">
             {/* Modal Header */}
             <div className="border-b border-slate-100 p-6 flex justify-between items-start sticky top-0 bg-white z-10">
               <div className="flex flex-col gap-1.5 text-left">
@@ -804,7 +804,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                 {selectedGigForDetails.images && selectedGigForDetails.images.length > 0 ? (
                   <div className="flex flex-col gap-3">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Showcase Images</h3>
-                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-slate-50 border border-slate-200">
+                    <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-slate-50 border border-slate-200">
                       <img 
                         src={selectedGigForDetails.images[0]} 
                         className="w-full h-full object-cover" 
@@ -822,7 +822,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                     )}
                   </div>
                 ) : (
-                  <div className="w-full aspect-video bg-gradient-to-tr from-primary/5 to-cyan-500/5 flex flex-col items-center justify-center text-slate-400 gap-1 rounded-2xl border border-slate-200">
+                  <div className="w-full aspect-video bg-gradient-to-tr from-primary/5 to-cyan-500/5 flex flex-col items-center justify-center text-slate-400 gap-1 rounded-xl border border-slate-200">
                     <span className="text-3xl">🎨</span>
                     <span className="font-extrabold text-slate-500 uppercase tracking-widest text-xs">No Image Preview</span>
                   </div>
@@ -840,7 +840,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                 {selectedGigForDetails.payment_type === "milestone" && selectedGigForDetails.milestones && (
                   <div className="flex flex-col gap-2 border-t border-slate-100 pt-6">
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1.5">Service Milestones</h3>
-                    <div className="flex flex-col gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                    <div className="flex flex-col gap-2 bg-slate-50 border border-slate-200 rounded-xl p-4">
                       {(typeof selectedGigForDetails.milestones === "string" 
                         ? JSON.parse(selectedGigForDetails.milestones) 
                         : selectedGigForDetails.milestones
@@ -902,7 +902,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
               {/* Right Column - Service Summary & Call To Action */}
               <div className="w-full md:w-80 shrink-0 flex flex-col gap-6">
-                <div className="border border-slate-200 rounded-3xl p-6 bg-slate-50/50 flex flex-col gap-4 text-left">
+                <div className="border border-slate-200 rounded-xl p-6 bg-slate-50/50 flex flex-col gap-4 text-left">
                   <div className="flex justify-between items-baseline border-b border-slate-200/60 pb-4">
                     <span className="text-slate-400 font-bold uppercase tracking-widest text-[9px]">Starting Price</span>
                     <div className="text-right">

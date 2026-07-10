@@ -671,7 +671,11 @@ export const getPublicFreelancerProfile = async (req, res) => {
         );
 
         const userRes = await pool.query(
-            "SELECT user_id, CONCAT_WS(' ', first_name, last_name) as name, email, profile_image, slug, display_name FROM users WHERE user_id = $1",
+            `SELECT u.user_id, CONCAT_WS(' ', u.first_name, u.last_name) as name, u.email, u.profile_image, u.slug, u.display_name,
+                    COALESCE(u.active_plan_subscribed_at + (sp.profile_featured_duration * INTERVAL '1 day') >= CURRENT_TIMESTAMP AND sp.profile_featured_duration > 0, false) as is_featured
+             FROM users u
+             LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
+             WHERE u.user_id = $1`,
             [userId]
         );
         const user = userRes.rows[0] || null;
@@ -754,10 +758,10 @@ export const getFreelancerContracts = async (req, res) => {
         const result = await pool.query(
              `SELECT 
                 c.*,
-                u_client.first_name || ' ' || u_client.last_name as client_name,
+                u_client.first_name || COALESCE(' ' || u_client.last_name, '') as client_name,
                 u_client.email as client_email,
                 u_client.profile_image as client_image,
-                u_free.first_name || ' ' || u_free.last_name as freelancer_name,
+                u_free.first_name || COALESCE(' ' || u_free.last_name, '') as freelancer_name,
                 u_free.email as freelancer_email,
                 u_free.profile_image as freelancer_image,
                 j.description as project_description,
@@ -1477,6 +1481,7 @@ export const getPublicFreelancers = async (req, res) => {
               fp.experience_level,
               fp.category_id,
               fp.sub_category_id,
+              COALESCE(u.active_plan_subscribed_at + (sp.profile_featured_duration * INTERVAL '1 day') >= CURRENT_TIMESTAMP AND sp.profile_featured_duration > 0, false) as is_featured,
               (SELECT category_name FROM categories WHERE category_id = fp.category_id) AS category_name,
               (SELECT sub_category_name FROM sub_categories WHERE sub_category_id = fp.sub_category_id) AS sub_category_name,
               (
@@ -1487,9 +1492,10 @@ export const getPublicFreelancers = async (req, res) => {
               ) as skills
             FROM users u
             JOIN freelancer_profiles fp ON u.user_id = fp.user_id
+            LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
             WHERE fp.onboarding_completed = true
               AND u.is_active = true
-            ORDER BY u.created_at DESC
+            ORDER BY is_featured DESC, u.created_at DESC
         `;
         const result = await pool.query(query);
         res.status(200).json(result.rows);

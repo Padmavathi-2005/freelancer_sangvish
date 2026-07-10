@@ -102,7 +102,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Modal Container */}
-          <div className="relative z-10 w-full max-w-md bg-white border border-slate-200/85 rounded-[2.2rem] p-6 sm:p-10 shadow-2xl shadow-slate-950/20 flex flex-col gap-6 text-slate-800 animate-scaleUp">
+          <div className="relative z-10 w-full max-w-md bg-white border border-slate-200/85 rounded-xl p-6 sm:p-10 shadow-2xl shadow-slate-950/20 flex flex-col gap-6 text-slate-800 animate-scaleUp">
             {/* Close Button */}
             <button
               onClick={closeLoginModal}

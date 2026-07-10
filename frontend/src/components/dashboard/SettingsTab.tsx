@@ -455,11 +455,11 @@ export default function SettingsTab({
                 setActiveSettingsSubTab("profile");
               }
             }}
-            className="bg-white border border-slate-200/80 hover:border-teal-700/30 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
+            className="bg-white border border-slate-200/80 hover:border-teal-700/30 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
           >
             <div>
               <div className="flex justify-between items-start">
-                <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
                   <FiUser className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] bg-slate-100 text-slate-650 font-black px-3 py-1 rounded-full uppercase tracking-wider">
@@ -485,11 +485,11 @@ export default function SettingsTab({
                 setActiveSettingsSubTab("subscription");
               }
             }}
-            className="bg-white border border-slate-200/80 hover:border-teal-700/30 rounded-3xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
+            className="bg-white border border-slate-200/80 hover:border-teal-700/30 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
           >
             <div>
               <div className="flex justify-between items-start">
-                <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
                   <FiCheckCircle className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] bg-teal-55 text-teal-800 font-black px-3 py-1 rounded-full uppercase tracking-wider">
@@ -521,7 +521,7 @@ export default function SettingsTab({
     return (
       <div className="relative z-10 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start w-full animate-fadeIn">
         {/* LEFT CHECKLIST SIDEBAR */}
-        <div className="xl:col-span-4 bg-white border border-slate-200/85 rounded-2xl p-6 shadow-sm flex flex-col gap-6 order-last xl:order-first">
+        <div className="xl:col-span-4 bg-white border border-slate-200/85 rounded-xl p-6 shadow-sm flex flex-col gap-6 order-last xl:order-first">
           <div>
             <h2 className="text-base font-extrabold text-slate-800">Profile Setup Checklist</h2>
             <p className="text-slate-400 text-xs mt-1">Complete each section to activate your profile on the SQL DB.</p>
@@ -622,7 +622,7 @@ export default function SettingsTab({
 
         {/* RIGHT WIZARD FLOW CONTENT */}
         <div className="xl:col-span-8 flex flex-col gap-6 w-full order-first xl:order-none">
-          <div className="bg-white border border-slate-200/85 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 text-slate-800">
+          <div className="bg-white border border-slate-200/85 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 text-slate-800">
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <span className="text-[10px] font-black text-primary uppercase tracking-wider block">
@@ -653,7 +653,7 @@ export default function SettingsTab({
             {/* MEMBERSHIP PLAN STEP OVERRIDE */}
             {profileStep === 99 && (
               <div className="flex flex-col gap-6 animate-fadeIn">
-                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 shadow-xs text-left">
+                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 shadow-xs text-left">
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Plan:</span>
@@ -678,7 +678,7 @@ export default function SettingsTab({
 
                 {/* Next Upgrade Tier */}
                 {(!userSubscription || userSubscription.active_plan_id !== 3) && (
-                  <div className="bg-[#063c38]/5 border border-teal-700/10 p-5 rounded-2xl text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 mt-2 text-left">
+                  <div className="bg-[#063c38]/5 border border-teal-700/10 p-5 rounded-xl text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 mt-2 text-left">
                     <div className="flex items-start gap-3.5">
                       <div className="w-10 h-10 rounded-xl bg-[#063c38] text-white flex items-center justify-center font-black shrink-0 shadow-sm text-sm">
                         🚀
@@ -713,7 +713,7 @@ export default function SettingsTab({
             {userRole !== "client" && profileStep === 1 && (
               <div className="flex flex-col gap-5 text-left">
                 {/* Modern Circular Profile Image Uploader */}
-                <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-4">
+                <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-xl flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-4">
                   <div className="relative w-24 h-24 select-none shrink-0">
                     <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 ${profileImage ? "bg-slate-50" : "bg-gradient-to-tr from-primary to-cyan-500"}`}>
                       {profileImage ? (
@@ -1354,7 +1354,7 @@ export default function SettingsTab({
             {userRole === "client" && profileStep === 1 && (
               <div className="flex flex-col gap-5 text-left">
                 {/* Modern Circular Profile Image Uploader */}
-                <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-4">
+                <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-xl flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-4">
                   <div className="relative w-24 h-24 select-none shrink-0">
                     <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 ${profileImage ? "bg-slate-50" : "bg-gradient-to-tr from-primary to-cyan-500"}`}>
                       {profileImage ? (
@@ -1567,7 +1567,7 @@ export default function SettingsTab({
   return (
     <div className="relative z-10 grid grid-cols-1 xl:grid-cols-12 gap-8 items-start w-full animate-fadeIn select-none">
       {/* LEFT NAVIGATION SUBTABS (4 cols) */}
-      <div className="xl:col-span-4 bg-white border border-slate-200/85 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+      <div className="xl:col-span-4 bg-white border border-slate-200/85 rounded-xl p-6 shadow-sm flex flex-col gap-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0 select-none">
             <FiSettings className="w-5 h-5" />
@@ -1630,7 +1630,7 @@ export default function SettingsTab({
 
       {/* RIGHT DISPLAY PANEL (8 cols) */}
       <div className="xl:col-span-8 flex flex-col gap-6 w-full">
-        <div className="bg-white border border-slate-200/85 rounded-2xl p-6 sm:p-8 shadow-sm text-slate-800 animate-fadeIn min-h-[400px]">
+        <div className="bg-white border border-slate-200/85 rounded-xl p-6 sm:p-8 shadow-sm text-slate-800 animate-fadeIn min-h-[400px]">
           
           {/* TAB 1: ACCOUNT DETAILS */}
           {activeSettingsSubTab === "account" && (
@@ -1646,7 +1646,7 @@ export default function SettingsTab({
               </div>
 
               {/* Profile Card Summary */}
-              <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-2xl flex flex-col sm:flex-row items-center gap-6 shadow-sm">
+              <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-xl flex flex-col sm:flex-row items-center gap-6 shadow-sm">
                 <div className="relative w-24 h-24 select-none shrink-0">
                   <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 ${profileImage ? "bg-slate-50" : "bg-gradient-to-tr from-primary to-cyan-500"}`}>
                     {profileImage ? (
@@ -1711,7 +1711,7 @@ export default function SettingsTab({
               <div className="flex flex-col gap-4 mt-2">
                 <h4 className="text-xs font-black text-slate-800 uppercase tracking-wide">Developer & Reset Options</h4>
                 
-                <div className="bg-amber-50/50 border border-amber-200/80 p-4.5 rounded-2xl text-xs flex gap-3.5 items-start">
+                <div className="bg-amber-50/50 border border-amber-200/80 p-4.5 rounded-xl text-xs flex gap-3.5 items-start">
                   <FiAlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                   <div className="flex-1">
                     <h5 className="font-extrabold text-amber-900">Reset Profile Onboarding Status</h5>
@@ -1756,7 +1756,7 @@ export default function SettingsTab({
                 </span>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 shadow-xs">
+              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 shadow-xs">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Plan:</span>
@@ -1781,7 +1781,7 @@ export default function SettingsTab({
 
               {/* Next Upgrade Tier */}
               {(!userSubscription || userSubscription.active_plan_id !== 3) && (
-                <div className="bg-[#063c38]/5 border border-teal-700/10 p-5 rounded-2xl text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 mt-2">
+                <div className="bg-[#063c38]/5 border border-teal-700/10 p-5 rounded-xl text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 mt-2">
                   <div className="flex items-start gap-3.5">
                     <div className="w-10 h-10 rounded-xl bg-[#063c38] text-white flex items-center justify-center font-black shrink-0 shadow-sm text-sm">
                       🚀
@@ -2242,7 +2242,7 @@ export default function SettingsTab({
                       </div>
 
                       {/* Add Experience form */}
-                      <div className="bg-slate-50/50 border border-slate-200/80 p-5 rounded-2xl flex flex-col gap-4">
+                      <div className="bg-slate-50/50 border border-slate-200/80 p-5 rounded-xl flex flex-col gap-4">
                         <h4 className="text-xs font-black text-slate-800">Add Professional Role</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <input
@@ -2367,7 +2367,7 @@ export default function SettingsTab({
                       </div>
 
                       {/* Add Education form */}
-                      <div className="bg-slate-50/50 border border-slate-200/80 p-5 rounded-2xl flex flex-col gap-4">
+                      <div className="bg-slate-50/50 border border-slate-200/80 p-5 rounded-xl flex flex-col gap-4">
                         <h4 className="text-xs font-black text-slate-800">Add Academic Credential</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <input
@@ -2473,7 +2473,7 @@ export default function SettingsTab({
                       </div>
 
                       {/* Add Cert Form */}
-                      <div className="bg-slate-50/50 border border-slate-200/80 p-5 rounded-2xl flex flex-col gap-4">
+                      <div className="bg-slate-50/50 border border-slate-200/80 p-5 rounded-xl flex flex-col gap-4">
                         <h4 className="text-xs font-black text-slate-800">Add Professional Certification</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <input

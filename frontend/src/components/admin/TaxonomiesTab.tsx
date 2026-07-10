@@ -2,7 +2,8 @@
 import { API_URL } from "@/config/api";
 
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Table from "@/components/Table";
 import CustomSelect from "@/components/CustomSelect";
 import { Category, Subcategory, Skill } from "@/app/admin/AdminContext";
@@ -42,6 +43,10 @@ interface TaxonomiesTabProps {
   setCategoryFormSlug: (v: string) => void;
   categoryFormDescription: string;
   setCategoryFormDescription: (v: string) => void;
+  categoryFormImage: string;
+  setCategoryFormImage: (v: string) => void;
+  categoryFormVideo: string;
+  setCategoryFormVideo: (v: string) => void;
   categoryFormStatus: "Active" | "Inactive";
   setCategoryFormStatus: (v: "Active" | "Inactive") => void;
   categoryFormError: string | null;
@@ -127,6 +132,10 @@ export default function TaxonomiesTab({
   setCategoryFormSlug,
   categoryFormDescription,
   setCategoryFormDescription,
+  categoryFormImage,
+  setCategoryFormImage,
+  categoryFormVideo,
+  setCategoryFormVideo,
   categoryFormStatus,
   setCategoryFormStatus,
   categoryFormError,
@@ -178,6 +187,77 @@ export default function TaxonomiesTab({
   handleAddSkillClick
 }: TaxonomiesTabProps) {
   const [cleaning, setCleaning] = React.useState(false);
+  const [uploadingImage, setUploadingImage] = React.useState(false);
+  const [uploadingVideo, setUploadingVideo] = React.useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    try {
+      setUploadingImage(true);
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Upload failed");
+      }
+      
+      const data = await res.json();
+      setCategoryFormImage(data.url);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Could not upload image.");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    try {
+      setUploadingVideo(true);
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || "Upload failed");
+      }
+      
+      const data = await res.json();
+      setCategoryFormVideo(data.url);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || "Could not upload video.");
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
 
   const handleCleanDb = async () => {
     if (!window.confirm("WARNING: This will permanently delete all Gig Orders, Contracts, and Wallet Transactions, and reset all wallet balances to $0.00. Are you sure you want to proceed?")) {
@@ -207,14 +287,42 @@ export default function TaxonomiesTab({
     }
   };
 
+  const resolveCategoryImageUrl = (url: string) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    const baseUrl = API_URL.replace(/\/api$/, "");
+    return `${baseUrl}/${url.replace(/^\/?/, "")}`;
+  };
+
   const categoryColumns = [
     {
       header: "S.No",
       accessor: (row: Category, idx: number) => ((categoriesPage - 1) * itemsPerPage) + idx + 1
     },
     { 
-      header: "Category Name", 
-      accessor: (row: Category) => row.category_name || row.name || ""
+      header: "Category", 
+      accessor: (row: Category) => (
+        <div className="flex items-center gap-3 py-1">
+          <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+            {row.category_image ? (
+              <img src={resolveCategoryImageUrl(row.category_image)} className="w-full h-full object-cover" alt="" />
+            ) : (
+              <div className="text-[9px] font-black text-slate-400">No Image</div>
+            )}
+          </div>
+          <span className="font-bold text-slate-800 text-xs">{row.category_name || row.name || ""}</span>
+        </div>
+      )
+    },
+    {
+      header: "Description",
+      accessor: (row: Category) => (
+        <span className="text-[11px] text-slate-500 line-clamp-2 max-w-xs block leading-relaxed py-1">
+          {row.description || "-"}
+        </span>
+      )
     },
     { 
       header: "Status", 
@@ -376,7 +484,7 @@ export default function TaxonomiesTab({
 
   if (tabName === "cleanup") {
     return (
-      <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm flex flex-col gap-6 animate-fadeIn text-left">
+      <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm flex flex-col gap-6 animate-fadeIn text-left">
         <div>
           <h3 className="text-lg font-black text-slate-800">Database Cleanup & Reset</h3>
           <p className="text-slate-505 text-xs sm:text-sm mt-0.5">
@@ -384,7 +492,7 @@ export default function TaxonomiesTab({
           </p>
         </div>
 
-        <div className="bg-rose-50/50 border border-rose-200/60 rounded-2xl p-6 flex flex-col gap-4">
+        <div className="bg-rose-50/50 border border-rose-200/60 rounded-xl p-6 flex flex-col gap-4">
           <h4 className="text-xs font-black text-rose-800 uppercase tracking-wider">Affected Tables</h4>
           <ul className="list-disc pl-5 text-xs text-rose-700 font-semibold space-y-2">
             <li>
@@ -435,7 +543,7 @@ export default function TaxonomiesTab({
     <div className={`flex flex-col gap-6 animate-fadeIn text-left ${
       isLangOrCurr
         ? ""
-        : "bg-white border border-slate-200 rounded-3xl p-6 shadow-sm"
+        : "bg-white border border-slate-200 rounded-xl p-6 shadow-sm"
     }`}>
       
       {/* Main Tab Title Header */}
@@ -634,9 +742,9 @@ export default function TaxonomiesTab({
       )}
 
       {/* Category Modal */}
-      {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/35 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative flex flex-col p-6 sm:p-8 animate-fadeIn text-slate-800">
+      {isCategoryModalOpen && mounted && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-50 bg-slate-900/25 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col p-6 sm:p-8 animate-fadeIn text-slate-800">
             <button
               onClick={() => setIsCategoryModalOpen(false)}
               className="absolute top-6 right-6 z-20 text-slate-500 hover:text-slate-700 font-bold text-xs bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-0"
@@ -667,6 +775,50 @@ export default function TaxonomiesTab({
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description</label>
+                  <textarea
+                    rows={2}
+                    value={categoryFormDescription}
+                    onChange={(e) => setCategoryFormDescription(e.target.value)}
+                    placeholder="Brief description of services in this category..."
+                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 resize-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Category Cover Image</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="text"
+                      value={categoryFormImage}
+                      onChange={(e) => setCategoryFormImage(e.target.value)}
+                      placeholder="Paste image URL or upload file"
+                      className="flex-1 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800"
+                    />
+                    <label className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-all shrink-0">
+                      {uploadingImage ? "Uploading..." : "Upload"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={uploadingImage}
+                      />
+                    </label>
+                  </div>
+                  {categoryFormImage && (
+                    <div className="mt-1 w-full h-24 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 relative group">
+                      <img src={categoryFormImage} className="w-full h-full object-cover" alt="Preview" />
+                      <button
+                        type="button"
+                        onClick={() => setCategoryFormImage("")}
+                        className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 text-[10px] cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Active Status</label>
                   <CustomSelect
                     options={[
@@ -687,13 +839,14 @@ export default function TaxonomiesTab({
               </form>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Subcategory Modal */}
-      {isSubcategoryModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/35 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative flex flex-col p-6 sm:p-8 animate-fadeIn text-slate-800">
+      {isSubcategoryModalOpen && mounted && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-50 bg-slate-900/25 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col p-6 sm:p-8 animate-fadeIn text-slate-800">
             <button
               onClick={() => setIsSubcategoryModalOpen(false)}
               className="absolute top-6 right-6 z-20 text-slate-500 hover:text-slate-700 font-bold text-xs bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-0"
@@ -755,13 +908,14 @@ export default function TaxonomiesTab({
               </form>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Skill Modal */}
-      {isSkillModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/35 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl relative flex flex-col p-6 sm:p-8 animate-fadeIn text-slate-800">
+      {isSkillModalOpen && mounted && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-50 bg-slate-900/25 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl relative flex flex-col p-6 sm:p-8 animate-fadeIn text-slate-800">
             <button
               onClick={() => setIsSkillModalOpen(false)}
               className="absolute top-6 right-6 z-20 text-slate-500 hover:text-slate-700 font-bold text-xs bg-slate-100 hover:bg-slate-200/80 px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer border-0"
@@ -823,7 +977,8 @@ export default function TaxonomiesTab({
               </form>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

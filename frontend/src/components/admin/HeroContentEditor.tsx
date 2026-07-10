@@ -186,7 +186,7 @@ export default function HeroContentEditor({
         </button>
       </div>
 
-      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-2xl border border-slate-200/50">
+      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200/50">
         <span className="text-xs font-bold text-slate-500">Edit translations for:</span>
         <div className="flex items-center gap-1">
           {(availLanguages.length > 0 ? availLanguages : [
@@ -211,7 +211,7 @@ export default function HeroContentEditor({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/30 border border-slate-200/50 p-5 rounded-3xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50/30 border border-slate-200/50 p-5 rounded-xl">
         <div className="flex flex-col gap-1.5">
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hero Badge Text ({selectedContentLang})</label>
           <input

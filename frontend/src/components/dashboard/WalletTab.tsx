@@ -75,7 +75,7 @@ export default function WalletTab() {
         <div className="lg:col-span-1 space-y-6">
           
           {/* Glassmorphic Credit Card */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-teal-800 via-teal-700 to-cyan-600 p-6 text-white shadow-xl shadow-teal-900/10 min-h-[180px] flex flex-col justify-between">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-800 via-teal-700 to-cyan-600 p-6 text-white shadow-xl shadow-teal-900/10 min-h-[180px] flex flex-col justify-between">
             {/* Background design elements */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-cyan-400/20 rounded-full blur-xl -ml-8 -mb-8"></div>
@@ -108,7 +108,7 @@ export default function WalletTab() {
           </div>
 
           {/* Test Deposit Simulator */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
             <div>
               <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
                 <i className="fa-solid fa-bolt text-teal-600"></i> Add Funds
@@ -141,7 +141,7 @@ export default function WalletTab() {
 
         {/* WITHDRAWAL FORM */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm h-full space-y-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm h-full space-y-6">
             <div>
               <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
                 <i className="fa-solid fa-money-bill-transfer text-slate-700"></i> Request Fund Withdrawal / Payout
@@ -256,7 +256,7 @@ export default function WalletTab() {
       </div>
 
       {/* WITHDRAWAL REQUESTS LOG */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-4">
           <i className="fa-solid fa-clock-rotate-left text-slate-700"></i> Payout Withdrawal Requests
         </h2>
@@ -313,7 +313,7 @@ export default function WalletTab() {
       </div>
 
       {/* TRANSACTION HISTORY */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-4">
           <i className="fa-solid fa-receipt text-slate-700"></i> Wallet Transactions Log
         </h2>

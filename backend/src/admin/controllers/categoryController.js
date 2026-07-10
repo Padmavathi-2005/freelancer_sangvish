@@ -40,13 +40,17 @@ export const addCategory = async (req, res) => {
         const {
             category_name,
             category_image,
-            status
+            status,
+            description,
+            category_video
         } = req.body;
 
         const result = await Category.createCategory(
             category_name,
             category_image || null,
-            status ?? true
+            status ?? true,
+            description || null,
+            category_video || null
         );
 
         res.status(201).json({
@@ -69,14 +73,18 @@ export const editCategory = async (req, res) => {
         const {
             category_name,
             category_image,
-            status
+            status,
+            description,
+            category_video
         } = req.body;
 
         const result = await Category.updateCategory(
             id,
             category_name,
             category_image,
-            status
+            status,
+            description || null,
+            category_video || null
         );
 
         if (result.rows.length === 0) {

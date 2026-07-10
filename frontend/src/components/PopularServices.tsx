@@ -1,5 +1,11 @@
 "use client";
-import { API_URL } from "@/config/api";
+import { API_URL, API_BASE_URL } from "@/config/api";
+
+const resolveMediaUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 
 import React, { useState, useEffect } from "react";
@@ -115,7 +121,7 @@ export default function PopularServices() {
             style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}
           >
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="border border-slate-200/60 rounded-3xl overflow-hidden flex flex-col animate-pulse bg-white">
+              <div key={i} className="border border-slate-200/60 rounded-xl overflow-hidden flex flex-col animate-pulse bg-white">
                 <div className="w-full h-40 bg-slate-200" />
                 <div className="p-4 flex flex-col gap-2.5">
                   <div className="h-3.5 bg-slate-200 rounded w-1/3" />
@@ -227,10 +233,10 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
   return (
     <div
       onClick={() => router.push(`/gigs/${gig.slug || gig.gig_id}`)}
-      className="group border border-slate-200/60 rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.015] hover:border-teal-500/25 hover:shadow-xl hover:shadow-slate-200/60 cursor-pointer bg-white"
+      className="group border border-slate-200/60 rounded-xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.015] hover:border-teal-500/25 hover:shadow-xl hover:shadow-slate-200/60 cursor-pointer bg-white"
     >
       {/* Fixed-height cover — never stretches the card */}
-      <div className="w-full h-40 shrink-0 overflow-hidden bg-gradient-to-tr from-slate-50 to-slate-100 border-b border-slate-200/50 relative">
+      <div className="w-full h-40 shrink-0 overflow-hidden bg-gradient-to-tr from-slate-50 to-slate-100 relative">
         {coverUrl ? (
           <img
             src={coverUrl}
@@ -258,17 +264,43 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
       </div>
 
       {/* Content */}
-      <div className="p-4 flex flex-col gap-2 flex-1 text-left">
+      <div className="p-4 pb-0 flex flex-col gap-2 flex-1 text-left">
         <h3 className="text-sm font-black text-slate-900 leading-snug line-clamp-2 group-hover:text-teal-800 transition-colors">
           {gig.title}
         </h3>
-        <div className="flex items-center gap-3 text-[10px] font-bold text-slate-400 mt-auto pt-2">
+
+        {gig.freelancer_name && (
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/freelancer/${gig.freelancer_slug || gig.freelancer_id}`);
+            }}
+            className="mt-1 flex items-center gap-2 group/author cursor-pointer w-fit select-none"
+          >
+            {gig.freelancer_image ? (
+              <img
+                src={resolveMediaUrl(gig.freelancer_image)}
+                alt={gig.freelancer_name}
+                className="w-5.5 h-5.5 rounded-full object-cover border border-slate-100/80"
+              />
+            ) : (
+              <div className="w-5.5 h-5.5 rounded-full bg-teal-700/10 flex items-center justify-center font-bold text-[8px] text-teal-700 border border-teal-500/10 shrink-0 select-none">
+                {gig.freelancer_name.substring(0, 2).toUpperCase()}
+              </div>
+            )}
+            <span className="text-[10px] text-slate-500 font-bold hover:text-teal-750 group-hover/author:text-teal-700 transition-colors">
+              By {gig.freelancer_name}
+            </span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3.5 text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mt-auto pt-2">
           <div className="flex items-center gap-0.5">
             <FiStar className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
-            <span className="text-slate-800 font-extrabold">{rating}</span>
-            <span className="font-medium">({reviews})</span>
+            <span className="text-slate-700 font-black">{rating}</span>
+            <span className="text-slate-400 font-semibold">({reviews})</span>
           </div>
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-1">
             <FiClock className="w-3 h-3 shrink-0" />
             <span>{gig.delivery_days || 3}d delivery</span>
           </div>
@@ -276,7 +308,7 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
       </div>
 
       {/* Footer */}
-      <div className="px-4 pb-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+      <div className="px-4 pb-4 pt-2.5 flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Starting at</span>
         <span className="text-base font-extrabold text-slate-900">
           {converted.formatted}

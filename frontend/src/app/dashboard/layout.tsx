@@ -1,5 +1,11 @@
 "use client";
-import { API_URL } from "@/config/api";
+import { API_URL, API_BASE_URL } from "@/config/api";
+
+const resolveLogoUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 
 import React, { useState } from "react";
@@ -241,6 +247,34 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [newHMAmount, setNewHMAmount] = useState<number | "">("");
   const [submittingDirectHire, setSubmittingDirectHire] = useState(false);
   const [directHireError, setDirectHireError] = useState("");
+  const [siteLogo, setSiteLogo] = useState("");
+  const [siteName, setSiteName] = useState("");
+
+  React.useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          data.forEach((setting: any) => {
+            if (setting.setting_key === "site_settings") {
+              let val = setting.setting_value;
+              if (typeof val === "string") {
+                try {
+                  val = JSON.parse(val);
+                } catch (e) {}
+              }
+              if (val?.site_logo) setSiteLogo(val.site_logo);
+              if (val?.site_name) setSiteName(val.site_name);
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard settings", err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const subNavBtnClass = (path: string) => {
     const isActive = pathname === path;
@@ -285,8 +319,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     : "w-full bg-slate-800 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:border-emerald-500 focus:outline-none";
   
   const subCardClass = isLight 
-    ? "border border-slate-200 p-4 rounded-[2rem] bg-slate-50" 
-    : "border border-slate-855 p-4 rounded-[2rem] bg-slate-955/40";
+    ? "border border-slate-200 p-4 rounded-xl bg-slate-50" 
+    : "border border-slate-855 p-4 rounded-xl bg-slate-955/40";
   
   const listBgClass = isLight 
     ? "space-y-2 mb-4 bg-slate-100/50 p-3 rounded-xl border border-slate-150" 
@@ -416,15 +450,51 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             href="/"
             className="flex items-center gap-2 select-none hover:opacity-80 transition-opacity cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-750 font-extrabold shadow-sm shrink-0">
-              <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            </div>
-            <span className="text-lg font-black tracking-tight font-display flex items-baseline gap-0.5">
-              <span className="text-slate-800">Buy2</span>
-              <span className="text-teal-700">Lancer</span>
-            </span>
+            {siteLogo ? (
+              <img
+                src={resolveLogoUrl(siteLogo)}
+                alt={siteName || "Buy2Lancer"}
+                className="h-8 w-auto max-w-[150px] object-contain shrink-0"
+              />
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-750 font-extrabold shadow-sm shrink-0">
+                  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <span className="text-lg font-black tracking-tight font-display flex items-baseline gap-0.5">
+                  {siteName ? (
+                    (() => {
+                      const words = siteName.split(" ");
+                      if (words.length > 1) {
+                        return (
+                          <>
+                            <span className="text-slate-800">{words[0]}</span>
+                            <span className="text-teal-700">{words.slice(1).join(" ")}</span>
+                          </>
+                        );
+                      }
+                      const match = siteName.match(/^([a-z0-9]+)([A-Z].*)$/i);
+                      if (match) {
+                        return (
+                          <>
+                            <span className="text-slate-800">{match[1]}</span>
+                            <span className="text-teal-700">{match[2]}</span>
+                          </>
+                        );
+                      }
+                      return <span className="text-slate-800">{siteName}</span>;
+                    })()
+                  ) : (
+                    <>
+                      <span className="text-slate-800">Buy2</span>
+                      <span className="text-teal-700">Lancer</span>
+                    </>
+                  )}
+                </span>
+              </>
+            )}
           </Link>
           <button
             onClick={() => setIsSidebarOpen(false)}
@@ -1163,7 +1233,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2 select-none">
               <span className="text-[10px] font-bold text-slate-400 hidden sm:inline uppercase tracking-widest">{t("active_workspace_indicator", "Active Workspace:")}</span>
               <span className="px-3 py-1.5 rounded-xl border border-teal-150 bg-teal-50/50 text-xs font-bold text-teal-800 shadow-xxs">
-                {userRole === "client" ? t("client_view_indicator", "💼 Client View") : t("freelancer_view_indicator", "💻 Freelancer View")}
+                {userRole === "client" ? t("client_view_indicator", "Client View") : t("freelancer_view_indicator", "Freelancer View")}
               </span>
             </div>
           </div>
@@ -1222,7 +1292,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0"></div>
 
           {!onboardingCompleted && (
-            <div className="flex items-center justify-between gap-4 bg-rose-50 border border-rose-250 rounded-2xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
+            <div className="flex items-center justify-between gap-4 bg-rose-50 border border-rose-250 rounded-xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
               <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.03] rounded-full filter blur-xl"></div>
               
               <div className="flex items-center gap-3.5 min-w-0">
@@ -1249,7 +1319,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           )}
 
           {onboardingCompleted && vettingStatus === "Pending" && (
-            <div className="flex items-center gap-3.5 bg-amber-50 border border-amber-250 rounded-2xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
+            <div className="flex items-center gap-3.5 bg-amber-50 border border-amber-250 rounded-xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/[0.03] rounded-full filter blur-xl"></div>
               
               <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 shrink-0 shadow-sm">
@@ -1276,7 +1346,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           
           {/* STEP 1: ROLE SELECTION MODAL */}
           {onboardingStep === "role_selection" && (
-            <div className={`${cardBgClass} w-full max-w-xl rounded-3xl overflow-hidden relative flex flex-col p-6 sm:p-8 animate-fadeIn`}>
+            <div className={`${cardBgClass} w-full max-w-xl rounded-xl overflow-hidden relative flex flex-col p-6 sm:p-8 animate-fadeIn`}>
               <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-25%] left-[-15%] w-[25rem] h-[25rem] bg-emerald-500/10 rounded-full filter blur-[80px]"></div>
                 <div className="absolute bottom-[-25%] right-[-15%] w-[25rem] h-[25rem] bg-teal-500/10 rounded-full filter blur-[80px]"></div>
@@ -1313,7 +1383,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <div className="flex flex-col gap-4 w-full mt-6">
                   <div
                     onClick={handleSelectFreelancer}
-                    className="border p-4.5 rounded-2xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md group flex items-start gap-4 text-left bg-slate-50/50 border-slate-200 hover:border-teal-700/50 hover:bg-white"
+                    className="border p-4.5 rounded-xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md group flex items-start gap-4 text-left bg-slate-50/50 border-slate-200 hover:border-teal-700/50 hover:bg-white"
                   >
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-base shrink-0 group-hover:scale-105 transition-transform duration-300">
                       💻
@@ -1330,7 +1400,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                   <div
                     onClick={handleSelectClient}
-                    className="border p-4.5 rounded-2xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md group flex items-start gap-4 text-left bg-slate-50/50 border-slate-200 hover:border-teal-700/50 hover:bg-white"
+                    className="border p-4.5 rounded-xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-md group flex items-start gap-4 text-left bg-slate-50/50 border-slate-200 hover:border-teal-700/50 hover:bg-white"
                   >
                     <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 text-base shrink-0 group-hover:scale-105 transition-transform duration-300">
                       💼
@@ -1351,7 +1421,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* CLIENT STEP-BY-STEP FLOW */}
           {onboardingStep === "client_flow" && (
-            <div className="bg-white border border-slate-200/80 shadow-2xl text-slate-800 w-full max-w-3xl rounded-3xl overflow-hidden relative flex flex-col p-6 sm:p-8 animate-fadeIn max-h-[90vh]">
+            <div className="bg-white border border-slate-200/80 shadow-2xl text-slate-800 w-full max-w-3xl rounded-xl overflow-hidden relative flex flex-col p-6 sm:p-8 animate-fadeIn max-h-[90vh]">
               <button
                 onClick={handleSkip}
                 className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer z-20 flex items-center justify-center gap-1.5 border text-slate-500 hover:text-slate-855 bg-slate-100 hover:bg-slate-200/80 border-slate-200"
@@ -1563,7 +1633,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* FREELANCER STEP-BY-STEP FLOW */}
           {onboardingStep === "freelancer_flow" && (
-            <div className="bg-white border border-slate-200/80 shadow-2xl text-slate-800 w-full max-w-5xl rounded-3xl overflow-hidden relative flex flex-col p-6 sm:p-8 animate-fadeIn max-h-[90vh]">
+            <div className="bg-white border border-slate-200/80 shadow-2xl text-slate-800 w-full max-w-5xl rounded-xl overflow-hidden relative flex flex-col p-6 sm:p-8 animate-fadeIn max-h-[90vh]">
               <button
                 onClick={handleSkip}
                 className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all duration-200 cursor-pointer z-20 flex items-center justify-center gap-1.5 border text-slate-500 hover:text-slate-850 bg-slate-100 hover:bg-slate-200/80 border-slate-200"
@@ -1781,7 +1851,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                     {/* Spoken Languages Proficiency Levels Section */}
                     {selectedLanguages.length > 0 && (
-                      <div className="mt-4 space-y-3 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 animate-fadeIn">
+                      <div className="mt-4 space-y-3 bg-slate-50 border border-slate-200/80 rounded-xl p-4 animate-fadeIn">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Set Language Proficiency Levels</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                           {selectedLanguages.map((selLang) => {
@@ -2345,7 +2415,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Publish Profile Confirmation Modal */}
       {showPublishConfirmModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-center relative text-slate-800">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-center relative text-slate-800">
             <div className="w-16 h-16 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4 shadow-sm select-none">
               🚀
             </div>
@@ -2389,7 +2459,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Submit Job Proposal Modal */}
       {showProposalModal && applyingJob && (
         <div className="fixed inset-0 z-50 bg-slate-900/25 backdrop-blur-[0.5px] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left max-h-[90vh] flex flex-col relative my-8">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left max-h-[90vh] flex flex-col relative my-8">
             <button
               onClick={() => {
                 setShowProposalModal(false);
@@ -2667,7 +2737,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Freelancer Profile details & Hire request modal */}
       {selectedFreelancerProfile && (
         <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[1px] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 shadow-2xl rounded-3xl w-full max-w-3xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-slate-800 my-8 max-h-[90vh] flex flex-col relative">
+          <div className="bg-white border border-slate-200 shadow-2xl rounded-xl w-full max-w-3xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-slate-800 my-8 max-h-[90vh] flex flex-col relative">
             <button
               onClick={() => {
                 setSelectedFreelancerProfile(null);
@@ -2749,7 +2819,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Portfolio Projects</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {selectedFreelancerFullProfile.projects.map((p: any, idx: number) => (
-                            <div key={idx} className="border border-slate-200 p-4 rounded-2xl bg-slate-50 flex flex-col justify-between">
+                            <div key={idx} className="border border-slate-200 p-4 rounded-xl bg-slate-50 flex flex-col justify-between">
                               <div>
                                 <h5 className="text-xs font-black text-slate-800 truncate">{p.title}</h5>
                                 <p className="text-xxs font-medium text-slate-500 mt-1 line-clamp-3">{p.description}</p>
@@ -2947,7 +3017,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       )}
                     </div>
                   ) : (
-                    <div className="space-y-4 bg-slate-50/50 border border-slate-200 p-4 rounded-2xl">
+                    <div className="space-y-4 bg-slate-50/50 border border-slate-200 p-4 rounded-xl">
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Project Title *</label>
                         <input
@@ -3008,7 +3078,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   </div>
 
                   {/* 4. Milestones builder */}
-                  <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200 p-4 rounded-2xl">
+                  <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200 p-4 rounded-xl">
                     <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Define Contract Milestones ({hireMilestones.length})</h4>
                     
                     {hireMilestones.length > 0 && (

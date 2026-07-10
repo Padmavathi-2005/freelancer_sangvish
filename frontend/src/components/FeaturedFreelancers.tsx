@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { FiStar } from "react-icons/fi";
 
 interface Freelancer {
   user_id: number;
@@ -20,6 +21,7 @@ interface Freelancer {
   sub_category_name: string | null;
   skills: string[];
   slug?: string;
+  is_featured?: boolean;
 }
 
 const FALLBACK_FREELANCERS: Freelancer[] = [
@@ -70,6 +72,33 @@ export default function FeaturedFreelancers() {
   const [freelancers, setFreelancers] = useState<Freelancer[]>([]);
   const [loading, setLoading] = useState(true);
   const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
+  const [siteShortName, setSiteShortName] = useState("Lancer");
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const siteRaw = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;
+          if (siteRaw) {
+            let parsed = siteRaw;
+            if (typeof parsed === "string") {
+              try { parsed = JSON.parse(parsed); } catch {}
+            }
+            if (parsed.site_short_name) {
+              setSiteShortName(parsed.site_short_name);
+            } else if (parsed.site_name) {
+              setSiteShortName(parsed.site_name);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings in featured freelancers:", e);
+      }
+    };
+    loadSettings();
+  }, []);
 
   useEffect(() => {
     const fetchFreelancers = async () => {
@@ -84,8 +113,10 @@ export default function FeaturedFreelancers() {
               ? f.skills.map((s: any) => (typeof s === "string" ? s : s.skill_name)).filter(Boolean)
               : [],
           }));
-          // Show top 3 by profile completeness (those with rate and title first)
-          const sorted = normalized.sort((a, b) => {
+          // Show is_featured first, then top by completeness (those with rate and title first)
+          const sorted = normalized.sort((a: any, b: any) => {
+            if (a.is_featured && !b.is_featured) return -1;
+            if (!a.is_featured && b.is_featured) return 1;
             const scoreA = (a.hourly_rate ? 1 : 0) + (a.professional_title ? 1 : 0) + (a.skills.length > 0 ? 1 : 0);
             const scoreB = (b.hourly_rate ? 1 : 0) + (b.professional_title ? 1 : 0) + (b.skills.length > 0 ? 1 : 0);
             return scoreB - scoreA;
@@ -145,7 +176,7 @@ export default function FeaturedFreelancers() {
             style={{ gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))" }}
           >
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="bg-slate-50/80 border border-slate-200/60 rounded-3xl p-6 flex flex-col gap-4 animate-pulse">
+              <div key={i} className="bg-slate-50/80 border border-slate-200/60 rounded-xl p-6 flex flex-col gap-4 animate-pulse">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full bg-slate-200 shrink-0" />
                   <div className="flex flex-col gap-2 flex-1">
@@ -186,7 +217,7 @@ export default function FeaturedFreelancers() {
                 <div
                   key={freelancer.user_id || index}
                   onClick={handleCardClick}
-                  className="bg-slate-50/50 border border-slate-200/60 rounded-3xl p-6 transition-all duration-300 hover:scale-[1.02] hover:bg-white hover:border-[#0a5a54]/30 hover:shadow-xl hover:shadow-slate-200/50 flex flex-col justify-between cursor-pointer"
+                  className="bg-slate-50/50 border border-slate-200/60 rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:bg-white hover:border-[#0a5a54]/30 hover:shadow-xl hover:shadow-slate-200/50 flex flex-col justify-between cursor-pointer"
                 >
                   <div>
                     {/* Profile Header */}
@@ -206,10 +237,16 @@ export default function FeaturedFreelancers() {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-extrabold text-slate-900 text-base truncate">
                             {freelancer.name || freelancer.email || "Freelancer"}
                           </span>
+                          {freelancer.is_featured && (
+                            <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider animate-pulse shrink-0 flex items-center gap-1">
+                              <FiStar className="w-2.5 h-2.5 fill-white text-white shrink-0" />
+                              <span>{siteShortName}'s Choice</span>
+                            </span>
+                          )}
                           <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>

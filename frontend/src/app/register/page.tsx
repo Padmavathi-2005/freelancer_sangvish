@@ -132,7 +132,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Card wrapper */}
-        <div className="bg-white/80 backdrop-blur-md border border-slate-200/80 rounded-[2.2rem] p-6 sm:p-10 shadow-2xl shadow-slate-100/50 flex flex-col gap-6">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200/80 rounded-xl p-6 sm:p-10 shadow-2xl shadow-slate-100/50 flex flex-col gap-6">
           <div className="text-center sm:text-left">
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight font-display">
               Register

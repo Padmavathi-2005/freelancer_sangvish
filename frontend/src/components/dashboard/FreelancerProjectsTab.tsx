@@ -106,7 +106,7 @@ export default function FreelancerProjectsTab() {
 
       {/* Metrics Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4 text-left">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex items-center gap-4 text-left">
           <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
             <FiClock className="w-5 h-5 animate-pulse" />
           </div>
@@ -116,7 +116,7 @@ export default function FreelancerProjectsTab() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4 text-left">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex items-center gap-4 text-left">
           <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
             <FiCheckCircle className="w-5 h-5" />
           </div>
@@ -126,7 +126,7 @@ export default function FreelancerProjectsTab() {
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm flex items-center gap-4 text-left">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex items-center gap-4 text-left">
           <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0">
             <FiDollarSign className="w-5 h-5" />
           </div>
@@ -138,7 +138,7 @@ export default function FreelancerProjectsTab() {
       </div>
 
       {/* Projects List Container */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-6">
         {selectedContract ? (
           <div className="flex flex-col gap-6 text-left animate-fadeIn">
             {/* Header */}
@@ -264,7 +264,7 @@ export default function FreelancerProjectsTab() {
                 <p className="text-slate-400 text-xs font-semibold">Loading projects...</p>
               </div>
             ) : filteredContracts.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 p-6">
+              <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200 p-6">
                 <svg className="w-10 h-10 text-slate-355 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -286,7 +286,7 @@ export default function FreelancerProjectsTab() {
                     <div
                       key={c.contract_id}
                       onClick={() => setSelectedContract(c)}
-                      className="bg-slate-50/40 hover:bg-white border border-slate-200/80 hover:border-teal-300 rounded-2xl p-5 transition-all flex flex-col justify-between gap-5 text-left cursor-pointer hover:shadow-md"
+                      className="bg-slate-50/40 hover:bg-white border border-slate-200/80 hover:border-teal-300 rounded-xl p-5 transition-all flex flex-col justify-between gap-5 text-left cursor-pointer hover:shadow-md"
                     >
                       <div>
                         {/* Badge & Price */}
@@ -393,7 +393,7 @@ export default function FreelancerProjectsTab() {
       </div>
 
       {/* BOTTOM SECTION: CLIENTS & RECOMMENDATIONS */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-6 text-left">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-6 text-left">
         
         {/* Toggle between Clients and Recommended Clients */}
         <div className="flex justify-between items-center border-b border-slate-100 pb-4">
@@ -434,7 +434,7 @@ export default function FreelancerProjectsTab() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {myClients.map((client) => (
-                <div key={client.user_id} className="bg-slate-50/50 hover:bg-slate-50 border border-slate-200/80 rounded-2xl p-4 transition-all flex flex-col justify-between gap-4">
+                <div key={client.user_id} className="bg-slate-50/50 hover:bg-slate-50 border border-slate-200/80 rounded-xl p-4 transition-all flex flex-col justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center shrink-0 border border-slate-200">
                       {client.image ? (
@@ -475,7 +475,7 @@ export default function FreelancerProjectsTab() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {recommendedClients.map((client) => (
-                <div key={client.user_id} className="bg-slate-50/50 hover:bg-slate-50 border border-slate-200/80 rounded-2xl p-4 transition-all flex flex-col justify-between gap-4">
+                <div key={client.user_id} className="bg-slate-50/50 hover:bg-slate-50 border border-slate-200/80 rounded-xl p-4 transition-all flex flex-col justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 overflow-hidden flex items-center justify-center shrink-0">

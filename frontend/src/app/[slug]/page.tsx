@@ -132,7 +132,7 @@ function ContactForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-slate-50 border border-slate-100 p-6 sm:p-8 rounded-3xl flex flex-col gap-5 text-left">
+    <form onSubmit={handleSubmit} className="bg-slate-50 border border-slate-100 p-6 sm:p-8 rounded-xl flex flex-col gap-5 text-left">
       <div>
         <h3 className="text-base font-black text-slate-800 tracking-tight leading-none mb-2 select-none">Send Message</h3>
         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none">Our team will respond back shortly</p>
@@ -156,7 +156,7 @@ function ContactForm() {
           placeholder="John Doe"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-white border border-slate-200 focus:border-primary rounded-2xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
+          className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
         />
       </div>
 
@@ -169,7 +169,7 @@ function ContactForm() {
           placeholder="john@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-white border border-slate-200 focus:border-primary rounded-2xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
+          className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
         />
       </div>
 
@@ -181,7 +181,7 @@ function ContactForm() {
           placeholder="Business Inquiry / Partnership"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
-          className="w-full bg-white border border-slate-200 focus:border-primary rounded-2xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
+          className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
         />
       </div>
 
@@ -194,7 +194,7 @@ function ContactForm() {
           placeholder="Write your inquiry details here..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="w-full bg-white border border-slate-200 focus:border-primary rounded-2xl px-4 py-3 text-xs font-bold text-slate-700 focus:outline-none resize-none transition-all"
+          className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:outline-none resize-none transition-all"
         />
       </div>
 
@@ -253,7 +253,7 @@ function NewsletterForm() {
   };
 
   return (
-    <form onSubmit={handleSubscribe} className="bg-slate-50 border border-slate-100 p-6 sm:p-8 rounded-3xl flex flex-col gap-5 text-left font-sans">
+    <form onSubmit={handleSubscribe} className="bg-slate-50 border border-slate-100 p-6 sm:p-8 rounded-xl flex flex-col gap-5 text-left font-sans">
       <div>
         <h3 className="text-base font-black text-slate-800 tracking-tight leading-none mb-2 select-none">Subscribe</h3>
         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none font-sans">Get remote jobs & marketplace trends</p>
@@ -278,7 +278,7 @@ function NewsletterForm() {
           placeholder="your.email@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-white border border-slate-200 focus:border-primary rounded-2xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
+          className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
         />
       </div>
 
@@ -440,7 +440,7 @@ export default function DynamicCmsPage() {
 
               <div className="flex flex-col gap-5">
                 {/* Customer Support */}
-                <div className="flex gap-4.5 p-5.5 bg-white border border-slate-200/55 rounded-2xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm">
+                <div className="flex gap-4.5 p-5.5 bg-white border border-slate-200/55 rounded-xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm">
                   <div className="w-11 h-11 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shrink-0 text-lg">
                     <FiMail className="w-4 h-4" />
                   </div>
@@ -456,7 +456,7 @@ export default function DynamicCmsPage() {
                 </div>
 
                 {/* HQ Office */}
-                <div className="flex gap-4.5 p-5.5 bg-white border border-slate-200/55 rounded-2xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm">
+                <div className="flex gap-4.5 p-5.5 bg-white border border-slate-200/55 rounded-xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm">
                   <div className="w-11 h-11 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shrink-0 text-lg">
                     <FiMapPin className="w-4 h-4" />
                   </div>
@@ -469,7 +469,7 @@ export default function DynamicCmsPage() {
                 </div>
 
                 {/* Expected Response Times */}
-                <div className="flex gap-4.5 p-5.5 bg-white border border-slate-200/55 rounded-2xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm">
+                <div className="flex gap-4.5 p-5.5 bg-white border border-slate-200/55 rounded-xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm">
                   <div className="w-11 h-11 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shrink-0 text-lg">
                     <FiClock className="w-4 h-4" />
                   </div>
@@ -485,7 +485,7 @@ export default function DynamicCmsPage() {
 
             {/* Right Side: Contact Form Card */}
             <div className="lg:col-span-7">
-              <div className="bg-white border border-slate-200/60 shadow-xl rounded-[2rem] p-6 sm:p-10 relative overflow-hidden">
+              <div className="bg-white border border-slate-200/60 shadow-xl rounded-xl p-6 sm:p-10 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full filter blur-xl pointer-events-none" />
                 <ContactForm />
               </div>
@@ -553,7 +553,7 @@ export default function DynamicCmsPage() {
           
           {/* Centered Subscription Box */}
           <div className="max-w-2xl mx-auto w-full">
-            <div className="bg-white border border-slate-200/60 shadow-xl rounded-[2.5rem] p-6 sm:p-12 relative overflow-hidden text-center">
+            <div className="bg-white border border-slate-200/60 shadow-xl rounded-xl p-6 sm:p-12 relative overflow-hidden text-center">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full filter blur-xl pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-20 h-20 bg-secondary/5 rounded-full filter blur-xl pointer-events-none" />
               
@@ -576,7 +576,7 @@ export default function DynamicCmsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Weekly curated remote jobs */}
-              <div className="flex flex-col gap-4 p-6 bg-white border border-slate-200/55 rounded-2xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm text-left">
+              <div className="flex flex-col gap-4 p-6 bg-white border border-slate-200/55 rounded-xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm text-left">
                 <div className="w-11 h-11 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shrink-0 text-lg">
                   <FiBriefcase className="w-4 h-4" />
                 </div>
@@ -589,7 +589,7 @@ export default function DynamicCmsPage() {
               </div>
 
               {/* Freelancing Guides */}
-              <div className="flex flex-col gap-4 p-6 bg-white border border-slate-200/55 rounded-2xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm text-left">
+              <div className="flex flex-col gap-4 p-6 bg-white border border-slate-200/55 rounded-xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm text-left">
                 <div className="w-11 h-11 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shrink-0 text-lg">
                   <FiActivity className="w-4 h-4" />
                 </div>
@@ -602,7 +602,7 @@ export default function DynamicCmsPage() {
               </div>
 
               {/* Marketplace stats */}
-              <div className="flex flex-col gap-4 p-6 bg-white border border-slate-200/55 rounded-2xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm text-left">
+              <div className="flex flex-col gap-4 p-6 bg-white border border-slate-200/55 rounded-xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm text-left">
                 <div className="w-11 h-11 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shrink-0 text-lg">
                   <FiSliders className="w-4 h-4" />
                 </div>
@@ -647,7 +647,7 @@ export default function DynamicCmsPage() {
           </div>
           
           <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="bg-white border border-slate-200/70 rounded-[2rem] p-8 md:p-12 shadow-xl shadow-slate-100/50">
+            <div className="bg-white border border-slate-200/70 rounded-xl p-8 md:p-12 shadow-xl shadow-slate-100/50">
               
               {/* Header section with page title */}
               <div className="border-b border-slate-100 pb-6 mb-8 text-left">
@@ -689,7 +689,7 @@ export default function DynamicCmsPage() {
                       </p>
                       
                       {/* Interactive Search box mockup */}
-                      <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl p-2 shadow-lg hover:shadow-xl focus-within:ring-2 focus-within:ring-teal-500/25 transition-all duration-300 flex items-center gap-2 mt-4">
+                      <div className="w-full max-w-xl bg-white border border-slate-200 rounded-xl p-2 shadow-lg hover:shadow-xl focus-within:ring-2 focus-within:ring-teal-500/25 transition-all duration-300 flex items-center gap-2 mt-4">
                         <FiSearch className="w-5 h-5 text-slate-400 ml-2" />
                         <input
                           type="text"
@@ -765,7 +765,7 @@ export default function DynamicCmsPage() {
                           return (
                             <div
                               key={qIdx}
-                              className="rounded-2xl border border-slate-200 bg-white overflow-hidden hover:shadow-md hover:border-teal-500/10 transition-all duration-200"
+                              className="rounded-xl border border-slate-200 bg-white overflow-hidden hover:shadow-md hover:border-teal-500/10 transition-all duration-200"
                             >
                               <button
                                 onClick={() => setOpenFaqIdx(isOpen ? null : qIdx)}
@@ -841,7 +841,7 @@ export default function DynamicCmsPage() {
                         {data.features?.map((feat: any, idx: number) => (
                           <div
                             key={idx}
-                            className="bg-white p-8 rounded-2xl border border-slate-200/80 hover:shadow-2xl hover:border-teal-500/20 hover:-translate-y-1.5 transition-all duration-300 flex flex-col gap-3"
+                            className="bg-white p-8 rounded-xl border border-slate-200/80 hover:shadow-2xl hover:border-teal-500/20 hover:-translate-y-1.5 transition-all duration-300 flex flex-col gap-3"
                           >
                             <div className="w-10 h-10 rounded-xl bg-teal-55 border border-teal-250 flex items-center justify-center text-teal-700 font-extrabold shadow-sm shrink-0">
                               <span className="text-sm font-black">{idx + 1}</span>
@@ -880,7 +880,7 @@ export default function DynamicCmsPage() {
                           return (
                             <div
                               key={idx}
-                              className={`p-8 rounded-3xl border flex flex-col gap-6 relative transition-all duration-350 hover:shadow-2xl hover:-translate-y-2 ${
+                              className={`p-8 rounded-xl border flex flex-col gap-6 relative transition-all duration-350 hover:shadow-2xl hover:-translate-y-2 ${
                                 isPromo
                                   ? "bg-gradient-to-tr from-slate-900 to-slate-950 text-white border-slate-800 hover:border-teal-500/25"
                                   : "bg-slate-50/50 border-slate-200 hover:border-teal-700/20"
@@ -949,7 +949,7 @@ export default function DynamicCmsPage() {
                         {data.reviews?.map((rev: any, idx: number) => (
                           <div
                             key={idx}
-                            className="bg-white p-8 rounded-2xl border border-slate-200/80 flex flex-col justify-between gap-4 hover:shadow-2xl hover:-translate-y-1.5 hover:border-teal-500/10 transition-all duration-300"
+                            className="bg-white p-8 rounded-xl border border-slate-200/80 flex flex-col justify-between gap-4 hover:shadow-2xl hover:-translate-y-1.5 hover:border-teal-500/10 transition-all duration-300"
                           >
                             <p className="text-sm italic text-slate-650 leading-relaxed font-medium">
                               "{rev.quote}"
@@ -994,7 +994,7 @@ export default function DynamicCmsPage() {
                         ].map((cat, idx) => (
                           <div
                             key={idx}
-                            className="p-6 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:shadow-2xl hover:-translate-y-1.5 hover:border-teal-500/15 transition-all duration-300 cursor-pointer group text-center flex flex-col items-center gap-2"
+                            className="p-6 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:shadow-2xl hover:-translate-y-1.5 hover:border-teal-500/15 transition-all duration-300 cursor-pointer group text-center flex flex-col items-center gap-2"
                           >
                             <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${cat.gradient} text-white flex items-center justify-center font-black shadow-sm transform group-hover:scale-110 transition-transform duration-200`}>
                               {cat.name.charAt(0)}

@@ -40,6 +40,7 @@ interface Plan {
   plan_duration?: number;
   plan_role?: string;
   credits?: number;
+  badge_image?: string | null;
 }
 
 export default function PlanDetailsPage() {
@@ -297,7 +298,7 @@ export default function PlanDetailsPage() {
   if (error || !plan) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="bg-white border border-slate-200 shadow-xl rounded-3xl p-8 max-w-md text-center flex flex-col items-center gap-5">
+        <div className="bg-white border border-slate-200 shadow-xl rounded-xl p-8 max-w-md text-center flex flex-col items-center gap-5">
           <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 text-2xl">⚠️</div>
           <h2 className="text-xl font-black text-slate-900">Plan Error</h2>
           <p className="text-xs text-slate-500 font-semibold leading-relaxed">{error || "Subscription tier details are unavailable."}</p>
@@ -319,7 +320,7 @@ export default function PlanDetailsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
         {success ? (
-          <div className="bg-white border border-emerald-100 shadow-2xl rounded-[2.5rem] p-12 max-w-2xl mx-auto text-center flex flex-col items-center gap-6 py-20 animate-fadeIn">
+          <div className="bg-white border border-emerald-100 shadow-2xl rounded-xl p-12 max-w-2xl mx-auto text-center flex flex-col items-center gap-6 py-20 animate-fadeIn">
             <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 text-4xl animate-bounce">
               🎉
             </div>
@@ -349,17 +350,29 @@ export default function PlanDetailsPage() {
               {/* Premium Plan Banner */}
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-start flex-wrap gap-4">
-                  <div>
-                    <span className="text-[10px] font-black text-teal-850 uppercase tracking-widest bg-teal-50 py-1.5 px-4 rounded-full border border-teal-100/80 shadow-sm inline-block">
-                      {plan.name} Membership
-                    </span>
-                    <h1 className="text-4xl font-black tracking-tight text-slate-900 mt-3">{plan.name} Plan Upgrade</h1>
-                    <p className="text-xs text-slate-500 font-semibold mt-1.5 max-w-xl leading-relaxed">
-                      {plan.description || "Unlock elevated permissions, lower commission fees, and dynamic benefits."}
-                    </p>
+                  <div className="flex gap-4 items-start">
+                    {plan.badge_image && (
+                      <img 
+                        src={plan.badge_image} 
+                        alt={plan.name} 
+                        className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-sm shrink-0 mt-1" 
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    )}
+                    <div>
+                      <span className="text-[10px] font-black text-teal-850 uppercase tracking-widest bg-teal-50 py-1.5 px-4 rounded-full border border-teal-100/80 shadow-sm inline-block">
+                        {plan.name} Membership
+                      </span>
+                      <h1 className="text-4xl font-black tracking-tight text-slate-900 mt-3">{plan.name} Plan Upgrade</h1>
+                      <p className="text-xs text-slate-500 font-semibold mt-1.5 max-w-xl leading-relaxed">
+                        {plan.description || "Unlock elevated permissions, lower commission fees, and dynamic benefits."}
+                      </p>
+                    </div>
                   </div>
                   
-                  <div className="text-right flex flex-col items-end shrink-0 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <div className="text-right flex flex-col items-end shrink-0 bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <span className="text-3xl font-black text-slate-900 tracking-tight">
                       {parseFloat((plan.price || 0).toString()) === 0 
                         ? "Free" 
@@ -373,7 +386,7 @@ export default function PlanDetailsPage() {
                 </div>
 
                 {isCurrentActive && (
-                  <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-2xl p-4 text-xs font-bold flex items-center gap-2 animate-fadeIn mt-2 shadow-sm">
+                  <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-xl p-4 text-xs font-bold flex items-center gap-2 animate-fadeIn mt-2 shadow-sm">
                     <span>🌟 This is your current active subscription plan</span>
                   </div>
                 )}
@@ -387,7 +400,7 @@ export default function PlanDetailsPage() {
                 
                 <div className="flex flex-col divide-y divide-slate-100">
                   <div className="flex items-start gap-4 py-5 first:pt-0">
-                    <div className="w-10 h-10 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm">
                       <FiTag />
                     </div>
                     <div>
@@ -401,7 +414,7 @@ export default function PlanDetailsPage() {
                   </div>
 
                   <div className="flex items-start gap-4 py-5">
-                    <div className="w-10 h-10 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm">
                       <FiFolderPlus />
                     </div>
                     <div>
@@ -415,7 +428,7 @@ export default function PlanDetailsPage() {
                   </div>
 
                   <div className="flex items-start gap-4 py-5">
-                    <div className="w-10 h-10 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm">
                       <FiMessageSquare />
                     </div>
                     <div>
@@ -433,7 +446,7 @@ export default function PlanDetailsPage() {
               </div>
 
               {/* Side by side Matrix Table (Soft Container) */}
-              <div className="bg-white border border-slate-200/80 shadow-md rounded-[2rem] p-8 overflow-hidden">
+              <div className="bg-white border border-slate-200/80 shadow-md rounded-xl p-8 overflow-hidden">
                 <h2 className="text-lg font-black text-slate-900 mb-4">Subscription Tiers Comparison</h2>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
@@ -490,7 +503,7 @@ export default function PlanDetailsPage() {
 
             {/* RIGHT COLUMN: Payment & Checkout Panel (lg:col-span-5) */}
             <div className="lg:col-span-5 sticky top-24">
-              <div className="bg-white border border-slate-150 shadow-xl rounded-[2.5rem] p-8 flex flex-col gap-6">
+              <div className="bg-white border border-slate-150 shadow-xl rounded-xl p-8 flex flex-col gap-6">
                 
                 <div>
                   <h3 className="text-md font-black text-slate-900 uppercase tracking-wide">Checkout Summary</h3>
@@ -521,7 +534,7 @@ export default function PlanDetailsPage() {
 
                   {/* Wallet Balance Display */}
                   {paymentMethod === "wallet" && (
-                    <div className="bg-slate-50 border border-slate-100 rounded-3xl p-5 flex items-center justify-between">
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-5 flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider">Active Wallet Balance</span>
                         <span className="text-lg font-black text-slate-900 mt-0.5">{currencySymbol}{walletBalance.toFixed(2)}</span>
@@ -542,8 +555,8 @@ export default function PlanDetailsPage() {
 
                   {/* Stripe Checkout redirection info */}
                   {paymentMethod === "stripe" && (
-                    <div className="flex flex-col gap-4 items-center justify-center py-4 border border-dashed border-slate-200 rounded-3xl bg-slate-50/50 p-6 animate-fadeIn">
-                      <div className="w-10 h-10 rounded-2xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm animate-pulse">
+                    <div className="flex flex-col gap-4 items-center justify-center py-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 p-6 animate-fadeIn">
+                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm animate-pulse">
                         <FiCreditCard />
                       </div>
                       <div className="text-center">
@@ -557,7 +570,7 @@ export default function PlanDetailsPage() {
 
                   {/* PayPal Sandbox Checkout Option */}
                   {paymentMethod === "paypal" && (
-                    <div className="flex flex-col gap-4 items-center justify-center py-4 border border-dashed border-slate-200 rounded-3xl bg-slate-50/50 p-6 animate-fadeIn">
+                    <div className="flex flex-col gap-4 items-center justify-center py-4 border border-dashed border-slate-200 rounded-xl bg-slate-50/50 p-6 animate-fadeIn">
                       <button
                         type="button"
                         onClick={() => setShowPaypalModal(true)}
@@ -636,7 +649,7 @@ export default function PlanDetailsPage() {
       {/* PayPal Sandbox Pop-up Modal Simulation */}
       {showPaypalModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 shadow-2xl rounded-3xl overflow-hidden w-full max-w-md animate-scaleUp">
+          <div className="bg-white border border-slate-200 shadow-2xl rounded-xl overflow-hidden w-full max-w-md animate-scaleUp">
             
             {/* Paypal Modal Header */}
             <div className="bg-[#003087] text-white px-6 py-4 flex justify-between items-center shadow-sm">
@@ -660,7 +673,7 @@ export default function PlanDetailsPage() {
                 <span className="text-xs font-black text-slate-800">LancerFlow {plan.name} Plan Membership Upgrade</span>
               </div>
 
-              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-150">
+              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-150">
                 <span className="text-xs font-bold text-slate-650">Checkout Price</span>
                 <span className="text-xl font-black text-slate-900 font-mono">{currencySymbol}{priceVal.toFixed(2)}</span>
               </div>

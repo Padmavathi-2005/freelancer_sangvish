@@ -44,10 +44,36 @@ export default function ProjectsTab({
   handleUpdateProposalVettingStatus
 }: ProjectsTabProps) {
 
+  const [approvalFilter, setApprovalFilter] = React.useState<"all" | "approved" | "pending">("all");
+  const [localPage, setLocalPage] = React.useState(1);
+
+  const filteredByApproval = React.useMemo(() => {
+    return filteredProjects.filter((p: any) => {
+      if (approvalFilter === "approved") {
+        return p.status !== "Pending Approval" && p.status !== "Declined";
+      }
+      if (approvalFilter === "pending") {
+        return p.status === "Pending Approval";
+      }
+      return true;
+    });
+  }, [filteredProjects, approvalFilter]);
+
+  const paginatedProjectsLocal = React.useMemo(() => {
+    const startIndex = (localPage - 1) * itemsPerPage;
+    return filteredByApproval.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredByApproval, localPage, itemsPerPage]);
+
+  const totalPagesLocal = Math.ceil(filteredByApproval.length / itemsPerPage);
+
+  React.useEffect(() => {
+    setLocalPage(1);
+  }, [approvalFilter, projectsSearch]);
+
   const projectColumns = [
     {
       header: "S.No",
-      accessor: (row: any, idx: number) => ((projectsPage - 1) * itemsPerPage) + idx + 1
+      accessor: (row: any, idx: number) => ((localPage - 1) * itemsPerPage) + idx + 1
     },
     {
       header: "Title",
@@ -69,11 +95,12 @@ export default function ProjectsTab({
       header: "Status",
       accessor: (row: any) => (
         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-          row.status === "Open" ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" :
+          row.status === "Open" ? "bg-emerald-50 text-emerald-707 border border-emerald-200/60" :
           row.status === "Closed" ? "bg-slate-50 text-slate-400 border border-slate-200" :
-          "bg-amber-50 text-amber-700 border border-amber-200/60"
+          row.status === "Pending Approval" ? "bg-amber-50 text-amber-700 border border-amber-200" :
+          "bg-rose-50 text-rose-700 border border-rose-200"
         }`}>
-          {row.status}
+          {row.status === "Flagged" ? "Suspended" : row.status}
         </span>
       )
     },
@@ -81,18 +108,37 @@ export default function ProjectsTab({
       header: "Actions",
       accessor: (row: any) => (
         <div className="flex gap-2 select-none justify-center">
-          <button
-            onClick={() => handleUpdateProjectStatus(row.job_id, row.status === "Open" ? "Flagged" : "Open")}
-            className="px-2.5 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-50 border border-teal-200/60 rounded-lg cursor-pointer transition-colors bg-white"
-          >
-            {row.status === "Open" ? "Flag" : "Unflag"}
-          </button>
-          <button
-            onClick={() => handleDeleteProject(row.job_id)}
-            className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200/60 rounded-lg cursor-pointer transition-colors bg-white"
-          >
-            Delete
-          </button>
+          {row.status === "Pending Approval" ? (
+            <>
+              <button
+                onClick={() => handleUpdateProjectStatus(row.job_id, "Open")}
+                className="px-2.5 py-1 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50 border border-emerald-250/60 rounded-lg cursor-pointer transition-colors bg-white"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => handleUpdateProjectStatus(row.job_id, "Declined")}
+                className="px-2.5 py-1 text-[11px] font-bold text-rose-605 hover:bg-rose-50 border border-rose-250/60 rounded-lg cursor-pointer transition-colors bg-white"
+              >
+                Decline
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => handleUpdateProjectStatus(row.job_id, row.status === "Open" ? "Flagged" : "Open")}
+                className="px-2.5 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-50 border border-teal-200/60 rounded-lg cursor-pointer transition-colors bg-white"
+              >
+                {row.status === "Open" ? "Suspend" : "Activate"}
+              </button>
+              <button
+                onClick={() => handleDeleteProject(row.job_id)}
+                className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200/60 rounded-lg cursor-pointer transition-colors bg-white"
+              >
+                Delete
+              </button>
+            </>
+          )}
         </div>
       )
     }
@@ -196,10 +242,51 @@ export default function ProjectsTab({
       </div>
 
       {projectsSubTab === "projects" ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm text-left">
-          <div>
-            <h3 className="text-lg font-bold text-slate-800">Project management</h3>
-            <p className="text-slate-505 text-xs sm:text-sm mt-0.5">Manage and review all client-posted projects/jobs across the platform.</p>
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Project management</h3>
+              <p className="text-slate-505 text-xs sm:text-sm mt-0.5 font-semibold">Manage, review, and approve client-posted projects/jobs across the platform.</p>
+            </div>
+
+            {/* Approval Tab Filters */}
+            <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 self-start select-none gap-1 shrink-0">
+              <button
+                onClick={() => setApprovalFilter("all")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
+                  approvalFilter === "all"
+                    ? "bg-white text-slate-805 shadow-sm border border-slate-200/50"
+                    : "text-slate-500 hover:text-slate-800 bg-transparent"
+                }`}
+              >
+                All Posted ({filteredProjects.length})
+              </button>
+              <button
+                onClick={() => setApprovalFilter("approved")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
+                  approvalFilter === "approved"
+                    ? "bg-white text-slate-805 shadow-sm border border-slate-200/50"
+                    : "text-slate-500 hover:text-slate-800 bg-transparent"
+                }`}
+              >
+                Approved & Live ({filteredProjects.filter((p: any) => p.status !== "Pending Approval" && p.status !== "Declined").length})
+              </button>
+              <button
+                onClick={() => setApprovalFilter("pending")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer flex items-center gap-1.5 ${
+                  approvalFilter === "pending"
+                    ? "bg-white text-slate-805 shadow-sm border border-slate-200/50"
+                    : "text-slate-500 hover:text-slate-800 bg-transparent"
+                }`}
+              >
+                <span>Pending Vetting</span>
+                {filteredProjects.filter((p: any) => p.status === "Pending Approval").length > 0 && (
+                  <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black leading-none animate-pulse">
+                    {filteredProjects.filter((p: any) => p.status === "Pending Approval").length}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           <div className="flex justify-between items-center gap-4">
@@ -219,24 +306,28 @@ export default function ProjectsTab({
 
           <Table
             columns={projectColumns}
-            data={paginatedProjects}
-            currentPage={projectsPage}
-            totalPages={totalProjectsPages}
-            onPageChange={setProjectsPage}
-            totalItems={filteredProjects.length}
+            data={paginatedProjectsLocal}
+            currentPage={localPage}
+            totalPages={totalPagesLocal}
+            onPageChange={setLocalPage}
+            totalItems={filteredByApproval.length}
             itemsPerPage={itemsPerPage}
-            emptyMessage="No project listings found."
+            emptyMessage={
+              approvalFilter === "pending"
+                ? "No project listings require vetting approval."
+                : (approvalFilter === "approved" ? "No active/approved project listings found." : "No project listings found.")
+            }
           />
         </div>
       ) : projectsSubTab === "vetting" ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
           <div>
             <h3 className="text-lg font-bold text-slate-805">Talent Vetting Queue</h3>
             <p className="text-slate-505 text-xs sm:text-sm mt-0.5">Verify background credentials, portfolio samples, and assign elite Top 3% badges.</p>
           </div>
 
           {vettingApps.length === 0 ? (
-            <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-2xl">
+            <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl">
               <p className="text-slate-500 text-sm font-semibold">No applications pending review in this cycle.</p>
             </div>
           ) : (
@@ -244,7 +335,7 @@ export default function ProjectsTab({
               {vettingApps.map((app) => (
                 <div 
                   key={app.id} 
-                  className={`p-5 bg-white border rounded-2xl flex flex-col lg:flex-row justify-between lg:items-center gap-5 transition-all shadow-sm ${
+                  className={`p-5 bg-white border rounded-xl flex flex-col lg:flex-row justify-between lg:items-center gap-5 transition-all shadow-sm ${
                     app.status === "Approved" ? "border-emerald-200 bg-emerald-50/40" :
                     app.status === "Declined" ? "border-rose-200 bg-rose-50/40" :
                     app.status === "Info Requested" ? "border-amber-200 bg-amber-50/40" : "border-slate-200"
@@ -324,7 +415,7 @@ export default function ProjectsTab({
           )}
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col gap-6 shadow-sm text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left">
           <div>
             <h3 className="text-lg font-bold text-slate-800">Proposal Vetting Queue</h3>
             <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Approve or reject bids submitted by freelancers before clients can see them.</p>

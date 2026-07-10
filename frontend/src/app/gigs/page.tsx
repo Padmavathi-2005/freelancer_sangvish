@@ -1,8 +1,14 @@
 "use client";
-import { API_URL } from "@/config/api";
+import { API_URL, API_BASE_URL } from "@/config/api";
+
+const resolveMediaUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -22,6 +28,8 @@ function GigsSearchContent() {
   const [filterRating, setFilterRating] = useState<string>("");
   const [experienceLevel, setExperienceLevel] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("popular");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   // Wishlist and Toast states
   const [wishlist, setWishlist] = useState<any[]>([]);
@@ -237,6 +245,17 @@ function GigsSearchContent() {
     return scoreB - scoreA;
   });
 
+  const paginatedGigs = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedGigs.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedGigs, currentPage]);
+
+  const totalPages = Math.ceil(sortedGigs.length / itemsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedCategory, selectedSubcategory, minPrice, maxPrice, maxDeliveryDays, filterRating, experienceLevel, sortBy]);
+
   const handleResetFilters = () => {
     setSearchQuery("");
     setSelectedCategory("");
@@ -270,7 +289,7 @@ function GigsSearchContent() {
 
       {/* Search Type Switcher */}
       <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Category</span>
           <div className="flex gap-2">
             <button
@@ -311,11 +330,11 @@ function GigsSearchContent() {
       </div>
 
       {/* Main Grid Workspace */}
-      <main className="max-w-7xl mx-auto w-full py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+      <main className="max-w-[1600px] mx-auto w-full py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
         
         {/* Left Side: Filtering Sidebar */}
         <aside className="lg:col-span-3 space-y-6">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-6 sticky top-6">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 sticky top-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
                 <FiSliders className="w-4 h-4 text-teal-700" />
@@ -339,7 +358,7 @@ function GigsSearchContent() {
                   setSelectedCategory(e.target.value);
                   setSelectedSubcategory("");
                 }}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">All Categories</option>
                 {categories.map((c) => (
@@ -357,7 +376,7 @@ function GigsSearchContent() {
                 <select
                   value={selectedSubcategory}
                   onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
                 >
                   <option value="">All Subcategories</option>
                   {activeSubcategories.map((s) => (
@@ -380,7 +399,7 @@ function GigsSearchContent() {
                     placeholder="Min"
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl pl-5 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl pl-5 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none transition-all"
                   />
                 </div>
                 <div className="relative">
@@ -390,7 +409,7 @@ function GigsSearchContent() {
                     placeholder="Max"
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl pl-5 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none transition-all"
+                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl pl-5 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none transition-all"
                   />
                 </div>
               </div>
@@ -402,7 +421,7 @@ function GigsSearchContent() {
               <select
                 value={maxDeliveryDays}
                 onChange={(e) => setMaxDeliveryDays(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">Any time duration</option>
                 <option value="1">Up to 24 hours</option>
@@ -418,7 +437,7 @@ function GigsSearchContent() {
               <select
                 value={filterRating}
                 onChange={(e) => setFilterRating(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">Any Rating</option>
                 <option value="4.5">4.5 Stars &amp; Up</option>
@@ -433,7 +452,7 @@ function GigsSearchContent() {
               <select
                 value={experienceLevel}
                 onChange={(e) => setExperienceLevel(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-3xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">Any Level</option>
                 <option value="Entry">Entry Level</option>
@@ -448,7 +467,7 @@ function GigsSearchContent() {
         <section className="lg:col-span-9 space-y-6">
           
           {/* Grid control bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
             {/* Search Input */}
             <div className="flex-1 max-w-md relative select-none">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
@@ -459,7 +478,7 @@ function GigsSearchContent() {
                 placeholder="Search for service gigs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-3xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
               />
             </div>
 
@@ -473,7 +492,7 @@ function GigsSearchContent() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-3xl px-3 py-1.5 text-xs font-bold text-slate-750 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-750 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
                 >
                   <option value="popular">Recommended / Popular</option>
                   <option value="rating">Top Rated Status</option>
@@ -491,8 +510,8 @@ function GigsSearchContent() {
               <p className="text-xs font-bold text-slate-450 uppercase tracking-wider">Scanning marketplace database...</p>
             </div>
           ) : sortedGigs.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center gap-4 max-w-xl mx-auto shadow-sm animate-fadeIn">
-              <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-3xl shadow-inner border border-slate-100">
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center flex flex-col items-center justify-center gap-4 max-w-xl mx-auto shadow-sm animate-fadeIn">
+              <div className="w-16 h-16 bg-slate-50 rounded-xl flex items-center justify-center text-3xl shadow-inner border border-slate-100">
                 🔍
               </div>
               <div className="space-y-1">
@@ -509,107 +528,151 @@ function GigsSearchContent() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
-              {sortedGigs.map((gig) => {
-                // Parse cover image
-                let coverUrl = "";
-                try {
-                  if (Array.isArray(gig.images)) {
-                    coverUrl = gig.images[0];
-                  } else if (typeof gig.images === "string") {
-                    const parsed = JSON.parse(gig.images);
-                    if (Array.isArray(parsed)) coverUrl = parsed[0];
-                  }
-                } catch (e) {}
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
+                {paginatedGigs.map((gig) => {
+                  // Parse cover image
+                  let coverUrl = "";
+                  try {
+                    if (Array.isArray(gig.images)) {
+                      coverUrl = gig.images[0];
+                    } else if (typeof gig.images === "string") {
+                      const parsed = JSON.parse(gig.images);
+                      if (Array.isArray(parsed)) coverUrl = parsed[0];
+                    }
+                  } catch (e) {}
 
-                const reviews = parseInt(gig.reviews_count || 0);
-                const rating = reviews > 0 ? parseFloat(gig.reviews_avg_rating).toFixed(1) : "0.0";
+                  const reviews = parseInt(gig.reviews_count || 0);
+                  const rating = reviews > 0 ? parseFloat(gig.reviews_avg_rating).toFixed(1) : "0.0";
 
-                return (
-                  <div
-                    key={gig.gig_id}
-                    onClick={() => router.push(`/gigs/${gig.slug || gig.gig_id}`)}
-                    className="group border border-slate-200/60 rounded-3xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:border-teal-500/25 hover:shadow-xl hover:shadow-slate-200/50 cursor-pointer bg-white justify-between"
-                  >
-                    <div>
-                      {/* Thumbnail block */}
-                      {coverUrl ? (
-                        <div className="relative w-full h-44 overflow-hidden bg-slate-100 border-b border-slate-200/50">
-                          <img src={coverUrl} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={gig.title} />
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleWishlist(gig);
-                            }}
-                            className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
-                            title="Add to wishlist"
-                          >
-                            <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(gig.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="relative w-full h-44 bg-gradient-to-tr from-slate-50 to-slate-100/55 flex items-center justify-center border-b border-slate-200/55 text-slate-350 select-none text-xxs font-extrabold tracking-wider uppercase">
-                          🎨 Service Preview Showcase
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleWishlist(gig);
-                            }}
-                            className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
-                            title="Add to wishlist"
-                          >
-                            <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(gig.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
-                          </button>
-                        </div>
-                      )}
+                  return (
+                     <div
+                       key={gig.gig_id}
+                       onClick={() => router.push(`/gigs/${gig.slug || gig.gig_id}`)}
+                       className="group border border-slate-200/60 rounded-xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:border-teal-500/25 hover:shadow-xl hover:shadow-slate-200/50 cursor-pointer bg-white justify-between"
+                     >
+                       <div>
+                         {/* Thumbnail block */}
+                         {coverUrl ? (
+                           <div className="relative w-full h-44 overflow-hidden bg-slate-100">
+                             <img src={coverUrl} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={gig.title} />
+                             <button
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleToggleWishlist(gig);
+                               }}
+                               className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
+                               title="Add to wishlist"
+                             >
+                               <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(gig.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
+                             </button>
+                           </div>
+                         ) : (
+                           <div className="relative w-full h-44 bg-gradient-to-tr from-slate-50 to-slate-100/55 flex items-center justify-center text-slate-350 select-none text-xxs font-extrabold tracking-wider uppercase">
+                             🎨 Service Preview Showcase
+                             <button
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleToggleWishlist(gig);
+                               }}
+                               className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
+                               title="Add to wishlist"
+                             >
+                               <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(gig.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
+                             </button>
+                           </div>
+                         )}
 
-                      {/* Info Details body */}
-                      <div className="p-5">
-                        <div className="flex justify-between items-center gap-2">
-                          <span className="text-[9px] font-black text-teal-700 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded uppercase tracking-wider block w-fit">
-                            {gig.category_name || "Development"}
-                          </span>
-                          {gig.wishlist_count > 0 && (
-                            <span className="text-[9px] font-bold text-rose-500 flex items-center gap-0.5 select-none">
-                              <FiHeart className="w-3 h-3 fill-rose-500" />
-                              <span>{gig.wishlist_count} saves</span>
-                            </span>
-                          )}
-                        </div>
+                         {/* Info Details body */}
+                         <div className="p-5 pb-0">
+                           <div className="flex justify-between items-center gap-2">
+                             <span className="text-[9px] font-black text-teal-700 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded uppercase tracking-wider block w-fit">
+                               {gig.category_name || "Development"}
+                             </span>
+                             {gig.wishlist_count > 0 && (
+                               <span className="text-[9px] font-bold text-rose-500 flex items-center gap-0.5 select-none">
+                                 <FiHeart className="w-3 h-3 fill-rose-500" />
+                                 <span>{gig.wishlist_count} saves</span>
+                               </span>
+                             )}
+                           </div>
 
-                        <h3 className="text-xs sm:text-sm font-black text-slate-900 leading-snug line-clamp-2 mt-3 hover:text-teal-750 transition-colors">
-                          {gig.title}
-                        </h3>
+                           <h3 className="text-sm sm:text-base font-black text-slate-900 leading-snug line-clamp-2 mt-3 hover:text-teal-750 transition-colors">
+                             {gig.title}
+                           </h3>
 
-                        {gig.freelancer_name && (
-                          <div className="text-[10px] text-slate-400 font-bold mt-1.5 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                            <span>By {gig.freelancer_name}</span>
-                          </div>
-                        )}
+                           {gig.freelancer_name && (
+                             <div 
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 router.push(`/freelancer/${gig.freelancer_slug || gig.freelancer_id}`);
+                               }}
+                               className="mt-2.5 flex items-center gap-2 group/author cursor-pointer w-fit select-none"
+                             >
+                               {gig.freelancer_image ? (
+                                 <img
+                                   src={resolveMediaUrl(gig.freelancer_image)}
+                                   alt={gig.freelancer_name}
+                                   className="w-5.5 h-5.5 rounded-full object-cover border border-slate-100/80"
+                                 />
+                               ) : (
+                                 <div className="w-5.5 h-5.5 rounded-full bg-teal-700/10 flex items-center justify-center font-bold text-[8px] text-teal-700 border border-teal-500/10 shrink-0 select-none">
+                                   {gig.freelancer_name.substring(0, 2).toUpperCase()}
+                                 </div>
+                               )}
+                               <span className="text-[10px] text-slate-500 font-bold hover:text-teal-750 group-hover/author:text-teal-700 transition-colors">
+                                 By {gig.freelancer_name}
+                               </span>
+                             </div>
+                           )}
 
-                        <div className="flex items-center gap-3.5 mt-4 border-t border-slate-100 pt-3 text-xxs font-extrabold text-slate-400">
-                          <div className="flex items-center gap-0.5">
-                            <FiStar className="w-3.5 h-3.5 text-amber-400 fill-amber-400 shrink-0" />
-                            <span className="text-slate-800">{rating}</span>
-                            <span className="text-slate-400 font-medium">({reviews})</span>
-                          </div>
-                          <div className="flex items-center gap-0.5">
-                            <FiClock className="w-3.5 h-3.5 shrink-0" />
-                            <span>{gig.delivery_days || 3}d delivery</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                           <div className="flex items-center gap-3.5 mt-3.5 text-[9.5px] font-bold text-slate-400 uppercase tracking-wider">
+                             <div className="flex items-center gap-0.5">
+                               <FiStar className="w-3 h-3 text-amber-400 fill-amber-400 shrink-0" />
+                               <span className="text-slate-700 font-black">{rating}</span>
+                               <span className="text-slate-400 font-semibold">({reviews})</span>
+                             </div>
+                             <div className="flex items-center gap-1">
+                               <FiClock className="w-3 h-3 shrink-0" />
+                               <span>{gig.delivery_days || 3}d delivery</span>
+                             </div>
+                           </div>
+                         </div>
+                       </div>
 
-                    {/* Footer Block */}
-                    <div className="px-5 pb-5 pt-3 border-t border-slate-50 flex items-center justify-between text-xs font-bold text-slate-400 select-none">
-                      <span className="uppercase tracking-wider">Starting At</span>
-                      <span className="text-base font-extrabold text-slate-900">${parseFloat(gig.price || 0).toLocaleString()}</span>
-                    </div>
+                       {/* Footer Block */}
+                       <div className="px-5 pb-5 pt-3.5 flex items-center justify-between text-xs font-bold text-slate-400 select-none">
+                         <span className="uppercase tracking-wider">Starting At</span>
+                         <span className="text-base font-extrabold text-slate-900">${parseFloat(gig.price || 0).toLocaleString()}</span>
+                       </div>
+                     </div>
+                  );
+                })}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-100 text-xs font-bold select-none text-slate-805">
+                  <span className="text-slate-400">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedGigs.length)} of {sortedGigs.length} active gigs
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                    >
+                      Next
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
           )}
 

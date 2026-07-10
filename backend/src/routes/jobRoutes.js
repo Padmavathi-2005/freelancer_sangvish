@@ -6,7 +6,8 @@ import {
   getAllJobs,
   updateJob,
   validateJobSlug,
-  getJobBySlugOrId
+  getJobBySlugOrId,
+  toggleJobFeature
 } from "../controllers/jobController.js";
 
 const router = express.Router();
@@ -24,6 +25,7 @@ router.get("/validate-slug", validateJobSlug);
 // Job routes
 router.post("/", checkApprovedFreelancer, createJob);
 router.put("/:id", checkApprovedFreelancer, updateJob);
+router.put("/:id/feature", toggleJobFeature);
 router.get("/client", getClientJobs);
 router.get("/", getAllJobs);
 

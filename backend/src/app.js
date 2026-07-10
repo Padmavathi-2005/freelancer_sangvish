@@ -23,6 +23,7 @@ import subscriptionPlanRoutes from './routes/subscriptionPlanRoutes.js';
 import faqRoutes from './routes/faqRoutes.js';
 import landingSectionsRoutes from './routes/landingSectionsRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import blogRoutes from './routes/blogRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,6 +41,7 @@ app.use((req, res, next) => {
 
 // Serve uploaded files statically
 app.use('/public', express.static(path.join(__dirname, '../public')));
+app.use('/api/public', express.static(path.join(__dirname, '../public')));
 
 app.get('/api/settings', getSettings);
 app.use('/api', cmsRoutes);
@@ -58,6 +60,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api', blogRoutes);
 
 
 app.use("/api/admin/categories",categoryRoutes);

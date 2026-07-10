@@ -22,7 +22,7 @@ export default function ClientHiredFreelancersTab({
 }: ClientHiredFreelancersTabProps) {
   return (
     <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left">
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm">
         <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
           <svg className="w-5 h-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -33,12 +33,12 @@ export default function ClientHiredFreelancersTab({
       </div>
 
       {loadingHiredFreelancers ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-2xl p-8 shadow-sm">
+        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-xl p-8 shadow-sm">
           <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
           <p className="text-slate-400 text-xs font-semibold">Loading hired freelancers...</p>
         </div>
       ) : hiredFreelancers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-355 rounded-2xl p-8 shadow-inner gap-4">
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-355 rounded-xl p-8 shadow-inner gap-4">
           <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
             <i className="fa-solid fa-users-slash"></i>
           </div>
@@ -60,12 +60,12 @@ export default function ClientHiredFreelancersTab({
           {hiredFreelancers.map((freelancer) => {
             const initials = freelancer.name.split(" ").map((n: string) => n[0]).join("");
             return (
-              <div key={freelancer.user_id} className="bg-white border border-slate-200/85 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 relative overflow-hidden text-left">
+              <div key={freelancer.user_id} className="bg-white border border-slate-200/85 rounded-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col gap-4 relative overflow-hidden text-left">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
                 
                 {/* Header Profile Section */}
                 <div className="flex gap-4 items-start">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center text-white font-extrabold text-sm shadow-sm shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center text-white font-extrabold text-sm shadow-sm shrink-0">
                     {initials}
                   </div>
                   <div className="flex-1 text-left min-w-0">

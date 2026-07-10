@@ -85,7 +85,7 @@ export default function Table<T>({
   };
 
   return (
-    <div className="w-full flex flex-col bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+    <div className="w-full flex flex-col bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
       {/* Table Content Scroll wrapper */}
       <div className="w-full overflow-x-auto" {...dragScrollProps}>
         <table className="w-full text-left border-collapse">

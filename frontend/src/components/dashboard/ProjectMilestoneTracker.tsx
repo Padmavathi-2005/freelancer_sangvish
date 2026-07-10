@@ -1,5 +1,5 @@
 import { API_URL, API_BASE_URL } from "@/config/api";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { FiCheck, FiDollarSign, FiCheckCircle, FiCreditCard, FiUnlock, FiMessageSquare, FiBriefcase, FiFileText } from "react-icons/fi";
 import { FaStripe, FaPaypal, FaWallet, FaCreditCard } from "react-icons/fa";
@@ -601,6 +601,35 @@ export default function ProjectMilestoneTracker({
     }
   }, [contracts, projectProposals]);
 
+  const [candidateSearch, setCandidateSearch] = useState("");
+  const [candidatePage, setCandidatePage] = useState(1);
+  const candidatesPerPage = 5;
+
+  const filteredCandidates = useMemo(() => {
+    return projectProposals.filter((p) => {
+      if (candidateSearch.trim()) {
+        const query = candidateSearch.toLowerCase();
+        const matchName = p.freelancer_name?.toLowerCase().includes(query);
+        const matchTitle = p.freelancer_title?.toLowerCase().includes(query);
+        const matchEmail = p.freelancer_email?.toLowerCase().includes(query);
+        const matchLetter = p.cover_letter?.toLowerCase().includes(query);
+        return matchName || matchTitle || matchEmail || matchLetter;
+      }
+      return true;
+    });
+  }, [projectProposals, candidateSearch]);
+
+  const paginatedCandidates = useMemo(() => {
+    const startIndex = (candidatePage - 1) * candidatesPerPage;
+    return filteredCandidates.slice(startIndex, startIndex + candidatesPerPage);
+  }, [filteredCandidates, candidatePage]);
+
+  const totalCandidatePages = Math.ceil(filteredCandidates.length / candidatesPerPage);
+
+  useEffect(() => {
+    setCandidatePage(1);
+  }, [candidateSearch]);
+
   const activeContract = selectedContractId 
     ? jobContracts.find(c => c.contract_id === selectedContractId) 
     : jobContracts[0];
@@ -651,15 +680,26 @@ export default function ProjectMilestoneTracker({
           </div>
         )}
         
-        <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 text-xs font-semibold rounded-xl p-4">
-          💡 This project is currently Open. Below are the proposals received from freelancers. You can review and accept one to start tracking milestones.
-        </div>
-        
-        {projectProposals.length === 0 ? (
-          <p className="text-slate-400 text-xs italic font-medium py-2">No bids received yet for this project.</p>
+        {projectProposals.length > 0 && (
+          <div className="relative w-full">
+            <input
+              type="text"
+              value={candidateSearch}
+              onChange={(e) => setCandidateSearch(e.target.value)}
+              placeholder="Search candidate proposals by freelancer name, credentials, cover letter..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-850 focus:outline-none focus:border-teal-700 focus:bg-white transition-all shadow-xs"
+            />
+            <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+          </div>
+        )}
+
+        {filteredCandidates.length === 0 ? (
+          <p className="text-slate-400 text-xs italic font-medium py-2">
+            {projectProposals.length === 0 ? "No bids received yet for this project." : "No proposals match your search query."}
+          </p>
         ) : (
           <div className="flex flex-col gap-3">
-            {projectProposals.map((proposal) => {
+            {paginatedCandidates.map((proposal: any) => {
               const isAlreadyHired = proposal.status === "Accepted" || jobContracts.some(c => c.freelancer_id === proposal.freelancer_id);
               return (
                 <div key={proposal.proposal_id} className="bg-slate-50 border border-slate-250/70 rounded-xl p-4 flex flex-col gap-3 text-left">
@@ -679,7 +719,7 @@ export default function ProjectMilestoneTracker({
                       </div>
                     </a>
                     {isAlreadyHired ? (
-                      <span className="text-[9px] font-black border px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-50 text-emerald-705 border-emerald-150">
+                      <span className="text-[9px] font-black border px-1.5 py-0.5 rounded uppercase tracking-wider bg-emerald-50 text-emerald-755 border-emerald-150">
                         Hired
                       </span>
                     ) : (
@@ -741,12 +781,36 @@ export default function ProjectMilestoneTracker({
                 </div>
               );
             })}
+
+            {totalCandidatePages > 1 && (
+              <div className="flex justify-between items-center mt-4 pt-3 border-t border-slate-100 text-[10px] font-bold select-none">
+                <span className="text-slate-400">
+                  Showing {(candidatePage - 1) * candidatesPerPage + 1} - {Math.min(candidatePage * candidatesPerPage, filteredCandidates.length)} of {filteredCandidates.length} candidates
+                </span>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setCandidatePage(p => Math.max(1, p - 1))}
+                    disabled={candidatePage === 1}
+                    className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCandidatePage(p => Math.min(totalCandidatePages, p + 1))}
+                    disabled={candidatePage === totalCandidatePages}
+                    className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {payingProposal && typeof window !== "undefined" && createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/55 backdrop-blur-sm p-4 overflow-y-auto">
-            <div className="relative bg-white border border-slate-200 shadow-2xl rounded-3xl max-w-md w-full animate-fadeIn overflow-hidden text-left text-slate-800">
+            <div className="relative bg-white border border-slate-200 shadow-2xl rounded-xl max-w-md w-full animate-fadeIn overflow-hidden text-left text-slate-800">
               {/* Top accent bar */}
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500" />
 
@@ -1473,7 +1537,7 @@ export default function ProjectMilestoneTracker({
                 <button
                   key={c.contract_id}
                   onClick={() => setSelectedContractId(c.contract_id)}
-                  className={`flex items-center gap-3 p-3 rounded-2xl border-2 transition-all cursor-pointer text-left focus:outline-none ${
+                  className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer text-left focus:outline-none ${
                     isSelected
                       ? "border-primary bg-primary/[0.04] text-slate-900 shadow-sm"
                       : "border-slate-150 hover:border-slate-250 bg-white text-slate-600"
@@ -1511,7 +1575,7 @@ export default function ProjectMilestoneTracker({
 
       {/* Active Partner Info Banner */}
       {activeContract && (
-        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mb-1">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mb-1">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-xs uppercase overflow-hidden shadow-sm shrink-0">
               {activeContract.freelancer_image ? (
@@ -1548,7 +1612,7 @@ export default function ProjectMilestoneTracker({
 
       {/* Accepted Candidate Awaiting Acceptance Banner */}
       {!activeContract && acceptedProposal && (
-        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mb-1">
+        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 mb-1">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-xs uppercase overflow-hidden shadow-sm shrink-0">
               {acceptedProposal.freelancer_image || acceptedProposal.freelancer_profile_image ? (
@@ -1585,7 +1649,7 @@ export default function ProjectMilestoneTracker({
 
       {/* 1. Dynamic Status Banner */}
       {activeContract && activeContract.status !== "Cancelled" && (
-        <div className={`p-4 rounded-2xl border flex items-center justify-between gap-4 ${
+        <div className={`p-4 rounded-xl border flex items-center justify-between gap-4 ${
           activeContract.status === "Completed"
             ? "bg-emerald-50 border-emerald-250 text-emerald-800"
             : activeContract.status === "Work Completed"
@@ -1654,7 +1718,7 @@ export default function ProjectMilestoneTracker({
 
       {/* 2. Project Progress Steps Timeline */}
       {activeContract && (
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Project Progress Steps</span>
             <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
@@ -2033,7 +2097,7 @@ export default function ProjectMilestoneTracker({
                     <span className="text-slate-400 text-xxs font-bold">Loading timecards...</span>
                   </div>
                 ) : timecards.length === 0 ? (
-                  <div className="text-center py-10 bg-slate-50/50 border border-slate-200/40 rounded-2xl">
+                  <div className="text-center py-10 bg-slate-50/50 border border-slate-200/40 rounded-xl">
                     <p className="text-xs font-bold text-slate-400">No timecard activities logged yet.</p>
                   </div>
                 ) : (
@@ -2147,7 +2211,7 @@ export default function ProjectMilestoneTracker({
             {activeTimecardTab === "invoices" && (
               <div className="flex flex-col gap-3">
                 {timecards.filter(tc => tc.status === "Paid").length === 0 ? (
-                  <div className="text-center py-10 bg-slate-50/50 border border-slate-200/40 rounded-2xl">
+                  <div className="text-center py-10 bg-slate-50/50 border border-slate-200/40 rounded-xl">
                     <p className="text-xs font-bold text-slate-400">No paid invoices generated yet.</p>
                   </div>
                 ) : (
@@ -2458,7 +2522,7 @@ export default function ProjectMilestoneTracker({
       {/* Modals & Portals */}
       {payingTimecard && typeof window !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/55 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative bg-white border border-slate-200 shadow-2xl rounded-3xl max-w-md w-full animate-fadeIn overflow-hidden text-left text-slate-800">
+          <div className="relative bg-white border border-slate-200 shadow-2xl rounded-xl max-w-md w-full animate-fadeIn overflow-hidden text-left text-slate-800">
             {/* Top accent bar */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500" />
 
@@ -2592,7 +2656,7 @@ export default function ProjectMilestoneTracker({
 
       {showTimecardModal && typeof window !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[10000] bg-slate-900/35 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-3xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative">
             <button
               type="button"
               onClick={() => setShowTimecardModal(false)}
@@ -2686,7 +2750,7 @@ export default function ProjectMilestoneTracker({
       {/* Dispute Modal */}
       {showDisputeModal && typeof window !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[9999] bg-slate-900/45 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 p-6 shadow-xl animate-fadeIn">
+          <div className="bg-white rounded-xl max-w-md w-full border border-slate-200 p-6 shadow-xl animate-fadeIn">
             <h3 className="text-sm font-black text-slate-800 mb-1">Open Dispute</h3>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4">Request contract mediation</p>
             <form onSubmit={handleRaiseDispute} className="flex flex-col gap-4">
@@ -2734,7 +2798,7 @@ export default function ProjectMilestoneTracker({
       {/* Review Modal */}
       {showReviewModal && activeContract && typeof window !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[9999] bg-slate-900/40 backdrop-blur-[0.5px] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full border border-slate-200 p-6 shadow-2xl relative animate-scaleIn text-slate-800 text-left">
+          <div className="bg-white rounded-xl max-w-md w-full border border-slate-200 p-6 shadow-2xl relative animate-scaleIn text-slate-800 text-left">
             
             {/* Sticky Close Icon */}
             <button
@@ -2760,7 +2824,7 @@ export default function ProjectMilestoneTracker({
 
             <form onSubmit={handleSubmitReview} className="flex flex-col gap-5 mt-4">
               {/* Star Rating Selector */}
-              <div className="flex flex-col items-center gap-2 bg-slate-50 border border-slate-200/50 p-4 rounded-2xl">
+              <div className="flex flex-col items-center gap-2 bg-slate-50 border border-slate-200/50 p-4 rounded-xl">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Your Rating Choice</span>
                 <div className="flex gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
@@ -2967,7 +3031,7 @@ export default function ProjectMilestoneTracker({
           `}} />
           
           <div 
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] border border-slate-200/80 shadow-2xl flex flex-col relative overflow-hidden animate-fadeIn print:shadow-none print:border-none print:max-w-none print:max-h-none"
+            className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] border border-slate-200/80 shadow-2xl flex flex-col relative overflow-hidden animate-fadeIn print:shadow-none print:border-none print:max-w-none print:max-h-none"
           >
             {/* Close Button Icon */}
             <button

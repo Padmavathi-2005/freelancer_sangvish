@@ -166,7 +166,7 @@ export default function Hero() {
             {/* Search */}
             <form
               onSubmit={handleSearchSubmit}
-              className="w-full max-w-xl mx-auto lg:mx-0 mt-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col sm:flex-row gap-1.5 transition-all duration-300 focus-within:border-[#0a5a54]/40 focus-within:shadow-2xl focus-within:shadow-[#0a5a54]/5"
+              className="w-full max-w-xl mx-auto lg:mx-0 mt-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col sm:flex-row gap-1.5 transition-all duration-300 focus-within:border-[#0a5a54]/40 focus-within:shadow-2xl focus-within:shadow-[#0a5a54]/5"
             >
               <div className="flex-1 flex items-center px-3 gap-2.5 relative">
                 <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -220,8 +220,8 @@ export default function Hero() {
 
           {/* Right Column: Visual Mockup */}
           <div className="lg:col-span-5 relative w-full flex justify-center items-center py-2 lg:py-0">
-            <div className="relative w-full aspect-[1.12] max-w-[290px] sm:max-w-[360px] xl:max-w-[395px] bg-[#042e2a] rounded-[2.2rem] p-4 sm:p-6 flex items-center justify-center shadow-xl overflow-visible">
-              <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:16px_16px] rounded-[2.2rem]"></div>
+            <div className="relative w-full aspect-[1.12] max-w-[290px] sm:max-w-[360px] xl:max-w-[395px] bg-[#042e2a] rounded-xl p-4 sm:p-6 flex items-center justify-center shadow-xl overflow-visible">
+              <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:16px_16px] rounded-xl"></div>
               <div className="absolute -top-6 -right-6 w-32 h-32 bg-teal-400/20 rounded-full filter blur-2xl pointer-events-none"></div>
               <div className="absolute -bottom-6 -left-6 w-36 h-36 bg-emerald-400/20 rounded-full filter blur-2xl pointer-events-none"></div>
 
