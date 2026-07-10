@@ -48,6 +48,8 @@ export interface Category {
   name?: string;
   slug?: string;
   description?: string;
+  category_image?: string;
+  category_video?: string;
   status?: boolean | string | number;
   count?: number;
   createdAt?: string;
