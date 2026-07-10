@@ -43,10 +43,10 @@ interface TaxonomiesTabProps {
   setCategoryFormSlug: (v: string) => void;
   categoryFormDescription: string;
   setCategoryFormDescription: (v: string) => void;
-  categoryFormImage: string;
-  setCategoryFormImage: (v: string) => void;
-  categoryFormVideo: string;
-  setCategoryFormVideo: (v: string) => void;
+  categoryFormImage?: string;
+  setCategoryFormImage?: (v: string) => void;
+  categoryFormVideo?: string;
+  setCategoryFormVideo?: (v: string) => void;
   categoryFormStatus: "Active" | "Inactive";
   setCategoryFormStatus: (v: "Active" | "Inactive") => void;
   categoryFormError: string | null;
@@ -132,10 +132,10 @@ export default function TaxonomiesTab({
   setCategoryFormSlug,
   categoryFormDescription,
   setCategoryFormDescription,
-  categoryFormImage,
-  setCategoryFormImage,
-  categoryFormVideo,
-  setCategoryFormVideo,
+  categoryFormImage = "",
+  setCategoryFormImage = () => {},
+  categoryFormVideo = "",
+  setCategoryFormVideo = () => {},
   categoryFormStatus,
   setCategoryFormStatus,
   categoryFormError,
