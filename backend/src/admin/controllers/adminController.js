@@ -1337,3 +1337,60 @@ export const getAdminProfile = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+export const getAdminDisputes = async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                d.dispute_id as id,
+                d.contract_id,
+                d.client_id,
+                d.freelancer_id,
+                d.conversation_id,
+                d.status,
+                d.reason,
+                d.description,
+                d.escalated_at,
+                d.resolved_at,
+                d.resolution_type,
+                d.resolution_details,
+                d.raised_by,
+                c.title as project,
+                c.budget as amount,
+                CONCAT(u_client.first_name, ' ', u_client.last_name) as client,
+                CONCAT(u_free.first_name, ' ', u_free.last_name) as freelancer
+            FROM disputes d
+            JOIN contracts c ON d.contract_id = c.contract_id
+            JOIN users u_client ON d.client_id = u_client.user_id
+            JOIN users u_free ON d.freelancer_id = u_free.user_id
+            ORDER BY d.created_at DESC
+        `;
+        const result = await pool.query(query);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Failed to get admin disputes:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const getAdminDisputeMessages = async (req, res) => {
+    try {
+        const disputeId = parseInt(req.params.id);
+        if (!disputeId || isNaN(disputeId)) {
+            return res.status(400).json({ error: "Invalid dispute ID." });
+        }
+
+        const disputeRes = await pool.query("SELECT conversation_id FROM disputes WHERE dispute_id = $1", [disputeId]);
+        if (disputeRes.rows.length === 0) {
+            return res.status(404).json({ error: "Dispute not found." });
+        }
+        const { conversation_id } = disputeRes.rows[0];
+
+        const { default: MessageModel } = await import("../../models/messageModel.js");
+        const messages = await MessageModel.findMessagesByConversationId(conversation_id);
+        res.json(messages);
+    } catch (err) {
+        console.error("Failed to get admin dispute messages:", err);
+        res.status(500).json({ error: err.message });
+    }
+};

@@ -219,6 +219,47 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
     }
   };
 
+  const handleFreelancerCancelContract = async (contractId: number) => {
+    const confirmation = confirm(
+      `WARNING: Are you sure you want to cancel this contract? This will forfeit all work and automatically refund 100% of the escrowed funds back to the client.\n\nThis action cannot be undone.`
+    );
+    if (!confirmation) return;
+
+    try {
+      setDisputeLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/${contractId}/freelancer-cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Contract cancelled & client fully refunded!", "You have cancelled the project and funds have been returned to the client.");
+        await fetchFreelancerApplications();
+        // Update selectedGigOrder state
+        const refreshed = gigApplications.find(a => a.application_id === selectedGigOrder.application_id);
+        if (refreshed) {
+          setSelectedGigOrder({
+            ...refreshed,
+            contract_status: "Cancelled"
+          });
+        } else {
+          setSelectedGigOrder((prev: any) => ({
+            ...prev,
+            contract_status: "Cancelled"
+          }));
+        }
+      } else {
+        triggerToast("error", data.message || "Failed to cancel contract.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Network error. Please try again.");
+    } finally {
+      setDisputeLoading(false);
+    }
+  };
+
   // ─── Detail View ───────────────────────────────────────────────────────────
   if (selectedGigOrder) {
     const app = selectedGigOrder;
@@ -431,10 +472,10 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
               </div>
               <div className="flex gap-2.5 shrink-0">
                 <button
-                  onClick={() => setShowDisputeModal(true)}
+                  onClick={() => handleFreelancerCancelContract(app.contract_id)}
                   className="px-4.5 py-2.5 rounded-xl font-bold text-xs border border-rose-200 text-rose-650 hover:bg-rose-50 transition-all cursor-pointer shadow-sm"
                 >
-                  Raise Dispute
+                  Cancel Work & Refund Client
                 </button>
                 <button
                   onClick={() => {

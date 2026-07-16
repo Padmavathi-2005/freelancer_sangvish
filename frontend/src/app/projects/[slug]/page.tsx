@@ -24,6 +24,33 @@ import {
   FiX
 } from "react-icons/fi";
 
+const getMaxDaysFromDuration = (durationStr: string): number => {
+  if (!durationStr) return Infinity;
+  const str = durationStr.toLowerCase();
+  if (str.includes("less than 1 month")) return 30;
+  if (str.includes("1-3 months")) return 90;
+  if (str.includes("3-6 months")) return 180;
+  if (str.includes("more than 6 months")) return Infinity;
+  
+  const numbers = str.match(/\d+/g);
+  if (numbers && numbers.length > 0) {
+    const maxVal = Math.max(...numbers.map(Number));
+    if (str.includes("month")) {
+      return maxVal * 30;
+    }
+    if (str.includes("week")) {
+      return maxVal * 7;
+    }
+    if (str.includes("year")) {
+      return maxVal * 365;
+    }
+    if (str.includes("day")) {
+      return maxVal;
+    }
+  }
+  return Infinity;
+};
+
 export default function ProjectDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -179,6 +206,59 @@ export default function ProjectDetailsPage() {
         return;
       }
 
+      // Check onboarding and vetting status
+      const checkRes = await fetch(`${API_URL}/users/onboarding-check`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (checkRes.ok) {
+        const data = await checkRes.json();
+        if (!data.hasFreelancerProfile) {
+          setSubmitError("You have not completed your freelancer profile onboarding. Redirecting...");
+          localStorage.setItem("user_role", "freelancer");
+          localStorage.setItem("onboarding_role", "freelancer");
+          setTimeout(() => {
+            router.push("/dashboard?tab=settings");
+          }, 2000);
+          setSubmitting(false);
+          return;
+        }
+        if (data.freelancerVettingStatus !== "Approved") {
+          setSubmitError("Your freelancer profile is pending administrator approval.");
+          setSubmitting(false);
+          return;
+        }
+      } else {
+        setSubmitError("Failed to check profile status.");
+        setSubmitting(false);
+        return;
+      }
+
+      // Validation checks
+      const parsedBid = parseFloat(bidAmount);
+      if (isNaN(parsedBid) || parsedBid <= 0) {
+        setSubmitError("Please enter a valid positive bid amount.");
+        setSubmitting(false);
+        return;
+      }
+
+      if (job.project_type !== "Hourly") {
+        const daysEntered = parseInt(deliveryDays);
+        if (isNaN(daysEntered) || daysEntered <= 0) {
+          setSubmitError("Please enter a valid positive number of delivery days.");
+          setSubmitting(false);
+          return;
+        }
+
+        if (job.duration) {
+          const maxDays = getMaxDaysFromDuration(job.duration);
+          if (daysEntered > maxDays) {
+            setSubmitError(`Your estimated delivery days (${daysEntered} days) exceeds the project's expected duration (${job.duration}).`);
+            setSubmitting(false);
+            return;
+          }
+        }
+      }
+
       const res = await fetch(`${API_URL}/proposals`, {
         method: "POST",
         headers: {
@@ -187,8 +267,8 @@ export default function ProjectDetailsPage() {
         },
         body: JSON.stringify({
           job_id: job.job_id,
-          bid_amount: parseFloat(bidAmount),
-          delivery_days: parseInt(deliveryDays),
+          bid_amount: parsedBid,
+          delivery_days: job.project_type === "Hourly" ? 7 : parseInt(deliveryDays),
           cover_letter: coverLetter.trim()
         })
       });
@@ -415,6 +495,13 @@ export default function ProjectDetailsPage() {
                   <p className="text-[10px] text-emerald-700 font-bold leading-normal mt-1">
                     You have successfully submitted your proposal. The client will review your details and contact you via chat.
                   </p>
+                  <button
+                    onClick={() => router.push("/dashboard/proposals")}
+                    className="mt-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] uppercase tracking-wider py-2.5 rounded-xl transition shadow-md flex items-center justify-center gap-1.5 cursor-pointer border-0"
+                  >
+                    <FiFileText className="w-3.5 h-3.5" />
+                    <span>View Submitted Proposals</span>
+                  </button>
                 </div>
               ) : limitReached ? (
                 <div className="text-center py-4 flex flex-col items-center gap-3">

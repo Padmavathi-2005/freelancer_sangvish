@@ -42,5 +42,14 @@ export const Education = {
              WHERE user_id = $1`,
             [userId]
         );
+    },
+
+    delete: async (educationId, userId) => {
+        return await pool.query(
+            `DELETE FROM education
+             WHERE education_id = $1 AND user_id = $2
+             RETURNING *`,
+            [educationId, userId]
+        );
     }
 };

@@ -3,7 +3,12 @@ import { API_URL, API_BASE_URL } from "@/config/api";
 
 const resolveLogoUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    if (url.includes("localhost:5000")) {
+      return url.replace("http://localhost:5000", API_BASE_URL);
+    }
+    return url;
+  }
   return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
 };
 
@@ -11,7 +16,7 @@ const resolveLogoUrl = (url: string) => {
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuthModal } from "@/context/AuthModalContext";
-import { FiZap, FiPlus, FiGrid, FiChevronDown, FiChevronRight, FiSearch } from "react-icons/fi";
+import { FiZap, FiPlus, FiGrid, FiChevronDown, FiChevronRight, FiSearch, FiUser, FiLogOut } from "react-icons/fi";
 
 export default function Header() {
   const { lang, currency, currencySymbol, activeLanguages, currencies, changeLanguage, changeCurrency, t } = useLanguage();
@@ -19,6 +24,11 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userFirstName, setUserFirstName] = useState("");
+  const [userLastName, setUserLastName] = useState("");
+  const [userProfileImage, setUserProfileImage] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [userRole, setUserRole] = useState("");
+  const [userSlug, setUserSlug] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -70,11 +80,33 @@ export default function Header() {
       const userStr = localStorage.getItem("user");
       if (token) {
         let name = "";
+        let lastName = "";
+        let profileImg = "";
+        let email = "";
         if (userStr) {
           try {
             const user = JSON.parse(userStr);
             if (user.first_name) {
               name = user.first_name;
+            } else if (user.display_name) {
+              name = user.display_name;
+            } else if (user.name) {
+              name = user.name;
+            }
+            if (user.last_name) {
+              lastName = user.last_name;
+            }
+            if (user.profile_image) {
+              profileImg = user.profile_image;
+            }
+            if (user.email) {
+              email = user.email;
+            }
+            if (user.role) {
+              setUserRole(user.role);
+            }
+            if (user.slug) {
+              setUserSlug(user.slug);
             }
           } catch (e) {
             console.error("Failed to parse user in header:", e);
@@ -84,6 +116,15 @@ export default function Header() {
           setIsLoggedIn(true);
           if (name) {
             setUserFirstName(name);
+          }
+          if (lastName) {
+            setUserLastName(lastName);
+          }
+          if (profileImg) {
+            setUserProfileImage(profileImg);
+          }
+          if (email) {
+            setUserEmail(email);
           }
         }, 0);
       }
@@ -400,30 +441,80 @@ export default function Header() {
 
             {isLoggedIn ? (
               <div className="relative group">
-                <button className="flex items-center gap-2 focus:outline-none cursor-pointer">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center font-extrabold text-white shadow-sm transition-transform duration-200 hover:scale-105 select-none">
-                    {userFirstName ? userFirstName.substring(0, 2).toUpperCase() : "US"}
+                <button className="flex items-center gap-2 px-1 py-1 focus:outline-none cursor-pointer border-none bg-transparent">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0 text-[11px]">
+                    {userProfileImage ? (
+                      <img src={resolveLogoUrl(userProfileImage)} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      userFirstName ? userFirstName.substring(0, 2).toUpperCase() : "US"
+                    )}
                   </div>
-                  <svg className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
+                  <span className="font-extrabold text-slate-800 text-sm select-none group-hover:text-primary transition-colors">
+                    {userFirstName || "User"}
+                  </span>
                 </button>
 
                 {/* Dropdown Menu (visible on hover) */}
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200/85 rounded-xl shadow-xl py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Welcome</p>
-                    <p className="text-sm font-black text-slate-800 truncate mt-1">{userFirstName || "User"}</p>
+                <div className="absolute right-0 mt-3 w-72 bg-white/95 backdrop-blur-md border border-slate-100 rounded-3xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.12)] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100/50 flex items-center gap-3 relative overflow-hidden">
+                    <div className="absolute right-[-10%] top-[-10%] w-20 h-20 bg-primary/5 rounded-full blur-lg pointer-events-none" />
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center font-extrabold text-white shadow-md border-2 border-white shrink-0">
+                      {userProfileImage ? (
+                        <img src={resolveLogoUrl(userProfileImage)} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        userFirstName ? userFirstName.substring(0, 2).toUpperCase() : "US"
+                      )}
+                    </div>
+                    <div className="min-w-0 z-10">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs font-black text-slate-800 truncate leading-tight">
+                          {userFirstName} {userLastName}
+                        </p>
+                        {userRole && (
+                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border shrink-0 ${
+                            userRole === "client" 
+                              ? "text-cyan-600 bg-cyan-50 border-cyan-100" 
+                              : "text-primary bg-primary-light border-primary/20"
+                          }`}>
+                            {userRole}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] font-semibold text-slate-400 truncate mt-1 leading-none">
+                        {userEmail}
+                      </p>
+                      <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100/30 mt-2 shrink-0">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        Online
+                      </span>
+                    </div>
                   </div>
-                  <a href="/dashboard" className="block px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary font-bold transition-colors">
-                    {t("dashboard", "Go to Dashboard")}
-                  </a>
-                  <button
-                    onClick={handleHeaderLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 font-bold transition-colors cursor-pointer"
-                  >
-                    Logout
-                  </button>
+                  <div className="pt-2 flex flex-col gap-0.5">
+                    <a href="/dashboard" className="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-650 hover:bg-primary-light hover:text-primary font-bold rounded-xl transition-all duration-200 group/item hover:translate-x-0.5">
+                      <div className="flex items-center gap-2.5">
+                        <FiGrid className="w-4 h-4 text-slate-400 group-hover:text-primary" />
+                        <span>{t("dashboard", "Go to Dashboard")}</span>
+                      </div>
+                      <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                    </a>
+                    {userRole === "freelancer" && userSlug && (
+                      <a href={`/freelancer/${userSlug}`} className="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-650 hover:bg-primary-light hover:text-primary font-bold rounded-xl transition-all duration-200 group/item hover:translate-x-0.5">
+                        <div className="flex items-center gap-2.5">
+                          <FiUser className="w-4 h-4 text-slate-400 group-hover:text-primary" />
+                          <span>View Profile</span>
+                        </div>
+                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                      </a>
+                    )}
+                    <div className="h-px bg-slate-100 my-1 mx-2" />
+                    <button
+                      onClick={handleHeaderLogout}
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-rose-600 hover:bg-rose-50 font-bold rounded-xl transition-all duration-200 hover:translate-x-0.5 cursor-pointer text-left border-none bg-transparent"
+                    >
+                      <FiLogOut className="w-4 h-4 text-rose-500" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -434,12 +525,14 @@ export default function Header() {
                 {t("sign_in", "Sign in")}
               </button>
             )}
-            <button
-              onClick={() => openLoginModal("/dashboard")}
-              className="bg-primary hover:bg-primary-hover text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all duration-250 hover:shadow-lg hover:shadow-primary/20 transform active:scale-[0.98] cursor-pointer border-none"
-            >
-              {t("get_started", "Get Started")}
-            </button>
+            {!isLoggedIn && (
+              <button
+                onClick={() => openLoginModal("/dashboard")}
+                className="bg-primary hover:bg-primary-hover text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all duration-250 hover:shadow-lg hover:shadow-primary/20 transform active:scale-[0.98] cursor-pointer border-none"
+              >
+                {t("get_started", "Get Started")}
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Toggle Button */}
@@ -564,12 +657,14 @@ export default function Header() {
               {t("sign_in", "Sign in")}
             </button>
           )}
-          <button
-            onClick={() => openLoginModal("/dashboard")}
-            className="bg-primary hover:bg-primary-hover text-white text-center font-bold px-4 py-3.5 rounded-lg text-base shadow-md transition-all border-none cursor-pointer"
-          >
-            {t("get_started", "Get Started")}
-          </button>
+          {!isLoggedIn && (
+            <button
+              onClick={() => openLoginModal("/dashboard")}
+              className="bg-primary hover:bg-primary-hover text-white text-center font-bold px-4 py-3.5 rounded-lg text-base shadow-md transition-all border-none cursor-pointer"
+            >
+              {t("get_started", "Get Started")}
+            </button>
+          )}
         </div>
       </div>
     </header>

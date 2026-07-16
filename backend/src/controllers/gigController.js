@@ -187,13 +187,19 @@ export const applyToFreelancerGig = async (req, res) => {
 
     // Retrieve gig details to identify owner
     const gigRes = await pool.query(
-      "SELECT freelancer_id, title FROM gigs WHERE gig_id = $1",
+      `SELECT g.freelancer_id AS freelancer_user_id, g.title 
+       FROM gigs g
+       WHERE g.gig_id = $1`,
       [parseInt(gig_id)]
     );
     if (gigRes.rows.length === 0) {
       return res.status(444).json({ message: "The gig no longer exists." });
     }
     const gig = gigRes.rows[0];
+
+    if (gig.freelancer_user_id === clientId) {
+      return res.status(400).json({ message: "You cannot order your own service gig." });
+    }
 
     const finalMilestones = milestones && Array.isArray(milestones) && milestones.length > 0 ? milestones : [];
     const milestonesSum = finalMilestones.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0);
@@ -750,9 +756,12 @@ export const updateFreelancerGig = async (req, res) => {
   }
 };
 
-export const getClientGigById = async (req, res) => {
+export const getClientGigById = async (req, res, next) => {
   try {
     const { id } = req.params;
+    if (id === "applications") {
+      return next();
+    }
     const isNumeric = /^\d+$/.test(id);
 
     // Increment views count

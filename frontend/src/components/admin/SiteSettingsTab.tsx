@@ -164,6 +164,10 @@ export default function SiteSettingsTab({
   // Helper to format/preview image URLs
   const formatImgSrc = (url: string) => {
     if (!url) return "";
+    if (url.includes("localhost:5000")) {
+      const apiDomain = API_URL.replace("/api", "");
+      return url.replace("http://localhost:5000", apiDomain);
+    }
     if (url.startsWith("/") && !url.startsWith("/public")) {
       const apiDomain = API_URL.replace("/api", "");
       return `${apiDomain}${url}`;

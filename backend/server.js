@@ -69,6 +69,13 @@ try {
     `);
     console.log('✅ cms_pages seo column check completed');
 
+    // Startup migration for contracts submitted_files column
+    await pool.query(`
+      ALTER TABLE contracts 
+      ADD COLUMN IF NOT EXISTS submitted_files TEXT
+    `);
+    console.log('✅ contracts table submitted_files column check completed');
+
     // Startup migration for gig_reviews
     await pool.query(`
       CREATE TABLE IF NOT EXISTS gig_reviews (

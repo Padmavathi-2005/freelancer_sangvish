@@ -101,6 +101,17 @@ export const approveWithdrawal = async (req, res) => {
 
     const amount = parseFloat(request.amount);
 
+    // Fetch system wallet to verify balance
+    const sysWalletRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+    const sysWallet = sysWalletRes.rows[0];
+    if (!sysWallet) {
+      return res.status(500).json({ message: "System escrow wallet not found." });
+    }
+
+    if (parseFloat(sysWallet.balance) < amount) {
+      return res.status(400).json({ message: `Insufficient system escrow balance. System balance is $${parseFloat(sysWallet.balance).toFixed(2)}.` });
+    }
+
     // Update withdrawal request status
     await pool.query(
       "UPDATE withdrawal_requests SET status = 'Approved', updated_at = CURRENT_TIMESTAMP WHERE request_id = $1",
@@ -243,5 +254,322 @@ export const payToUser = async (req, res) => {
   } catch (error) {
     console.error("Error in payToUser admin wallet transfer:", error);
     return res.status(500).json({ message: "Failed to process manual platform payout." });
+  }
+};
+
+export const getReferralPayouts = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        rp.payout_id,
+        rp.referrer_id,
+        rp.referred_id,
+        rp.status,
+        rp.amount,
+        rp.created_at,
+        referrer.first_name || ' ' || COALESCE(referrer.last_name, '') as referrer_name,
+        referrer.email as referrer_email,
+        referred.first_name || ' ' || COALESCE(referred.last_name, '') as referred_name,
+        referred.email as referred_email,
+        referred.phone as referred_phone,
+        referred.email_verified as referred_email_verified,
+        referred.phone_verified as referred_phone_verified,
+        -- Check duplicate phone number count
+        (
+          SELECT COUNT(*) 
+          FROM users u2 
+          WHERE u2.phone = referred.phone AND u2.user_id <> referred.user_id AND referred.phone IS NOT NULL AND referred.phone <> ''
+        ) as duplicate_phone_count,
+        -- Check if they completed at least one order
+        EXISTS (
+            SELECT 1 
+            FROM wallet_transactions wt
+            JOIN wallets w ON w.wallet_id = wt.sender_wallet_id
+            WHERE w.user_id = referred.user_id AND wt.status = 'completed'
+        ) as has_completed_order
+      FROM referral_payouts rp
+      JOIN users referrer ON rp.referrer_id = referrer.user_id
+      JOIN users referred ON rp.referred_id = referred.user_id
+      ORDER BY rp.created_at DESC
+    `;
+
+    const result = await pool.query(query);
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error in getReferralPayouts:", error);
+    return res.status(500).json({ message: "Failed to retrieve referral payout requests." });
+  }
+};
+
+export const approveReferralPayout = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payoutId = parseInt(id);
+
+    // 1. Fetch payout request
+    const payoutRes = await pool.query("SELECT * FROM referral_payouts WHERE payout_id = $1", [payoutId]);
+    if (payoutRes.rows.length === 0) {
+      return res.status(404).json({ message: "Referral payout request not found." });
+    }
+    const payout = payoutRes.rows[0];
+
+    if (payout.status !== "pending") {
+      return res.status(400).json({ message: `Referral payout has already been ${payout.status}.` });
+    }
+
+    const payAmt = parseFloat(payout.amount);
+    const referrerId = payout.referrer_id;
+    const referredUserId = payout.referred_id;
+
+    // 2. Fetch or create referrer's wallet
+    let referrerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [referrerId]);
+    let referrerWallet = referrerWalletRes.rows[0];
+    if (!referrerWallet) {
+      const ins = await pool.query(
+        "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
+        [referrerId]
+      );
+      referrerWallet = ins.rows[0];
+    }
+
+    // 3. Fetch system wallet
+    const sysWalletRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+    const sysWallet = sysWalletRes.rows[0];
+    if (!sysWallet) {
+      return res.status(500).json({ message: "System wallet not found." });
+    }
+
+    if (parseFloat(sysWallet.balance) < payAmt) {
+      return res.status(400).json({ message: `Insufficient system escrow balance. System balance is $${parseFloat(sysWallet.balance).toFixed(2)}.` });
+    }
+
+    // Execute transfer in database transaction
+    await pool.query("BEGIN");
+    try {
+      // a. Deduct from system wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [payAmt, sysWallet.wallet_id]
+      );
+
+      // b. Add to referrer wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [payAmt, referrerWallet.wallet_id]
+      );
+
+      // c. Record transaction log
+      const descriptionMatch = `Referral reward for user_id = ${referredUserId}`;
+      await pool.query(
+        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+         VALUES ($1, $2, $3, 'referral_bonus', 'completed', $4)`,
+        [
+          sysWallet.wallet_id,
+          referrerWallet.wallet_id,
+          payAmt,
+          descriptionMatch
+        ]
+      );
+
+      // d. Update payout status in referral_payouts
+      await pool.query(
+        "UPDATE referral_payouts SET status = 'approved', updated_at = CURRENT_TIMESTAMP WHERE payout_id = $1",
+        [payoutId]
+      );
+
+      await pool.query("COMMIT");
+    } catch (txErr) {
+      await pool.query("ROLLBACK");
+      throw txErr;
+    }
+
+    return res.status(200).json({
+      message: `Successfully approved referral payout of $${payAmt.toFixed(2)} to referrer #${referrerId}.`
+    });
+  } catch (error) {
+    console.error("Error in approveReferralPayout:", error);
+    return res.status(500).json({ message: "Failed to approve referral payout." });
+  }
+};
+
+export const rejectReferralPayout = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payoutId = parseInt(id);
+
+    // 1. Fetch payout request
+    const payoutRes = await pool.query("SELECT * FROM referral_payouts WHERE payout_id = $1", [payoutId]);
+    if (payoutRes.rows.length === 0) {
+      return res.status(404).json({ message: "Referral payout request not found." });
+    }
+    const payout = payoutRes.rows[0];
+
+    if (payout.status !== "pending") {
+      return res.status(400).json({ message: `Referral payout has already been ${payout.status}.` });
+    }
+
+    // Update status to rejected
+    await pool.query(
+      "UPDATE referral_payouts SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE payout_id = $1",
+      [payoutId]
+    );
+
+    return res.status(200).json({
+      message: "Referral payout request rejected successfully."
+    });
+  } catch (error) {
+    console.error("Error in rejectReferralPayout:", error);
+    return res.status(500).json({ message: "Failed to reject referral payout." });
+  }
+};
+
+export const getAdminAffiliateCommissions = async (req, res) => {
+  try {
+    const query = `
+      SELECT 
+        ac.commission_id,
+        ac.affiliate_id,
+        ac.referred_user_id,
+        ac.transaction_id,
+        ac.amount,
+        ac.platform_fee,
+        ac.status,
+        ac.created_at,
+        affiliate.first_name || ' ' || COALESCE(affiliate.last_name, '') as affiliate_name,
+        affiliate.email as affiliate_email,
+        referred.first_name || ' ' || COALESCE(referred.last_name, '') as referred_name,
+        referred.email as referred_email
+      FROM affiliate_commissions ac
+      JOIN users affiliate ON ac.affiliate_id = affiliate.user_id
+      JOIN users referred ON ac.referred_user_id = referred.user_id
+      ORDER BY ac.created_at DESC
+    `;
+
+    const result = await pool.query(query);
+    return res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error in getAdminAffiliateCommissions:", error);
+    return res.status(500).json({ message: "Failed to retrieve affiliate commissions ledger." });
+  }
+};
+
+export const approveAffiliateCommission = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const commissionId = parseInt(id);
+
+    // 1. Fetch commission row
+    const commissionRes = await pool.query("SELECT * FROM affiliate_commissions WHERE commission_id = $1", [commissionId]);
+    if (commissionRes.rows.length === 0) {
+      return res.status(404).json({ message: "Affiliate commission request not found." });
+    }
+    const commission = commissionRes.rows[0];
+
+    if (commission.status !== "pending") {
+      return res.status(400).json({ message: `Commission has already been ${commission.status}.` });
+    }
+
+    const payAmt = parseFloat(commission.amount);
+    const affiliateId = commission.affiliate_id;
+
+    // 2. Fetch or create affiliate's wallet
+    let affiliateWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [affiliateId]);
+    let affiliateWallet = affiliateWalletRes.rows[0];
+    if (!affiliateWallet) {
+      const ins = await pool.query(
+        "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
+        [affiliateId]
+      );
+      affiliateWallet = ins.rows[0];
+    }
+
+    // 3. Fetch system wallet
+    const sysWalletRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+    const sysWallet = sysWalletRes.rows[0];
+    if (!sysWallet) {
+      return res.status(500).json({ message: "System wallet not found." });
+    }
+
+    if (parseFloat(sysWallet.balance) < payAmt) {
+      return res.status(400).json({ message: `Insufficient system escrow balance. System balance is $${parseFloat(sysWallet.balance).toFixed(2)}.` });
+    }
+
+    // Execute transfer in database transaction
+    await pool.query("BEGIN");
+    try {
+      // a. Deduct from system wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [payAmt, sysWallet.wallet_id]
+      );
+
+      // b. Add to affiliate wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [payAmt, affiliateWallet.wallet_id]
+      );
+
+      // c. Record transaction log
+      const descriptionMatch = `Affiliate commission reward for commission_id = ${commissionId}`;
+      await pool.query(
+        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+         VALUES ($1, $2, $3, 'affiliate_commission', 'completed', $4)`,
+        [
+          sysWallet.wallet_id,
+          affiliateWallet.wallet_id,
+          payAmt,
+          descriptionMatch
+        ]
+      );
+
+      // d. Update status in affiliate_commissions
+      await pool.query(
+        "UPDATE affiliate_commissions SET status = 'approved', updated_at = CURRENT_TIMESTAMP WHERE commission_id = $1",
+        [commissionId]
+      );
+
+      await pool.query("COMMIT");
+    } catch (txErr) {
+      await pool.query("ROLLBACK");
+      throw txErr;
+    }
+
+    return res.status(200).json({
+      message: `Successfully approved affiliate commission of $${payAmt.toFixed(2)} to affiliate #${affiliateId}.`
+    });
+  } catch (error) {
+    console.error("Error in approveAffiliateCommission:", error);
+    return res.status(500).json({ message: "Failed to approve affiliate commission." });
+  }
+};
+
+export const rejectAffiliateCommission = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const commissionId = parseInt(id);
+
+    // 1. Fetch commission row
+    const commissionRes = await pool.query("SELECT * FROM affiliate_commissions WHERE commission_id = $1", [commissionId]);
+    if (commissionRes.rows.length === 0) {
+      return res.status(404).json({ message: "Affiliate commission request not found." });
+    }
+    const commission = commissionRes.rows[0];
+
+    if (commission.status !== "pending") {
+      return res.status(400).json({ message: `Commission has already been ${commission.status}.` });
+    }
+
+    // Update status to rejected
+    await pool.query(
+      "UPDATE affiliate_commissions SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE commission_id = $1",
+      [commissionId]
+    );
+
+    return res.status(200).json({
+      message: "Affiliate commission rejected successfully."
+    });
+  } catch (error) {
+    console.error("Error in rejectAffiliateCommission:", error);
+    return res.status(500).json({ message: "Failed to reject affiliate commission." });
   }
 };

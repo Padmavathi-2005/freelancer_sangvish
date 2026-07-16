@@ -80,6 +80,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
+      const refCode = typeof window !== "undefined" ? localStorage.getItem("referral_code") : null;
       const response = await fetch(`${API_URL}/users/register`, {
         method: "POST",
         headers: {
@@ -89,6 +90,7 @@ export default function RegisterPage() {
           first_name: name.trim(), // API parameter maps to first_name
           email: email.trim(),
           password,
+          refCode: refCode || undefined,
         }),
       });
 
@@ -101,6 +103,7 @@ export default function RegisterPage() {
       if (typeof window !== "undefined") {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.removeItem("referral_code");
         window.location.href = "/dashboard";
       }
     } catch (err: any) {

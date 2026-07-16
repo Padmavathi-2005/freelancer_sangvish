@@ -301,6 +301,48 @@ export const saveFreelancerCertification = async (req, res) => {
     }
 };
 
+export const deleteFreelancerExperience = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const experienceId = req.params.id;
+        const result = await Experience.delete(experienceId, userId);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Experience not found or unauthorized." });
+        }
+        res.status(200).json({ message: "Experience deleted successfully.", experience: result.rows[0] });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const deleteFreelancerEducation = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const educationId = req.params.id;
+        const result = await Education.delete(educationId, userId);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Education not found or unauthorized." });
+        }
+        res.status(200).json({ message: "Education deleted successfully.", education: result.rows[0] });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const deleteFreelancerCertification = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const certificationId = req.params.id;
+        const result = await Certification.delete(certificationId, userId);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Certification not found or unauthorized." });
+        }
+        res.status(200).json({ message: "Certification deleted successfully.", certification: result.rows[0] });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export const saveFreelancerProject = async (req, res) => {
     try {
         const userId = req.user.user_id;
@@ -771,12 +813,14 @@ export const getFreelancerContracts = async (req, res) => {
                 j.project_type as project_type,
                 d.status as dispute_status,
                 d.resolution_type as dispute_resolution_type,
-                d.resolution_details as dispute_resolution_details
+                d.resolution_details as dispute_resolution_details,
+                COALESCE(p.bid_amount, c.budget) AS original_budget
               FROM contracts c
               JOIN users u_client ON c.client_id = u_client.user_id
               JOIN users u_free ON c.freelancer_id = u_free.user_id
               LEFT JOIN jobs j ON c.job_id = j.job_id
               LEFT JOIN disputes d ON c.contract_id = d.contract_id AND d.status = 'Resolved'
+              LEFT JOIN proposals p ON c.job_id = p.job_id AND c.freelancer_id = p.freelancer_id AND p.status = 'Accepted'
               WHERE c.freelancer_id = $1 OR c.client_id = $1
               ORDER BY c.created_at DESC`,
             [userId]
@@ -1622,10 +1666,12 @@ export const submitContractCompletion = async (req, res) => {
             return res.status(400).json({ message: `Contract cannot be submitted for completion in status: ${contract.status}` });
         }
 
+        const { submitted_files } = req.body;
+
         // Update contract status to 'Work Completed'
         await pool.query(
-            "UPDATE contracts SET status = 'Work Completed', updated_at = CURRENT_TIMESTAMP WHERE contract_id = $1",
-            [contract.contract_id]
+            "UPDATE contracts SET status = 'Work Completed', submitted_files = $1, submitted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $2",
+            [submitted_files || null, contract.contract_id]
         );
 
         // Notify client
@@ -1770,6 +1816,101 @@ export const approveContractCompletion = async (req, res) => {
     } catch (error) {
         console.error("Error approving contract completion:", error);
         res.status(500).json({ message: "Internal server error." });
+    }
+};
+
+export const getPublicClientProfile = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const isNumeric = /^\d+$/.test(id);
+        let userId;
+
+        if (isNumeric) {
+            userId = parseInt(id);
+        } else {
+            const nameSearch = id.replace(/-/g, ' ');
+            let userLookup = await pool.query("SELECT user_id FROM users WHERE slug = $1", [id]);
+            
+            if (userLookup.rows.length === 0) {
+                userLookup = await pool.query(
+                    "SELECT user_id FROM users WHERE LOWER(display_name) = LOWER($1) OR LOWER(first_name || ' ' || last_name) = LOWER($2) OR LOWER(first_name) = LOWER($3) OR LOWER(first_name || '-' || last_name) = LOWER($4)",
+                    [id, nameSearch, id, id]
+                );
+            }
+
+            if (userLookup.rows.length === 0) {
+                return res.status(404).json({ message: "Client not found." });
+            }
+            userId = userLookup.rows[0].user_id;
+        }
+
+        const userRes = await pool.query(
+            `SELECT u.user_id, CONCAT_WS(' ', u.first_name, u.last_name) as name, u.email, u.profile_image, u.slug, u.display_name, u.created_at
+             FROM users u
+             WHERE u.user_id = $1`,
+            [userId]
+        );
+        const user = userRes.rows[0] || null;
+
+        if (!user) {
+            return res.status(404).json({ message: "Client not found." });
+        }
+
+        const profileRes = await pool.query(
+            `SELECT * FROM client_profiles WHERE user_id = $1`,
+            [userId]
+        );
+        const profile = profileRes.rows[0] || null;
+
+        const reviewsRes = await pool.query(
+            `SELECT cr.*, 
+                    u.first_name || ' ' || COALESCE(u.last_name, '') as reviewer_name,
+                    u.profile_image as reviewer_image,
+                    j.title as project_title
+             FROM contract_reviews cr
+             JOIN users u ON cr.reviewer_id = u.user_id
+             JOIN contracts c ON cr.contract_id = c.contract_id
+             LEFT JOIN jobs j ON c.job_id = j.job_id
+             WHERE cr.reviewee_id = $1 AND cr.reviewer_role = 'freelancer'
+             ORDER BY cr.created_at DESC`,
+            [userId]
+        );
+        const reviews = reviewsRes.rows;
+
+        const jobsRes = await pool.query(
+            `SELECT j.*, 
+                    cat.category_name, 
+                    sub.sub_category_name,
+                    (SELECT COUNT(*) FROM proposals WHERE job_id = j.job_id) as proposal_count
+             FROM jobs j
+             LEFT JOIN categories cat ON j.category_id = cat.category_id
+             LEFT JOIN sub_categories sub ON j.sub_category_id = sub.sub_category_id
+             WHERE j.client_id = $1 AND j.status = 'Open'
+             ORDER BY j.created_at DESC`,
+            [userId]
+        );
+        const jobs = jobsRes.rows;
+
+        let avgRating = 0;
+        if (reviews.length > 0) {
+            const sum = reviews.reduce((acc, r) => acc + parseFloat(r.rating || 0), 0);
+            avgRating = parseFloat((sum / reviews.length).toFixed(1));
+        }
+
+        return res.status(200).json({
+            user,
+            profile,
+            reviews,
+            jobs,
+            stats: {
+                total_reviews: reviews.length,
+                average_rating: avgRating,
+                open_jobs: jobs.length
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching client profile:", error);
+        return res.status(500).json({ message: "Internal server error." });
     }
 };
 

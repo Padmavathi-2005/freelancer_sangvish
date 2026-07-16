@@ -20,6 +20,11 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
   const [clientGigs, setClientGigs] = useState<any[]>([]);
   const [loadingClientGigs, setLoadingClientGigs] = useState(false);
   const [gigSearchQuery, setGigSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [gigSearchQuery]);
 
   // Wishlist state and handlers
   const [wishlist, setWishlist] = useState<any[]>([]);
@@ -100,6 +105,61 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
   const [customProposedPrice, setCustomProposedPrice] = useState("");
   const [orderMilestones, setOrderMilestones] = useState<any[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("wallet");
+  const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(false);
+
+  const handleOrderClick = async (gig: any) => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    try {
+      setOnboardingCheckLoading(true);
+      const res = await fetch(`${API_URL}/users/onboarding-check`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.hasClientProfile) {
+          triggerToast("error", "You have not completed your client profile onboarding. Redirecting...");
+          localStorage.setItem("user_role", "client");
+          localStorage.setItem("onboarding_role", "client");
+          setTimeout(() => {
+            router.push("/dashboard");
+            window.location.reload();
+          }, 2000);
+          return;
+        }
+        if (data.clientVettingStatus !== "Approved") {
+          triggerToast("error", "Your client profile is pending administrator approval.");
+          return;
+        }
+        
+        // Proceed with order flow
+        setApplyingGig(gig);
+        setIsApplying(true);
+        if (gig.payment_type === "milestone" && gig.milestones) {
+          const ms = typeof gig.milestones === "string" ? JSON.parse(gig.milestones) : gig.milestones;
+          if (Array.isArray(ms)) {
+            setOrderMilestones(ms.map((m: any) => ({
+              title: m.title,
+              amount: m.amount.toString(),
+              description: m.description || ""
+            })));
+          }
+        } else {
+          setOrderMilestones([]);
+        }
+      } else {
+        triggerToast("error", "Failed to check profile status.");
+      }
+    } catch (err) {
+      triggerToast("error", "Error checking profile status.");
+    } finally {
+      setOnboardingCheckLoading(false);
+    }
+  };
 
   const insertRequirementFormat = (tag: string) => {
     const textarea = document.getElementById("project-requirements-textarea") as HTMLTextAreaElement;
@@ -237,6 +297,11 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
     return matchesSearch;
   });
 
+  const ITEMS_PER_PAGE = 9;
+  const totalPages = Math.ceil(filteredGigs.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedGigs = filteredGigs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
   return (
     <div className="relative z-10 flex flex-col gap-8 w-full animate-fadeIn text-left">
       {/* Header */}
@@ -280,8 +345,9 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
           <p className="text-slate-404 text-xs max-w-sm font-semibold">Try modifying your query or category filter options.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredGigs.map((g) => (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {paginatedGigs.map((g) => (
             <div 
               key={g.gig_id} 
               onClick={() => {
@@ -359,31 +425,67 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
               <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
                 <span className="text-slate-404 text-xxs font-semibold">Delivery: {g.delivery_days} days</span>
                 <button
+                  disabled={onboardingCheckLoading}
                   onClick={(e) => {
                     e.stopPropagation();
-                    setApplyingGig(g);
-                    setIsApplying(true);
-                    if (g.payment_type === "milestone" && g.milestones) {
-                      const ms = typeof g.milestones === "string" ? JSON.parse(g.milestones) : g.milestones;
-                      if (Array.isArray(ms)) {
-                        setOrderMilestones(ms.map((m: any) => ({
-                          title: m.title,
-                          amount: m.amount.toString(),
-                          description: m.description || ""
-                        })));
-                      }
-                    } else {
-                      setOrderMilestones([]);
-                    }
+                    handleOrderClick(g);
                   }}
-                  className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-1.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer"
+                  className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-1.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  Order Service →
+                  {onboardingCheckLoading ? "Checking..." : "Order Service →"}
                 </button>
               </div>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          {filteredGigs.length > ITEMS_PER_PAGE && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm mt-6">
+              <p className="text-slate-500 text-xs font-semibold">
+                Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to{" "}
+                <span className="font-bold text-slate-800">
+                  {Math.min(startIndex + ITEMS_PER_PAGE, filteredGigs.length)}
+                </span>{" "}
+                of <span className="font-bold text-slate-800">{filteredGigs.length}</span> services
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="px-3.5 py-2 text-[11px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-250 rounded-xl transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
+                >
+                  ← Previous
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-9 h-9 rounded-xl text-xs font-extrabold transition-all cursor-pointer border flex items-center justify-center ${
+                        currentPage === pageNum
+                          ? "bg-primary text-white border-primary shadow-md"
+                          : "bg-white hover:bg-slate-50 text-slate-650 border-slate-200"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="px-3.5 py-2 text-[11px] font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-250 rounded-xl transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Order Gig Application Modal */}

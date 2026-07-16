@@ -12,7 +12,8 @@ import {
   FiCreditCard, 
   FiAlertTriangle, 
   FiSearch,
-  FiSettings
+  FiSettings,
+  FiUsers
 } from "react-icons/fi";
 
 import GeneralSettingsTab from "@/components/admin/GeneralSettingsTab";
@@ -24,6 +25,7 @@ import SocialLoginTab from "@/components/admin/SocialLoginTab";
 import PaymentSettingsTab from "@/components/admin/PaymentSettingsTab";
 import DisputeReasonsTab from "@/components/admin/DisputeReasonsTab";
 import SEOPreviewTab from "@/components/admin/SEOPreviewTab";
+import ReferralSettingsTab from "@/components/admin/ReferralSettingsTab";
 
 function SettingsPortalContent() {
   const router = useRouter();
@@ -74,6 +76,7 @@ function SettingsPortalContent() {
     { key: "payment", label: "Payment Settings", icon: FiCreditCard },
     { key: "disputes", label: "Dispute Reasons", icon: FiAlertTriangle },
     { key: "seo", label: "SEO & Meta Preview", icon: FiSearch },
+    { key: "referral", label: "Referral & Earn", icon: FiUsers },
   ];
 
   const handleTabChange = (key: string) => {
@@ -103,7 +106,7 @@ function SettingsPortalContent() {
                 className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-black transition duration-150 flex items-center gap-3 cursor-pointer border-none ${
                   isTabActive
                     ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-850 hover:bg-slate-50"
+                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
@@ -189,6 +192,12 @@ function SettingsPortalContent() {
 
           {activeTabQuery === "seo" && (
             <SEOPreviewTab />
+          )}
+
+          {activeTabQuery === "referral" && (
+            <ReferralSettingsTab
+              handleSaveSetting={handleSaveSetting}
+            />
           )}
         </div>
       </div>

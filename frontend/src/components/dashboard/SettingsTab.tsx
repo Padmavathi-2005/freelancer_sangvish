@@ -815,7 +815,7 @@ export default function SettingsTab({
                       value={profileBasics.experience_level}
                       onChange={(val) => setProfileBasics({ ...profileBasics, experience_level: val })}
                       options={[
-                        { value: "Entry", label: "Entry (Beginner)" },
+                        { value: "Beginner", label: "Entry (Beginner)" },
                         { value: "Intermediate", label: "Intermediate (Mid-level)" },
                         { value: "Expert", label: "Expert (Senior)" },
                       ]}
@@ -2240,7 +2240,7 @@ export default function SettingsTab({
                             value={profileBasics.experience_level || "Expert"}
                             onChange={(val) => setProfileBasics({ ...profileBasics, experience_level: val })}
                             options={[
-                              { value: "Entry", label: "Entry (Beginner)" },
+                              { value: "Beginner", label: "Entry (Beginner)" },
                               { value: "Intermediate", label: "Intermediate (Mid-level)" },
                               { value: "Expert", label: "Expert (Senior)" },
                             ]}

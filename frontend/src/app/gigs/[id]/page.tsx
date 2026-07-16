@@ -190,6 +190,48 @@ export default function GigDetailsPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(false);
+
+  const handleOrderClick = async () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) {
+      openLoginModal(window.location.pathname);
+      return;
+    }
+    
+    try {
+      setOnboardingCheckLoading(true);
+      const res = await fetch(`${API_URL}/users/onboarding-check`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.hasClientProfile) {
+          showToast("error", "You have not completed your client profile onboarding. Redirecting...");
+          localStorage.setItem("user_role", "client");
+          localStorage.setItem("onboarding_role", "client");
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, 2000);
+          return;
+        }
+        if (data.clientVettingStatus !== "Approved") {
+          showToast("error", "Your client profile is pending administrator approval.");
+          return;
+        }
+        localStorage.setItem("user_role", "client");
+        localStorage.setItem("onboarding_role", "client");
+        setIsApplying(true);
+      } else {
+        showToast("error", "Failed to check profile status.");
+      }
+    } catch (err) {
+      showToast("error", "Error checking profile status.");
+    } finally {
+      setOnboardingCheckLoading(false);
+    }
+  };
+
   // Mock fallback gigs for offline/empty-db demo experience
   const MOCK_GIGS_DATA: Record<string, any> = {
     "1": {
@@ -590,6 +632,8 @@ export default function GigDetailsPage() {
         setCustomProposedPrice("");
         setOrderMilestones([]);
         showToast("success", "Service ordered successfully!");
+        localStorage.setItem("user_role", "client");
+        localStorage.setItem("onboarding_role", "client");
         setTimeout(() => {
           setIsApplying(false);
           setOrderSuccess(false);
@@ -1136,9 +1180,9 @@ export default function GigDetailsPage() {
             {/* PACKAGE PRICING CARD */}
             <div className="bg-white border border-slate-200 shadow-lg rounded-xl overflow-hidden flex flex-col text-left">
               {/* Package Tabs */}
-              <div className="flex border-b border-slate-155 bg-slate-50/80">
-                {hasCustomPlans ? (
-                  parsedPlans.map((p: any) => (
+              {hasCustomPlans && (
+                <div className="flex border-b border-slate-155 bg-slate-50/80">
+                  {parsedPlans.map((p: any) => (
                     <button
                       key={p.name}
                       onClick={() => setActivePackageTab(p.name)}
@@ -1150,23 +1194,9 @@ export default function GigDetailsPage() {
                     >
                       {p.title?.trim() ? p.title : `${p.name} Package`}
                     </button>
-                  ))
-                ) : (
-                  (["basic", "popular", "premium"] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActivePackageTab(tab)}
-                      className={`flex-1 text-center py-3.5 text-xs font-black capitalize border-b-2 transition-all cursor-pointer ${
-                        activePackageTab === tab
-                          ? "border-teal-700 text-teal-700 bg-white"
-                          : "border-transparent text-slate-400 hover:text-slate-700"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))
-                )}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {/* Package Content */}
               <div className="p-6 flex flex-col gap-5">
@@ -1205,7 +1235,7 @@ export default function GigDetailsPage() {
                   ) : (
                     <>
                       {activePackageTab === "basic" && (
-                        <p>Standard delivery package of the service, containing basic setup, core deliverables, and initial configuration.</p>
+                        <p>{stripHtml(gig.description) || "Standard delivery package of the service, containing basic setup, core deliverables, and initial configuration."}</p>
                       )}
                       {activePackageTab === "popular" && (
                         <p>Recommended complete service package, including intermediate features, custom revisions, and priority support.</p>
@@ -1274,13 +1304,21 @@ export default function GigDetailsPage() {
                 )}
 
                 {/* Instant Order CTA */}
-                <button
-                  onClick={() => setIsApplying(true)}
-                  className="w-full bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.01] active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <FiShoppingBag className="w-4 h-4 shrink-0" />
-                  <span>Order Service Now</span>
-                </button>
+                {isOwnGig ? (
+                  <div className="bg-slate-50 border border-slate-200 text-slate-500 rounded-xl p-3.5 text-center text-xs font-bold leading-relaxed flex items-center justify-center gap-1.5 w-full select-none">
+                    <FiInfo className="w-4 h-4 shrink-0 text-slate-400" />
+                    <span>This is your own service gig.</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleOrderClick}
+                    disabled={onboardingCheckLoading}
+                    className="w-full bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.01] active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    <FiShoppingBag className="w-4 h-4 shrink-0" />
+                    <span>{onboardingCheckLoading ? "Checking Profile..." : "Order Service Now"}</span>
+                  </button>
+                )}
 
                 {gig.negotiation && (
                   <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-150 p-2.5 rounded-xl font-bold flex items-center gap-1.5 leading-relaxed">

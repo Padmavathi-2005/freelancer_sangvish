@@ -265,11 +265,13 @@ export const getJobProposals = async (req, res) => {
     if (jobRes.rows.length === 0) {
       return res.status(404).json({ message: "Project not found." });
     }
+    const proposals = await Proposal.findByJobId(jobId);
     if (jobRes.rows[0].client_id !== clientId) {
-      return res.status(403).json({ message: "Access denied. You do not own this project." });
+      // If they don't own the project, filter to show only their own proposal (if any) to preserve privacy
+      const myProposals = proposals.filter(p => parseInt(p.freelancer_id) === clientId);
+      return res.status(200).json(myProposals);
     }
 
-    const proposals = await Proposal.findByJobId(jobId);
     return res.status(200).json(proposals);
   } catch (error) {
     console.error("Error fetching job proposals:", error);

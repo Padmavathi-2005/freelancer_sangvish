@@ -2,6 +2,46 @@ import pool from "../config/db.js";
 import MessageModel from "../models/messageModel.js";
 import Notification from "../models/notificationModel.js";
 
+/**
+ * Re-evaluates a job's Open/Closed status based on how many non-cancelled
+ * contracts currently exist vs. the job's num_freelancers hiring limit.
+ * Called after a dispute cancels a single contract so that multi-hire jobs
+ * re-open a slot without affecting other active freelancers on the same job.
+ */
+const recalculateJobStatus = async (jobId) => {
+  if (!jobId) return;
+  try {
+    const jobRes = await pool.query("SELECT num_freelancers FROM jobs WHERE job_id = $1", [jobId]);
+    if (jobRes.rows.length === 0) return;
+
+    const numFreelancersStr = jobRes.rows[0]?.num_freelancers || "1 freelancer";
+    let limit = 1;
+    if (numFreelancersStr.includes("2-5")) {
+      limit = 5;
+    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("5+") || numFreelancersStr.includes("many")) {
+      limit = 999;
+    } else {
+      const match = numFreelancersStr.match(/^(\d+)/);
+      if (match) limit = parseInt(match[1]);
+    }
+
+    const countRes = await pool.query(
+      "SELECT COUNT(*) FROM contracts WHERE job_id = $1 AND status != 'Cancelled'",
+      [jobId]
+    );
+    const activeCount = parseInt(countRes.rows[0].count || 0);
+
+    const newStatus = activeCount >= limit ? "Closed" : "Open";
+    await pool.query(
+      "UPDATE jobs SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE job_id = $2",
+      [newStatus, jobId]
+    );
+  } catch (err) {
+    console.error("recalculateJobStatus error for job", jobId, ":", err);
+  }
+};
+
+
 // Helper to push system messages into chat
 const postSystemChatMessage = async (io, conversationId, senderId, payload) => {
   try {
@@ -216,6 +256,9 @@ export const respondToDispute = async (req, res) => {
           );
 
           await pool.query("COMMIT");
+
+          // Re-open job slot if this was a multi-hire job and a slot just freed up
+          await recalculateJobStatus(contract.job_id);
 
           if (req.io && proposalIdToCancel) {
             req.io.to(`user_${contract.freelancer_id}`).emit("proposal_status_updated", {
@@ -596,6 +639,9 @@ export const adminResolve = async (req, res) => {
         await pool.query("UPDATE conversations SET admin_id = NULL WHERE conversation_id = $1", [dispute.conversation_id]);
 
         await pool.query("COMMIT");
+
+        // Re-open job slot if this was a multi-hire job and a slot just freed up
+        await recalculateJobStatus(contract.job_id);
 
         if (req.io && proposalIdToCancelAdmin) {
           req.io.to(`user_${contract.freelancer_id}`).emit("proposal_status_updated", {

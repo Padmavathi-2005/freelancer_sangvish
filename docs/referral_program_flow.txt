@@ -1,0 +1,67 @@
+REFERRAL PROGRAM (REFER & EARN) WORKFLOW
+=========================================
+
+The Refer & Earn system is designed to incentivize users to invite new contractors and clients to the platform. It awards the referred user an immediate sign-up bonus, and logs a pending reward for the referrer that must be audited and approved by the admin.
+
+1. DATABASE SCHEMA
+------------------
+* users table:
+  - referral_code (VARCHAR, UNIQUE): A unique, generated string for every user (e.g., REF_ZEAQL1).
+  - referred_by (INTEGER REFERENCES users(user_id)): Tracks who referred this user.
+* referral_payouts table:
+  - payout_id (SERIAL PRIMARY KEY)
+  - referrer_id (INTEGER REFERENCES users(user_id)): The promoter who referred the user.
+  - referred_id (INTEGER REFERENCES users(user_id)): The new user who signed up.
+  - amount (NUMERIC, default 10.00): The referral reward amount for the promoter.
+  - status (VARCHAR, check constraint: 'pending', 'approved', 'rejected'): Current state of the payout.
+  - details (JSONB): Logs metadata about the transaction that triggered the payout.
+  - created_at / updated_at (TIMESTAMP)
+
+2. FRONTEND PARAMETER CAPTURING
+--------------------------------
+* When a visitor lands on the site with "?ref=CODE" (e.g., https://freelancer.sangvish.com/register?ref=REF_ZEAQL1):
+  - The ReferralTracker component captures the code from query parameters.
+  - It saves the code in the browser's localStorage under the key 'refCode'.
+* During registration:
+  - The registration form fetches the cached 'refCode' from localStorage.
+  - Appends it to the POST /api/users/register (or /social-login) payload.
+  - On successful registration, 'refCode' is cleared from localStorage.
+
+3. BACKEND SIGN-UP REWARD LOGIC
+-------------------------------
+* Upon receiving a signup request with a referral code:
+  - The controller queries the database to locate the referrer user ID.
+  - If a valid referrer is found, the new user's account is created with `referred_by` set to the referrer's user ID.
+  - The system automatically creates a wallet for the new user, credits a $5.00 sign-up bonus, and inserts a completed transaction record of type 'referral_signup_bonus'.
+
+4. TRANSACTION TRIGGER LOGIC
+----------------------------
+* The referrer receives a $10.00 reward ONLY when the referred user completes their first payment on the platform.
+* Trigger endpoints:
+  - confirmStripePayment (Stripe checkout)
+  - payWithWallet (wallet checkout)
+  - confirmStripeProposalPayment (proposal checkout)
+  - payProposalDirectly (direct wallet proposal payment)
+  - confirmStripeTimecardPayment (stripe hourly payment)
+  - payTimecardDirectly (wallet hourly payment)
+* Finalization Hook (checkAndRewardReferrer):
+  - Checks if the user was referred by someone.
+  - Verifies that no reward (pending, approved, or rejected) has already been created for this referral to prevent duplicate logs.
+  - Inserts a new row in the referral_payouts table with 'pending' status.
+
+5. ADMIN AUDITING AND APPROVAL
+------------------------------
+* Location: Admin Panel -> Referral Payouts (/admin/referrals)
+* The admin panel retrieves all payouts from GET /api/admin/referrals/payouts.
+* For each pending reward, the system calculates and displays:
+  - Email/Phone verification status.
+  - Unique Phone Audit: Checks if the phone number of the referred user is shared with any other accounts.
+  - First Order Verification: Asserts if the referred user has completed at least one order transaction.
+* Actions:
+  - APPROVE: Credits the referrer's wallet with $10.00, deducts the amount from the system/escrow wallet, records a 'referral_bonus' completed transaction, and sets the payout status to 'approved'.
+  - REJECT: Sets the payout status to 'rejected' without paying.
+
+6. WALLET SECURITY GUARDS
+-------------------------
+* Database Constraint: A CHECK constraint `check_balance_non_negative` enforces that the `balance` field in `wallets` can never be less than 0.00.
+* API Guards: In approveReferralPayout, the system queries the system escrow wallet balance. If the system balance is less than the payout amount ($10.00), the approval is rejected with a 400 Bad Request error to prevent negative escrow balances.

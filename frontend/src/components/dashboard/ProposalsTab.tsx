@@ -51,6 +51,8 @@ interface ProposalsTabProps {
   handlePostJobToggleLanguage: (id: number) => void;
   postJobMaxHours: number;
   setPostJobMaxHours: (val: number) => void;
+  postJobMinHours: number;
+  setPostJobMinHours: (val: number) => void;
   postJobPaymentMode: string;
   setPostJobPaymentMode: (val: string) => void;
   clientJobs: any[];
@@ -115,6 +117,8 @@ export default function ProposalsTab({
   handlePostJobToggleLanguage,
   postJobMaxHours,
   setPostJobMaxHours,
+  postJobMinHours,
+  setPostJobMinHours,
   postJobPaymentMode,
   setPostJobPaymentMode,
   clientJobs,
@@ -140,6 +144,22 @@ export default function ProposalsTab({
   const { pendingInviteFreelancer, setPendingInviteFreelancer } = useDashboard();
   const [clientSubscription, setClientSubscription] = useState<any>(null);
   const [siteShortName, setSiteShortName] = useState("Lancer");
+  const [durations, setDurations] = useState<string[]>([
+    "Less than 1 month",
+    "1-3 months",
+    "3-6 months",
+    "More than 6 months"
+  ]);
+  const [locations, setLocations] = useState<string[]>([
+    "Remote",
+    "Onsite",
+    "Partially Remote"
+  ]);
+  const [paymentModes, setPaymentModes] = useState<string[]>([
+    "Daily",
+    "Weekly",
+    "Monthly"
+  ]);
   const [togglingFeatureId, setTogglingFeatureId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -184,6 +204,24 @@ export default function ProposalsTab({
       } catch (e) {
         console.error("Failed to load settings in ProposalsTab:", e);
       }
+
+      try {
+        const resOptions = await fetch(`${API_URL}/form-field-options`);
+        if (resOptions.ok) {
+          const data = await resOptions.json();
+          if (data.project_durations) {
+            setDurations(data.project_durations.map((d: any) => d.option_value));
+          }
+          if (data.location_preferences) {
+            setLocations(data.location_preferences.map((l: any) => l.option_value));
+          }
+          if (data.payment_modes) {
+            setPaymentModes(data.payment_modes.map((p: any) => p.option_value));
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings in ProposalsTab:", e);
+      }
     };
     loadSettings();
   }, []);
@@ -213,7 +251,7 @@ export default function ProposalsTab({
     }
   };
   const [selectedProposalDetails, setSelectedProposalDetails] = useState<any | null>(null);
-  const [projectFilter, setProjectFilter] = useState<"all" | "pending" | "ongoing" | "dispute" | "completed" | "draft">("all");
+  const [projectFilter, setProjectFilter] = useState<"all" | "pending" | "ongoing" | "dispute" | "completed" | "draft" | "hired" | "proposals_arrived" | "proposals_not_arrived">("all");
   const [freelancerFilter, setFreelancerFilter] = useState<"all" | "pending" | "accepted" | "declined">("all");
 
   const [searchProjectQuery, setSearchProjectQuery] = useState("");
@@ -419,7 +457,7 @@ export default function ProposalsTab({
   }, [userRole]);
 
   const filteredJobs = useMemo(() => {
-    return clientJobs.filter((job) => {
+    const filtered = clientJobs.filter((job) => {
       const cStatus = job.contract_status?.toLowerCase();
       const jStatus = job.status?.toLowerCase();
       
@@ -427,13 +465,19 @@ export default function ProposalsTab({
       if (projectFilter === "draft") {
         matchStatus = jStatus === "draft";
       } else if (projectFilter === "pending") {
-        matchStatus = cStatus === "pending" || jStatus === "pending";
+        matchStatus = cStatus === "pending" || cStatus === "hired" || jStatus === "pending";
       } else if (projectFilter === "ongoing") {
-        matchStatus = cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active";
+        matchStatus = cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active" || cStatus === "work started" || cStatus === "work_started" || cStatus === "under review" || cStatus === "under_review";
       } else if (projectFilter === "dispute") {
         matchStatus = cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed";
       } else if (projectFilter === "completed") {
-        matchStatus = cStatus === "completed" || jStatus === "completed";
+        matchStatus = cStatus === "completed" || cStatus === "work completed" || cStatus === "work_completed" || jStatus === "completed";
+      } else if (projectFilter === "hired") {
+        matchStatus = !!job.contract_id && cStatus !== "cancelled";
+      } else if (projectFilter === "proposals_arrived") {
+        matchStatus = !job.contract_id && parseInt(job.proposal_count || 0) > 0 && jStatus !== "draft";
+      } else if (projectFilter === "proposals_not_arrived") {
+        matchStatus = !job.contract_id && parseInt(job.proposal_count || 0) === 0 && jStatus !== "draft";
       }
 
       if (!matchStatus) return false;
@@ -447,6 +491,15 @@ export default function ProposalsTab({
       }
 
       return true;
+    });
+
+    // Sort Hired/Ongoing projects (where contract_id exists) to the top of the list
+    return [...filtered].sort((a, b) => {
+      const aHired = !!a.contract_id;
+      const bHired = !!b.contract_id;
+      if (aHired && !bHired) return -1;
+      if (!aHired && bHired) return 1;
+      return 0;
     });
   }, [clientJobs, projectFilter, searchProjectQuery]);
 
@@ -477,6 +530,7 @@ export default function ProposalsTab({
     setPostJobSelectedSkills([]);
     setPostJobSelectedLanguages([]);
     setPostJobMaxHours(40);
+    setPostJobMinHours(10);
     setPostJobPaymentMode("Weekly");
     setPostJobSlug("");
     setPostJobSeoTitle("");
@@ -528,6 +582,7 @@ export default function ProposalsTab({
     setPostJobNumFreelancers(job.num_freelancers || "1 freelancer");
     setPostJobExpLevel(job.experience_level || "Intermediate");
     setPostJobMaxHours(job.max_hours || 40);
+    setPostJobMinHours(job.min_hours || 10);
     setPostJobPaymentMode(job.payment_mode || "Weekly");
     setPostJobSlug(job.slug || "");
     setIsSlugManuallyEdited(true);
@@ -610,6 +665,7 @@ export default function ProposalsTab({
           skills: payloadSkills,
           languages: payloadLanguages,
           max_hours: postJobType === "Hourly" ? postJobMaxHours : null,
+          min_hours: postJobType === "Hourly" ? postJobMinHours : null,
           payment_mode: postJobType === "Hourly" ? postJobPaymentMode : null,
           slug: postJobSlug.trim(),
           seo: {
@@ -733,6 +789,25 @@ export default function ProposalsTab({
                     triggerToast("error", "Maximum budget must be greater than or equal to minimum budget.");
                     return;
                   }
+                  // Hourly-specific validation
+                  if (postJobType === "Hourly") {
+                    if (postJobMinHours <= 0) {
+                      triggerToast("error", "Minimum hours must be a positive value.");
+                      return;
+                    }
+                    if (postJobMaxHours <= 0) {
+                      triggerToast("error", "Maximum hours per week must be a positive value.");
+                      return;
+                    }
+                    if (postJobMinHours > postJobMaxHours) {
+                      triggerToast("error", "Minimum hours cannot exceed maximum hours per week.");
+                      return;
+                    }
+                    if (postJobMinHours * postJobMinBudget > postJobMaxBudget) {
+                      triggerToast("error", `Invalid rate range: ${postJobMinHours} min hrs × $${postJobMinBudget}/hr = $${(postJobMinHours * postJobMinBudget).toLocaleString()}, which exceeds max budget ($${postJobMaxBudget.toLocaleString()}). Increase max rate or reduce min hours.`);
+                      return;
+                    }
+                  }
                   setPostJobStep(2);
                 } else if (postJobStep === 2) {
                   setPostJobStep(3);
@@ -779,6 +854,7 @@ export default function ProposalsTab({
                         skills: payloadSkills,
                         languages: payloadLanguages,
                         max_hours: postJobType === "Hourly" ? postJobMaxHours : null,
+                        min_hours: postJobType === "Hourly" ? postJobMinHours : null,
                         payment_mode: postJobType === "Hourly" ? postJobPaymentMode : null,
                         slug: postJobSlug.trim(),
                         seo: {
@@ -952,54 +1028,85 @@ export default function ProposalsTab({
                   )}
 
                   {postJobType === "Hourly" && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Maximum Hours Per Week *</label>
-                        <input
-                          type="number"
-                          required
-                          min="1"
-                          placeholder="e.g. 40"
-                          value={postJobMaxHours}
-                          onChange={(e) => setPostJobMaxHours(Number(e.target.value))}
-                          className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-bold"
-                        />
+                    <div className="flex flex-col gap-5 text-left">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Minimum Hours Required *</label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            placeholder="e.g. 10"
+                            value={postJobMinHours}
+                            onChange={(e) => setPostJobMinHours(Number(e.target.value))}
+                            className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-bold"
+                          />
+                          <p className="text-[10px] text-slate-400">Minimum total hours expected from the freelancer</p>
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Maximum Hours Per Week *</label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            placeholder="e.g. 40"
+                            value={postJobMaxHours}
+                            onChange={(e) => setPostJobMaxHours(Number(e.target.value))}
+                            className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-bold"
+                          />
+                          <p className="text-[10px] text-slate-400">Max hours the freelancer can work per week</p>
+                        </div>
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Payment Mode *</label>
                         <CustomSelect
                           value={postJobPaymentMode}
                           onChange={(val) => setPostJobPaymentMode(val)}
-                          options={[
-                            { value: "Daily", label: "Daily" },
-                            { value: "Weekly", label: "Weekly" },
-                            { value: "Monthly", label: "Monthly" },
-                          ]}
+                          options={paymentModes.map((mode) => ({ value: mode, label: mode }))}
                         />
                       </div>
+                      {/* Live cost preview */}
+                      {postJobMinBudget > 0 && postJobMaxBudget > 0 && postJobMinHours > 0 && (
+                        <div className={`rounded-xl p-3 text-xs flex flex-col gap-1 ${
+                          postJobMinHours * postJobMinBudget > postJobMaxBudget
+                            ? "bg-red-50 border border-red-200 text-red-700"
+                            : "bg-emerald-50 border border-emerald-200 text-emerald-800"
+                        }`}>
+                          <p className="font-bold">💡 Estimated Cost Preview</p>
+                          <p>Min: {postJobMinHours} hrs × ${postJobMinBudget}/hr = <strong>${(postJobMinHours * postJobMinBudget).toLocaleString()}</strong></p>
+                          <p>Max: {postJobMinHours} hrs × ${postJobMaxBudget}/hr = <strong>${(postJobMinHours * postJobMaxBudget).toLocaleString()}</strong></p>
+                          {postJobMinHours * postJobMinBudget > postJobMaxBudget && (
+                            <p className="font-semibold mt-1">⚠️ Minimum hours × min rate exceeds your max budget. Please adjust.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Minimum Budget (USD) *</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">
+                        {postJobType === "Hourly" ? "Min Hourly Rate (USD/hr) *" : "Minimum Budget (USD) *"}
+                      </label>
                       <input
                         type="number"
                         required
                         min="1"
-                        placeholder="e.g. 500"
+                        placeholder={postJobType === "Hourly" ? "e.g. 25" : "e.g. 500"}
                         value={postJobMinBudget}
                         onChange={(e) => setPostJobMinBudget(Number(e.target.value))}
                         className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Maximum Budget (USD) *</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">
+                        {postJobType === "Hourly" ? "Max Hourly Rate (USD/hr) *" : "Maximum Budget (USD) *"}
+                      </label>
                       <input
                         type="number"
                         required
                         min="1"
-                        placeholder="e.g. 5000"
+                        placeholder={postJobType === "Hourly" ? "e.g. 75" : "e.g. 5000"}
                         value={postJobMaxBudget}
                         onChange={(e) => setPostJobMaxBudget(Number(e.target.value))}
                         className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
@@ -1035,12 +1142,7 @@ export default function ProposalsTab({
                       <CustomSelect
                         value={postJobDuration}
                         onChange={(val) => setPostJobDuration(val)}
-                        options={[
-                          { value: "Less than 1 month", label: "Less than 1 month" },
-                          { value: "1-3 months", label: "1-3 months" },
-                          { value: "3-6 months", label: "3-6 months" },
-                          { value: "More than 6 months", label: "More than 6 months" },
-                        ]}
+                        options={durations.map((d) => ({ value: d, label: d }))}
                       />
                     </div>
 
@@ -1049,11 +1151,7 @@ export default function ProposalsTab({
                       <CustomSelect
                         value={postJobLocation}
                         onChange={(val) => setPostJobLocation(val)}
-                        options={[
-                          { value: "Remote", label: "Remote" },
-                          { value: "Onsite", label: "Onsite" },
-                          { value: "Partially Remote", label: "Partially Remote" },
-                        ]}
+                        options={locations.map((l) => ({ value: l, label: l }))}
                       />
                     </div>
                   </div>
@@ -1118,7 +1216,7 @@ export default function ProposalsTab({
                       value={postJobExpLevel}
                       onChange={(val) => setPostJobExpLevel(val)}
                       options={[
-                        { value: "Entry", label: "Entry (Beginner)" },
+                        { value: "Beginner", label: "Entry (Beginner)" },
                         { value: "Intermediate", label: "Intermediate (Mid-level)" },
                         { value: "Expert", label: "Expert (Senior)" },
                       ]}
@@ -1473,6 +1571,9 @@ export default function ProposalsTab({
               {[
                 { id: "all", label: "All Projects", icon: "fa-solid fa-list-check" },
                 { id: "pending", label: "Pending", icon: "fa-solid fa-clock text-amber-500" },
+                { id: "hired", label: "Hired Projects", icon: "fa-solid fa-user-check text-teal-650" },
+                { id: "proposals_arrived", label: "Proposals Arrived", icon: "fa-solid fa-envelope-open text-primary" },
+                { id: "proposals_not_arrived", label: "Proposals Not Arrived", icon: "fa-solid fa-envelope text-slate-400" },
                 { id: "ongoing", label: "Ongoing", icon: "fa-solid fa-spinner text-emerald-600 animate-spin-slow" },
                 { id: "dispute", label: "Disputed", icon: "fa-solid fa-triangle-exclamation text-rose-500" },
                 { id: "completed", label: "Completed", icon: "fa-solid fa-circle-check text-teal-600" },
@@ -1482,10 +1583,13 @@ export default function ProposalsTab({
                   const cStatus = j.contract_status?.toLowerCase();
                   const jStatus = j.status?.toLowerCase();
                   if (tab.id === "draft") return jStatus === "draft";
-                  if (tab.id === "pending") return cStatus === "pending" || jStatus === "pending";
-                  if (tab.id === "ongoing") return cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active";
+                  if (tab.id === "pending") return cStatus === "pending" || cStatus === "hired" || jStatus === "pending";
+                  if (tab.id === "ongoing") return cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active" || cStatus === "work started" || cStatus === "work_started" || cStatus === "under review" || cStatus === "under_review";
                   if (tab.id === "dispute") return cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed";
-                  if (tab.id === "completed") return cStatus === "completed" || jStatus === "completed";
+                  if (tab.id === "completed") return cStatus === "completed" || cStatus === "work completed" || cStatus === "work_completed" || jStatus === "completed";
+                  if (tab.id === "hired") return !!j.contract_id && cStatus !== "cancelled";
+                  if (tab.id === "proposals_arrived") return !j.contract_id && parseInt(j.proposal_count || 0) > 0 && jStatus !== "draft";
+                  if (tab.id === "proposals_not_arrived") return !j.contract_id && parseInt(j.proposal_count || 0) === 0 && jStatus !== "draft";
                   return true;
                 }).length;
 
@@ -1669,28 +1773,56 @@ export default function ProposalsTab({
                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                             Project Status
                           </span>
-                          {/* Beautiful status badges */}
-                          {job.contract_status === "In_Progress" || job.contract_status === "Active" ? (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-150 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                              Ongoing
-                            </span>
-                          ) : job.contract_status === "Disputed" ? (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-rose-50 text-rose-700 border border-rose-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                              <i className="fa-solid fa-triangle-exclamation text-rose-500 animate-bounce"></i>
-                              Disputed
-                            </span>
-                          ) : job.contract_status === "Pending" ? (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-amber-50 text-amber-700 border border-amber-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                              Pending
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-teal-50 text-teal-700 border border-teal-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                              <i className="fa-solid fa-circle-check text-teal-600"></i>
-                              Completed
-                            </span>
-                          )}
+                          {(() => {
+                            const status = job.contract_status?.toLowerCase();
+                            if (status === "in_progress" || status === "in-progress" || status === "active" || status === "work started" || status === "work_started") {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-150 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                  Ongoing
+                                </span>
+                              );
+                            }
+                            if (status === "under review" || status === "under_review") {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-150 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                  Under Review
+                                </span>
+                              );
+                            }
+                            if (status === "disputed" || status === "dispute") {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-rose-50 text-rose-700 border border-rose-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                  <i className="fa-solid fa-triangle-exclamation text-rose-500 animate-bounce"></i>
+                                  Disputed
+                                </span>
+                              );
+                            }
+                            if (status === "pending" || status === "hired") {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-amber-50 text-amber-700 border border-amber-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                  Hired
+                                </span>
+                              );
+                            }
+                            if (status === "cancelled") {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-slate-50 text-slate-700 border border-slate-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                  <i className="fa-solid fa-ban text-slate-500"></i>
+                                  Cancelled
+                                </span>
+                              );
+                            }
+                            // Default / Completed
+                            return (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-teal-50 text-teal-700 border border-teal-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                <i className="fa-solid fa-circle-check text-teal-600"></i>
+                                Completed
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         {/* Progress Bar */}
@@ -1742,20 +1874,31 @@ export default function ProposalsTab({
                     </>
                   ) : (
                     <>
-                      <div className="bg-cyan-50/30 border border-cyan-100 rounded-xl p-3.5 text-center">
-                        <span className="text-[9px] font-black text-cyan-700 uppercase tracking-widest block mb-1">
-                          Bidding Active
+                      <div className={`border rounded-xl p-3.5 text-center ${
+                        parseInt(job.proposal_count || 0) > 0 
+                          ? "bg-teal-50/40 border-teal-100" 
+                          : "bg-slate-50 border-slate-200"
+                      }`}>
+                        <span className={`text-[9px] font-black uppercase tracking-widest block mb-1 ${
+                          parseInt(job.proposal_count || 0) > 0 ? "text-teal-700" : "text-slate-500"
+                        }`}>
+                          {parseInt(job.proposal_count || 0) > 0 ? `Proposals Received (${job.proposal_count})` : "Awaiting Bids"}
                         </span>
                         <span className="text-[10px] text-slate-500 font-semibold leading-relaxed">
-                          This project is open. Review proposal bids submitted by freelancers.
+                          {parseInt(job.proposal_count || 0) > 0 
+                            ? `You have received ${job.proposal_count} proposal bid${parseInt(job.proposal_count || 0) === 1 ? "" : "s"}. Review and select a freelancer to hire.`
+                            : "Waiting for freelancers to submit proposal bids. You will be notified when proposals arrive."
+                          }
                         </span>
                       </div>
                       <button
                         onClick={() => setSelectedProjectDetails(job)}
-                        className="w-full bg-cyan-700 hover:bg-cyan-800 text-white font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border-0"
+                        className={`w-full text-white font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border-0 ${
+                          parseInt(job.proposal_count || 0) > 0 ? "bg-teal-650 hover:bg-teal-700" : "bg-slate-700 hover:bg-slate-800"
+                        }`}
                       >
-                        <i className="fa-solid fa-users-viewfinder"></i>
-                        <span>Review Proposals</span>
+                        <i className={parseInt(job.proposal_count || 0) > 0 ? "fa-solid fa-users-viewfinder" : "fa-solid fa-folder-open"}></i>
+                        <span>{parseInt(job.proposal_count || 0) > 0 ? "Review Proposals" : "View Project Details"}</span>
                       </button>
                       {/* Feature Project Action Button */}
                       {clientSubscription && clientSubscription.featured_project_limit > 0 && (

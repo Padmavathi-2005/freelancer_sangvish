@@ -39,5 +39,14 @@ export const Certification = {
              WHERE user_id = $1`,
             [userId]
         );
+    },
+
+    delete: async (certificationId, userId) => {
+        return await pool.query(
+            `DELETE FROM certifications
+             WHERE certification_id = $1 AND user_id = $2
+             RETURNING *`,
+            [certificationId, userId]
+        );
     }
 };

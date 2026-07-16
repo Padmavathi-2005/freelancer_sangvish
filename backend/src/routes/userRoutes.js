@@ -11,7 +11,10 @@ import {
     subscribeToPlan,
     getLoggedInUser,
     updateUserProfile,
-    socialLogin
+    socialLogin,
+    getReferrals,
+    getAffiliateStats,
+    getReferralBanner
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -27,5 +30,8 @@ router.get('/me/subscription', auth, getMySubscription);
 router.post('/subscribe', auth, subscribeToPlan);
 router.get('/me', auth, getLoggedInUser);
 router.put('/profile', auth, updateUserProfile);
+router.get('/referrals', auth, getReferrals);
+router.get('/affiliate/stats', auth, getAffiliateStats);
+router.get('/referral/banner.svg', getReferralBanner);
 
 export default router;

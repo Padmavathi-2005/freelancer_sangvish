@@ -1,5 +1,5 @@
 import express from "express";
-import { auth, checkApprovedFreelancer } from "../middleware/auth.js";
+import { auth, checkApprovedFreelancer, checkApprovedClient } from "../middleware/auth.js";
 import {
   createJob,
   getClientJobs,
@@ -23,8 +23,8 @@ router.use(auth);
 router.get("/validate-slug", validateJobSlug);
 
 // Job routes
-router.post("/", checkApprovedFreelancer, createJob);
-router.put("/:id", checkApprovedFreelancer, updateJob);
+router.post("/", checkApprovedClient, createJob);
+router.put("/:id", checkApprovedClient, updateJob);
 router.put("/:id/feature", toggleJobFeature);
 router.get("/client", getClientJobs);
 router.get("/", getAllJobs);

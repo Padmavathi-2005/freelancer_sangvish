@@ -52,6 +52,8 @@ export default function ProposalsPage() {
     handlePostJobToggleLanguage,
     postJobMaxHours,
     setPostJobMaxHours,
+    postJobMinHours,
+    setPostJobMinHours,
     postJobPaymentMode,
     setPostJobPaymentMode,
     clientJobs,
@@ -213,6 +215,8 @@ export default function ProposalsPage() {
       handlePostJobToggleLanguage={handlePostJobToggleLanguage}
       postJobMaxHours={postJobMaxHours}
       setPostJobMaxHours={setPostJobMaxHours}
+      postJobMinHours={postJobMinHours}
+      setPostJobMinHours={setPostJobMinHours}
       postJobPaymentMode={postJobPaymentMode}
       setPostJobPaymentMode={setPostJobPaymentMode}
       clientJobs={clientJobs}

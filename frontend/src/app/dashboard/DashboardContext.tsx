@@ -350,6 +350,7 @@ interface DashboardContextType {
   postJobAvailableLanguages: any[]; setPostJobAvailableLanguages: React.Dispatch<React.SetStateAction<any[]>>;
   postJobSelectedLanguages: number[]; setPostJobSelectedLanguages: React.Dispatch<React.SetStateAction<number[]>>;
   postJobMaxHours: number; setPostJobMaxHours: React.Dispatch<React.SetStateAction<number>>;
+  postJobMinHours: number; setPostJobMinHours: React.Dispatch<React.SetStateAction<number>>;
   postJobPaymentMode: string; setPostJobPaymentMode: (v: string) => void;
 
   // Client Job Posts listing states
@@ -758,6 +759,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [postJobAvailableLanguages, setPostJobAvailableLanguages] = useState<any[]>([]);
   const [postJobSelectedLanguages, setPostJobSelectedLanguages] = useState<number[]>([]);
   const [postJobMaxHours, setPostJobMaxHours] = useState(40);
+  const [postJobMinHours, setPostJobMinHours] = useState(10);
   const [postJobPaymentMode, setPostJobPaymentMode] = useState("Weekly");
 
   // Client Job Posts listing states
@@ -931,6 +933,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       "/dashboard/wishlist": "wishlist",
       "/dashboard/reports": "reports",
       "/dashboard/subscription": "subscription",
+      "/dashboard/referrals": "referrals",
+      "/dashboard/affiliate": "affiliate",
     };
     return routeMap[pathname] || "workspace";
   }, [pathname]);
@@ -954,6 +958,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       wishlist: "/dashboard/wishlist",
       reports: "/dashboard/reports",
       subscription: "/dashboard/subscription",
+      referrals: "/dashboard/referrals",
+      affiliate: "/dashboard/affiliate",
     };
     const path = routeMap[tab];
     if (path) {
@@ -1064,7 +1070,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Sync basic profile data from localStorage
   useEffect(() => {
@@ -1263,7 +1269,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setHasFreelancerProfile(!!data.hasFreelancerProfile);
         setHasClientProfile(!!data.hasClientProfile);
 
-        const savedRole = localStorage.getItem("onboarding_role");
+        let savedRole = localStorage.getItem("onboarding_role");
+        if (!savedRole) {
+          if (data.hasFreelancerProfile && !data.hasClientProfile) {
+            savedRole = "freelancer";
+            localStorage.setItem("onboarding_role", "freelancer");
+          } else if (data.hasClientProfile && !data.hasFreelancerProfile) {
+            savedRole = "client";
+            localStorage.setItem("onboarding_role", "client");
+          } else if (data.hasFreelancerProfile && data.hasClientProfile) {
+            savedRole = "freelancer";
+            localStorage.setItem("onboarding_role", "freelancer");
+          }
+        }
+
         if (!savedRole) {
           setOnboardingCompleted(false);
           setShowOnboardingModal(true);
@@ -1306,7 +1325,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const fetchOnboardingStatus = async () => {
+  const fetchOnboardingStatus = async (shouldUpdateStep = true) => {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/freelancer/onboarding/status`, {
@@ -1315,7 +1334,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setOnboardingStepsStatus(data.steps);
-        setWizardStep(data.currentStep);
+        if (shouldUpdateStep) {
+          setWizardStep(data.currentStep);
+        }
         if (data.onboardingCompleted) {
           setOnboardingCompleted(true);
           localStorage.setItem("onboarding_completed", "true");
@@ -1504,7 +1525,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       setStep1Success(true);
       setTimeout(() => {
         setWizardStep(2);
-        fetchOnboardingStatus();
+        fetchOnboardingStatus(false);
       }, 1000);
     } catch (e: any) {
       setStep1Error(e.message || "An error occurred while saving profile.");
@@ -2107,6 +2128,29 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Hourly: bid amount is the hourly rate — validate it doesn't exceed max hourly rate
+    if (applyingJob.project_type === "Hourly") {
+      const maxRate = parseFloat(applyingJob.max_budget || applyingJob.budget || 0);
+      const minRate = parseFloat(applyingJob.min_budget || 0);
+      if (maxRate > 0 && proposalBidAmount > maxRate) {
+        setProposalError(`Your hourly rate ($${proposalBidAmount}/hr) cannot exceed the client's maximum rate ($${maxRate.toLocaleString()}/hr).`);
+        return;
+      }
+      if (minRate > 0 && proposalBidAmount < minRate) {
+        setProposalError(`Your hourly rate ($${proposalBidAmount}/hr) is below the client's minimum rate ($${minRate.toLocaleString()}/hr).`);
+        return;
+      }
+    }
+
+    // Fixed: validate bid amount doesn't exceed max budget
+    if (applyingJob.project_type === "Fixed") {
+      const maxBudget = parseFloat(applyingJob.max_budget || applyingJob.budget || 0);
+      if (maxBudget > 0 && proposalBidAmount > maxBudget) {
+        setProposalError(`Your bid ($${proposalBidAmount.toLocaleString()}) cannot exceed the project's maximum budget ($${maxBudget.toLocaleString()}).`);
+        return;
+      }
+    }
+
     const requiresMilestones = applyingJob.project_type === "Fixed" && applyingJob.milestone_type === "Milestone";
     const useMilestones = proposalUseMilestones || requiresMilestones;
 
@@ -2116,8 +2160,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       const totalMilestones = proposalMilestones.reduce((sum, m) => sum + m.amount, 0);
-      if (totalMilestones > proposalBidAmount) {
-        setProposalError(`Total milestone amount ($${totalMilestones.toLocaleString()}) cannot exceed the offered total bid amount ($${proposalBidAmount.toLocaleString()}).`);
+      if (Math.abs(totalMilestones - proposalBidAmount) > 0.01) {
+        setProposalError(`Total milestone amounts ($${totalMilestones.toFixed(2)}) must exactly equal your total bid ($${proposalBidAmount.toFixed(2)}). Please adjust milestones to match.`);
         return;
       }
     }
@@ -2813,25 +2857,64 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const deleteExperience = (index: number) => {
+  const deleteExperience = async (index: number) => {
+    const target = experiences[index];
     const updated = experiences.filter((_, idx) => idx !== index);
     setExperiences(updated);
     localStorage.setItem("profile_experiences", JSON.stringify(updated));
     triggerToast("success", "Experience removed.");
+
+    if (target && target.experience_id) {
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`${API_URL}/freelancer/onboarding/experience/${target.experience_id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error("Failed to delete experience on backend:", err);
+      }
+    }
   };
 
-  const deleteEducation = (index: number) => {
+  const deleteEducation = async (index: number) => {
+    const target = educations[index];
     const updated = educations.filter((_, idx) => idx !== index);
     setEducations(updated);
     localStorage.setItem("profile_education", JSON.stringify(updated));
     triggerToast("success", "Education removed.");
+
+    if (target && target.education_id) {
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`${API_URL}/freelancer/onboarding/education/${target.education_id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error("Failed to delete education on backend:", err);
+      }
+    }
   };
 
-  const deleteCertification = (index: number) => {
+  const deleteCertification = async (index: number) => {
+    const target = certifications[index];
     const updated = certifications.filter((_, idx) => idx !== index);
     setCertifications(updated);
     localStorage.setItem("profile_certifications", JSON.stringify(updated));
     triggerToast("success", "Certification removed.");
+
+    if (target && target.certification_id) {
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`${API_URL}/freelancer/onboarding/certification/${target.certification_id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } catch (err) {
+        console.error("Failed to delete certification on backend:", err);
+      }
+    }
   };
 
   const handleSaveStep = async (stepNum: number) => {
@@ -2875,6 +2958,91 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           const data = await res.json();
           triggerToast("error", data.message || "Failed to save profile basics.");
         }
+      } else if (stepNum === 2) {
+        // Save unsaved experiences to database
+        const unsaved = experiences.filter(exp => !exp.experience_id);
+        const savedList = [...experiences.filter(exp => exp.experience_id)];
+        
+        for (const exp of unsaved) {
+          const res = await fetch(`${API_URL}/freelancer/onboarding/experience`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              company_name: exp.company_name,
+              job_title: exp.job_title,
+              employment_type: exp.employment_type || "Full-time",
+              start_date: exp.start_date || null,
+              end_date: exp.end_date || null,
+              currently_working: exp.currently_working ?? false,
+              description: exp.description || null
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            savedList.push(data.experience);
+          }
+        }
+        setExperiences(savedList);
+        localStorage.setItem("profile_experiences", JSON.stringify(savedList));
+        triggerToast("success", "Work experience saved successfully!");
+      } else if (stepNum === 3) {
+        // Save unsaved education to database
+        const unsaved = educations.filter(edu => !edu.education_id);
+        const savedList = [...educations.filter(edu => edu.education_id)];
+
+        for (const edu of unsaved) {
+          const res = await fetch(`${API_URL}/freelancer/onboarding/education`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              institution_name: edu.institution_name,
+              degree: edu.degree,
+              field_of_study: edu.field_of_study || null,
+              start_year: edu.start_year ? parseInt(String(edu.start_year)) : null,
+              end_year: edu.end_year ? parseInt(String(edu.end_year)) : null
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            savedList.push(data.education);
+          }
+        }
+        setEducations(savedList);
+        localStorage.setItem("profile_education", JSON.stringify(savedList));
+        triggerToast("success", "Education history saved successfully!");
+      } else if (stepNum === 4) {
+        // Save unsaved certifications to database
+        const unsaved = certifications.filter(cert => !cert.certification_id);
+        const savedList = [...certifications.filter(cert => cert.certification_id)];
+
+        for (const cert of unsaved) {
+          const res = await fetch(`${API_URL}/freelancer/onboarding/certification`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              certificate_name: cert.certificate_name,
+              issuing_organization: cert.issuing_organization,
+              issue_date: cert.issue_date || null,
+              credential_url: cert.credential_url || null
+            })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            savedList.push(data.certification);
+          }
+        }
+        setCertifications(savedList);
+        localStorage.setItem("profile_certifications", JSON.stringify(savedList));
+        triggerToast("success", "Certifications saved successfully!");
       } else if (stepNum === 5) {
         // Save skills selector
         const res = await fetch(`${API_URL}/freelancer/onboarding/skills`, {
@@ -2891,14 +3059,29 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         if (res.ok) {
           triggerToast("success", "Skills saved successfully!");
           localStorage.setItem("profile_skills", JSON.stringify(selectedSkills));
+
+          // Also trigger final complete onboarding so backend updates status to true in database
+          try {
+            const completeRes = await fetch(`${API_URL}/freelancer/onboarding/complete`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+            });
+            if (completeRes.ok) {
+              const completeData = await completeRes.json();
+              const status = completeData.vettingStatus || "Approved";
+              setVettingStatus(status);
+              localStorage.setItem("vetting_status", status);
+              setHasFreelancerProfile(true);
+              setOnboardingCompleted(true);
+              localStorage.setItem("onboarding_completed", "true");
+            }
+          } catch (e) {
+            console.error("Failed to call complete onboarding on step 5 finish:", e);
+          }
         } else {
           const data = await res.json();
           triggerToast("error", data.message || "Failed to save skills.");
         }
-      } else {
-        // Steps 2, 3, and 4 add/delete items dynamically. 
-        // We just return a success toast and skip calling any endpoints.
-        triggerToast("success", `Step ${stepNum} updated successfully!`);
       }
     } catch (e) {
       console.error(e);
@@ -3033,12 +3216,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       const token = localStorage.getItem("token");
       await fetch(`${API_URL}/freelancer/onboarding/step`, {
-        method: "PUT",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ currentStep: stepNum })
+        body: JSON.stringify({ step: stepNum })
       });
     } catch (e) {
       console.error(e);
@@ -3518,6 +3701,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     postJobAvailableLanguages, setPostJobAvailableLanguages,
     postJobSelectedLanguages, setPostJobSelectedLanguages,
     postJobMaxHours, setPostJobMaxHours,
+    postJobMinHours, setPostJobMinHours,
     postJobPaymentMode, setPostJobPaymentMode,
     clientJobs, setClientJobs,
     loadingClientJobs, setLoadingClientJobs,
@@ -3633,7 +3817,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     postJobDescription, postJobExpLevel, postJobStep, postJobType, postJobMilestoneType,
     postJobMinBudget, postJobMaxBudget, postJobDuration, postJobLocation, postJobNumFreelancers,
     postJobAvailableSkills, postJobSelectedSkills, postJobAvailableLanguages,
-    postJobSelectedLanguages, postJobMaxHours, postJobPaymentMode, clientJobs,
+    postJobSelectedLanguages, postJobMaxHours, postJobMinHours, setPostJobMinHours, postJobPaymentMode, clientJobs,
     loadingClientJobs, isCreatingJob, editingDraftJobId, selectedProjectDetails,
     selectedGigOrderDetails, selectedFreelancerProfile, loadingProfileDetails,
     projectProposals, loadingProjectProposals, allJobs, loadingAllJobs, jobSearchQuery,

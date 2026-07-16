@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Table from "@/components/Table";
 import { DisputeCase, useAdmin } from "@/app/admin/AdminContext";
+import { API_URL } from "@/config/api";
+import { FiMessageSquare } from "react-icons/fi";
 
 interface TransactionsTabProps {
   transactionsSubTab: "transactions" | "disputes";
@@ -35,6 +37,35 @@ export default function TransactionsTab({
   resolveDispute
 }: TransactionsTabProps) {
   const { highlightedDisputeId, setHighlightedDisputeId } = useAdmin();
+
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [loadingChatId, setLoadingChatId] = useState<string | null>(null);
+
+  const handleToggleChat = async (disputeId: string) => {
+    if (activeChatId === disputeId) {
+      setActiveChatId(null);
+      setChatMessages([]);
+      return;
+    }
+
+    try {
+      setLoadingChatId(disputeId);
+      const token = localStorage.getItem("adminToken");
+      const res = await fetch(`${API_URL}/admin/disputes/${disputeId}/messages`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setChatMessages(data);
+        setActiveChatId(disputeId);
+      }
+    } catch (err) {
+      console.error("Error fetching dispute messages:", err);
+    } finally {
+      setLoadingChatId(null);
+    }
+  };
   
   const transactionColumns = [
     {
@@ -237,16 +268,80 @@ export default function TransactionsTab({
                         >
                           Split 50 / 50
                         </button>
+                        <button
+                          onClick={() => handleToggleChat(disp.id)}
+                          className="px-3 py-1.5 bg-slate-105 hover:bg-slate-200 border border-slate-300 text-slate-700 transition-all text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1"
+                        >
+                          <FiMessageSquare className="w-3.5 h-3.5" />
+                          {loadingChatId === disp.id ? "Loading..." : activeChatId === disp.id ? "Hide Chat" : "View Chat"}
+                        </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => resolveDispute(disp.id, "Under Mediation")}
-                        className="text-xs font-semibold text-slate-400 hover:text-slate-650 cursor-pointer underline bg-transparent border-0"
-                      >
-                        Reopen Case
-                      </button>
+                      <div className="flex gap-3 items-center">
+                        <button
+                          onClick={() => handleToggleChat(disp.id)}
+                          className="px-3 py-1.5 bg-slate-105 hover:bg-slate-200 border border-slate-300 text-slate-700 transition-all text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1"
+                        >
+                          <FiMessageSquare className="w-3.5 h-3.5" />
+                          {loadingChatId === disp.id ? "Loading..." : activeChatId === disp.id ? "Hide Chat" : "View Chat"}
+                        </button>
+                        <button
+                          onClick={() => resolveDispute(disp.id, "Under Mediation")}
+                          className="text-xs font-semibold text-slate-400 hover:text-slate-650 cursor-pointer underline bg-transparent border-0"
+                        >
+                          Reopen Case
+                        </button>
+                      </div>
                     )}
                   </div>
+
+                  {/* Chat Container */}
+                  {activeChatId === disp.id && (
+                    <div className="mt-4 p-4 border border-slate-200 rounded-xl bg-slate-50/50 max-h-80 overflow-y-auto flex flex-col gap-3">
+                      <h5 className="font-extrabold text-xs text-slate-800 mb-1">Mediation Chat History</h5>
+                      {chatMessages.length === 0 ? (
+                        <p className="text-xs text-slate-400 font-semibold italic text-center py-2">No messages in this mediation room yet.</p>
+                      ) : (
+                        <div className="flex flex-col gap-3">
+                          {chatMessages.map((msg, index) => {
+                            let textContent = msg.message_text;
+                            let isSystem = false;
+                            try {
+                              if (textContent.startsWith("{")) {
+                                const parsed = JSON.parse(textContent);
+                                textContent = parsed.message || parsed.details || textContent;
+                                isSystem = true;
+                              }
+                            } catch (e) {}
+
+                            const isClientSender = parseInt(String(msg.sender_id || '0')) === parseInt(String(disp.client_id || '0'));
+
+                            return (
+                              <div
+                                key={msg.message_id || index}
+                                className={`flex flex-col text-xs p-2.5 rounded-xl max-w-[80%] ${
+                                  isSystem
+                                    ? "bg-amber-50 border border-amber-100 text-amber-900 mx-auto text-center"
+                                    : isClientSender
+                                    ? "bg-white border border-slate-200 text-slate-800 self-start"
+                                    : "bg-teal-50 border border-teal-100 text-teal-900 self-end text-right"
+                                }`}
+                              >
+                                <span className="text-[10px] font-black text-slate-400 mb-0.5 uppercase">
+                                  {isSystem
+                                    ? "SYSTEM"
+                                    : isClientSender
+                                    ? "CLIENT"
+                                    : "FREELANCER"}
+                                </span>
+                                <p className="font-medium whitespace-pre-wrap">{textContent}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

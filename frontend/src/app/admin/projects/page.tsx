@@ -18,8 +18,6 @@ export default function ProjectsPage() {
     itemsPerPage,
     handleUpdateProjectStatus,
     handleDeleteProject,
-    vettingApps,
-    updateVettingStatus,
     pendingProposals,
     handleUpdateProposalVettingStatus
   } = useAdmin();
@@ -38,8 +36,6 @@ export default function ProjectsPage() {
       itemsPerPage={itemsPerPage}
       handleUpdateProjectStatus={handleUpdateProjectStatus}
       handleDeleteProject={handleDeleteProject}
-      vettingApps={vettingApps}
-      updateVettingStatus={updateVettingStatus}
       pendingProposals={pendingProposals}
       handleUpdateProposalVettingStatus={handleUpdateProposalVettingStatus}
     />

@@ -17,6 +17,7 @@ import messageRoutes from './routes/messageRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import walletRoutes from './routes/walletRoutes.js';
 import { getSettings } from './admin/controllers/settingsController.js';
+import { getFormFieldOptions } from './controllers/formFieldController.js';
 import cmsRoutes from './admin/routes/cmsRoutes.js';
 import translationRoutes from './routes/translationRoutes.js';
 import subscriptionPlanRoutes from './routes/subscriptionPlanRoutes.js';
@@ -46,6 +47,7 @@ app.use('/public', express.static(path.join(__dirname, '../public')));
 app.use('/api/public', express.static(path.join(__dirname, '../public')));
 
 app.get('/api/settings', getSettings);
+app.get('/api/form-field-options', getFormFieldOptions);
 app.use('/api', cmsRoutes);
 app.use('/api', translationRoutes);
 app.use('/api', subscriptionPlanRoutes);

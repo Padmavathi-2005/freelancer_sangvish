@@ -14,6 +14,13 @@ const resolveMediaUrl = (url: string) => {
 export default function WishlistPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"gigs" | "projects" | "freelancers">("gigs");
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setUserRole(localStorage.getItem("onboarding_role") || localStorage.getItem("user_role") || "freelancer");
+    }
+  }, []);
   const [gigsWishlist, setGigsWishlist] = useState<any[]>([]);
   const [projectsWishlist, setProjectsWishlist] = useState<any[]>([]);
   const [freelancersWishlist, setFreelancersWishlist] = useState<any[]>([]);
@@ -91,14 +98,16 @@ export default function WishlistPage() {
             Keep track of services, projects, and freelancers you want to hire, collaborate with, or bid on in the future.
           </p>
         </div>
-        <div className="flex gap-2 self-start sm:self-center">
-          <button
-            onClick={() => router.push("/dashboard/explore-gigs")}
-            className="bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer"
-          >
-            Explore Gigs
-          </button>
-        </div>
+        {userRole !== "freelancer" && (
+          <div className="flex gap-2 self-start sm:self-center">
+            <button
+              onClick={() => router.push("/dashboard/explore-gigs")}
+              className="bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer"
+            >
+              Explore Gigs
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tab Switchers */}

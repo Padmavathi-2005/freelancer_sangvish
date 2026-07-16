@@ -1,5 +1,5 @@
 import express from "express";
-import { auth, checkApprovedFreelancer } from "../middleware/auth.js";
+import { auth, checkApprovedFreelancer, checkApprovedClient } from "../middleware/auth.js";
 import {
     saveFreelancerProfile,
     saveFreelancerSkills,
@@ -7,6 +7,9 @@ import {
     saveFreelancerExperience,
     saveFreelancerEducation,
     saveFreelancerCertification,
+    deleteFreelancerExperience,
+    deleteFreelancerEducation,
+    deleteFreelancerCertification,
     saveFreelancerProject,
     sendEmailOtp,
     verifyEmailOtp,
@@ -31,7 +34,8 @@ import {
     requestTimecardPayment,
     declineTimecard,
     submitContractCompletion,
-    approveContractCompletion
+    approveContractCompletion,
+    getPublicClientProfile
 } from "../controllers/freelancerController.js";
 import {
     createFreelancerGig,
@@ -61,6 +65,7 @@ router.get("/client/gigs/:id", getClientGigById);
 router.get("/client/gigs/:id/similar", getSimilarGigs);
 router.get("/profile/validate-slug", validateFreelancerSlug);
 router.get("/profile/:id", getPublicFreelancerProfile);
+router.get("/client-profile/:id", getPublicClientProfile);
 router.get("/public/list", getPublicFreelancers);
 
 // Apply auth middleware to all routes
@@ -82,6 +87,9 @@ router.post("/onboarding/languages", saveFreelancerLanguages);
 router.post("/onboarding/experience", saveFreelancerExperience);
 router.post("/onboarding/education", saveFreelancerEducation);
 router.post("/onboarding/certification", saveFreelancerCertification);
+router.delete("/onboarding/experience/:id", deleteFreelancerExperience);
+router.delete("/onboarding/education/:id", deleteFreelancerEducation);
+router.delete("/onboarding/certification/:id", deleteFreelancerCertification);
 
 // Step 3 OTP Verification
 router.post("/onboarding/verify/email/send", sendEmailOtp);
@@ -99,7 +107,7 @@ router.post("/onboarding/complete", completeFreelancerOnboarding);
 // Gig management routes
 router.post("/gigs", checkApprovedFreelancer, createFreelancerGig);
 router.get("/gigs", getFreelancerGigs);
-router.post("/client/gigs/apply", applyToFreelancerGig);
+router.post("/client/gigs/apply", checkApprovedClient, applyToFreelancerGig);
 router.get("/client/gigs/applications", getClientGigApplications);
 router.get("/gigs/applications", getFreelancerGigApplications);
 router.post("/client/gigs/:id/wishlist", syncGigWishlist);

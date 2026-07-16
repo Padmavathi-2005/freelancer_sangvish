@@ -408,6 +408,15 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   Project proposals
                 </button>
                 <button
+                  onClick={() => {
+                    setActiveTab("projects");
+                    setProjectsSubTab("maintenance");
+                  }}
+                  className={subNavBtnClass("projects", [], activeTab === "projects" && projectsSubTab === "maintenance")}
+                >
+                  Form Config
+                </button>
+                <button
                   onClick={() => setActiveTab("project_orders")}
                   className={subNavBtnClass("project_orders")}
                 >
@@ -528,6 +537,26 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-3 w-full">
               <FiCreditCard className="w-4 h-4 shrink-0" />
               <span>Payouts & Wallets</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("referrals")}
+            className={navBtnClass("referrals")}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <FiUsers className="w-4 h-4 shrink-0" />
+              <span>Referral Payouts</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("affiliate")}
+            className={navBtnClass("affiliate")}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <FiBriefcase className="w-4 h-4 shrink-0" />
+              <span>Affiliate Payouts</span>
             </div>
           </button>
 
@@ -671,7 +700,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 : "text-rose-600 hover:text-rose-700 bg-rose-50 border border-rose-200/60 hover:bg-rose-100"
             }`}
           >
-            Terminate Session
+            Logout
           </button>
         </div>
       </aside>

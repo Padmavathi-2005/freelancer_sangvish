@@ -80,6 +80,27 @@ function ProjectsSearchContent() {
   // Wishlist and Toast states
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    const fetchAppliedJobs = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_URL}/proposals/my-proposals`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const ids = new Set<number>(data.map((p: any) => p.job_id));
+          setAppliedJobIds(ids);
+        }
+      } catch (err) {
+        console.error("Failed to fetch submitted proposals:", err);
+      }
+    };
+    fetchAppliedJobs();
+  }, []);
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -471,7 +492,7 @@ function ProjectsSearchContent() {
                 className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
                 <option value="">{t("any_level_opt", "Any Level")}</option>
-                <option value="Entry">{t("entry_level_opt", "Entry Level")}</option>
+                <option value="Beginner">{t("entry_level_opt", "Entry Level")}</option>
                 <option value="Intermediate">{t("intermediate_opt", "Intermediate")}</option>
                 <option value="Expert">{t("expert_opt", "Expert")}</option>
               </select>
@@ -684,15 +705,24 @@ function ProjectsSearchContent() {
                           )}
                         </div>
 
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/projects/${job.slug || job.job_id}`);
-                          }}
-                          className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
-                        >
-                          {t("submit_proposal_btn", "Submit Proposal")}
-                        </button>
+                        {appliedJobIds.has(job.job_id) ? (
+                          <button
+                            disabled
+                            className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 px-4 rounded-xl shadow-sm cursor-not-allowed select-none"
+                          >
+                            {t("proposal_submitted_btn", "Proposal Submitted")}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/projects/${job.slug || job.job_id}`);
+                            }}
+                            className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
+                          >
+                            {t("submit_proposal_btn", "Submit Proposal")}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

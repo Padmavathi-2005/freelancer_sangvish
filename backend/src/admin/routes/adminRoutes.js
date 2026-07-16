@@ -47,18 +47,30 @@ import {
     createBackup,
     downloadBackup,
     deleteBackup,
-    getAdminProfile
+    getAdminProfile,
+    getAdminDisputes,
+    getAdminDisputeMessages
 } from "../controllers/adminController.js";
 import {
     getSettings,
     updateSetting
 } from "../controllers/settingsController.js";
 import {
+    addFormFieldOption,
+    deleteFormFieldOption
+} from "../../controllers/formFieldController.js";
+import {
     getPlatformWalletStats,
     getWithdrawalRequests,
     approveWithdrawal,
     rejectWithdrawal,
-    payToUser
+    payToUser,
+    getReferralPayouts,
+    approveReferralPayout,
+    rejectReferralPayout,
+    getAdminAffiliateCommissions,
+    approveAffiliateCommission,
+    rejectAffiliateCommission
 } from "../controllers/adminWalletController.js";
 
 import { adminAuth } from "../middleware/adminAuth.js";
@@ -85,6 +97,10 @@ router.delete("/delete/:id", adminAuth, deleteAdmin);
 router.get("/settings", getSettings);
 router.post("/settings", adminAuth, updateSetting);
 router.post("/clean-data", adminAuth, cleanData);
+
+// form fields management
+router.post("/form-field-options", adminAuth, addFormFieldOption);
+router.delete("/form-field-options/:id", adminAuth, deleteFormFieldOption);
 
 // database backups
 router.get("/backups", adminAuth, getBackups);
@@ -163,7 +179,19 @@ router.post("/wallet/withdrawals/:id/approve", adminAuth, approveWithdrawal);
 router.post("/wallet/withdrawals/:id/reject", adminAuth, rejectWithdrawal);
 router.post("/wallet/pay", adminAuth, payToUser);
 
+// admin referrals routes
+router.get("/referrals/payouts", adminAuth, getReferralPayouts);
+router.post("/referrals/payouts/:id/approve", adminAuth, approveReferralPayout);
+router.post("/referrals/payouts/:id/reject", adminAuth, rejectReferralPayout);
+
+// admin affiliates routes
+router.get("/affiliates/commissions", adminAuth, getAdminAffiliateCommissions);
+router.post("/affiliates/commissions/:id/approve", adminAuth, approveAffiliateCommission);
+router.post("/affiliates/commissions/:id/reject", adminAuth, rejectAffiliateCommission);
+
 // Admin dispute resolution route
+router.get("/disputes", adminAuth, getAdminDisputes);
+router.get("/disputes/:id/messages", adminAuth, getAdminDisputeMessages);
 router.post("/disputes/:id/resolve", adminAuth, adminResolve);
 
 export default router;

@@ -59,3 +59,9 @@ coverage/
 *.dump
 *.sql
 backend/backups/
+
+# Executables and Scratch folders
+OllamaSetup.exe
+backend/src/scratch/
+lancerflow-agent/
+

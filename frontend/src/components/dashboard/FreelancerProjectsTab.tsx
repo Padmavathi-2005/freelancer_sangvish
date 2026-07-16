@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { FiCheckCircle, FiClock, FiDollarSign, FiCalendar, FiUser, FiMessageSquare, FiX, FiMail, FiExternalLink, FiBriefcase } from "react-icons/fi";
@@ -69,7 +70,7 @@ export default function FreelancerProjectsTab() {
   const totalEarnings = useMemo(() => {
     return freelancerContracts
       .filter((c) => c.status === "Completed")
-      .reduce((sum, c) => sum + parseFloat(c.budget), 0);
+      .reduce((sum, c) => sum + parseFloat(c.original_budget || c.budget), 0);
   }, [freelancerContracts]);
 
   // Unique clients freelancer has worked with
@@ -103,40 +104,6 @@ export default function FreelancerProjectsTab() {
           Manage your active freelancer assignments, track completion milestones, and view client history.
         </p>
       </div>
-
-      {/* Metrics Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex items-center gap-4 text-left">
-          <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
-            <FiClock className="w-5 h-5 animate-pulse" />
-          </div>
-          <div>
-            <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Ongoing Projects</span>
-            <h3 className="text-lg font-black text-slate-800">{ongoingCount} Active</h3>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex items-center gap-4 text-left">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-            <FiCheckCircle className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Completed Projects</span>
-            <h3 className="text-lg font-black text-slate-800">{completedCount} Finished</h3>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex items-center gap-4 text-left">
-          <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0">
-            <FiDollarSign className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-slate-400 font-bold uppercase tracking-wider text-[9px]">Total Earnings</span>
-            <h3 className="text-lg font-black text-slate-800">${totalEarnings.toLocaleString()}</h3>
-          </div>
-        </div>
-      </div>
-
       {/* Projects List Container */}
       <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-6">
         {selectedContract ? (
@@ -184,8 +151,8 @@ export default function FreelancerProjectsTab() {
                 </p>
                 <p className="text-sm font-black text-slate-800 mt-0.5">
                   {selectedContract.project_type === "Hourly"
-                    ? `$${parseFloat(selectedContract.accepted_bid_amount || selectedContract.budget).toLocaleString()} / hr`
-                    : `$${parseFloat(selectedContract.budget).toLocaleString()}`
+                    ? `$${parseFloat(selectedContract.accepted_bid_amount || selectedContract.original_budget || selectedContract.budget).toLocaleString()} / hr`
+                    : `$${parseFloat(selectedContract.original_budget || selectedContract.budget).toLocaleString()}`
                   }
                 </p>
                 {selectedContract.project_type === "Hourly" && (
@@ -221,7 +188,7 @@ export default function FreelancerProjectsTab() {
                 title: selectedContract.title,
                 project_type: selectedContract.project_type,
                 description: selectedContract.project_description,
-                budget: selectedContract.budget
+                budget: selectedContract.original_budget || selectedContract.budget
               }}
               onUpdateJob={(updatedJob) => {
                 setSelectedContract((prev: any) => prev ? {
@@ -303,7 +270,7 @@ export default function FreelancerProjectsTab() {
                             {c.status === "Under Review" ? "Awaiting Approval" : c.status}
                           </span>
                           <span className="text-xs font-black text-slate-900 bg-white border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                            ${parseFloat(c.budget).toLocaleString()}
+                            ${parseFloat(c.original_budget || c.budget).toLocaleString()}
                           </span>
                         </div>
 
@@ -480,9 +447,9 @@ export default function FreelancerProjectsTab() {
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 overflow-hidden flex items-center justify-center shrink-0">
                         {client.profile_image ? (
-                          <img src={client.profile_image} alt={client.name} className="w-full h-full object-cover" />
+                          <img src={client.profile_image} alt={client.name || "Client"} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-sm font-extrabold text-teal-700">{client.name.substring(0, 1)}</span>
+                          <span className="text-sm font-extrabold text-teal-700">{(client.name || "Client").substring(0, 1)}</span>
                         )}
                       </div>
                       <div className="min-w-0">
@@ -499,20 +466,13 @@ export default function FreelancerProjectsTab() {
                   </div>
 
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => handleContactClient(client.user_id)}
-                      className="flex-1 bg-white hover:bg-slate-100 border border-slate-200 text-teal-700 font-bold text-[10px] py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    <Link
+                      href={`/client/${client.user_id}`}
+                      className="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold text-[10px] py-2.5 rounded-xl transition-all text-center no-underline flex items-center justify-center gap-1.5 border-0 shadow-sm cursor-pointer"
                     >
-                      <FiMessageSquare className="w-3.5 h-3.5" />
-                      <span>Contact</span>
-                    </button>
-                    <button
-                      onClick={() => setActiveTab("find_work")}
-                      className="bg-teal-700 hover:bg-teal-800 text-white font-bold text-[10px] py-2 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center"
-                      title="View Open Jobs"
-                    >
-                      <FiExternalLink className="w-3.5 h-3.5" />
-                    </button>
+                      <FiBriefcase className="w-3.5 h-3.5" />
+                      <span>View Client Profile</span>
+                    </Link>
                   </div>
                 </div>
               ))}

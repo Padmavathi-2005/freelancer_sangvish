@@ -6,6 +6,172 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
 /**
+ * Re-evaluates a job's Open/Closed status based on how many non-cancelled
+ * contracts currently exist vs. the job's num_freelancers hiring limit.
+ * Called after any single contract is cancelled so that multi-hire jobs
+ * re-open a slot without affecting other active contracts on the same job.
+ */
+const recalculateJobStatus = async (jobId) => {
+  if (!jobId) return;
+  try {
+    const jobRes = await pool.query("SELECT num_freelancers FROM jobs WHERE job_id = $1", [jobId]);
+    if (jobRes.rows.length === 0) return;
+
+    const numFreelancersStr = jobRes.rows[0]?.num_freelancers || "1 freelancer";
+    let limit = 1;
+    if (numFreelancersStr.includes("2-5")) {
+      limit = 5;
+    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("5+") || numFreelancersStr.includes("many")) {
+      limit = 999;
+    } else {
+      const match = numFreelancersStr.match(/^(\d+)/);
+      if (match) limit = parseInt(match[1]);
+    }
+
+    const countRes = await pool.query(
+      "SELECT COUNT(*) FROM contracts WHERE job_id = $1 AND status != 'Cancelled'",
+      [jobId]
+    );
+    const activeCount = parseInt(countRes.rows[0].count || 0);
+
+    const newStatus = activeCount >= limit ? "Closed" : "Open";
+    await pool.query(
+      "UPDATE jobs SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE job_id = $2",
+      [newStatus, jobId]
+    );
+  } catch (err) {
+    console.error("recalculateJobStatus error for job", jobId, ":", err);
+  }
+};
+
+/**
+ * Checks if a user has a referrer and if this is their first completed payment.
+ * If so, awards the referrer a referral bonus of $10.
+ */
+export const checkAndRewardReferrer = async (referredUserId) => {
+  try {
+    // 1. Check if the user was referred by someone
+    const userRes = await pool.query(
+      "SELECT referred_by FROM users WHERE user_id = $1",
+      [referredUserId]
+    );
+    
+    if (userRes.rows.length === 0) return;
+    const referrerId = userRes.rows[0].referred_by;
+    if (!referrerId) return; // Not referred
+
+    // 2. Check if a payout request already exists for this referral
+    const checkRes = await pool.query(
+      "SELECT payout_id FROM referral_payouts WHERE referrer_id = $1 AND referred_id = $2",
+      [referrerId, referredUserId]
+    );
+
+    if (checkRes.rows.length > 0) {
+      return; // Already exists (pending, approved, or rejected)
+    }
+
+    // 3. Calculate this referrer's successful referral number (nth_referral)
+    const approvedRes = await pool.query(
+      "SELECT COUNT(*) as count FROM referral_payouts WHERE referrer_id = $1 AND status = 'approved'",
+      [referrerId]
+    );
+    const approvedCount = parseInt(approvedRes.rows[0].count || 0);
+    const referralNumber = approvedCount + 1; // This is their Nth referral
+
+    // 4. Fetch referral settings from database
+    let bonusAmount = 10.00; // Default fallback
+    try {
+      const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+      if (settingsRes.rows.length > 0) {
+        let settingsVal = settingsRes.rows[0].setting_value;
+        if (typeof settingsVal === "string") {
+          settingsVal = JSON.parse(settingsVal);
+        }
+        if (settingsVal && Array.isArray(settingsVal.tiers)) {
+          // Sort tiers by min_referrals descending to match the highest applicable tier
+          const sortedTiers = [...settingsVal.tiers].sort((a, b) => b.min_referrals - a.min_referrals);
+          const matchingTier = sortedTiers.find(tier => referralNumber >= tier.min_referrals);
+          if (matchingTier) {
+            bonusAmount = parseFloat(matchingTier.reward);
+          }
+        }
+      }
+    } catch (settingErr) {
+      console.error("Error reading referral settings, using fallback reward amount:", settingErr);
+    }
+
+    // 5. Create a pending payout request in referral_payouts
+    await pool.query(`
+      INSERT INTO referral_payouts (referrer_id, referred_id, amount, status, details)
+      VALUES ($1, $2, $3, 'pending', $4)
+    `, [
+      referrerId, 
+      referredUserId, 
+      bonusAmount, 
+      JSON.stringify({ 
+        trigger: "first_completed_transaction",
+        referral_number: referralNumber,
+        timestamp: new Date().toISOString()
+      })
+    ]);
+
+    console.log(`Created pending referral payout request for referrer ${referrerId} and referred user ${referredUserId} (Referral #${referralNumber}, Reward: $${bonusAmount})`);
+  } catch (err) {
+    console.error("Error in checkAndRewardReferrer:", err);
+  }
+};
+
+/**
+ * Checks if the transacting user has a referrer, and if so, records a pending
+ * affiliate commission equal to 10% of the platform service fee collected.
+ */
+export const checkAndEarnAffiliateCommission = async (referredUserId) => {
+  try {
+    // 1. Check if referred by someone
+    const userRes = await pool.query("SELECT referred_by FROM users WHERE user_id = $1", [referredUserId]);
+    if (userRes.rows.length === 0) return;
+    const referrerId = userRes.rows[0].referred_by;
+    if (!referrerId) return;
+
+    // 2. Fetch the latest completed transaction of the referred user that has a commission_amount > 0
+    // and hasn't been credited for affiliate commissions yet
+    const query = `
+      SELECT wt.transaction_id, wt.commission_amount
+      FROM wallet_transactions wt
+      JOIN wallets w ON w.wallet_id = wt.sender_wallet_id
+      WHERE w.user_id = $1 
+        AND wt.status = 'completed' 
+        AND wt.commission_amount > 0
+        AND NOT EXISTS (
+          SELECT 1 FROM affiliate_commissions ac 
+          WHERE ac.transaction_id = wt.transaction_id
+        )
+      ORDER BY wt.created_at DESC
+      LIMIT 1
+    `;
+    const txRes = await pool.query(query, [referredUserId]);
+    if (txRes.rows.length === 0) return;
+
+    const { transaction_id, commission_amount } = txRes.rows[0];
+    const platformFee = parseFloat(commission_amount);
+    
+    // Affiliate gets 10%
+    const affiliateAmount = parseFloat((platformFee * 0.10).toFixed(2));
+    if (affiliateAmount <= 0) return;
+
+    // 3. Insert the pending commission request
+    await pool.query(`
+      INSERT INTO affiliate_commissions (affiliate_id, referred_user_id, transaction_id, amount, platform_fee, status)
+      VALUES ($1, $2, $3, $4, $5, 'pending')
+    `, [referrerId, referredUserId, transaction_id, affiliateAmount, platformFee]);
+
+    console.log(`Log pending affiliate commission: Referrer=${referrerId}, Referred=${referredUserId}, Tx=${transaction_id}, Fee=${platformFee}, Comm=${affiliateAmount}`);
+  } catch (err) {
+    console.error("Error in checkAndEarnAffiliateCommission:", err);
+  }
+};
+
+/**
  * POST /api/payments/stripe/create-session
  * Creates a Stripe Checkout Session for a gig application payment.
  * Called from ClientOrdersTab AFTER the freelancer has accepted the order.
@@ -263,6 +429,8 @@ export const confirmStripePayment = async (req, res) => {
       );
 
       await pool.query("COMMIT");
+      await checkAndRewardReferrer(userId);
+      await checkAndEarnAffiliateCommission(userId);
     } catch (txErr) {
       await pool.query("ROLLBACK");
       throw txErr;
@@ -440,6 +608,8 @@ export const payWithWallet = async (req, res) => {
       );
 
       await pool.query("COMMIT");
+      await checkAndRewardReferrer(userId);
+      await checkAndEarnAffiliateCommission(userId);
     } catch (txErr) {
       await pool.query("ROLLBACK");
       throw txErr;
@@ -883,6 +1053,9 @@ export const confirmStripeProposalPayment = async (req, res) => {
       io: req.io
     });
 
+    await checkAndRewardReferrer(userId);
+    await checkAndEarnAffiliateCommission(userId);
+
     return res.status(200).json({
       message: "Payment confirmed. Contract is now active.",
       amount: upfrontAmount,
@@ -955,6 +1128,9 @@ export const payProposalDirectly = async (req, res) => {
       bidAmount: upfrontAmount,
       io: req.io
     });
+
+    await checkAndRewardReferrer(userId);
+    await checkAndEarnAffiliateCommission(userId);
 
     return res.status(200).json({
       message: "Payment confirmed. Contract is now active.",
@@ -1397,6 +1573,9 @@ export const cancelContractAndRefund = async (req, res) => {
 
       await pool.query("COMMIT");
 
+      // Re-evaluate job slot count so a multi-hire job re-opens if under limit
+      await recalculateJobStatus(contract.job_id);
+
       // Notify freelancer
       try {
         const { default: Notification } = await import("../models/notificationModel.js");
@@ -1433,6 +1612,138 @@ export const cancelContractAndRefund = async (req, res) => {
   } catch (err) {
     console.error("Cancel and refund contract error:", err);
     return res.status(500).json({ message: err.message || "Failed to cancel contract and refund escrow." });
+  }
+};
+
+export const freelancerCancelContractAndRefund = async (req, res) => {
+  try {
+    const freelancerId = req.user.user_id;
+    const contractId = parseInt(req.params.id);
+
+    if (!contractId || isNaN(contractId)) {
+      return res.status(400).json({ message: "Invalid contract ID." });
+    }
+
+    // 1. Fetch contract
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [contractId]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    // 2. Verify freelancer ownership
+    if (contract.freelancer_id !== freelancerId) {
+      return res.status(403).json({ message: "Access denied. Only the assigned freelancer can cancel this work." });
+    }
+
+    // 3. Verify status - cancellation and refund is allowed on active/started contracts
+    const allowedStatuses = ["Hired", "Work Started", "In Progress", "Work Completed", "Under Review"];
+    if (!allowedStatuses.includes(contract.status)) {
+      return res.status(400).json({ message: `Cancellation is only allowed on active contracts (current status: '${contract.status}').` });
+    }
+
+    const budget = parseFloat(contract.budget);
+
+    // 4. Get wallets
+    const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+    const sysWallet = sysRes.rows[0];
+
+    let clientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [contract.client_id]);
+    let clientWallet = clientWalletRes.rows[0];
+    if (!clientWallet) {
+      const ins = await pool.query(
+        "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
+        [contract.client_id]
+      );
+      clientWallet = ins.rows[0];
+    }
+
+    // 5. Process refund
+    await pool.query("BEGIN");
+    try {
+      // Debit system escrow
+      await pool.query(
+        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [budget, sysWallet.wallet_id]
+      );
+
+      // Credit client wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [budget, clientWallet.wallet_id]
+      );
+
+      // Record refund transaction
+      await pool.query(
+        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+         VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
+        [
+          sysWallet.wallet_id,
+          clientWallet.wallet_id,
+          budget,
+          `Escrow refund due to freelancer cancelling work: ${contract.title}`,
+        ]
+      );
+
+      // Update contract status
+      await pool.query(
+        "UPDATE contracts SET status = 'Cancelled', progress = 0, cancelled_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $1",
+        [contractId]
+      );
+
+      // Update all milestones to Cancelled
+      await pool.query(
+        "UPDATE contract_milestones SET status = 'Cancelled', payment_status = 'Refunded', updated_at = CURRENT_TIMESTAMP WHERE contract_id = $1",
+        [contractId]
+      );
+
+      const proposalIdToCancel = contract.application_id || (await pool.query(
+        "SELECT proposal_id FROM proposals WHERE job_id = $1 AND freelancer_id = $2 AND status = 'Accepted'",
+        [contract.job_id, contract.freelancer_id]
+      )).rows[0]?.proposal_id;
+
+      if (proposalIdToCancel) {
+        await pool.query(
+          "UPDATE proposals SET status = 'Cancelled', updated_at = CURRENT_TIMESTAMP WHERE proposal_id = $1",
+          [proposalIdToCancel]
+        );
+      }
+
+      await pool.query("COMMIT");
+
+      // Re-evaluate job slot count so a multi-hire job re-opens if under limit
+      await recalculateJobStatus(contract.job_id);
+
+      // Notify client
+      try {
+        const { default: Notification } = await import("../models/notificationModel.js");
+        await Notification.create({
+          userId: contract.client_id,
+          title: "Project Cancelled by Freelancer",
+          message: `Freelancer cancelled the contract "${contract.title}". Escrow funds have been refunded to your wallet.`,
+          type: "system",
+          referenceId: contractId.toString(),
+        });
+        if (req.io) {
+          req.io.to(`user_${contract.client_id}`).emit("new_notification", {
+            title: "Project Cancelled by Freelancer",
+            message: `Freelancer cancelled the contract "${contract.title}". Escrow funds have been refunded to your wallet.`,
+          });
+        }
+      } catch (nErr) {
+        console.error("Failed to notify client on freelancer cancellation:", nErr);
+      }
+
+      return res.status(200).json({
+        message: "Work cancelled successfully and escrow refunded to the client.",
+      });
+    } catch (txErr) {
+      await pool.query("ROLLBACK");
+      throw txErr;
+    }
+  } catch (err) {
+    console.error("Freelancer cancel contract error:", err);
+    return res.status(500).json({ message: err.message || "Failed to cancel contract." });
   }
 };
 
@@ -1637,6 +1948,11 @@ export const confirmStripeTimecardPayment = async (req, res) => {
 
     await approveTimecard(simReq, simRes);
 
+    if (responseStatus === 200) {
+      await checkAndRewardReferrer(userId);
+      await checkAndEarnAffiliateCommission(userId);
+    }
+
     return res.status(responseStatus).json(responseData);
   } catch (err) {
     console.error("Confirm Stripe timecard payment error:", err);
@@ -1718,6 +2034,11 @@ export const payTimecardDirectly = async (req, res) => {
     };
 
     await approveTimecard(simReq, simRes);
+
+    if (responseStatus === 200) {
+      await checkAndRewardReferrer(userId);
+      await checkAndEarnAffiliateCommission(userId);
+    }
 
     return res.status(responseStatus).json(responseData);
   } catch (err) {

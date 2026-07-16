@@ -3,7 +3,9 @@ import pool from '../config/db.js';
 const createUser = async (
     first_name,
     email,
-    password_hash
+    password_hash,
+    referral_code,
+    referred_by = null
 ) => {
 
     const query = `
@@ -11,17 +13,21 @@ const createUser = async (
         (
             first_name,
             email,
-            password_hash
+            password_hash,
+            referral_code,
+            referred_by
         )
         VALUES
-        ($1,$2,$3)
+        ($1,$2,$3,$4,$5)
         RETURNING *
     `;
 
     const values = [
         first_name,
         email,
-        password_hash
+        password_hash,
+        referral_code,
+        referred_by
     ];
 
     const result = await pool.query(query, values);

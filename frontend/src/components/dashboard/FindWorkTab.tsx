@@ -1,6 +1,7 @@
 import React, { useRef, useState } from "react";
 import { FiChevronLeft, FiChevronRight, FiAlertTriangle, FiX } from "react-icons/fi";
 import UpgradeOverlay from "./UpgradeOverlay";
+import { API_URL } from "@/config/api";
 
 interface FindWorkTabProps {
   userRole: string | null;
@@ -59,6 +60,57 @@ export default function FindWorkTab({
 }: FindWorkTabProps) {
   const catScrollRef = useRef<HTMLDivElement>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(false);
+
+  const handleBidClick = async (e: React.MouseEvent, job: any) => {
+    e.stopPropagation();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      triggerToast("error", "You must be logged in to submit a proposal.");
+      return;
+    }
+
+    try {
+      setOnboardingCheckLoading(true);
+      const res = await fetch(`${API_URL}/users/onboarding-check`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.hasFreelancerProfile) {
+          triggerToast("error", "You have not completed your freelancer profile onboarding. Redirecting...");
+          localStorage.setItem("user_role", "freelancer");
+          localStorage.setItem("onboarding_role", "freelancer");
+          setTimeout(() => {
+            setActiveTab("settings");
+          }, 2000);
+          return;
+        }
+        if (data.freelancerVettingStatus !== "Approved") {
+          triggerToast("error", "Your freelancer profile is pending administrator approval.");
+          return;
+        }
+        
+        // Proceed to proposal modal
+        if (proposalLimitReached) {
+          setShowLimitModal(true);
+        } else {
+          setApplyingJob(job);
+          setProposalBidAmount(parseFloat(job.budget));
+          setProposalDeliveryDays(7);
+          setProposalCoverLetter("");
+          setProposalError("");
+          setShowProposalModal(true);
+        }
+      } else {
+        triggerToast("error", "Failed to check profile status.");
+      }
+    } catch (err) {
+      triggerToast("error", "Error checking profile status.");
+    } finally {
+      setOnboardingCheckLoading(false);
+    }
+  };
 
   const scrollCats = (dir: "left" | "right") => {
     if (catScrollRef.current) {
@@ -520,22 +572,11 @@ export default function FindWorkTab({
                     </button>
                   ) : (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (proposalLimitReached) {
-                          setShowLimitModal(true);
-                        } else {
-                          setApplyingJob(job);
-                          setProposalBidAmount(parseFloat(job.budget));
-                          setProposalDeliveryDays(7);
-                          setProposalCoverLetter("");
-                          setProposalError("");
-                          setShowProposalModal(true);
-                        }
-                      }}
-                      className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-2 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5"
+                      disabled={onboardingCheckLoading}
+                      onClick={(e) => handleBidClick(e, job)}
+                      className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-2 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
                     >
-                      <i className="fa-solid fa-paper-plane"></i> Submit Proposal
+                      <i className="fa-solid fa-paper-plane"></i> {onboardingCheckLoading ? "Checking..." : "Submit Proposal"}
                     </button>
                   )}
                   </div>

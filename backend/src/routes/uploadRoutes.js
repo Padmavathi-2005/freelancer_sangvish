@@ -60,7 +60,8 @@ router.post('/', upload.single('file'), (req, res) => {
       relativeFolder = 'public/videos/onboard';
     }
     
-    const fileUrl = `http://localhost:5000/${relativeFolder}/${req.file.filename}`;
+    const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
+    const fileUrl = `${baseUrl}/${relativeFolder}/${req.file.filename}`;
     
     return res.status(200).json({
       message: 'File uploaded successfully!',

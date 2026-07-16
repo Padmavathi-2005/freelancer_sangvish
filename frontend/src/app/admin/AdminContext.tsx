@@ -27,6 +27,9 @@ export interface DisputeCase {
   clientStatement: string;
   freelancerStatement: string;
   status: "Under Mediation" | "Resolved (Refunded Client)" | "Resolved (Released to Freelancer)" | "Resolved (Split)";
+  client_id?: number | string;
+  freelancer_id?: number | string;
+  conversation_id?: number | string;
 }
 
 export interface AdminNotification {
@@ -177,8 +180,8 @@ interface AdminContextType {
   // Sub-tabs
   categoriesSubTab: "categories" | "subcategories" | "skills" | "languages" | "currencies" | "cleanup";
   setCategoriesSubTab: React.Dispatch<React.SetStateAction<"categories" | "subcategories" | "skills" | "languages" | "currencies" | "cleanup">>;
-  projectsSubTab: "projects" | "vetting" | "proposals";
-  setProjectsSubTab: React.Dispatch<React.SetStateAction<"projects" | "vetting" | "proposals">>;
+  projectsSubTab: "projects" | "proposals" | "maintenance";
+  setProjectsSubTab: React.Dispatch<React.SetStateAction<"projects" | "proposals" | "maintenance">>;
   transactionsSubTab: "transactions" | "disputes";
   setTransactionsSubTab: React.Dispatch<React.SetStateAction<"transactions" | "disputes">>;
   adminNotifications: AdminNotification[];
@@ -344,11 +347,9 @@ interface AdminContextType {
   handleDeleteAdmin: (id: number) => Promise<void>;
   fetchError: string | null;
 
-  // Vetting Applications & Disputes states
-  vettingApps: VettingApplication[];
-  updateVettingStatus: (id: string, newStatus: VettingApplication["status"]) => void;
   disputes: DisputeCase[];
   resolveDispute: (id: string, resolution: DisputeCase["status"]) => void;
+  fetchDisputes: () => Promise<void>;
   pendingVettingCount: number;
   activeDisputesCount: number;
   userCounts: { total: number; freelancers: number; clients: number };
@@ -481,7 +482,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   // Subcategories & Skills management states
   const [categoriesSubTab, setCategoriesSubTab] = useState<"categories" | "subcategories" | "skills" | "languages" | "currencies" | "cleanup">("categories");
-  const [projectsSubTab, setProjectsSubTab] = useState<"projects" | "vetting" | "proposals">("projects");
+  const [projectsSubTab, setProjectsSubTab] = useState<"projects" | "proposals" | "maintenance">("projects");
   const [transactionsSubTab, setTransactionsSubTab] = useState<"transactions" | "disputes">("transactions");
   const [usersSubTab, setUsersSubTab] = useState<"users" | "admins">("users");
   const [categoriesSearch, setCategoriesSearch] = useState("");
@@ -541,13 +542,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [adminLoading, setAdminLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Vetting Applications state
-  const [vettingApps, setVettingApps] = useState<VettingApplication[]>([
-    { id: "v1", name: "Marcus Chen", role: "Rust Systems Engineer", rate: "$110/hr", experience: "8 years", skills: ["Rust", "WebAssembly", "Go"], status: "Pending" },
-    { id: "v2", name: "Sophia Martinez", role: "Senior UX Designer", rate: "$90/hr", experience: "6 years", skills: ["Figma", "Design Systems", "Prototyping"], status: "Pending" },
-    { id: "v3", name: "Vikram Nair", role: "AI Automation Architect", rate: "$130/hr", experience: "5 years", skills: ["Python", "PyTorch", "LangChain"], status: "Pending" },
-    { id: "v4", name: "Claire Dupont", role: "SEO Growth Hacker", rate: "$65/hr", experience: "4 years", skills: ["SEO", "Content Marketing", "Analytics"], status: "Pending" },
-  ]);
+
 
   const [adminNotifications, setAdminNotificationsState] = useState<AdminNotification[]>([]);
 
@@ -1666,17 +1661,79 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Vetting Applications & Disputes logic
-  const updateVettingStatus = (id: string, newStatus: VettingApplication["status"]) => {
-    setVettingApps((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, status: newStatus } : app))
-    );
+
+
+  const fetchDisputes = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return;
+      const res = await fetch(`${API_URL}/admin/disputes`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Map database columns to DisputeCase shape
+        const mapped = data.map((d: any) => ({
+          id: d.id.toString(),
+          project: d.project,
+          client: d.client,
+          freelancer: d.freelancer,
+          amount: parseFloat(d.amount),
+          reason: d.reason,
+          clientStatement: d.raised_by === 'client' ? d.description : 'No statement filed by client.',
+          freelancerStatement: d.raised_by === 'freelancer' ? d.description : 'No statement filed by freelancer.',
+          status: d.status === 'Open' ? 'Under Mediation' : d.status,
+          client_id: d.client_id,
+          freelancer_id: d.freelancer_id,
+          conversation_id: d.conversation_id
+        }));
+        setDisputes(mapped);
+      }
+    } catch (err) {
+      console.error("Error fetching disputes:", err);
+    }
   };
 
-  const resolveDispute = (id: string, resolution: DisputeCase["status"]) => {
-    setDisputes((prev) =>
-      prev.map((disp) => (disp.id === id ? { ...disp, status: resolution } : disp))
-    );
+  const resolveDispute = async (id: string, resolution: DisputeCase["status"]) => {
+    let verdict = "";
+    let client_refund_percent = 0;
+
+    if (resolution.includes("Refunded Client")) {
+      verdict = "Buyer Wins";
+      client_refund_percent = 100;
+    } else if (resolution.includes("Released to Freelancer")) {
+      verdict = "Freelancer Wins";
+      client_refund_percent = 0;
+    } else if (resolution.includes("Split")) {
+      verdict = "Partial Split";
+      client_refund_percent = 50;
+    }
+
+    if (verdict) {
+      try {
+        const token = localStorage.getItem("adminToken");
+        if (!token) return;
+        const res = await fetch(`${API_URL}/admin/disputes/${id}/resolve`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ verdict, client_refund_percent })
+        });
+        if (res.ok) {
+          fetchDisputes();
+          fetchAdminWalletStats();
+          fetchTransactions();
+        }
+      } catch (err) {
+        console.error("Error resolving dispute:", err);
+      }
+    } else {
+      setDisputes((prev) =>
+        prev.map((disp) => (disp.id === id ? { ...disp, status: resolution } : disp))
+      );
+    }
   };
 
   const fetchAdminWalletStats = async () => {
@@ -1971,6 +2028,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         fetchCmsPages();
         fetchBlogs();
         fetchPendingProposals();
+        fetchDisputes();
       }, 0);
     }
   }, [isAuthenticated]);
@@ -2007,6 +2065,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       "/admin/backups": "backups",
       "/admin/search-logs": "search_logs",
       "/admin/seo-settings": "seo_settings",
+      "/admin/referrals": "referrals",
+      "/admin/affiliate": "affiliate",
     };
     return routeMap[pathname] || "overview";
   }, [pathname]);
@@ -2057,6 +2117,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       backups: "/admin/backups",
       search_logs: "/admin/search-logs",
       seo_settings: "/admin/settings?tab=seo",
+      referral_settings: "/admin/settings?tab=referral",
+      referrals: "/admin/referrals",
+      affiliate: "/admin/affiliate",
     };
     const path = routeMap[tab];
     if (path) {
@@ -2296,7 +2359,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setAutoVetting, maintenanceMode, setMaintenanceMode, primaryColor, setPrimaryColor, secondaryColor, setSecondaryColor,
       siteTheme, setSiteTheme, defaultCurrency, setDefaultCurrency, defaultLanguage, setDefaultLanguage, handleSaveSetting, frontendHeroContent, setFrontendHeroContent, disputeReasons, setDisputeReasons, clientDisputeReasons, setClientDisputeReasons, freelancerDisputeReasons, setFreelancerDisputeReasons, adminsList, adminUser, newAdminName, setNewAdminName, newAdminEmail, setNewAdminEmail,
       newAdminPassword, setNewAdminPassword, newAdminRole, setNewAdminRole, adminError, adminSuccess, adminLoading, handleCreateAdmin,
-      handleDeleteAdmin, vettingApps, updateVettingStatus, disputes, resolveDispute, pendingVettingCount, activeDisputesCount,
+      handleDeleteAdmin, disputes, resolveDispute, fetchDisputes, pendingVettingCount, activeDisputesCount,
       adminNotifications, setAdminNotifications, highlightedDisputeId, setHighlightedDisputeId,
       userCounts, filteredUsers, paginatedUsers, totalUsersPages, filteredOnboardedUsers, paginatedOnboardedUsers, totalOnboardedPages,
       fetchError,

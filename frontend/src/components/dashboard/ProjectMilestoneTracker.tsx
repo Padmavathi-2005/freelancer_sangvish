@@ -29,7 +29,7 @@ export default function ProjectMilestoneTracker({
   triggerToast,
   setSelectedFreelancerProfile,
 }: ProjectMilestoneTrackerProps) {
-  const { approveContractPayment, handleStartConversation, setActiveTab, userRole } = useDashboard();
+  const { approveContractPayment, handleStartConversation, setActiveTab, userRole, startWorkContract } = useDashboard();
   const [projectProposals, setProjectProposals] = useState<any[]>([]);
   const [loadingProposals, setLoadingProposals] = useState(false);
 
@@ -52,6 +52,8 @@ export default function ProjectMilestoneTracker({
   const [reviewComment, setReviewComment] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
   const [userReviewed, setUserReviewed] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; url: string }[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Hourly / Timecard States
   const [timecards, setTimecards] = useState<any[]>([]);
@@ -1148,6 +1150,32 @@ export default function ProjectMilestoneTracker({
     }
   };
 
+  const handleFreelancerCancelContract = async () => {
+    if (!activeContract) return;
+    const confirmation = confirm(
+      `WARNING: Are you sure you want to cancel this contract? This will forfeit all work and automatically refund 100% of the escrowed funds ($${parseFloat(activeContract.budget).toLocaleString()}) back to the client.\n\nThis action cannot be undone.`
+    );
+    if (!confirmation) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/${activeContract.contract_id}/freelancer-cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Contract cancelled & client fully refunded!", "You have cancelled the project and funds have been returned to the client.");
+        fetchContracts();
+      } else {
+        triggerToast("error", data.message || "Failed to cancel contract.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Network error. Please try again.");
+    }
+  };
+
   const handleRaiseDispute = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeContract) return;
@@ -1186,6 +1214,42 @@ export default function ProjectMilestoneTracker({
     }
   };
 
+  const handleUploadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setIsUploading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const filesArray = Array.from(e.target.files);
+      const newUploads: any[] = [];
+      for (const file of filesArray) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch(`${API_URL}/upload`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+          body: formData
+        });
+        if (res.ok) {
+          const data = await res.json();
+          newUploads.push({ name: file.name, url: data.url });
+        } else {
+          triggerToast("error", `Failed to upload file: ${file.name}`);
+        }
+      }
+      if (newUploads.length > 0) {
+        setUploadedFiles(prev => [...prev, ...newUploads]);
+        triggerToast("success", `${newUploads.length} file(s) uploaded successfully!`);
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Error uploading files.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSubmitCompletion = async () => {
     if (!activeContract) return;
     if (!window.confirm("Are you sure you want to mark this project as completed and submit it for client review?")) {
@@ -1196,12 +1260,17 @@ export default function ProjectMilestoneTracker({
       const res = await fetch(`${API_URL}/freelancer/contracts/${activeContract.contract_id}/submit-completion`, {
         method: "PUT",
         headers: {
+          "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
-        }
+        },
+        body: JSON.stringify({
+          submitted_files: JSON.stringify(uploadedFiles)
+        })
       });
       const data = await res.json();
       if (res.ok) {
         triggerToast("success", "Project completion submitted successfully!");
+        setUploadedFiles([]);
         fetchContracts();
       } else {
         triggerToast("error", data.message || "Failed to submit completion.");
@@ -1800,7 +1869,7 @@ export default function ProjectMilestoneTracker({
               });
 
               milestones.forEach((m: any, i: number) => {
-                const paid = m.payment_status === "Paid" || m.status === "Completed";
+                const paid = m.payment_status === "Paid" || m.status === "Completed" || activeContract.status === "Completed" || !!activeContract.completed_at;
                 events.push({
                   label: `Milestone ${i + 1}: ${m.title}`,
                   sub: paid ? "Payment released from escrow" : "Awaiting completion & approval",
@@ -1812,12 +1881,15 @@ export default function ProjectMilestoneTracker({
               });
 
               if (activeContract.submitted_at) {
+                const isCompleted = activeContract.status === "Completed" || !!activeContract.completed_at;
                 events.push({
                   label: "Work Submitted",
-                  sub: "Awaiting your approval",
+                  sub: isCompleted 
+                    ? "Work approved and escrow released" 
+                    : (userRole === "client" ? "Awaiting your approval" : "Awaiting client approval"),
                   date: activeContract.submitted_at,
                   done: true,
-                  color: "amber",
+                  color: isCompleted ? "emerald" : "amber",
                 });
               } else if (!hasMilestones) {
                 events.push({
@@ -2426,6 +2498,41 @@ export default function ProjectMilestoneTracker({
         )
       )}
 
+      {activeContract && activeContract.submitted_files && (() => {
+        let filesList: { name: string; url: string }[] = [];
+        try {
+          filesList = JSON.parse(activeContract.submitted_files);
+        } catch (e) {
+          if (activeContract.submitted_files.includes("http")) {
+            filesList = activeContract.submitted_files.split(",").map((url: string) => ({ name: "Submitted Deliverable", url }));
+          }
+        }
+        if (filesList.length === 0) return null;
+        return (
+          <div className="w-full text-left bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 mt-6">
+            <h5 className="text-xs font-black text-emerald-800 mb-1.5 flex items-center gap-1.5 font-bold">
+              <i className="fa-solid fa-file-shield text-emerald-600"></i>
+              Submitted Project Deliverables / Documents
+            </h5>
+            <div className="flex flex-col gap-1.5 mt-2">
+              {filesList.map((file, idx) => (
+                <div key={idx} className="flex items-center justify-between bg-white border border-emerald-100 rounded-lg p-2 text-xs">
+                  <span className="font-semibold text-slate-700 truncate max-w-[250px]">{file.name}</span>
+                  <a 
+                    href={file.url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] rounded shadow-sm hover:shadow transition-all no-underline"
+                  >
+                    Download / View
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* 6. Action Buttons Footer */}
       {activeContract && activeContract.status !== "Cancelled" && activeContract.status !== "Completed" && activeContract.status !== "Disputed" && (
         <div className="border-t border-slate-105 pt-4 flex justify-end gap-3 items-center">
@@ -2442,29 +2549,120 @@ export default function ProjectMilestoneTracker({
             const totalLoggedHours = timecards.reduce((sum, tc) => sum + tc.hours + (tc.minutes / 60), 0);
             const minHoursRequired = job.project_type === "Hourly" ? parseFloat(job.max_hours || 0) : 0;
             const isHoursReqMet = minHoursRequired === 0 || totalLoggedHours >= minHoursRequired;
+            const isHired = activeContract.status === "Hired";
+
+            // Validation Checks
+            const isSingleMilestone = milestoneList.length <= 1 || (milestoneList.length === 1 && milestoneList[0].title === "Entire Project Scope");
+            
+            const allMilestonesCompleted = milestoneList.every((m: any) => 
+              m.status === 'Completed' || 
+              m.payment_status === 'Paid' || 
+              m.status === 'Under Review' || 
+              m.status === 'Submitted' ||
+              m.paid === true ||
+              m.completed === true
+            );
+            
+            const isHourly = job.project_type === "Hourly";
+            const canSubmitCompletion = isHourly
+              ? (isHoursReqMet && allMilestonesCompleted)
+              : (isSingleMilestone || allMilestonesCompleted);
+
             return (
-              <div className="flex flex-col items-end gap-1.5 ml-auto">
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowDisputeModal(true)}
-                    className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
-                  >
-                    File a Dispute
-                  </button>
-                  <button
-                    onClick={handleSubmitCompletion}
-                    disabled={!isHoursReqMet || isSubmittingCompletion}
-                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-extrabold text-xs rounded-xl cursor-pointer disabled:opacity-50 transition-all flex items-center gap-1.5 border-0 shadow-sm"
-                  >
-                    <i className="fa-solid fa-circle-check text-xs"></i>
-                    <span>Submit Work Completed</span>
-                  </button>
-                </div>
-                {!isHoursReqMet && (
-                  <span className="text-[10px] text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
-                    Requires min {minHoursRequired} hours logged to complete (Currently: {totalLoggedHours.toFixed(1)} hrs)
-                  </span>
+              <div className="flex flex-col items-end gap-3 w-full">
+                
+                {/* Upload Deliverables Section */}
+                {!isHired && (
+                  <div className="w-full text-left bg-slate-50 border border-slate-200/80 rounded-xl p-4">
+                    <h5 className="text-xs font-black text-slate-800 mb-1.5 flex items-center gap-1.5 font-bold">
+                      <i className="fa-solid fa-cloud-arrow-up text-teal-650"></i>
+                      Upload Project Deliverables / Documents
+                    </h5>
+                    <p className="text-[10px] text-slate-500 mb-3 leading-relaxed">
+                      Attach completed files, source code links, or final documentation for the client to review before final release.
+                    </p>
+                    
+                    <div className="flex flex-wrap items-center gap-3">
+                      <label className="px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-[11px] rounded-lg cursor-pointer transition-all border-0 shadow-sm flex items-center gap-1.5">
+                        <i className="fa-solid fa-plus text-xs"></i>
+                        <span>Add Files</span>
+                        <input 
+                          type="file" 
+                          multiple 
+                          onChange={handleUploadFile} 
+                          disabled={isUploading}
+                          className="hidden" 
+                        />
+                      </label>
+                      {isUploading && (
+                        <span className="text-xs text-slate-400 font-semibold italic animate-pulse">Uploading file(s)...</span>
+                      )}
+                    </div>
+
+                    {uploadedFiles.length > 0 && (
+                      <div className="mt-3 border-t border-slate-200/60 pt-2.5">
+                        <p className="text-[10px] font-black text-slate-450 uppercase mb-1.5 font-bold">Files ready to submit ({uploadedFiles.length})</p>
+                        <div className="flex flex-col gap-1.5">
+                          {uploadedFiles.map((file, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-2 text-xs">
+                              <span className="font-semibold text-slate-700 truncate max-w-[250px]">{file.name}</span>
+                              <button 
+                                type="button"
+                                onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== idx))}
+                                className="text-rose-650 hover:text-rose-805 font-bold bg-transparent border-0 cursor-pointer text-xs"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
+
+                <div className="flex justify-between items-center w-full mt-2">
+                  <div>
+                    {!isHired && !canSubmitCompletion && (
+                      <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100">
+                        {isHourly 
+                          ? `Requires min ${minHoursRequired} hours logged AND all milestones completed to submit.` 
+                          : "Please submit and complete all milestones before marking the entire project as completed."
+                        }
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleFreelancerCancelContract}
+                      className="px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                    >
+                      Cancel Contract & Refund Client
+                    </button>
+                    {isHired ? (
+                      <button
+                        onClick={async () => {
+                          await startWorkContract(activeContract.contract_id);
+                          fetchContracts();
+                        }}
+                        className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5 border-0 shadow-sm"
+                      >
+                        <i className="fa-solid fa-play text-xs"></i>
+                        <span>Start Work</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleSubmitCompletion}
+                        disabled={!canSubmitCompletion || isSubmittingCompletion}
+                        className="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-extrabold text-xs rounded-xl cursor-pointer disabled:opacity-50 transition-all flex items-center gap-1.5 border-0 shadow-sm"
+                      >
+                        <i className="fa-solid fa-circle-check text-xs"></i>
+                        <span>Submit Work Completed</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             );
           })()}

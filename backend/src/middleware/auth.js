@@ -73,4 +73,41 @@ export const checkApprovedFreelancer = async (req, res, next) => {
   }
 };
 
+export const checkApprovedClient = async (req, res, next) => {
+  try {
+    const userId = req.user.user_id;
+
+    // Check client profile onboarding and vetting status
+    const clientRes = await pool.query(
+      "SELECT onboarding_completed, vetting_status FROM client_profiles WHERE user_id = $1",
+      [userId]
+    );
+
+    if (clientRes.rows.length === 0) {
+      return res.status(403).json({ 
+        message: "You must complete client onboarding before performing this action." 
+      });
+    }
+
+    const { onboarding_completed, vetting_status } = clientRes.rows[0];
+
+    if (!onboarding_completed) {
+      return res.status(403).json({ 
+        message: "You must complete client onboarding before performing this action." 
+      });
+    }
+
+    if (vetting_status !== "Approved") {
+      return res.status(403).json({ 
+        message: "Your client profile is pending administrator approval. Action blocked." 
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Error in checkApprovedClient middleware:", error);
+    return res.status(500).json({ message: "Internal server error during client verification check." });
+  }
+};
+
 export default auth;

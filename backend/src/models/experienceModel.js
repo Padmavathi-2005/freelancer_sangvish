@@ -48,5 +48,14 @@ export const Experience = {
              WHERE user_id = $1`,
             [userId]
         );
+    },
+
+    delete: async (experienceId, userId) => {
+        return await pool.query(
+            `DELETE FROM experiences
+             WHERE experience_id = $1 AND user_id = $2
+             RETURNING *`,
+            [experienceId, userId]
+        );
     }
 };

@@ -39,8 +39,50 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
     fetchGigCategories,
     fetchCurrencies,
     setGigSubCategories,
-    setGigAvailableSkills
+    setGigAvailableSkills,
+    setActiveTab
   } = useDashboard();
+
+  const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(false);
+
+  const handleCreateGigClick = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      triggerToast("error", "You must be logged in to create a gig.");
+      return;
+    }
+
+    try {
+      setOnboardingCheckLoading(true);
+      const res = await fetch(`${API_URL}/users/onboarding-check`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.hasFreelancerProfile) {
+          triggerToast("error", "You have not completed your freelancer profile onboarding. Redirecting...");
+          localStorage.setItem("user_role", "freelancer");
+          localStorage.setItem("onboarding_role", "freelancer");
+          setTimeout(() => {
+            setActiveTab("settings");
+          }, 2000);
+          return;
+        }
+        if (data.freelancerVettingStatus !== "Approved") {
+          triggerToast("error", "Your freelancer profile is pending administrator approval.");
+          return;
+        }
+        
+        setIsCreatingGig(true);
+      } else {
+        triggerToast("error", "Failed to check profile status.");
+      }
+    } catch (err) {
+      triggerToast("error", "Error checking profile status.");
+    } finally {
+      setOnboardingCheckLoading(false);
+    }
+  };
 
   // Gig Form Fields
   const [gigTitle, setGigTitle] = useState("");
@@ -2055,10 +2097,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
             <p className="text-slate-404 text-xs mt-0.5">List and offer pre-priced services directly to clients.</p>
           </div>
           <button
-            onClick={() => setIsCreatingGig(true)}
-            className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-4.5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 self-start sm:self-auto font-display"
+            disabled={onboardingCheckLoading}
+            onClick={handleCreateGigClick}
+            className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-4.5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 self-start sm:self-auto font-display disabled:opacity-50 disabled:pointer-events-none"
           >
-            <span>+ Create New Gig</span>
+            <span>{onboardingCheckLoading ? "Checking..." : "+ Create New Gig"}</span>
           </button>
         </div>
 
@@ -2079,10 +2122,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
               </p>
             </div>
             <button
-              onClick={() => setIsCreatingGig(true)}
-              className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer font-display"
+              disabled={onboardingCheckLoading}
+              onClick={handleCreateGigClick}
+              className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer font-display disabled:opacity-50 disabled:pointer-events-none"
             >
-              Create Your First Gig
+              {onboardingCheckLoading ? "Checking..." : "Create Your First Gig"}
             </button>
           </div>
         ) : (

@@ -1,6 +1,21 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import * as userModel from '../models/userModel.js';
+import pool from '../config/db.js';
+
+// Helper to generate a unique referral code
+const generateUniqueReferralCode = async () => {
+    let unique = false;
+    let code = "";
+    while (!unique) {
+        code = "REF_" + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const check = await pool.query("SELECT user_id FROM users WHERE referral_code = $1", [code]);
+        if (check.rows.length === 0) {
+            unique = true;
+        }
+    }
+    return code;
+};
 
 export const register = async (req, res) => {
 
@@ -9,19 +24,68 @@ export const register = async (req, res) => {
         const {
             first_name,
             email,
-            password
+            password,
+            refCode
         } = req.body;
-console.log(req.body);
-console.log("Password:", password);
+
         const password_hash =
             await bcrypt.hash(password, 10);
+
+        // Fetch referred_by user
+        let referred_by = null;
+        if (refCode) {
+            const refUserRes = await pool.query("SELECT user_id FROM users WHERE referral_code = $1", [refCode]);
+            if (refUserRes.rows.length > 0) {
+                referred_by = refUserRes.rows[0].user_id;
+            }
+        }
+
+        // Generate unique referral code
+        const referral_code = await generateUniqueReferralCode();
 
         const user =
             await userModel.createUser(
                 first_name,
                 email,
-                password_hash
+                password_hash,
+                referral_code,
+                referred_by
             );
+
+        // Create wallet for the user
+        let signupBonus = 0.00;
+        if (referred_by) {
+            signupBonus = 5.00; // Default fallback
+            try {
+                const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+                if (settingsRes.rows.length > 0) {
+                    let settingsVal = settingsRes.rows[0].setting_value;
+                    if (typeof settingsVal === "string") {
+                        settingsVal = JSON.parse(settingsVal);
+                    }
+                    if (settingsVal && settingsVal.signup_bonus !== undefined) {
+                        signupBonus = parseFloat(settingsVal.signup_bonus);
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching referral signup_bonus settings:", err);
+            }
+        }
+        await pool.query(
+            "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, $2, 'USD')",
+            [user.user_id, signupBonus]
+        );
+
+        if (referred_by) {
+            const walletRes = await pool.query("SELECT wallet_id FROM wallets WHERE user_id = $1", [user.user_id]);
+            const walletId = walletRes.rows[0].wallet_id;
+
+            await pool.query(`
+                INSERT INTO wallet_transactions 
+                (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+                VALUES (NULL, $1, $2, 'referral_signup_bonus', 'completed', 'Referral sign-up bonus reward')
+            `, [walletId, signupBonus]);
+        }
 
         const token = jwt.sign(
             {
@@ -504,7 +568,7 @@ export const updateUserProfile = async (req, res) => {
 
 export const socialLogin = async (req, res) => {
     try {
-        const { email, first_name } = req.body;
+        const { email, first_name, refCode } = req.body;
         if (!email) {
             return res.status(400).json({ message: "Email is required" });
         }
@@ -514,7 +578,61 @@ export const socialLogin = async (req, res) => {
         if (!user) {
             // User doesn't exist, create a new one with a dummy/empty password_hash
             const dummyPasswordHash = "";
-            user = await userModel.createUser(first_name || email.split('@')[0], email, dummyPasswordHash);
+
+            // Fetch referred_by user
+            let referred_by = null;
+            if (refCode) {
+                const refUserRes = await pool.query("SELECT user_id FROM users WHERE referral_code = $1", [refCode]);
+                if (refUserRes.rows.length > 0) {
+                    referred_by = refUserRes.rows[0].user_id;
+                }
+            }
+
+            // Generate unique referral code
+            const referral_code = await generateUniqueReferralCode();
+
+            user = await userModel.createUser(
+                first_name || email.split('@')[0], 
+                email, 
+                dummyPasswordHash,
+                referral_code,
+                referred_by
+            );
+
+            // Create wallet for the user
+            let signupBonus = 0.00;
+            if (referred_by) {
+                signupBonus = 5.00; // Default fallback
+                try {
+                    const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+                    if (settingsRes.rows.length > 0) {
+                        let settingsVal = settingsRes.rows[0].setting_value;
+                        if (typeof settingsVal === "string") {
+                            settingsVal = JSON.parse(settingsVal);
+                        }
+                        if (settingsVal && settingsVal.signup_bonus !== undefined) {
+                            signupBonus = parseFloat(settingsVal.signup_bonus);
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error fetching referral signup_bonus settings:", err);
+                }
+            }
+            await pool.query(
+                "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, $2, 'USD')",
+                [user.user_id, signupBonus]
+            );
+
+            if (referred_by) {
+                const walletRes = await pool.query("SELECT wallet_id FROM wallets WHERE user_id = $1", [user.user_id]);
+                const walletId = walletRes.rows[0].wallet_id;
+
+                await pool.query(`
+                    INSERT INTO wallet_transactions 
+                    (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+                    VALUES (NULL, $1, $2, 'referral_signup_bonus', 'completed', 'Referral sign-up bonus reward')
+                `, [walletId, signupBonus]);
+            }
         }
 
         const token = jwt.sign(
@@ -531,6 +649,250 @@ export const socialLogin = async (req, res) => {
                 email: user.email
             }
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getReferrals = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+
+        // 1. Fetch user's referral code
+        const userRes = await pool.query("SELECT referral_code FROM users WHERE user_id = $1", [userId]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const referralCode = userRes.rows[0].referral_code;
+
+        // 2. Fetch list of referred users
+        const referredUsersRes = await pool.query(`
+            SELECT 
+                u.user_id,
+                u.first_name || ' ' || COALESCE(u.last_name, '') as name,
+                u.email,
+                u.created_at,
+                CASE 
+                    WHEN rp.status = 'pending' THEN 'pending_approval'
+                    WHEN rp.status = 'approved' THEN 'approved'
+                    WHEN rp.status = 'rejected' THEN 'rejected'
+                    ELSE 'pending_order'
+                END as status
+            FROM users u
+            LEFT JOIN referral_payouts rp ON rp.referred_id = u.user_id AND rp.referrer_id = u.referred_by
+            WHERE u.referred_by = $1
+            ORDER BY u.created_at DESC
+        `, [userId]);
+
+        // 3. Fetch total referral earnings from wallet transactions
+        const walletRes = await pool.query("SELECT wallet_id FROM wallets WHERE user_id = $1", [userId]);
+        let totalEarned = 0;
+        if (walletRes.rows.length > 0) {
+            const walletId = walletRes.rows[0].wallet_id;
+            const earningsRes = await pool.query(`
+                SELECT COALESCE(SUM(amount), 0) as total
+                FROM wallet_transactions
+                WHERE receiver_wallet_id = $1 AND type = 'referral_bonus' AND status = 'completed'
+            `, [walletId]);
+            totalEarned = parseFloat(earningsRes.rows[0].total || 0);
+        }
+
+        res.status(200).json({
+            referral_code: referralCode,
+            referred_users: referredUsersRes.rows,
+            total_earned: totalEarned
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getAffiliateStats = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+
+        // 1. Get referral code
+        const userRes = await pool.query("SELECT referral_code FROM users WHERE user_id = $1", [userId]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        const referralCode = userRes.rows[0].referral_code;
+
+        // 2. Count total referred users
+        const referredCountRes = await pool.query("SELECT COUNT(*) as count FROM users WHERE referred_by = $1", [userId]);
+        const referredCount = parseInt(referredCountRes.rows[0].count || 0);
+
+        // 3. Count total pending & approved affiliate commissions
+        const earningsRes = await pool.query(`
+            SELECT 
+                COALESCE(SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END), 0) as pending_commissions,
+                COALESCE(SUM(CASE WHEN status = 'approved' THEN amount ELSE 0 END), 0) as approved_commissions
+            FROM affiliate_commissions
+            WHERE affiliate_id = $1
+        `, [userId]);
+        const earnings = earningsRes.rows[0];
+
+        // 4. Fetch the detailed commission ledger logs
+        const ledgerRes = await pool.query(`
+            SELECT 
+                ac.commission_id,
+                ac.amount,
+                ac.platform_fee,
+                ac.status,
+                ac.created_at,
+                u.first_name || ' ' || COALESCE(u.last_name, '') as referred_user_name,
+                u.email as referred_user_email
+            FROM affiliate_commissions ac
+            JOIN users u ON ac.referred_user_id = u.user_id
+            WHERE ac.affiliate_id = $1
+            ORDER BY ac.created_at DESC
+        `, [userId]);
+
+        res.status(200).json({
+            referral_code: referralCode,
+            total_referred: referredCount,
+            pending_commissions: parseFloat(earnings.pending_commissions),
+            approved_commissions: parseFloat(earnings.approved_commissions),
+            ledger: ledgerRes.rows
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getReferralBanner = async (req, res) => {
+    try {
+        // 1. Fetch settings from database
+        let signupBonus = 5.00;
+        let maxReferrerReward = 10.00;
+        let headline = "Invite Friends & Earn";
+        let subline = "Share your referral link with friends. They get a bonus on sign-up, and you get paid when they complete transactions!";
+        let bgColor = "#0f172a";
+        let accentColor = "#0d9488";
+
+        const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+        let val = null;
+        if (settingsRes.rows.length > 0) {
+            val = settingsRes.rows[0].setting_value;
+            if (typeof val === "string") {
+                val = JSON.parse(val);
+            }
+            if (val) {
+                // If a custom designed banner image exists, redirect the request to it!
+                if (val.banner_image_url) {
+                    return res.redirect(val.banner_image_url);
+                }
+
+                if (val.signup_bonus !== undefined) signupBonus = parseFloat(val.signup_bonus);
+                if (val.banner_headline) headline = val.banner_headline;
+                if (val.banner_subline) subline = val.banner_subline;
+                if (val.banner_bg_color) bgColor = val.banner_bg_color;
+                if (val.banner_accent_color) accentColor = val.banner_accent_color;
+
+                if (Array.isArray(val.tiers) && val.tiers.length > 0) {
+                    // Find max reward amount among tiers
+                    maxReferrerReward = Math.max(...val.tiers.map(t => parseFloat(t.reward || 0)));
+                }
+            }
+        }
+
+        // 2. Wrap subline text into two lines
+        const words = subline.split(" ");
+        let sublinePart1 = "";
+        let sublinePart2 = "";
+        let currentLine = 1;
+        for (const word of words) {
+            if (currentLine === 1) {
+                if ((sublinePart1 + " " + word).trim().length < 60) {
+                    sublinePart1 += (sublinePart1 ? " " : "") + word;
+                } else {
+                    currentLine = 2;
+                    sublinePart2 = word;
+                }
+            } else {
+                if ((sublinePart2 + " " + word).trim().length < 60) {
+                    sublinePart2 += (sublinePart2 ? " " : "") + word;
+                } else {
+                    sublinePart2 += "...";
+                    break;
+                }
+            }
+        }
+
+        // XML-escape helper to prevent broken SVG elements
+        const escapeXml = (str) => {
+            if (!str) return "";
+            return str.replace(/[<>&'"]/g, (c) => {
+                switch (c) {
+                    case '<': return '&lt;';
+                    case '>': return '&gt;';
+                    case '&': return '&amp;';
+                    case '\'': return '&apos;';
+                    case '"': return '&quot;';
+                    default: return c;
+                }
+            });
+        };
+
+        const escapedHeadline = escapeXml(headline);
+        const escapedSublinePart1 = escapeXml(sublinePart1);
+        const escapedSublinePart2 = escapeXml(sublinePart2);
+
+        // 3. Render SVG
+        const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="${bgColor}" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="${accentColor}" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <rect width="800" height="400" rx="20" fill="url(#bgGrad)" />
+
+  <circle cx="750" cy="50" r="180" fill="white" fill-opacity="0.03" />
+  <circle cx="100" cy="350" r="150" fill="${accentColor}" fill-opacity="0.07" />
+  <path d="M 600,400 L 800,200 L 800,400 Z" fill="white" fill-opacity="0.02" />
+
+  <g transform="translate(560, 110)" filter="url(#shadow)">
+    <rect width="180" height="180" rx="24" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.15" stroke-width="1.5" />
+    <circle cx="70" cy="80" r="30" fill="url(#accentGrad)" />
+    <text x="70" y="88" font-family="'Inter', sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">$</text>
+    <circle cx="120" cy="110" r="25" fill="#f59e0b" />
+    <text x="120" y="117" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="white" text-anchor="middle">$</text>
+  </g>
+
+  <text x="60" y="90" font-family="'Inter', -apple-system, sans-serif" font-weight="900" font-size="36" fill="white">${escapedHeadline}</text>
+
+  <text x="60" y="130" font-family="'Inter', -apple-system, sans-serif" font-weight="600" font-size="14" fill="#94a3b8">
+    <tspan x="60" dy="0">${escapedSublinePart1}</tspan>
+    <tspan x="60" dy="20">${escapedSublinePart2}</tspan>
+  </text>
+
+  <g transform="translate(60, 210)">
+    <rect x="0" y="0" width="220" height="100" rx="16" fill="white" fill-opacity="0.05" stroke="white" stroke-opacity="0.1" stroke-width="1" />
+    <text x="25" y="35" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#94a3b8" letter-spacing="1">SIGN-UP BONUS</text>
+    <text x="25" y="75" font-family="'Inter', sans-serif" font-weight="900" font-size="32" fill="white">$${signupBonus.toFixed(2)}</text>
+
+    <rect x="250" y="0" width="220" height="100" rx="16" fill="white" fill-opacity="0.05" stroke="white" stroke-opacity="0.1" stroke-width="1" />
+    <text x="275" y="35" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#94a3b8" letter-spacing="1">REFERRAL REWARD</text>
+    <text x="275" y="75" font-family="'Inter', sans-serif" font-weight="900" font-size="32" fill="url(#accentGrad)">Up to $${maxReferrerReward.toFixed(2)}</text>
+  </g>
+
+  <text x="60" y="355" font-family="'Inter', sans-serif" font-weight="800" font-size="12" fill="#64748b" letter-spacing="2">POWERED BY LANCERFLOW</text>
+</svg>
+        `;
+
+        res.setHeader("Content-Type", "image/svg+xml");
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        res.status(200).send(svg);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

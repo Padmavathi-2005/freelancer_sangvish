@@ -2,11 +2,12 @@
 
 import React from "react";
 import Table from "@/components/Table";
-import { VettingApplication } from "@/app/admin/AdminContext";
+import { useAdmin } from "@/app/admin/AdminContext";
+import { API_URL } from "@/config/api";
 
 interface ProjectsTabProps {
-  projectsSubTab: "projects" | "vetting" | "proposals";
-  setProjectsSubTab: (tab: "projects" | "vetting" | "proposals") => void;
+  projectsSubTab: "projects" | "proposals" | "maintenance";
+  setProjectsSubTab: (tab: "projects" | "proposals" | "maintenance") => void;
   projectsSearch: string;
   setProjectsSearch: (v: string) => void;
   paginatedProjects: any[];
@@ -18,12 +19,15 @@ interface ProjectsTabProps {
   handleUpdateProjectStatus: (projectId: number, status: string) => Promise<void>;
   handleDeleteProject: (projectId: number) => Promise<void>;
 
-  vettingApps: VettingApplication[];
-  updateVettingStatus: (id: string, newStatus: VettingApplication["status"]) => void;
-
   pendingProposals?: any[];
   handleUpdateProposalVettingStatus?: (proposalId: number, status: "Approved" | "Rejected") => Promise<void>;
 }
+
+const CONFIGURABLE_FIELDS = [
+  { key: "project_durations", label: "Project Durations", placeholder: "e.g., 2-4 weeks", category: "site_settings", default: ["Less than 1 month", "1-3 months", "3-6 months", "More than 6 months"] },
+  { key: "location_preferences", label: "Location Preferences", placeholder: "e.g., Hybrid", category: "site_settings", default: ["Remote", "Onsite", "Partially Remote"] },
+  { key: "payment_modes", label: "Payment Modes", placeholder: "e.g., Bi-weekly", category: "site_settings", default: ["Daily", "Weekly", "Monthly"] }
+];
 
 export default function ProjectsTab({
   projectsSubTab,
@@ -38,14 +42,113 @@ export default function ProjectsTab({
   itemsPerPage,
   handleUpdateProjectStatus,
   handleDeleteProject,
-  vettingApps,
-  updateVettingStatus,
   pendingProposals,
   handleUpdateProposalVettingStatus
 }: ProjectsTabProps) {
 
   const [approvalFilter, setApprovalFilter] = React.useState<"all" | "approved" | "pending">("all");
   const [localPage, setLocalPage] = React.useState(1);
+
+  const [fieldsConfig, setFieldsConfig] = React.useState<Record<string, any[]>>({});
+  const [newOptionInputs, setNewOptionInputs] = React.useState<Record<string, string>>({});
+  const [savingFields, setSavingFields] = React.useState(false);
+  const [fieldsStatus, setFieldsStatus] = React.useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const fetchFieldsSettings = React.useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/form-field-options`);
+      if (res.ok) {
+        const data = await res.json();
+        const newConfig: Record<string, any[]> = {};
+        for (const field of CONFIGURABLE_FIELDS) {
+          newConfig[field.key] = data[field.key] || [];
+        }
+        setFieldsConfig(newConfig);
+      }
+    } catch (err) {
+      console.error("Failed to fetch form field settings:", err);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (projectsSubTab === "maintenance") {
+      fetchFieldsSettings();
+    }
+  }, [projectsSubTab, fetchFieldsSettings]);
+
+  const handleAddOption = async (fieldKey: string, optionValue: string) => {
+    const trimmed = optionValue.trim();
+    if (!trimmed) return;
+
+    // Check duplicate
+    const currentOptions = fieldsConfig[fieldKey] || [];
+    if (currentOptions.some((o) => o.option_value.toLowerCase() === trimmed.toLowerCase())) {
+      alert("This option already exists.");
+      return;
+    }
+
+    try {
+      setSavingFields(true);
+      setFieldsStatus(null);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/admin/form-field-options`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ field_key: fieldKey, option_value: trimmed })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setNewOptionInputs({
+          ...newOptionInputs,
+          [fieldKey]: ""
+        });
+        fetchFieldsSettings();
+        setFieldsStatus({ type: "success", text: "Option added successfully." });
+        setTimeout(() => setFieldsStatus(null), 3000);
+      } else {
+        alert(data.message || "Failed to add option.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to add option. Please try again.");
+    } finally {
+      setSavingFields(false);
+    }
+  };
+
+  const handleRemoveOption = async (optionId: number) => {
+    if (!confirm("Are you sure you want to remove this option?")) return;
+
+    try {
+      setSavingFields(true);
+      setFieldsStatus(null);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/admin/form-field-options/${optionId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        fetchFieldsSettings();
+        setFieldsStatus({ type: "success", text: "Option removed successfully." });
+        setTimeout(() => setFieldsStatus(null), 3000);
+      } else {
+        alert(data.message || "Failed to remove option.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to remove option. Please try again.");
+    } finally {
+      setSavingFields(false);
+    }
+  };
 
   const filteredByApproval = React.useMemo(() => {
     return filteredProjects.filter((p: any) => {
@@ -220,24 +323,24 @@ export default function ProjectsTab({
           Posted projects
         </button>
         <button
-          onClick={() => setProjectsSubTab("vetting")}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-            projectsSubTab === "vetting" 
-              ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
-              : "text-slate-500 hover:text-slate-800"
-          }`}
-        >
-          Talent vetting queue
-        </button>
-        <button
           onClick={() => setProjectsSubTab("proposals")}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
             projectsSubTab === "proposals" 
-              ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
+              ? "bg-white text-slate-800 shadow-sm border border-slate-205/50" 
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
           Proposal vetting queue
+        </button>
+        <button
+          onClick={() => setProjectsSubTab("maintenance")}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            projectsSubTab === "maintenance" 
+              ? "bg-white text-slate-800 shadow-sm border border-slate-200/50" 
+              : "text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          Form Fields
         </button>
       </div>
 
@@ -319,102 +422,7 @@ export default function ProjectsTab({
             }
           />
         </div>
-      ) : projectsSubTab === "vetting" ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
-          <div>
-            <h3 className="text-lg font-bold text-slate-805">Talent Vetting Queue</h3>
-            <p className="text-slate-505 text-xs sm:text-sm mt-0.5">Verify background credentials, portfolio samples, and assign elite Top 3% badges.</p>
-          </div>
-
-          {vettingApps.length === 0 ? (
-            <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl">
-              <p className="text-slate-500 text-sm font-semibold">No applications pending review in this cycle.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {vettingApps.map((app) => (
-                <div 
-                  key={app.id} 
-                  className={`p-5 bg-white border rounded-xl flex flex-col lg:flex-row justify-between lg:items-center gap-5 transition-all shadow-sm ${
-                    app.status === "Approved" ? "border-emerald-200 bg-emerald-50/40" :
-                    app.status === "Declined" ? "border-rose-200 bg-rose-50/40" :
-                    app.status === "Info Requested" ? "border-amber-200 bg-amber-50/40" : "border-slate-200"
-                  }`}
-                >
-                  <div className="flex-1 flex flex-col sm:flex-row gap-4 items-start">
-                    <div className="w-12 h-12 rounded-full bg-teal-700/10 border border-teal-700/20 text-teal-750 font-black flex items-center justify-center text-lg select-none">
-                      {app.name.charAt(0)}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-extrabold text-slate-800 text-base">{app.name}</span>
-                        <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded">
-                          {app.rate}
-                        </span>
-                        <span className="text-[10px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded">
-                          Exp: {app.experience}
-                        </span>
-                      </div>
-                      
-                      <p className="text-sm font-semibold text-slate-600 mt-1">{app.role}</p>
-                      
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        {app.skills.map((skill) => (
-                          <span key={skill} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-500">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 flex items-center gap-2 select-none justify-center">
-                    {app.status === "Pending" ? (
-                      <>
-                        <button
-                          onClick={() => updateVettingStatus(app.id, "Approved")}
-                          className="px-3.5 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-xs font-bold rounded-xl cursor-pointer"
-                        >
-                          Approve (Top 3%)
-                        </button>
-                        <button
-                          onClick={() => updateVettingStatus(app.id, "Info Requested")}
-                          className="px-3.5 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-600 hover:bg-amber-600 hover:text-white transition-all text-xs font-bold rounded-xl cursor-pointer"
-                        >
-                          Request Info
-                        </button>
-                        <button
-                          onClick={() => updateVettingStatus(app.id, "Declined")}
-                          className="px-3.5 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-600 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold rounded-xl cursor-pointer"
-                        >
-                          Decline
-                        </button>
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${
-                          app.status === "Approved" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" :
-                          app.status === "Declined" ? "bg-rose-500/10 text-rose-600 border border-rose-500/20" :
-                          "bg-amber-500/10 text-amber-600 border border-amber-500/20"
-                        }`}>
-                          Status: {app.status}
-                        </span>
-                        <button
-                          onClick={() => updateVettingStatus(app.id, "Pending")}
-                          className="text-xs font-semibold text-slate-500 hover:text-slate-700 cursor-pointer underline bg-transparent border-0"
-                        >
-                          Reset
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
+      ) : projectsSubTab === "proposals" ? (
         <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left">
           <div>
             <h3 className="text-lg font-bold text-slate-800">Proposal Vetting Queue</h3>
@@ -430,6 +438,80 @@ export default function ProjectsTab({
             itemsPerPage={100}
             emptyMessage="No pending proposals to vet."
           />
+        </div>
+      ) : (
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left animate-fadeIn">
+          <div className="border-b border-slate-100 pb-4">
+            <h3 className="text-lg font-bold text-slate-800">Project Form Fields Config</h3>
+            <p className="text-slate-550 text-xs sm:text-sm mt-0.5 font-semibold">Manage the available select options for project posting fields.</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {CONFIGURABLE_FIELDS.map((field) => {
+              const options = fieldsConfig[field.key] || [];
+              const inputValue = newOptionInputs[field.key] || "";
+              
+              return (
+                <div key={field.key} className="flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-2xl p-5">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">{field.label}</h4>
+                  
+                  <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
+                    {options.map((opt, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-white border border-slate-200/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 shadow-sm">
+                        <span>{opt.option_value}</span>
+                        <button
+                          onClick={() => handleRemoveOption(opt.option_id)}
+                          disabled={savingFields}
+                          className="text-rose-500 hover:text-rose-700 disabled:opacity-50 bg-transparent border-none cursor-pointer p-1 font-semibold text-xs"
+                          title="Remove Option"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    {options.length === 0 && (
+                      <p className="text-slate-400 text-xs font-semibold italic text-center py-4">No options configured.</p>
+                    )}
+                  </div>
+
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleAddOption(field.key, inputValue);
+                    }} 
+                    className="flex gap-2 mt-2 pt-3 border-t border-slate-200/50"
+                  >
+                    <input
+                      type="text"
+                      placeholder={field.placeholder}
+                      value={inputValue}
+                      disabled={savingFields}
+                      onChange={(e) => setNewOptionInputs({
+                        ...newOptionInputs,
+                        [field.key]: e.target.value
+                      })}
+                      className="flex-grow bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-teal-700/50"
+                    />
+                    <button
+                      type="submit"
+                      disabled={savingFields}
+                      className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white text-xs font-bold px-4 py-2 rounded-lg cursor-pointer border-none"
+                    >
+                      Add
+                    </button>
+                  </form>
+                </div>
+              );
+            })}
+          </div>
+
+          {fieldsStatus && (
+            <div className="flex justify-end items-center gap-4 mt-2">
+              <span className={`text-xs font-bold ${fieldsStatus.type === "success" ? "text-emerald-600" : "text-rose-600"}`}>
+                {fieldsStatus.text}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>

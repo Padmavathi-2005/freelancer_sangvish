@@ -125,7 +125,8 @@ async function setupTables() {
         submitted_at TIMESTAMP NULL,
         completed_at TIMESTAMP NULL,
         disputed_at TIMESTAMP NULL,
-        cancelled_at TIMESTAMP NULL
+        cancelled_at TIMESTAMP NULL,
+        submitted_files TEXT NULL
       )
     `);
     console.log("✅ 'contracts' table ready.");
@@ -1096,8 +1097,46 @@ async function setupTables() {
       console.log(`🌱 Backfilled slugs for ${emptyUserSlugs.rows.length} users.`);
     }
 
+    // Create form_field_options table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS form_field_options (
+        option_id SERIAL PRIMARY KEY,
+        field_key VARCHAR(50) NOT NULL,
+        option_value VARCHAR(100) NOT NULL,
+        sort_order INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (field_key, option_value)
+      )
+    `);
+    console.log("✅ 'form_field_options' table ready.");
 
-
+    // Migrate data from settings table if form_field_options is empty
+    const checkEmpty = await pool.query("SELECT COUNT(*) FROM form_field_options");
+    if (parseInt(checkEmpty.rows[0].count) === 0) {
+      console.log("🌱 Migrating settings to 'form_field_options'...");
+      const settingKeys = ['project_durations', 'location_preferences', 'payment_modes'];
+      for (const key of settingKeys) {
+        const checkSetting = await pool.query("SELECT setting_value FROM settings WHERE setting_key = $1", [key]);
+        if (checkSetting.rows.length > 0) {
+          let val = checkSetting.rows[0].setting_value;
+          if (typeof val === "string") {
+            try { val = JSON.parse(val); } catch {}
+          }
+          if (Array.isArray(val)) {
+            for (let i = 0; i < val.length; i++) {
+              await pool.query(
+                `INSERT INTO form_field_options (field_key, option_value, sort_order) 
+                 VALUES ($1, $2, $3)
+                 ON CONFLICT (field_key, option_value) DO NOTHING`,
+                [key, val[i], i]
+              );
+            }
+          }
+        }
+      }
+      console.log("✅ Migration to 'form_field_options' complete.");
+    }
 
   } catch (error) {
     console.error("❌ Error setting up database tables:", error.message);

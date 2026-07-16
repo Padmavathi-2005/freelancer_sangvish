@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
+import ReferralTracker from "@/components/ReferralTracker";
+import { API_URL, API_BASE_URL } from "@/config/api";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -15,33 +18,56 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL
-    ? `${process.env.NEXT_PUBLIC_API_URL}/api`
-    : "https://freelancer.sangvish.com/api";
 
 async function getSiteSettings() {
+  console.log("getSiteSettings: starting fetch...");
   try {
-    const res = await fetch(`${API_URL}/settings`, {
-      next: { revalidate: 3600 }, // re-fetch at most once per hour
+    console.log("getSiteSettings: fetching from", `${API_URL}/settings`);
+    let res = await fetch(`${API_URL}/settings`, {
+      cache: "no-store",
     });
-    if (!res.ok) return null;
+    
+    if (!res.ok) {
+      console.log("getSiteSettings: fetch failed, status =", res.status);
+      return null;
+    }
     const data: any[] = await res.json();
+    console.log("getSiteSettings: fetch successful, finding site_settings key...");
     const raw = data.find((s) => s.setting_key === "site_settings")?.setting_value;
-    if (!raw) return null;
-    return typeof raw === "string" ? JSON.parse(raw) : raw;
-  } catch {
+    if (!raw) {
+      console.log("getSiteSettings: site_settings key not found in response");
+      return null;
+    }
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    console.log("getSiteSettings: parsed settings successfully:", parsed?.site_name);
+    return parsed;
+  } catch (err: any) {
+    console.error("getSiteSettings: fetch error:", err.message || err);
     return null;
   }
 }
+
+// Helper to format metadata URLs (resolving localhost vs production domains)
+const formatMetadataUrl = (url: any) => {
+  if (typeof url !== "string" || !url) return null;
+  // If URL is relative
+  if (url.startsWith("/")) {
+    return `${API_BASE_URL}${url}`;
+  }
+  // If URL has local API host but we are on production
+  if (url.includes("localhost:5000")) {
+    return url.replace("http://localhost:5000", API_BASE_URL);
+  }
+  return url;
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteSettings();
 
   const siteName    = site?.site_name        || "LancerFlow";
   const description = site?.site_description || "Connect with top freelancers and clients on LancerFlow — the all-in-one freelance marketplace.";
-  const ogImage     = site?.site_og_image    || null;
-  const favicon     = site?.site_favicon     || null;
+  const ogImage     = formatMetadataUrl(site?.site_og_image) || null;
+  const favicon     = formatMetadataUrl(site?.site_favicon)  || null;
   const keywords    = site?.site_keywords    || "freelance, marketplace, hire freelancers, remote work, gigs";
 
   return {
@@ -86,16 +112,10 @@ export default function RootLayout({
       lang="en"
       className={`${plusJakartaSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
-        />
-      </head>
       <body className="min-h-full flex flex-col">
+        <Suspense fallback={null}>
+          <ReferralTracker />
+        </Suspense>
         <LanguageProvider>
           <AuthModalProvider>
             {children}
