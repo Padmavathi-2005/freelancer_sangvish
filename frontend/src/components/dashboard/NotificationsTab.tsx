@@ -49,13 +49,15 @@ export default function NotificationsTab({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col divide-y divide-slate-100">
-            {notifications.map((n) => (
+          <div className="flex flex-col gap-3">
+            {notifications.map((n, idx) => (
               <div
-                key={n.notification_id}
+                key={n.notification_id || `notif-tab-${idx}`}
                 onClick={() => handleMarkSingleRead(n.notification_id, n.type, n.reference_id)}
-                className={`py-4 px-4 flex gap-4 hover:bg-slate-50/50 rounded-xl transition-all cursor-pointer ${
-                  !n.is_read ? "bg-primary/5" : ""
+                className={`py-4 px-4 flex gap-4 hover:bg-slate-50/80 border rounded-xl transition-all cursor-pointer ${
+                  !n.is_read 
+                    ? "bg-primary/[0.04] border-primary/20 hover:border-primary/30" 
+                    : "bg-slate-50/30 border-slate-200 hover:border-slate-300"
                 }`}
               >
                 {/* Type Icon */}

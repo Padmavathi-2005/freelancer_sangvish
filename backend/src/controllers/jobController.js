@@ -486,3 +486,173 @@ export const toggleJobFeature = async (req, res) => {
     return res.status(500).json({ message: "Internal server error." });
   }
 };
+
+const generateUniqueJobSlug = async (pool, baseTitle) => {
+  const baseSlug = baseTitle
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)+/g, '');
+  
+  let slug = baseSlug;
+  let count = 0;
+  
+  while (true) {
+    const check = await pool.query(
+      "SELECT COUNT(*) FROM jobs WHERE slug = $1",
+      [slug]
+    );
+    if (parseInt(check.rows[0].count) === 0) {
+      break;
+    }
+    count++;
+    slug = `${baseSlug}-${count}`;
+  }
+  return slug;
+};
+
+export const relistJob = async (req, res) => {
+  try {
+    const jobId = req.params.id;
+    const clientId = req.user.user_id;
+    const { default: pool } = await import("../config/db.js");
+
+    // 1. Fetch original job details
+    const jobRes = await pool.query(
+      "SELECT * FROM jobs WHERE job_id = $1 AND client_id = $2",
+      [parseInt(jobId), clientId]
+    );
+    if (jobRes.rows.length === 0) {
+      return res.status(404).json({ message: "Original project not found or not owned by you." });
+    }
+
+    const originalJob = jobRes.rows[0];
+
+    // 2. Check monthly job posting limits (relist is a new post)
+    const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'package_options_settings'");
+    let packageOption = "Free listing for both type of users";
+    if (settingsRes.rows.length > 0) {
+      const parsed = typeof settingsRes.rows[0].setting_value === "string"
+        ? JSON.parse(settingsRes.rows[0].setting_value)
+        : settingsRes.rows[0].setting_value;
+      packageOption = parsed.package_option || "Free listing for both type of users";
+    }
+
+    const isPaidOption = packageOption === "Paid listing for both" || packageOption === "Paid listing for buyers";
+
+    if (isPaidOption) {
+      const planQuery = await pool.query(
+        `SELECT sp.job_posting_limit 
+         FROM users u 
+         LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id 
+         WHERE u.user_id = $1`,
+        [clientId]
+      );
+      const limit = planQuery.rows.length > 0 && planQuery.rows[0].job_posting_limit !== null 
+        ? parseInt(planQuery.rows[0].job_posting_limit) 
+        : 3;
+
+      const countQuery = await pool.query(
+        `SELECT COUNT(*) FROM jobs 
+         WHERE client_id = $1 
+           AND status != 'Draft'
+           AND created_at >= DATE_TRUNC('month', CURRENT_DATE)`,
+        [clientId]
+      );
+      const postedCount = parseInt(countQuery.rows[0].count || 0);
+
+      if (postedCount >= limit) {
+        return res.status(403).json({ 
+          message: `Monthly job posting limit reached (${postedCount}/${limit}). Please upgrade your subscription plan to publish more projects.` 
+        });
+      }
+    }
+
+    // 3. Generate a new unique slug
+    const newSlug = await generateUniqueJobSlug(pool, originalJob.title);
+
+    // 4. Check vetting setting
+    let finalStatus = "Open";
+    let isVetted = false;
+    const vettingRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'enable_project_vetting'");
+    if (vettingRes.rows.length > 0) {
+      const parsed = typeof vettingRes.rows[0].setting_value === "string"
+        ? JSON.parse(vettingRes.rows[0].setting_value)
+        : vettingRes.rows[0].setting_value;
+      if (parsed && parsed.enabled) {
+        finalStatus = "Pending Approval";
+        isVetted = true;
+      }
+    }
+
+    // 5. Create cloned job post
+    const clonedJob = await Job.create(
+      clientId,
+      originalJob.category_id,
+      originalJob.sub_category_id,
+      originalJob.title,
+      originalJob.description,
+      originalJob.budget,
+      originalJob.experience_level,
+      originalJob.project_type,
+      originalJob.milestone_type,
+      originalJob.min_budget,
+      originalJob.max_budget,
+      originalJob.duration,
+      originalJob.location,
+      originalJob.num_freelancers,
+      originalJob.skills,
+      originalJob.languages,
+      originalJob.max_hours,
+      originalJob.payment_mode,
+      finalStatus,
+      newSlug,
+      originalJob.seo
+    );
+
+    // 6. Admin notifications if vetting is enabled
+    if (isVetted && clonedJob) {
+      try {
+        const adminQuery = await pool.query("SELECT admin_id, email, full_name FROM admins");
+        for (const adminRow of adminQuery.rows) {
+          const userCheck = await pool.query("SELECT user_id FROM users WHERE email = $1", [adminRow.email]);
+          let adminUserId;
+          if (userCheck.rows.length > 0) {
+            adminUserId = userCheck.rows[0].user_id;
+          } else {
+            const insertUser = await pool.query(
+              "INSERT INTO users (first_name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id",
+              [adminRow.full_name || "Admin", adminRow.email, "ADMIN_VIRTUAL_HASH"]
+            );
+            adminUserId = insertUser.rows[0].user_id;
+          }
+
+          const adminNotif = await pool.query(
+            `INSERT INTO notifications (user_id, title, message, type, reference_id)
+             VALUES ($1, 'New Project Vetting Required 🛡️', $2, 'project_vetting', $3) RETURNING *`,
+            [
+              adminUserId,
+              `A new project "${clonedJob.title}" has been posted and requires your vetting approval.`,
+              clonedJob.job_id.toString()
+            ]
+          );
+
+          if (req.io && adminNotif.rows.length > 0) {
+            req.io.to(`user_${adminUserId}`).emit("new_notification", adminNotif.rows[0]);
+          }
+        }
+      } catch (notifErr) {
+        console.error("Project vetting notification failed:", notifErr);
+      }
+    }
+
+    return res.status(201).json({
+      message: isVetted 
+        ? "Project relisted successfully! It is pending admin approval before publishing." 
+        : "Project relisted successfully!",
+      job: clonedJob
+    });
+  } catch (error) {
+    console.error("Error relisting job:", error);
+    return res.status(500).json({ message: "Internal server error while relisting project." });
+  }
+};

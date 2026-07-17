@@ -438,10 +438,16 @@ async function setupTables() {
      await pool.query(`
        ALTER TABLE gig_application_milestones ADD COLUMN IF NOT EXISTS description TEXT;
      `);
-     await pool.query(`
-       ALTER TABLE contract_milestones ADD COLUMN IF NOT EXISTS description TEXT;
-     `);
-     console.log("✅ Milestone description columns migrated successfully.");
+      await pool.query(`
+        ALTER TABLE contract_milestones ADD COLUMN IF NOT EXISTS description TEXT;
+      `);
+      await pool.query(`
+        ALTER TABLE contract_milestones ADD COLUMN IF NOT EXISTS submitted_files TEXT;
+      `);
+      await pool.query(`
+        ALTER TABLE contract_milestones ADD COLUMN IF NOT EXISTS revision_count INTEGER DEFAULT 0;
+      `);
+      console.log("✅ Milestone description, submitted_files, and revision_count columns migrated successfully.");
 
     // Alter contracts table to add application_id link
     await pool.query(`

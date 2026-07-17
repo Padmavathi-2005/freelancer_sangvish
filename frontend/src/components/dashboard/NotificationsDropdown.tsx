@@ -71,9 +71,9 @@ export default function NotificationsDropdown({
                   <p className="text-[9px] mt-0.5 font-medium leading-normal">Updates on projects, orders and inbox will appear here.</p>
                 </div>
               ) : (
-                lastFiveNotifications.map((n) => (
+                lastFiveNotifications.map((n, idx) => (
                   <div
-                     key={n.notification_id}
+                     key={n.notification_id || `notif-dropdown-${idx}`}
                      onClick={() => handleMarkSingleRead(n.notification_id, n.type, n.reference_id)}
                      className={`p-3.5 flex gap-3 hover:bg-slate-50/50 transition-all cursor-pointer ${
                        !n.is_read ? "bg-primary/5" : ""

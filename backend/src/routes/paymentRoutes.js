@@ -16,7 +16,14 @@ import {
   startWorkContract,
   createStripeTimecardSession,
   confirmStripeTimecardPayment,
-  payTimecardDirectly
+  payTimecardDirectly,
+  acceptRevisionRequest,
+  fundExtraRevision,
+  rejectRevisionProposal,
+  fundMilestone,
+  createStripeMilestoneSession,
+  confirmStripeMilestonePayment,
+  requestMilestoneFunding
 } from "../controllers/paymentController.js";
 import {
   openDispute,
@@ -56,6 +63,13 @@ router.post("/timecard/pay", checkApprovedClient, payTimecardDirectly);
 router.post("/contract/milestone/:id/release", checkApprovedClient, releaseMilestonePayment);
 router.post("/contract/milestone/:id/submit", submitMilestoneWork);
 router.post("/contract/milestone/:id/reject", checkApprovedClient, rejectMilestoneWork);
+router.post("/contract/milestone/:id/accept-revision", acceptRevisionRequest);
+router.post("/contract/milestone/:id/fund-revision", checkApprovedClient, fundExtraRevision);
+router.post("/contract/milestone/:id/reject-revision-proposal", checkApprovedClient, rejectRevisionProposal);
+router.post("/contract/milestone/:id/fund", checkApprovedClient, fundMilestone);
+router.post("/contract/milestone/:id/request-funding", requestMilestoneFunding);
+router.post("/contract/milestone/stripe/create-session", checkApprovedClient, createStripeMilestoneSession);
+router.post("/contract/milestone/stripe/confirm", checkApprovedClient, confirmStripeMilestonePayment);
 router.post("/contract/:id/cancel", checkApprovedClient, cancelContractAndRefund);
 router.post("/contract/:id/freelancer-cancel", freelancerCancelContractAndRefund);
 router.post("/contract/:id/start-work", startWorkContract);

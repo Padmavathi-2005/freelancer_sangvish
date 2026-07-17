@@ -1,5 +1,7 @@
 import Stripe from "stripe";
+import fs from "fs";
 import pool from "../config/db.js";
+import { getOrCreateWallet } from "./walletController.js";
 import { handlePostHireNotificationsAndActions } from "../utils/hiringNotifier.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -1191,6 +1193,7 @@ export const releaseMilestonePayment = async (req, res) => {
       freelancerWallet = ins.rows[0];
     }
 
+    // Get client wallet if base milestone or extra revision fee is not funded upfront
     // Get client wallet if the milestone is not funded upfront
     let clientWallet = null;
     const isFundedUpfront = milestone.payment_status === "Funded";
@@ -1237,19 +1240,19 @@ export const releaseMilestonePayment = async (req, res) => {
           [freelancerAmount, sysWallet.wallet_id]
         );
       } else {
-        // Debit client wallet
+        // Debit client wallet for base milestone amount
         await pool.query(
           "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
           [milestoneAmount, clientWallet.wallet_id]
         );
 
-        // Credit system wallet with commission
+        // Credit system wallet with commission on the base milestone amount
         await pool.query(
           "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
           [commissionAmount, sysWallet.wallet_id]
         );
 
-        // Record client-to-system transaction (direct payment/escrow)
+        // Record client-to-system transaction (direct payment/escrow) for base milestone amount
         await pool.query(
           `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
            VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
@@ -1296,7 +1299,7 @@ export const releaseMilestonePayment = async (req, res) => {
       const isFinished = newProgress >= 100;
 
       await pool.query(
-        "UPDATE contracts SET progress = $1, status = $2, completed_at = CASE WHEN $2 = 'Completed' THEN CURRENT_TIMESTAMP ELSE completed_at END, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $3",
+        "UPDATE contracts SET progress = $1, status = $2, completed_at = CASE WHEN $2::varchar = 'Completed' THEN CURRENT_TIMESTAMP ELSE completed_at END, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $3",
         [newProgress, isFinished ? "Completed" : "Work Started", contract.contract_id]
       );
 
@@ -1307,6 +1310,7 @@ export const releaseMilestonePayment = async (req, res) => {
           [contract.application_id]
         );
       }
+
 
       await pool.query("COMMIT");
 
@@ -1349,6 +1353,7 @@ export const submitMilestoneWork = async (req, res) => {
   try {
     const freelancerId = req.user.user_id;
     const milestoneId = parseInt(req.params.id);
+    const { submitted_files } = req.body; // Expecting a JSON string or comma-separated URLs
 
     if (!milestoneId || isNaN(milestoneId)) {
       return res.status(400).json({ message: "Invalid milestone ID." });
@@ -1370,9 +1375,17 @@ export const submitMilestoneWork = async (req, res) => {
       return res.status(403).json({ message: "Access denied. You do not own this contract." });
     }
 
+    if (milestone.payment_status !== "Funded") {
+      return res.status(400).json({ message: "Client has not added funds in escrow for this milestone yet." });
+    }
+
+    if (milestone.revision_status === "Awaiting Funding") {
+      return res.status(400).json({ message: "You cannot submit deliverables because the client has not funded the proposed revision fee yet." });
+    }
+
     await pool.query(
-      "UPDATE contract_milestones SET status = 'Under Review', updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
-      [milestoneId]
+      "UPDATE contract_milestones SET status = 'Under Review', submitted_files = $1, revision_status = 'None', updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $2",
+      [submitted_files || null, milestoneId]
     );
 
     try {
@@ -1410,7 +1423,7 @@ export const rejectMilestoneWork = async (req, res) => {
   try {
     const clientId = req.user.user_id;
     const milestoneId = parseInt(req.params.id);
-    const { feedback } = req.body;
+    const { feedback, submitted_files } = req.body;
 
     if (!milestoneId || isNaN(milestoneId)) {
       return res.status(400).json({ message: "Invalid milestone ID." });
@@ -1435,9 +1448,57 @@ export const rejectMilestoneWork = async (req, res) => {
       return res.status(403).json({ message: "Access denied. You do not own this contract." });
     }
 
+    let existingHistory = [];
+    const currentFeedback = milestone.revision_feedback;
+    if (currentFeedback) {
+      if (currentFeedback.trim().startsWith("[")) {
+        try {
+          existingHistory = JSON.parse(currentFeedback);
+        } catch (e) {
+          existingHistory = [{
+            revision_number: 1,
+            feedback: currentFeedback,
+            files: milestone.revision_submitted_files ? JSON.parse(milestone.revision_submitted_files) : [],
+            timestamp: milestone.updated_at || new Date().toISOString()
+          }];
+        }
+      } else {
+        let filesArr = [];
+        if (milestone.revision_submitted_files) {
+          try {
+            filesArr = JSON.parse(milestone.revision_submitted_files);
+          } catch (e) {}
+        }
+        existingHistory = [{
+          revision_number: 1,
+          feedback: currentFeedback,
+          files: filesArr,
+          timestamp: milestone.updated_at || new Date().toISOString()
+        }];
+      }
+    }
+
+    const newRevisionNumber = existingHistory.length + 1;
+    let newFilesArr = [];
+    if (submitted_files) {
+      try {
+        newFilesArr = typeof submitted_files === "string" ? JSON.parse(submitted_files) : submitted_files;
+      } catch (e) {}
+    }
+
+    const newRevisionObj = {
+      revision_number: newRevisionNumber,
+      feedback: feedback.trim(),
+      files: newFilesArr,
+      timestamp: new Date().toISOString()
+    };
+
+    existingHistory.push(newRevisionObj);
+    const updatedFeedbackJson = JSON.stringify(existingHistory);
+
     await pool.query(
-      "UPDATE contract_milestones SET status = 'Revision Requested', feedback = $1, updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $2",
-      [feedback.trim(), milestoneId]
+      "UPDATE contract_milestones SET status = 'Revision Requested', feedback = $1, revision_feedback = $2, revision_submitted_files = $3, revision_status = 'Pending Acceptance', updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $4",
+      [feedback.trim(), updatedFeedbackJson, submitted_files || null, milestoneId]
     );
 
     try {
@@ -1804,7 +1865,8 @@ export const startWorkContract = async (req, res) => {
 
 export const createStripeTimecardSession = async (req, res) => {
   try {
-    const { contract_id, timecard_id } = req.body;
+    const { contract_id, timecard_id, redirect_path } = req.body;
+    const path = redirect_path || "/dashboard/proposals";
     const userId = req.user.user_id;
 
     // Verify contract owned by client
@@ -1857,8 +1919,8 @@ export const createStripeTimecardSession = async (req, res) => {
         },
       ],
       mode: "payment",
-      success_url: `${FRONTEND_URL}/dashboard/proposals?stripe_timecard_success=1&contract_id=${contract_id}&timecard_id=${timecard_id}&amount=${extraPayment}`,
-      cancel_url:  `${FRONTEND_URL}/dashboard/proposals?stripe_timecard_cancel=1&contract_id=${contract_id}&timecard_id=${timecard_id}`,
+      success_url: `${FRONTEND_URL}${path}?project_id=${contract.job_id}&stripe_timecard_success=1&contract_id=${contract_id}&timecard_id=${timecard_id}&amount=${extraPayment}`,
+      cancel_url:  `${FRONTEND_URL}${path}?project_id=${contract.job_id}&stripe_timecard_cancel=1&contract_id=${contract_id}&timecard_id=${timecard_id}`,
       metadata: {
         contract_id: contract_id.toString(),
         timecard_id: timecard_id.toString(),
@@ -2044,5 +2106,723 @@ export const payTimecardDirectly = async (req, res) => {
   } catch (err) {
     console.error("Pay timecard directly error:", err);
     return res.status(500).json({ message: err.message || "Failed to process timecard payment." });
+  }
+};
+
+export const acceptRevisionRequest = async (req, res) => {
+  try {
+    const freelancerId = req.user.user_id;
+    const milestoneId = parseInt(req.params.id);
+    const { extra_fee } = req.body; // optional extra fee proposed by freelancer
+
+    if (!milestoneId || isNaN(milestoneId)) {
+      return res.status(400).json({ message: "Invalid milestone ID." });
+    }
+
+    const milestoneRes = await pool.query("SELECT * FROM contract_milestones WHERE milestone_id = $1", [milestoneId]);
+    if (milestoneRes.rows.length === 0) {
+      return res.status(404).json({ message: "Milestone not found." });
+    }
+    const milestone = milestoneRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [milestone.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with milestone not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.freelancer_id !== freelancerId) {
+      return res.status(403).json({ message: "Access denied. You do not own this contract." });
+    }
+
+    if (milestone.revision_status !== "Pending Acceptance") {
+      return res.status(400).json({ message: "This revision request has already been accepted or handled." });
+    }
+
+    const currentCount = parseInt(milestone.revision_count || "0");
+    const limit = parseInt(contract.revisions_limit || "3");
+    const fee = parseFloat(extra_fee || "0");
+
+    if (currentCount < limit && fee <= 0) {
+      // Free/Within Limit revision: Start immediately
+      await pool.query(
+        "UPDATE contract_milestones SET revision_status = 'In Progress', status = 'Revision Requested', revision_count = COALESCE(revision_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
+        [milestoneId]
+      );
+      
+      // Notify client
+      try {
+        const { default: Notification } = await import("../models/notificationModel.js");
+        await Notification.create({
+          userId: contract.client_id,
+          title: "Revision Accepted (Free)!",
+          message: `Freelancer started work on the revision for milestone "${milestone.title}".`,
+          type: "contract",
+          referenceId: contract.contract_id.toString(),
+        });
+      } catch {}
+
+      return res.status(200).json({
+        message: "Revision accepted successfully.",
+        revision_status: "In Progress"
+      });
+    } else {
+      // Over limit and fee specified: Awaiting funding
+      await pool.query(
+        "UPDATE contract_milestones SET revision_status = 'Awaiting Funding', extra_revision_fee = $1, updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $2",
+        [fee, milestoneId]
+      );
+
+      // Notify client
+      try {
+        const { default: Notification } = await import("../models/notificationModel.js");
+        await Notification.create({
+          userId: contract.client_id,
+          title: "Extra Revision Fee Proposed",
+          message: `Freelancer has accepted the revision for milestone "${milestone.title}" but proposed an extra fee of $${fee.toFixed(2)} (limit reached).`,
+          type: "contract",
+          referenceId: contract.contract_id.toString(),
+        });
+      } catch {}
+
+      return res.status(200).json({
+        message: `Proposed extra revision fee of $${fee.toFixed(2)} to client.`,
+        revision_status: "Awaiting Funding"
+      });
+    }
+  } catch (err) {
+    console.error("Accept revision error:", err);
+    return res.status(500).json({ message: err.message || "Failed to accept revision request." });
+  }
+};
+
+export const fundExtraRevision = async (req, res) => {
+  try {
+    const clientId = req.user.user_id;
+    const milestoneId = parseInt(req.params.id);
+
+    if (!milestoneId || isNaN(milestoneId)) {
+      return res.status(400).json({ message: "Invalid milestone ID." });
+    }
+
+    const milestoneRes = await pool.query("SELECT * FROM contract_milestones WHERE milestone_id = $1", [milestoneId]);
+    if (milestoneRes.rows.length === 0) {
+      return res.status(404).json({ message: "Milestone not found." });
+    }
+    const milestone = milestoneRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [milestone.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with milestone not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.client_id !== clientId) {
+      return res.status(403).json({ message: "Access denied. You do not own this contract." });
+    }
+
+    if (milestone.revision_status !== "Awaiting Funding") {
+      return res.status(400).json({ message: "This revision fee has already been funded or is not pending." });
+    }
+
+    const fee = parseFloat(milestone.extra_revision_fee || "0");
+    if (fee <= 0) {
+      return res.status(400).json({ message: "No extra revision fee is pending for this milestone." });
+    }
+
+    // Process wallet payment from client wallet to system wallet (escrow)
+    const clientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [clientId]);
+    const clientWallet = clientWalletRes.rows[0];
+
+    if (!clientWallet || parseFloat(clientWallet.balance) < fee) {
+      return res.status(400).json({
+        message: `Insufficient wallet balance. Funding requires $${fee.toFixed(2)}, but you only have $${parseFloat(clientWallet?.balance || "0").toFixed(2)}.`
+      });
+    }
+
+    const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+    const sysWallet = sysRes.rows[0];
+
+    await pool.query("BEGIN");
+    try {
+      // Debit client
+      await pool.query(
+        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [fee, clientWallet.wallet_id]
+      );
+
+      // Get freelancer's wallet
+      let freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [contract.freelancer_id]);
+      let freelancerWallet = freelancerWalletRes.rows[0];
+      if (!freelancerWallet) {
+        const ins = await pool.query(
+          "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
+          [contract.freelancer_id]
+        );
+        freelancerWallet = ins.rows[0];
+      }
+
+      // Calculate commission
+      let commissionPercent = 0.05;
+      const feeRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'platform_fee'");
+      if (feeRes.rows.length > 0) {
+        let feeVal = feeRes.rows[0].setting_value;
+        if (typeof feeVal === "string") {
+          try { feeVal = JSON.parse(feeVal); } catch {}
+        }
+        if (feeVal?.fee) {
+          commissionPercent = parseFloat(feeVal.fee) / 100;
+        }
+      }
+
+      const commissionAmount = fee * commissionPercent;
+      const freelancerAmount = fee - commissionAmount;
+
+      // Credit freelancer wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [freelancerAmount, freelancerWallet.wallet_id]
+      );
+
+      // Credit system admin wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [commissionAmount, sysWallet.wallet_id]
+      );
+
+      // Record transaction
+      await pool.query(
+        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, commission_amount, type, status, description)
+         VALUES ($1, $2, $3, $4, 'Revision_Direct_Payment', 'Completed', $5)`,
+        [
+          clientWallet.wallet_id,
+          freelancerWallet.wallet_id,
+          freelancerAmount,
+          commissionAmount,
+          `Direct payment for revision fee on milestone: ${milestone.title} (contract: ${contract.title})`
+        ]
+      );
+
+      // Update milestone status to In Progress and increment revision_count
+      await pool.query(
+        "UPDATE contract_milestones SET revision_status = 'In Progress', status = 'Revision Requested', revision_count = COALESCE(revision_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
+        [milestoneId]
+      );
+
+      await pool.query("COMMIT");
+
+      // Notify freelancer
+      try {
+        const { default: Notification } = await import("../models/notificationModel.js");
+        await Notification.create({
+          userId: contract.freelancer_id,
+          title: "Extra Revision Funded! 💰",
+          message: `Client funded the extra revision fee of $${fee.toFixed(2)} for milestone "${milestone.title}". Work is started.`,
+          type: "contract",
+          referenceId: contract.contract_id.toString(),
+        });
+      } catch {}
+
+      return res.status(200).json({
+        message: "Extra revision funded successfully. Work started.",
+        revision_status: "In Progress"
+      });
+    } catch (txErr) {
+      await pool.query("ROLLBACK");
+      throw txErr;
+    }
+  } catch (err) {
+    console.error("Fund extra revision error:", err);
+    return res.status(500).json({ message: err.message || "Failed to fund extra revision." });
+  }
+};
+
+export const rejectRevisionProposal = async (req, res) => {
+  try {
+    const clientId = req.user.user_id;
+    const milestoneId = parseInt(req.params.id);
+
+    if (!milestoneId || isNaN(milestoneId)) {
+      return res.status(400).json({ message: "Invalid milestone ID." });
+    }
+
+    const milestoneRes = await pool.query("SELECT * FROM contract_milestones WHERE milestone_id = $1", [milestoneId]);
+    if (milestoneRes.rows.length === 0) {
+      return res.status(404).json({ message: "Milestone not found." });
+    }
+    const milestone = milestoneRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [milestone.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with milestone not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.client_id !== clientId) {
+      return res.status(403).json({ message: "Access denied. You do not own this contract." });
+    }
+
+    if (milestone.revision_status !== "Awaiting Funding") {
+      return res.status(400).json({ message: "No active revision fee proposal is pending rejection." });
+    }
+
+    // Reset status back to Pending Acceptance and clear fee
+    await pool.query(
+      "UPDATE contract_milestones SET revision_status = 'Pending Acceptance', extra_revision_fee = 0.00, updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
+      [milestoneId]
+    );
+
+    // Notify freelancer
+    try {
+      const { default: Notification } = await import("../models/notificationModel.js");
+      await Notification.create({
+        userId: contract.freelancer_id,
+        title: "Revision Fee Declined ❌",
+        message: `Client declined the extra fee proposal of $${parseFloat(milestone.extra_revision_fee).toFixed(2)} for milestone "${milestone.title}". Please accept for free or propose a new fee.`,
+        type: "contract",
+        referenceId: contract.contract_id.toString(),
+      });
+    } catch {}
+
+    return res.status(200).json({
+      message: "Revision fee proposal declined successfully.",
+      revision_status: "Pending Acceptance"
+    });
+  } catch (err) {
+    console.error("Reject revision proposal error:", err);
+    return res.status(500).json({ message: err.message || "Failed to decline revision proposal." });
+  }
+};
+
+export const fundMilestone = async (req, res) => {
+  try {
+    const clientId = req.user.user_id;
+    const milestoneId = parseInt(req.params.id);
+
+    if (!milestoneId || isNaN(milestoneId)) {
+      return res.status(400).json({ message: "Invalid milestone ID." });
+    }
+
+    const milestoneRes = await pool.query("SELECT * FROM contract_milestones WHERE milestone_id = $1", [milestoneId]);
+    if (milestoneRes.rows.length === 0) {
+      return res.status(404).json({ message: "Milestone not found." });
+    }
+    const milestone = milestoneRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [milestone.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with milestone not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.client_id !== clientId) {
+      return res.status(403).json({ message: "Access denied. You do not own this contract." });
+    }
+
+    if (milestone.payment_status === "Funded" || milestone.payment_status === "Paid") {
+      return res.status(400).json({ message: "Milestone is already funded or paid." });
+    }
+
+    const milestoneAmount = parseFloat(milestone.amount);
+
+    const clientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [clientId]);
+    const clientWallet = clientWalletRes.rows[0];
+
+    if (!clientWallet || parseFloat(clientWallet.balance) < milestoneAmount) {
+      return res.status(400).json({
+        message: `Insufficient wallet balance. Funding requires $${milestoneAmount.toFixed(2)}, but you only have $${parseFloat(clientWallet?.balance || "0").toFixed(2)}.`
+      });
+    }
+
+    const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+    const sysWallet = sysRes.rows[0];
+
+    await pool.query("BEGIN");
+    try {
+      // Debit client
+      await pool.query(
+        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [milestoneAmount, clientWallet.wallet_id]
+      );
+      // Credit system escrow
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [milestoneAmount, sysWallet.wallet_id]
+      );
+
+      // Record transaction
+      await pool.query(
+        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+         VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
+        [
+          clientWallet.wallet_id,
+          sysWallet.wallet_id,
+          milestoneAmount,
+          `Escrow funding for milestone: ${milestone.title} (contract: ${contract.title})`
+        ]
+      );
+
+      // Update milestone
+      await pool.query(
+        "UPDATE contract_milestones SET payment_status = 'Funded', status = 'Pending', updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
+        [milestoneId]
+      );
+
+      await pool.query("COMMIT");
+
+      // Notify freelancer
+      try {
+        const { default: Notification } = await import("../models/notificationModel.js");
+        await Notification.create({
+          userId: contract.freelancer_id,
+          title: "Milestone Funded! 💰",
+          message: `Client funded milestone "${milestone.title}" ($${milestoneAmount.toFixed(2)}). You can now start working.`,
+          type: "contract",
+          referenceId: contract.contract_id.toString(),
+        });
+      } catch {}
+
+      return res.status(200).json({
+        message: "Milestone funded successfully.",
+        payment_status: "Funded"
+      });
+    } catch (txErr) {
+      await pool.query("ROLLBACK");
+      throw txErr;
+    }
+  } catch (err) {
+    console.error("Fund milestone error:", err);
+    return res.status(500).json({ message: err.message || "Failed to fund milestone." });
+  }
+};
+
+export const requestMilestoneFunding = async (req, res) => {
+  try {
+    const freelancerId = req.user.user_id;
+    const milestoneId = parseInt(req.params.id);
+
+    if (!milestoneId || isNaN(milestoneId)) {
+      return res.status(400).json({ message: "Invalid milestone ID." });
+    }
+
+    const milestoneRes = await pool.query("SELECT * FROM contract_milestones WHERE milestone_id = $1", [milestoneId]);
+    if (milestoneRes.rows.length === 0) {
+      return res.status(404).json({ message: "Milestone not found." });
+    }
+    const milestone = milestoneRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [milestone.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with milestone not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.freelancer_id !== freelancerId) {
+      return res.status(403).json({ message: "Access denied. Only the hired freelancer can request funding." });
+    }
+
+    if (milestone.payment_status === "Funded" || milestone.payment_status === "Paid") {
+      return res.status(400).json({ message: "Milestone is already funded or paid." });
+    }
+
+    // Notify client
+    try {
+      const { default: Notification } = await import("../models/notificationModel.js");
+      await Notification.create({
+        userId: contract.client_id,
+        title: "Milestone Funding Request! 💰",
+        message: `Freelancer has requested you to fund the next milestone: "${milestone.title}" ($${parseFloat(milestone.amount).toFixed(2)}).`,
+        type: "system",
+        referenceId: contract.contract_id.toString(),
+      });
+
+      if (req.io) {
+        req.io.to(`user_${contract.client_id}`).emit("new_notification", {
+          title: "Milestone Funding Request!",
+          message: `Freelancer requested funding for "${milestone.title}".`,
+        });
+      }
+    } catch (nErr) {
+      console.error("Failed to create funding request notification:", nErr);
+    }
+
+    return res.status(200).json({ message: "Funding request sent to client successfully." });
+  } catch (err) {
+    console.error("Request milestone funding error:", err);
+    return res.status(500).json({ message: err.message || "Failed to request milestone funding." });
+  }
+};
+
+
+export const createStripeMilestoneSession = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { milestone_id, type, redirect_path } = req.body; // type can be 'milestone' or 'revision'
+    const path = redirect_path || "/dashboard/proposals";
+
+    if (!milestone_id || !type) {
+      return res.status(400).json({ message: "milestone_id and type are required." });
+    }
+
+    // Fetch milestone details
+    const milestoneRes = await pool.query(
+      `SELECT cm.*, c.title as contract_title, c.client_id, c.job_id
+       FROM contract_milestones cm
+       JOIN contracts c ON cm.contract_id = c.contract_id
+       WHERE cm.milestone_id = $1`,
+      [parseInt(milestone_id)]
+    );
+    if (milestoneRes.rows.length === 0) {
+      return res.status(404).json({ message: "Milestone not found." });
+    }
+    const milestone = milestoneRes.rows[0];
+    if (milestone.client_id !== userId) {
+      return res.status(403).json({ message: "Access denied. You do not own the contract for this milestone." });
+    }
+
+    let payAmount = 0;
+    let description = "";
+    if (type === "milestone") {
+      payAmount = parseFloat(milestone.amount);
+      description = `Milestone Escrow Funding: ${milestone.title}`;
+    } else if (type === "revision") {
+      payAmount = parseFloat(milestone.extra_revision_fee);
+      description = `Extra Revision Fee: ${milestone.title}`;
+    } else {
+      return res.status(400).json({ message: "Invalid type. Must be 'milestone' or 'revision'." });
+    }
+
+    if (payAmount <= 0) {
+      return res.status(400).json({ message: "Amount must be greater than zero to charge via Stripe." });
+    }
+
+    const amountCents = Math.round(payAmount * 100);
+
+    // Fetch Stripe secret key from Settings
+    let stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripeKeysRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'stripe_keys'");
+    if (stripeKeysRes.rows.length > 0) {
+      let keys = stripeKeysRes.rows[0].setting_value;
+      if (typeof keys === "string") {
+        try { keys = JSON.parse(keys); } catch {}
+      }
+      if (keys?.secret_key) {
+        stripeSecretKey = keys.secret_key;
+      }
+    }
+
+    if (!stripeSecretKey) {
+      return res.status(400).json({ message: "Stripe is not configured. Please add Stripe Secret Key in Admin Payment Settings." });
+    }
+
+    const localStripe = new Stripe(stripeSecretKey);
+    const session = await localStripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: description,
+              description: `Contract: ${milestone.contract_title}`,
+            },
+            unit_amount: amountCents,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${FRONTEND_URL}${path}?project_id=${milestone.job_id}&stripe_milestone_success=1&milestone_id=${milestone_id}&type=${type}&amount=${payAmount}`,
+      cancel_url:  `${FRONTEND_URL}${path}?project_id=${milestone.job_id}&stripe_milestone_cancel=1&milestone_id=${milestone_id}`,
+      metadata: {
+        milestone_id: milestone_id.toString(),
+        user_id: userId.toString(),
+        amount_usd: payAmount.toString(),
+        type: type,
+      },
+    });
+
+    return res.status(200).json({ url: session.url, session_id: session.id });
+  } catch (err) {
+    console.error("Stripe session creation error for milestone:", err);
+    return res.status(500).json({ message: "Failed to create Stripe payment session.", error: err.message });
+  }
+};
+
+export const confirmStripeMilestonePayment = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { milestone_id, type, amount_usd } = req.body;
+    fs.appendFileSync("api_logs.txt", `[${new Date().toISOString()}] confirmStripeMilestonePayment: userId=${userId}, body=${JSON.stringify(req.body)}\n`);
+
+    if (!milestone_id || !type || !amount_usd) {
+      return res.status(400).json({ message: "milestone_id, type and amount_usd are required." });
+    }
+
+    const milestoneId = parseInt(milestone_id);
+    const payAmount = parseFloat(amount_usd);
+
+    // Fetch milestone details
+    const milestoneRes = await pool.query(
+      `SELECT cm.*, c.title as contract_title, c.client_id, c.freelancer_id
+       FROM contract_milestones cm
+       JOIN contracts c ON cm.contract_id = c.contract_id
+       WHERE cm.milestone_id = $1`,
+      [milestoneId]
+    );
+    if (milestoneRes.rows.length === 0) {
+      return res.status(404).json({ message: "Milestone not found." });
+    }
+    const milestone = milestoneRes.rows[0];
+    if (milestone.client_id !== userId) {
+      return res.status(403).json({ message: "Access denied." });
+    }
+
+    // 1. Get or create client's wallet
+    const wallet = await getOrCreateWallet(userId, req.user.role);
+
+    // 2. Perform transaction: deposit the amount to client's wallet first
+    await pool.query("BEGIN");
+    try {
+      // Update wallet balance
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [payAmount, wallet.wallet_id]
+      );
+
+      // Record deposit transaction
+      await pool.query(
+        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+         VALUES (NULL, $1, $2, 'Stripe Deposit', 'Completed', $3)`,
+        [wallet.wallet_id, payAmount, `Stripe payment for ${type}: ${milestone.title}`]
+      );
+
+      await pool.query("COMMIT");
+    } catch (txErr) {
+      await pool.query("ROLLBACK");
+      throw txErr;
+    }
+
+    // 3. Perform the actual funding call
+    await pool.query("BEGIN");
+    try {
+      // Deduct client wallet
+      await pool.query(
+        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [payAmount, wallet.wallet_id]
+      );
+
+      // Get system wallet ID
+      const systemWalletRes = await pool.query("SELECT wallet_id FROM wallets WHERE is_system = true LIMIT 1");
+      const systemWalletId = systemWalletRes.rows[0]?.wallet_id || 1;
+
+      if (type === "milestone") {
+        // Increment system escrow wallet balance
+        await pool.query(
+          "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+          [payAmount, systemWalletId]
+        );
+
+        // Record escrow transfer
+        await pool.query(
+          `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+           VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
+          [wallet.wallet_id, systemWalletId, payAmount, `Escrow funding for milestone: ${milestone.title} (contract: ${milestone.contract_title})`]
+        );
+
+        // Update milestone
+        await pool.query(
+          "UPDATE contract_milestones SET payment_status = 'Funded', status = 'Pending', updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
+          [milestoneId]
+        );
+      } else {
+        // Get freelancer wallet
+        let freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [milestone.freelancer_id]);
+        let freelancerWallet = freelancerWalletRes.rows[0];
+        if (!freelancerWallet) {
+          const ins = await pool.query(
+            "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
+            [milestone.freelancer_id]
+          );
+          freelancerWallet = ins.rows[0];
+        }
+
+        // Calculate commission
+        let commissionPercent = 0.05;
+        const feeRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'platform_fee'");
+        if (feeRes.rows.length > 0) {
+          let feeVal = feeRes.rows[0].setting_value;
+          if (typeof feeVal === "string") {
+            try { feeVal = JSON.parse(feeVal); } catch {}
+          }
+          if (feeVal?.fee) {
+            commissionPercent = parseFloat(feeVal.fee) / 100;
+          }
+        }
+
+        const commissionAmount = payAmount * commissionPercent;
+        const freelancerAmount = payAmount - commissionAmount;
+
+        // Credit freelancer wallet
+        await pool.query(
+          "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+          [freelancerAmount, freelancerWallet.wallet_id]
+        );
+
+        // Credit system admin wallet
+        await pool.query(
+          "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+          [commissionAmount, systemWalletId]
+        );
+
+        // Record transaction
+        await pool.query(
+          `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, commission_amount, type, status, description)
+           VALUES ($1, $2, $3, $4, 'Revision_Direct_Payment', 'Completed', $5)`,
+          [
+            wallet.wallet_id,
+            freelancerWallet.wallet_id,
+            freelancerAmount,
+            commissionAmount,
+            `Direct payment for revision fee on milestone: ${milestone.title} (contract: ${milestone.contract_title})`
+          ]
+        );
+
+        // Update milestone revision status and increment revision_count
+        await pool.query(
+          "UPDATE contract_milestones SET revision_status = 'In Progress', revision_count = COALESCE(revision_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
+          [milestoneId]
+        );
+      }
+
+      await pool.query("COMMIT");
+
+      // Notify freelancer
+      try {
+        const { default: Notification } = await import("../models/notificationModel.js");
+        await Notification.create({
+          userId: milestone.freelancer_id,
+          title: type === "milestone" ? "Milestone Funded! 💰" : "Revision Funded! 💰",
+          message: type === "milestone" 
+            ? `Client funded milestone "${milestone.title}" ($${payAmount.toFixed(2)}).`
+            : `Client funded extra revision fee for "${milestone.title}" ($${payAmount.toFixed(2)}).`,
+          type: "contract",
+          referenceId: milestone.contract_id.toString(),
+        });
+      } catch {}
+
+      return res.status(200).json({
+        message: type === "milestone" ? "Milestone funded successfully." : "Extra revision funded successfully.",
+        payment_status: type === "milestone" ? "Funded" : undefined,
+        revision_status: type === "revision" ? "In Progress" : undefined
+      });
+    } catch (txErr) {
+      await pool.query("ROLLBACK");
+      throw txErr;
+    }
+  } catch (err) {
+    fs.appendFileSync("api_logs.txt", `[${new Date().toISOString()}] confirmStripeMilestonePayment ERROR: ${err.message}\n`);
+    console.error("Stripe milestone confirmation error:", err);
+    return res.status(500).json({ message: err.message || "Failed to confirm Stripe payment." });
   }
 };

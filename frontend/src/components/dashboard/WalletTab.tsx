@@ -360,8 +360,17 @@ export default function WalletTab() {
                           {tx.type}
                         </span>
                       </td>
-                      <td className="py-3 text-slate-500 font-semibold max-w-[300px] truncate" title={tx.description}>
-                        {tx.description}
+                      <td className="py-3 text-slate-500 font-semibold max-w-[300px]" title={tx.description}>
+                        <div className="truncate">{tx.description}</div>
+                        {parseFloat(tx.commission_amount || "0") > 0 && (() => {
+                          const origAmt = parseFloat(tx.amount) + parseFloat(tx.commission_amount);
+                          const commPercent = Math.round((parseFloat(tx.commission_amount) / origAmt) * 1000) / 10;
+                          return (
+                            <div className="text-[9px] text-slate-400 font-bold mt-0.5">
+                              ⚠️ Platform service commission of {commPercent}% (${parseFloat(tx.commission_amount).toFixed(2)}) was deducted.
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className={`py-3 text-right font-black ${amtStyle}`}>
                         {displayAmt}

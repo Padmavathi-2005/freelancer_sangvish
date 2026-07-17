@@ -76,6 +76,7 @@ export default function ProjectDetailsPage() {
   const [limitModalMessage, setLimitModalMessage] = useState("");
   const [limitReached, setLimitReached] = useState(false);
   const [limitMsg, setLimitMsg] = useState("");
+  const [activePlanName, setActivePlanName] = useState<string>("Standard");
 
   const fetchJobDetails = async () => {
     try {
@@ -121,6 +122,21 @@ export default function ProjectDetailsPage() {
                 setLimitMsg(`Your monthly proposal limit of ${limitData.limit} has been reached for this billing cycle. Your limit resets on ${limitData.resetDate}.`);
               }
             }
+          }
+
+          // Fetch subscription to determine commission
+          try {
+            const subRes = await fetch(`${API_URL}/users/me/subscription`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (subRes.ok) {
+              const subData = await subRes.json();
+              if (subData && subData.plan_name) {
+                setActivePlanName(subData.plan_name);
+              }
+            }
+          } catch (e) {
+            console.error("Error fetching subscription:", e);
           }
         }
       }
@@ -534,6 +550,22 @@ export default function ProjectDetailsPage() {
                       onChange={(e) => setBidAmount(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none font-semibold"
                     />
+                    {bidAmount && !isNaN(parseFloat(bidAmount)) && (
+                      <div className="mt-2 text-[10px] text-slate-500 font-bold flex flex-col gap-1.5 bg-slate-100/60 rounded-xl p-3 border border-slate-200/50 animate-fadeIn">
+                        <div className="flex justify-between items-center text-slate-600">
+                          <span>Platform Service Fee ({activePlanName === "Professional" ? "2.0%" : activePlanName === "Enterprise" ? "0.0%" : "5.0%"}):</span>
+                          <span className="text-rose-600 font-bold">
+                            -${(parseFloat(bidAmount) * (activePlanName === "Professional" ? 0.02 : activePlanName === "Enterprise" ? 0.00 : 0.05)).toFixed(2)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-emerald-700 border-t border-slate-200/80 pt-2 font-black">
+                          <span>Your Estimated Net Payout:</span>
+                          <span className="text-emerald-605 font-black text-xs">
+                            +${(parseFloat(bidAmount) * (activePlanName === "Professional" ? 0.98 : activePlanName === "Enterprise" ? 1.00 : 0.95)).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {job.project_type !== "Hourly" && (

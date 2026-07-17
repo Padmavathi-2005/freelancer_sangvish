@@ -1,25 +1,20 @@
-import pg from 'pg';
-import dotenv from 'dotenv';
-dotenv.config();
-
-const { Pool } = pg;
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
-});
+import pool from '../config/db.js';
 
 async function main() {
   try {
-    // Check constraints on contracts table
-    const res = await pool.query(
-      `SELECT conname, pg_get_constraintdef(oid) 
-       FROM pg_constraint 
-       WHERE conrelid = 'contracts'::regclass`
-    );
-    console.log("Constraints:", res.rows);
+    const contractsCols = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'contracts'
+    `);
+    console.log("contracts columns:", contractsCols.rows.map(r => r.column_name));
+
+    const proposalsCols = await pool.query(`
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'proposals'
+    `);
+    console.log("proposals columns:", proposalsCols.rows.map(r => r.column_name));
   } catch (err) {
     console.error(err);
   } finally {

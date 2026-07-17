@@ -995,8 +995,8 @@ export default function InboxTab({
       </div>
 
       {/* Custom Offer Modal */}
-      {isCustomOfferModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
+      {isCustomOfferModalOpen && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-900/25 backdrop-blur-[1px] flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative">
             <button
               onClick={() => {
@@ -1006,7 +1006,7 @@ export default function InboxTab({
                 setOfferDesc("");
                 setOfferGigId("");
               }}
-              className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-500 hover:text-slate-850 cursor-pointer"
+              className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-500 hover:text-slate-855 cursor-pointer"
             >
               Cancel
             </button>
@@ -1082,13 +1082,16 @@ export default function InboxTab({
                   // Send payload as message
                   const token = localStorage.getItem("token");
                   try {
-                    const res = await fetch(`${API_URL}/messages/${selectedConvId}`, {
+                    const res = await fetch(`${API_URL}/messages/send`, {
                       method: "POST",
                       headers: {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`
                       },
-                      body: JSON.stringify({ message_text: JSON.stringify(offerPayload) })
+                      body: JSON.stringify({
+                        conversation_id: selectedConvId,
+                        message_text: JSON.stringify(offerPayload)
+                      })
                     });
                     if (res.ok) {
                       triggerToast("success", "Custom offer dispatched to client!");
@@ -1098,7 +1101,12 @@ export default function InboxTab({
                       setOfferDesc("");
                       setOfferGigId("");
                       // Refresh message feed
-                      setSelectedConvId(selectedConvId);
+                      if (selectedConvId) {
+                        fetchChatMessages(selectedConvId);
+                      }
+                    } else {
+                      const errData = await res.json();
+                      triggerToast("error", errData.message || "Failed to send custom offer.");
                     }
                   } catch (e) {
                     triggerToast("error", "Failed to send custom offer.");
@@ -1110,7 +1118,8 @@ export default function InboxTab({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Dispute Response custom modal */}

@@ -44,6 +44,14 @@ export default function PricingPage() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Load and apply theme on mount
+    const savedTheme = typeof window !== "undefined" ? localStorage.getItem("siteTheme") || "light" : "light";
+    const primaryCol = typeof window !== "undefined" ? localStorage.getItem("primaryColor") || "#0d9488" : "#0d9488";
+    const secondaryCol = typeof window !== "undefined" ? localStorage.getItem("secondaryColor") || "#06b6d4" : "#06b6d4";
+    import("@/utils/theme").then((mod) => {
+      mod.applyTheme(savedTheme, primaryCol, secondaryCol);
+    });
+
     const storedRole = typeof window !== "undefined" ? localStorage.getItem("onboarding_role") : null;
     if (storedRole === "client") setRoleTab("buyer");
 
@@ -135,43 +143,43 @@ export default function PricingPage() {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950/80 text-slate-800 dark:text-slate-100 transition-colors duration-300">
         <Header />
 
         {/* ── Hero ── */}
-        <section className="relative bg-white overflow-hidden border-b border-slate-100/80 py-20 px-4 text-center">
+        <section className="relative bg-white dark:bg-slate-900/40 overflow-hidden border-b border-slate-100/80 dark:border-slate-800/80 py-20 px-4 text-center transition-colors duration-300">
           {/* Animated blobs */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <div className="blob-a absolute -top-24 -left-24 w-80 h-80 bg-teal-100/50 rounded-full blur-3xl" />
-            <div className="blob-b absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-100/40 rounded-full blur-3xl" />
-            <div className="blob-a absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[200px] bg-teal-50/60 rounded-full blur-3xl" />
+            <div className="blob-a absolute -top-24 -left-24 w-80 h-80 bg-teal-100/50 dark:bg-teal-900/10 rounded-full blur-3xl" />
+            <div className="blob-b absolute -bottom-24 -right-24 w-96 h-96 bg-emerald-100/40 dark:bg-emerald-900/10 rounded-full blur-3xl" />
+            <div className="blob-a absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[200px] bg-teal-50/60 dark:bg-teal-900/5 rounded-full blur-3xl" />
           </div>
 
           <div className="relative max-w-3xl mx-auto" style={{ animation: "fadeUp 0.6s cubic-bezier(.22,1,.36,1) both" }}>
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-teal-700 bg-teal-50 border border-teal-100 px-4 py-1.5 rounded-full mb-6 shadow-sm">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/40 px-4 py-1.5 rounded-full mb-6 shadow-sm">
               <FiZap className="w-3 h-3" /> Membership Plans
             </span>
-            <h1 className="text-5xl sm:text-6xl font-black text-slate-900 tracking-tight leading-tight">
+            <h1 className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               Simple,{" "}
               <span className="relative inline-block">
                 <span className="relative z-10 text-transparent bg-clip-text"
-                  style={{ backgroundImage: "linear-gradient(135deg,#0d9488,#064e3b)", WebkitBackgroundClip: "text" }}>
+                  style={{ backgroundImage: "linear-gradient(135deg,#2dd4bf,#0d9488)", WebkitBackgroundClip: "text" }}>
                   transparent
                 </span>
-                <span className="absolute bottom-1 left-0 right-0 h-2.5 bg-teal-100 rounded-full z-0" />
+                <span className="absolute bottom-1 left-0 right-0 h-2.5 bg-teal-100 dark:bg-teal-900/40 rounded-full z-0" />
               </span>{" "}
               pricing
             </h1>
-            <p className="mt-5 text-sm text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
+            <p className="mt-5 text-sm text-slate-500 dark:text-slate-400 font-semibold max-w-md mx-auto leading-relaxed">
               Upgrade or cancel any time — no lock‑in, no hidden fees.
             </p>
 
             {!loading && hasBuyerPlans && (
-              <div className="mt-8 inline-flex items-center bg-slate-100/80 backdrop-blur border border-slate-200 rounded-2xl p-1 gap-1 shadow-sm">
-                <button onClick={() => setRoleTab("seller")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "seller" ? "bg-teal-700 text-white shadow-md" : "text-slate-500 hover:text-slate-800"}`}>
+              <div className="mt-8 inline-flex items-center bg-slate-100/80 dark:bg-slate-850/80 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-1 gap-1 shadow-sm">
+                <button onClick={() => setRoleTab("seller")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "seller" ? "bg-teal-700 text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-205"}`}>
                   Freelancer Plans
                 </button>
-                <button onClick={() => setRoleTab("buyer")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "buyer" ? "bg-teal-700 text-white shadow-md" : "text-slate-500 hover:text-slate-800"}`}>
+                <button onClick={() => setRoleTab("buyer")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "buyer" ? "bg-teal-700 text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-205"}`}>
                   Client Plans
                 </button>
               </div>
@@ -183,12 +191,12 @@ export default function PricingPage() {
         <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32 gap-4">
-              <div className="w-10 h-10 border-4 border-teal-600 border-t-transparent rounded-full animate-spin" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Loading plans…</p>
+              <div className="w-10 h-10 border-4 border-teal-600 dark:border-teal-400 border-t-transparent rounded-full animate-spin" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-550">Loading plans…</p>
             </div>
           ) : plans.length === 0 ? (
             <div className="text-center py-32">
-              <p className="text-sm font-bold text-slate-400">No plans available yet.</p>
+              <p className="text-sm font-bold text-slate-400 dark:text-slate-550">No plans available yet.</p>
             </div>
           ) : (
             <div className={`grid gap-6 items-center ${colClass}`}>
@@ -202,7 +210,6 @@ export default function PricingPage() {
 
                 // Card themes
                 const isLight = idx === 0;
-                const isDark = idx === 2;
 
                 return (
                   <div
@@ -213,9 +220,9 @@ export default function PricingPage() {
                         : "hover:scale-[1.02] hover:shadow-xl"
                     } ${
                       isLight
-                        ? "bg-white ring-2 ring-slate-200 shadow-md"
+                        ? "bg-white dark:bg-slate-900/85 ring-2 ring-slate-200 dark:ring-slate-800/80 shadow-md"
                         : isPopular
-                        ? "ring-2 ring-teal-400 shadow-2xl"
+                        ? "bg-[#063c38] ring-2 ring-teal-400 dark:ring-teal-500 shadow-2xl"
                         : "bg-[#0f172a] ring-2 ring-slate-700 shadow-xl"
                     }`}
                     style={{ animationDelay: delay }}
@@ -241,26 +248,26 @@ export default function PricingPage() {
                     )}
 
                     {/* Header */}
-                    <div className={`px-7 pt-7 pb-6 ${isPopular ? "bg-gradient-to-br from-teal-700 to-[#063c38]" : isLight ? "bg-slate-50/80 border-b border-slate-100" : "bg-[#1e293b] border-b border-slate-700/50"}`}>
+                    <div className={`px-7 pt-7 pb-6 ${isPopular ? "bg-[#053531]" : isLight ? "bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/80" : "bg-[#1e293b] border-b border-slate-700/50"}`}>
                       {plan.badge_image && (
                         <img src={plan.badge_image} alt={plan.name} className="w-9 h-9 rounded-xl object-cover mb-3 border border-white/20 shadow"
                           onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
                       )}
-                      <p className={`text-[9px] font-black uppercase tracking-widest ${isPopular ? "text-teal-200" : isLight ? "text-teal-600" : "text-amber-400"}`}>
+                      <p className={`text-[9px] font-black uppercase tracking-widest ${isPopular ? "text-teal-200" : isLight ? "text-teal-600 dark:text-teal-400" : "text-amber-400"}`}>
                         {plan.name}
                       </p>
                       <div className="mt-3 flex items-baseline gap-1.5">
-                        <span className={`text-4xl font-black tracking-tight ${isPopular || isDark ? "text-white" : "text-slate-900"}`}>
+                        <span className={`text-4xl font-black tracking-tight ${isLight ? "text-slate-900 dark:text-white" : "text-white"}`}>
                           {isFree ? "Free" : `$${price % 1 === 0 ? Math.round(price) : price.toFixed(2)}`}
                         </span>
                         {!isFree && (
-                          <span className={`text-xs font-bold ${isPopular ? "text-teal-200/70" : isLight ? "text-slate-400" : "text-slate-400"}`}>
+                          <span className={`text-xs font-bold ${isLight ? "text-slate-450 dark:text-slate-400" : "text-slate-300"}`}>
                             {plan.plan_duration ? `/ ${plan.plan_duration} days` : `/ ${plan.period || "mo"}`}
                           </span>
                         )}
                       </div>
                       {plan.description && (
-                        <p className={`text-[11px] font-semibold mt-1.5 leading-relaxed ${isPopular ? "text-teal-100/70" : isLight ? "text-slate-400" : "text-slate-400"}`}>
+                        <p className={`text-[11px] font-semibold mt-1.5 leading-relaxed ${isPopular ? "text-teal-100/70" : isLight ? "text-slate-400 dark:text-slate-400" : "text-slate-300"}`}>
                           {plan.description}
                         </p>
                       )}
@@ -271,13 +278,13 @@ export default function PricingPage() {
                       {features.length > 0
                         ? features.map((f, i) => (
                             <div key={i} className="flex items-center gap-3" style={{ animation: `fadeUp 0.4s cubic-bezier(.22,1,.36,1) ${delay} both`, animationDelay: `${parseFloat(delay) + i * 0.06}s` }}>
-                              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isPopular ? "bg-teal-500/20" : isLight ? "bg-teal-50" : "bg-slate-700"}`}>
-                                <FiCheck className={`w-3 h-3 ${isPopular ? "text-emerald-300" : isLight ? "text-teal-600" : "text-amber-400"}`} />
+                              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isPopular ? "bg-teal-500/20" : isLight ? "bg-teal-50 dark:bg-slate-805" : "bg-slate-700"}`}>
+                                <FiCheck className={`w-3 h-3 ${isPopular ? "text-emerald-300" : isLight ? "text-teal-600 dark:text-teal-400" : "text-amber-400"}`} />
                               </span>
-                              <span className={`text-[11px] font-semibold ${isPopular ? "text-slate-100" : isLight ? "text-slate-700" : "text-slate-300"}`}>{f}</span>
+                              <span className={`text-[11px] font-semibold ${isPopular ? "text-slate-100" : isLight ? "text-slate-700 dark:text-slate-300" : "text-slate-300"}`}>{f}</span>
                             </div>
                           ))
-                        : <p className="text-[11px] font-semibold text-slate-400">Basic access included</p>
+                        : <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">Basic access included</p>
                       }
                     </div>
 
@@ -287,11 +294,11 @@ export default function PricingPage() {
                         href={`/pricing/${plan.plan_id}`}
                         className={`btn-shine w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold transition-all duration-200 active:scale-[0.98] ${
                           isActive
-                            ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
+                            ? "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-250 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-400"
                             : isPopular
                             ? "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-900/30"
                             : isLight
-                            ? "bg-slate-900 hover:bg-slate-700 text-white shadow"
+                            ? "bg-slate-900 hover:bg-slate-700 dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 text-white shadow"
                             : "bg-amber-500 hover:bg-amber-400 text-white shadow"
                         }`}
                       >
@@ -307,8 +314,8 @@ export default function PricingPage() {
 
           {!loading && plans.length > 0 && (
             <div className="flex items-center justify-center gap-2 mt-12" style={{ animation: "fadeUp 0.6s 0.5s both" }}>
-              <FiShield className="w-3.5 h-3.5 text-teal-600" />
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+              <FiShield className="w-3.5 h-3.5 text-teal-650 dark:text-teal-400" />
+              <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">
                 Secure checkout &nbsp;·&nbsp; Cancel anytime &nbsp;·&nbsp; Instant activation
               </p>
             </div>

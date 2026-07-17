@@ -30,6 +30,19 @@ export default function Header() {
   const [userRole, setUserRole] = useState("");
   const [userSlug, setUserSlug] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [siteTheme, setSiteTheme] = useState("light");
+
+  const toggleTheme = async () => {
+    const nextTheme = siteTheme === "light" ? "dark" : "light";
+    setSiteTheme(nextTheme);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("siteTheme", nextTheme);
+      const primaryCol = localStorage.getItem("primaryColor") || "#0d9488";
+      const secondaryCol = localStorage.getItem("secondaryColor") || "#06b6d4";
+      const { applyTheme } = await import("@/utils/theme");
+      applyTheme(nextTheme, primaryCol, secondaryCol);
+    }
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +87,14 @@ export default function Header() {
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("siteTheme") || "light";
+      setSiteTheme(savedTheme);
+      const primaryCol = localStorage.getItem("primaryColor") || "#0d9488";
+      const secondaryCol = localStorage.getItem("secondaryColor") || "#06b6d4";
+      import("@/utils/theme").then((mod) => {
+        mod.applyTheme(savedTheme, primaryCol, secondaryCol);
+      });
+
       setSiteLogo(localStorage.getItem("cached_site_logo") || "");
       setSiteName(localStorage.getItem("cached_site_name") || "");
       const token = localStorage.getItem("token");
@@ -439,6 +460,23 @@ export default function Header() {
               </div>
             </div>
 
+            {/* Theme Switcher */}
+            <button
+              onClick={toggleTheme}
+              className="text-slate-650 hover:text-teal-750 font-bold text-xs flex items-center justify-center cursor-pointer bg-slate-100 hover:bg-slate-200/60 p-2 rounded-xl border border-slate-200/50 transition-all duration-200"
+              aria-label="Toggle theme"
+            >
+              {siteTheme === "dark" ? (
+                <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                </svg>
+              )}
+            </button>
+
             {isLoggedIn ? (
               <div className="relative group">
                 <button className="flex items-center gap-2 px-1 py-1 focus:outline-none cursor-pointer border-none bg-transparent">
@@ -624,6 +662,23 @@ export default function Header() {
                   </option>
                 ))}
               </select>
+            </div>
+            <div className="flex flex-col gap-1 items-center justify-center shrink-0 border-l border-slate-200 pl-3">
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Theme</label>
+              <button
+                onClick={toggleTheme}
+                className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center cursor-pointer shadow-sm mt-0.5"
+              >
+                {siteTheme === "dark" ? (
+                  <svg className="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
 

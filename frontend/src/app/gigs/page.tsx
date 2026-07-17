@@ -247,7 +247,12 @@ function GigsSearchContent() {
 
     // 8. Experience Level filter
     if (experienceLevel) {
-      if (gig.experience_level?.toLowerCase() !== experienceLevel.toLowerCase()) return false;
+      const gigLevel = gig.experience_level?.toLowerCase() || "";
+      const selLevel = experienceLevel.toLowerCase();
+      const isMatch = gigLevel === selLevel ||
+        ((selLevel === "beginner" || selLevel === "entry level" || selLevel === "entry_level" || selLevel === "entry") &&
+         (gigLevel === "beginner" || gigLevel === "entry level" || gigLevel === "entry_level" || gigLevel === "entry"));
+      if (!isMatch) return false;
     }
 
     return true;

@@ -258,7 +258,12 @@ function ProjectsSearchContent() {
 
     // 5. Experience Level
     if (experienceLevel) {
-      if (job.experience_level?.toLowerCase() !== experienceLevel.toLowerCase()) return false;
+      const jobLevel = job.experience_level?.toLowerCase() || "";
+      const selLevel = experienceLevel.toLowerCase();
+      const isMatch = jobLevel === selLevel ||
+        ((selLevel === "beginner" || selLevel === "entry level" || selLevel === "entry_level" || selLevel === "entry") &&
+         (jobLevel === "beginner" || jobLevel === "entry level" || jobLevel === "entry_level" || jobLevel === "entry"));
+      if (!isMatch) return false;
     }
 
     // 6. Project Type (Fixed / Hourly)

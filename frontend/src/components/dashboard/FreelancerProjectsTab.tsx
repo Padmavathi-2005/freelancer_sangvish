@@ -43,6 +43,54 @@ export default function FreelancerProjectsTab() {
     loadData();
   }, []);
 
+  // Synchronize URL search params with selectedContract state
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const contractIdParam = params.get("contract_id");
+      if (contractIdParam) {
+        const contrId = parseInt(contractIdParam);
+        const foundContract = freelancerContracts.find((c: any) => c.contract_id === contrId);
+        if (foundContract) {
+          setSelectedContract(foundContract);
+        } else if (!loading) {
+          setSelectedContract(null);
+        }
+      } else {
+        setSelectedContract(null);
+      }
+    };
+
+    syncFromUrl();
+
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
+  }, [freelancerContracts, loading]);
+
+  // Synchronize state changes back to URL query parameters
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (loading) return; // Prevent clearing URL parameter during loading phase
+    const params = new URLSearchParams(window.location.search);
+    const currentParam = params.get("contract_id");
+
+    if (selectedContract) {
+      if (currentParam !== selectedContract.contract_id.toString()) {
+        params.set("contract_id", selectedContract.contract_id.toString());
+        window.history.pushState({}, "", `${window.location.pathname}?${params.toString()}`);
+      }
+    } else {
+      if (currentParam) {
+        params.delete("contract_id");
+        const searchStr = params.toString();
+        const newUrl = searchStr ? `${window.location.pathname}?${searchStr}` : window.location.pathname;
+        window.history.pushState({}, "", newUrl);
+      }
+    }
+  }, [selectedContract, loading]);
+
   // Filter contracts
   const filteredContracts = useMemo(() => {
     if (activeSubTab === "ongoing") {

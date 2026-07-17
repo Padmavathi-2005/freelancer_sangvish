@@ -84,15 +84,18 @@ function SettingsPortalContent() {
   };
 
   return (
-    <div className="flex-grow p-6 sm:p-10 select-none animate-fadeIn">
-      <div className="flex flex-col gap-1 mb-8 text-left">
-        <h1 className="text-2xl font-black text-slate-800 leading-tight">System Settings Portal</h1>
-        <p className="text-slate-500 text-xs font-semibold">Manage all core platform credentials, email templates, landing page designs, and system parameters.</p>
+    <div className="flex-grow select-none animate-fadeIn">
+      {/* Clean text-based header */}
+      <div className="flex flex-col gap-1.5 mb-8 text-left">
+        <h1 className="text-2xl font-black text-slate-800 dark:text-white leading-tight">System Settings Portal</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold">
+          Manage all core platform credentials, email templates, landing page designs, and system parameters.
+        </p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Sub-Sidebar Navigation */}
-        <div className="w-full lg:w-64 shrink-0 flex flex-col gap-1.5 bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-left">
+        <div className="w-full lg:w-64 shrink-0 flex flex-col gap-1.5 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm text-left backdrop-blur-md">
           <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2.5 px-2 select-none">
             Settings Categories
           </div>
@@ -103,13 +106,19 @@ function SettingsPortalContent() {
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-black transition duration-150 flex items-center gap-3 cursor-pointer border-none ${
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-black transition-all duration-200 flex items-center gap-3 cursor-pointer border-none relative group ${
                   isTabActive
-                    ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                    : "text-slate-500 hover:text-slate-855 hover:bg-slate-50"
+                    ? "bg-gradient-to-r from-teal-700 to-teal-800 text-white shadow-md shadow-teal-700/20 translate-x-0.5"
+                    : "text-slate-500 hover:text-teal-700 hover:bg-slate-50 hover:translate-x-0.5"
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                {/* Active Indicator Left Glow Line */}
+                {isTabActive && (
+                  <div className="absolute left-0 top-2.5 bottom-2.5 w-1 bg-teal-400 rounded-r-md"></div>
+                )}
+                <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+                  isTabActive ? "text-white" : "text-slate-400 group-hover:text-teal-700"
+                }`} />
                 <span>{tab.label}</span>
               </button>
             );

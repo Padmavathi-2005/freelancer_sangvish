@@ -161,6 +161,7 @@ export default function ProposalsTab({
     "Monthly"
   ]);
   const [togglingFeatureId, setTogglingFeatureId] = useState<number | null>(null);
+  const [relistingJobId, setRelistingJobId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchSubscription = async () => {
@@ -250,6 +251,35 @@ export default function ProposalsTab({
       setTogglingFeatureId(null);
     }
   };
+
+  const handleRelistProject = async (job: any) => {
+    if (!window.confirm(`Are you sure you want to relist the project "${job.title}"? This will create a new listing with the same details so freelancers can submit fresh proposals.`)) {
+      return;
+    }
+    try {
+      setRelistingJobId(job.job_id);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/jobs/${job.job_id}/relist`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", data.message || "Project relisted successfully!");
+        await fetchClientJobs();
+      } else {
+        triggerToast("error", data.message || "Failed to relist project.");
+      }
+    } catch (err) {
+      console.error("Failed to relist project:", err);
+      triggerToast("error", "Network error occurred.");
+    } finally {
+      setRelistingJobId(null);
+    }
+  };
+
   const [selectedProposalDetails, setSelectedProposalDetails] = useState<any | null>(null);
   const [projectFilter, setProjectFilter] = useState<"all" | "pending" | "ongoing" | "dispute" | "completed" | "draft" | "hired" | "proposals_arrived" | "proposals_not_arrived">("all");
   const [freelancerFilter, setFreelancerFilter] = useState<"all" | "pending" | "accepted" | "declined">("all");
@@ -1532,7 +1562,9 @@ export default function ProposalsTab({
 
           <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
-            <h3 className="text-sm font-extrabold text-slate-855 border-b border-slate-100 pb-2">Milestone & Delivery Tracker</h3>
+            <h3 className="text-sm font-extrabold text-slate-855 border-b border-slate-100 pb-2">
+              {selectedProjectDetails.contract_id ? "Milestone & Delivery Tracker" : "Freelancer Proposals"}
+            </h3>
             <ProjectMilestoneTracker
               job={selectedProjectDetails}
               onUpdateJob={(updatedJob) => {
@@ -1871,6 +1903,20 @@ export default function ProposalsTab({
                           </span>
                         </button>
                       )}
+
+                      {/* Relist Project Action Button */}
+                      {(job.status === "Cancelled" || job.status === "Completed" || 
+                        job.contract_status === "Cancelled" || job.contract_status === "Disputed" || job.contract_status === "Completed") && (
+                        <button
+                          type="button"
+                          disabled={relistingJobId !== null}
+                          onClick={() => handleRelistProject(job)}
+                          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border border-slate-200 mt-2"
+                        >
+                          <i className="fa-solid fa-arrows-rotate"></i>
+                          <span>{relistingJobId === job.job_id ? "Relisting..." : "Relist Project"}</span>
+                        </button>
+                      )}
                     </>
                   ) : (
                     <>
@@ -1894,7 +1940,7 @@ export default function ProposalsTab({
                       <button
                         onClick={() => setSelectedProjectDetails(job)}
                         className={`w-full text-white font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border-0 ${
-                          parseInt(job.proposal_count || 0) > 0 ? "bg-teal-650 hover:bg-teal-700" : "bg-slate-700 hover:bg-slate-800"
+                          parseInt(job.proposal_count || 0) > 0 ? "bg-primary hover:bg-primary-hover" : "bg-slate-700 hover:bg-slate-800"
                         }`}
                       >
                         <i className={parseInt(job.proposal_count || 0) > 0 ? "fa-solid fa-users-viewfinder" : "fa-solid fa-folder-open"}></i>
@@ -1918,6 +1964,19 @@ export default function ProposalsTab({
                               ? "Featured (Choice Active)" 
                               : `Feature Project (${clientJobs.filter((j: any) => j.is_featured).length}/${clientSubscription.featured_project_limit})`}
                           </span>
+                        </button>
+                      )}
+
+                      {/* Relist Project Action Button */}
+                      {(job.status === "Cancelled" || job.status === "Completed") && (
+                        <button
+                          type="button"
+                          disabled={relistingJobId !== null}
+                          onClick={() => handleRelistProject(job)}
+                          className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border border-slate-200 mt-2"
+                        >
+                          <i className="fa-solid fa-arrows-rotate"></i>
+                          <span>{relistingJobId === job.job_id ? "Relisting..." : "Relist Project"}</span>
                         </button>
                       )}
                     </>

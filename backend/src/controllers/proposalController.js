@@ -835,6 +835,20 @@ export const submitContractReview = async (req, res) => {
       [contractId, userId, revieweeId, reviewerRole, parseFloat(rating), comment || ""]
     );
 
+    // 4. Create Notification
+    try {
+      const reviewerName = req.user.name || (reviewerRole === "client" ? "The Client" : "The Freelancer");
+      await Notification.create({
+        userId: revieweeId,
+        title: "New Review Received!",
+        message: `${reviewerName} left you a ${rating}-star review for contract "${contract.title}".`,
+        type: "contract",
+        referenceId: contractId.toString(),
+      });
+    } catch (notifError) {
+      console.error("Error creating review notification:", notifError);
+    }
+
     return res.status(201).json({
       message: "Review submitted successfully!",
       review: insertRes.rows[0]

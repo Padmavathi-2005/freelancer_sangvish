@@ -523,6 +523,7 @@ interface DashboardContextType {
   requestContractPayment: (contractId: number) => Promise<void>;
   approveContractPayment: (contractId: number) => Promise<void>;
   startWorkContract: (contractId: number) => Promise<void>;
+  requestMilestoneFunding: (milestoneId: number) => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -1993,6 +1994,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (notifType === "gig") {
         setActiveTab(userRole === "client" ? "client_orders" : "gig_applications");
+      } else if (notifType === "contract" && refId) {
+        if (userRole === "client") {
+          const foundJob = clientJobs.find((j: any) => j.contract_id === parseInt(refId));
+          if (foundJob) {
+            router.push(`/dashboard/proposals?project_id=${foundJob.job_id}`);
+          } else {
+            router.push("/dashboard/proposals");
+          }
+        } else if (userRole === "freelancer") {
+          router.push(`/dashboard/my-projects?contract_id=${refId}`);
+        }
       }
     } catch (e) {
       console.error("Failed to mark notification as read:", e);
@@ -3485,6 +3497,24 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const requestMilestoneFunding = async (milestoneId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/milestone/${milestoneId}/request-funding`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Funding request sent to client successfully!");
+      } else {
+        triggerToast("error", data.message || "Failed to request funding.");
+      }
+    } catch (err) {
+      triggerToast("error", "Network error. Failed to request funding.");
+    }
+  };
+
   const approveContractPayment = async (contractId: number, paymentMethod: string = "wallet") => {
     try {
       const token = localStorage.getItem("token");
@@ -3788,7 +3818,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     fetchWalletInfo, handleWithdrawSubmit, handleDepositSubmit,
     freelancerContracts, recommendedClients,
     fetchFreelancerContracts, fetchRecommendedClients,
-    requestContractPayment, approveContractPayment, startWorkContract,
+    requestContractPayment, approveContractPayment, startWorkContract, requestMilestoneFunding,
     pendingInviteFreelancer, setPendingInviteFreelancer
   }), [
     isAuthenticated, onboardingCompleted, showOnboardingModal, forceShowOnboarding, onboardingStep, selectedRole, activeView,
@@ -3836,7 +3866,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     handleSaveClientStep,
     walletInfo, loadingWallet, withdrawAmount, withdrawMethod, withdrawAccount, depositAmount,
     freelancerContracts, recommendedClients,
-    requestContractPayment, approveContractPayment, startWorkContract,
+    requestContractPayment, approveContractPayment, startWorkContract, requestMilestoneFunding,
     selectedFreelancerFullProfile, loadingFullProfile,
     pendingInviteFreelancer
   ]);
