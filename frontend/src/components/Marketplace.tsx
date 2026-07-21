@@ -469,7 +469,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
                 <div>
                   {/* Top card row */}
                   <div className="flex justify-between items-start gap-3">
-                    <div className="flex gap-4 items-center">
+                    <div className="flex gap-4 items-center min-w-0">
                       <div className={`w-12 h-12 rounded-xl bg-gradient-to-tr ${freelancer.avatarColor} flex items-center justify-center font-bold text-lg text-white shadow-sm shrink-0`}>
                         {freelancer.name.split(" ").map(n => n[0]).join("")}
                       </div>

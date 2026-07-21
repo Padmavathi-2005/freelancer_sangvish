@@ -21,6 +21,16 @@ export default function SEOPreviewTab() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [siteLogo, setSiteLogo] = useState("");
+
+  const resolveLogoUrl = (url: string) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      return url;
+    }
+    const baseBackendUrl = API_URL.replace(/\/api\/?$/, "");
+    return `${baseBackendUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
 
   // Form states
   const [metaTitle, setMetaTitle] = useState("");
@@ -55,6 +65,28 @@ export default function SEOPreviewTab() {
 
   useEffect(() => {
     fetchSeoSettings();
+    const fetchSiteLogo = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          data.forEach((setting: any) => {
+            if (setting.setting_key === "site_settings") {
+              let val = setting.setting_value;
+              if (typeof val === "string") {
+                try { val = JSON.parse(val); } catch (e) {}
+              }
+              if (val?.site_logo) {
+                setSiteLogo(val.site_logo);
+              }
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load site logo in SEO Preview:", err);
+      }
+    };
+    fetchSiteLogo();
   }, []);
 
   const handleSelectRoute = (route: SeoSetting) => {
@@ -146,6 +178,13 @@ export default function SEOPreviewTab() {
 
   const titleProgress = Math.min(100, (metaTitle.length / 60) * 100);
   const descProgress = Math.min(100, (metaDescription.length / 160) * 100);
+
+  const resolvedPreviewImage = ogImage 
+    ? resolveLogoUrl(ogImage)
+    : (siteLogo 
+        ? resolveLogoUrl(siteLogo) 
+        : "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1200"
+      );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 text-slate-800 animate-fadeIn">
@@ -375,14 +414,11 @@ export default function SEOPreviewTab() {
           <div className="border border-slate-200/80 rounded-2xl overflow-hidden bg-slate-50/50 select-none hover:shadow-md transition-all duration-200">
             {/* OG Image banner container */}
             <div className="h-48 bg-slate-100 relative flex items-center justify-center border-b border-slate-200/80 overflow-hidden group">
-              {ogImage ? (
-                <img src={ogImage} alt="OG Card Preview" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-              ) : (
-                <div className="flex flex-col items-center gap-2.5 text-slate-400 select-none">
-                  <FiGlobe className="w-9 h-9 stroke-[1.2] text-slate-350" />
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">No Banner Specified (Fallback Logo)</span>
-                </div>
-              )}
+              <img 
+                src={resolvedPreviewImage} 
+                alt="OG Card Preview" 
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+              />
               {/* Preview Indicator overlay */}
               <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">
                 Card Preview

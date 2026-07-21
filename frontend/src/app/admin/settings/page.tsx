@@ -13,7 +13,8 @@ import {
   FiAlertTriangle, 
   FiSearch,
   FiSettings,
-  FiUsers
+  FiUsers,
+  FiFileText
 } from "react-icons/fi";
 
 import GeneralSettingsTab from "@/components/admin/GeneralSettingsTab";
@@ -26,6 +27,7 @@ import PaymentSettingsTab from "@/components/admin/PaymentSettingsTab";
 import DisputeReasonsTab from "@/components/admin/DisputeReasonsTab";
 import SEOPreviewTab from "@/components/admin/SEOPreviewTab";
 import ReferralSettingsTab from "@/components/admin/ReferralSettingsTab";
+import DocumentVettingTab from "@/components/admin/DocumentVettingTab";
 
 function SettingsPortalContent() {
   const router = useRouter();
@@ -77,6 +79,7 @@ function SettingsPortalContent() {
     { key: "disputes", label: "Dispute Reasons", icon: FiAlertTriangle },
     { key: "seo", label: "SEO & Meta Preview", icon: FiSearch },
     { key: "referral", label: "Referral & Earn", icon: FiUsers },
+    { key: "documents", label: "Document Verification", icon: FiFileText },
   ];
 
   const handleTabChange = (key: string) => {
@@ -106,20 +109,33 @@ function SettingsPortalContent() {
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-black transition-all duration-200 flex items-center gap-3 cursor-pointer border-none relative group ${
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-3 cursor-pointer border-none relative overflow-hidden isolate group transition-all duration-500 bg-transparent ${
                   isTabActive
-                    ? "bg-gradient-to-r from-teal-700 to-teal-800 text-white shadow-md shadow-teal-700/20 translate-x-0.5"
-                    : "text-slate-500 hover:text-teal-700 hover:bg-slate-50 hover:translate-x-0.5"
+                    ? "text-white translate-x-0.5"
+                    : "text-slate-500 hover:text-teal-900 hover:translate-x-0.5"
                 }`}
               >
-                {/* Active Indicator Left Glow Line */}
-                {isTabActive && (
-                  <div className="absolute left-0 top-2.5 bottom-2.5 w-1 bg-teal-400 rounded-r-md"></div>
+                {/* Active Background Pill with smooth slow horizontal slide-reveal */}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-r from-teal-700 to-teal-800 rounded-xl transition-all duration-500 ease-out origin-left -z-10 ${
+                    isTabActive ? "scale-x-100 opacity-100 shadow-md shadow-teal-700/20" : "scale-x-0 opacity-0"
+                  }`}
+                />
+
+                {/* Hover background pill that slides in from left slowly (only if not active) */}
+                {!isTabActive && (
+                  <div className="absolute inset-0 bg-slate-100/80 rounded-xl transition-transform duration-500 ease-out origin-left scale-x-0 group-hover:scale-x-100 -z-10" />
                 )}
-                <Icon className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110 ${
+
+                {/* Active Indicator Left Glow Line */}
+                <div className={`absolute left-0 top-2.5 bottom-2.5 w-1 bg-teal-400 rounded-r-md transition-all duration-500 ${
+                  isTabActive ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
+                }`}></div>
+
+                <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
                   isTabActive ? "text-white" : "text-slate-400 group-hover:text-teal-700"
                 }`} />
-                <span>{tab.label}</span>
+                <span className="relative z-10">{tab.label}</span>
               </button>
             );
           })}
@@ -207,6 +223,10 @@ function SettingsPortalContent() {
             <ReferralSettingsTab
               handleSaveSetting={handleSaveSetting}
             />
+          )}
+
+          {activeTabQuery === "documents" && (
+            <DocumentVettingTab />
           )}
         </div>
       </div>

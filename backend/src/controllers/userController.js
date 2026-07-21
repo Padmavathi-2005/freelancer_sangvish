@@ -897,3 +897,40 @@ export const getReferralBanner = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+export const getUserProfile = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { default: pool } = await import('../config/db.js');
+
+        // Fetch user profile joining with subscription plans
+        const userRes = await pool.query(
+            `SELECT u.user_id, u.first_name, u.last_name, u.email, u.profile_image, u.active_plan_id, 
+                    sp.name AS membership_name, sp.credits
+             FROM users u
+             LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
+             WHERE u.user_id = $1`,
+            [userId]
+        );
+
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const userData = userRes.rows[0];
+
+        // Fetch wallet balance
+        const walletRes = await pool.query("SELECT balance FROM wallets WHERE user_id = $1", [userId]);
+        const balance = walletRes.rows.length > 0 ? parseFloat(walletRes.rows[0].balance) || 0.00 : 0.00;
+
+        res.status(200).json({
+            ...userData,
+            membership_id: userData.active_plan_id,
+            wallet_balance: balance.toString(),
+            project_credits: userData.credits ?? 0,
+            proposal_credits: userData.credits ?? 0
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};

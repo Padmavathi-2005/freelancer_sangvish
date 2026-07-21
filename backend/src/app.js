@@ -27,6 +27,8 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import seoRoutes from './routes/seoRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +69,8 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api', blogRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/seo', seoRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/documents', documentRoutes);
 
 
 app.use("/api/admin/categories",categoryRoutes);

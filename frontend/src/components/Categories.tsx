@@ -118,12 +118,12 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
   return (
     <div
       onClick={onClick}
-      className="group rounded-xl border border-slate-200 bg-white overflow-hidden cursor-pointer
-                 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70
+      className="group rounded-xl border border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 overflow-hidden cursor-pointer
+                 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70 hover:shadow-zinc-950/30
                  hover:border-[#0F766E]/30 flex flex-col"
     >
       {/* Image / icon area */}
-      <div className="relative h-44 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+      <div className="relative h-44 bg-slate-50 dark:bg-zinc-850 flex items-center justify-center overflow-hidden shrink-0">
         {imgSrc ? (
           <img
             src={imgSrc}
@@ -147,8 +147,8 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
       {/* Content */}
       <div className="p-4 flex flex-col gap-3 flex-1">
         <div className="flex flex-col flex-1">
-          <h3 className="text-sm font-bold text-slate-900 leading-snug mb-1">{cat.category_name}</h3>
-          <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed min-h-[34px]">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 leading-snug mb-1">{cat.category_name}</h3>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed min-h-[34px]">
             {cat.description || "Browse custom services and top-tier freelancers across all industries."}
           </p>
         </div>
@@ -205,13 +205,13 @@ export default function Categories() {
   }, []);
 
   return (
-    <section className="w-full bg-[#f8fafc] border-t border-slate-200/60 py-16 px-4 sm:px-6 lg:px-8">
+    <section className="w-full bg-[#f8fafc] dark:bg-zinc-950 border-t border-slate-200/60 dark:border-zinc-800/40 py-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-[1600px] mx-auto">
 
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-zinc-100 leading-tight">
               {t("categories_title", "Browse Popular Categories")}
             </h2>
           </div>

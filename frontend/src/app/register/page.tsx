@@ -281,7 +281,16 @@ export default function RegisterPage() {
                 {socialSettings.facebookEnabled && (
                   <button
                     type="button"
-                    onClick={() => alert(`Facebook authentication initiated with App ID: ${socialSettings.facebookAppId}`)}
+                    onClick={() => {
+                      const client_id = socialSettings.facebookAppId;
+                      if (!client_id) {
+                        alert("Facebook App ID is not configured in Admin Site Settings.");
+                        return;
+                      }
+                      const redirectUri = window.location.origin + "/auth/callback/facebook";
+                      const facebookUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=email,public_profile`;
+                      window.location.href = facebookUrl;
+                    }}
                     className="flex-1 flex items-center justify-center gap-2.5 px-4 py-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold text-xs text-slate-700 bg-white"
                   >
                     <svg className="w-4 h-4 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">

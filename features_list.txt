@@ -1,0 +1,142 @@
+Buy2Lancer - Complete Features List
+
+1. Authentication & Security
+   - Credentials Login & Password Hashing
+   - Google OAuth Integration
+   - Facebook OAuth Integration
+   - Dual Freelancer / Client Workspaces
+
+2. Profile Onboarding & Vetting
+   - Multi-step Profile Onboarding Wizard
+   - Profile Completeness Feature Lock
+   - Admin Freelancer Vetting & Approval
+
+3. Client Projects & Proposals
+   - Custom Project Posting (Fixed / Hourly)
+   - Project Admin Moderation & Approval
+   - Proposal Bidding & Moderation Approval
+
+4. Freelancer Gigs Marketplace
+   - Gig Creation & Package Pricing Tiers
+   - Gig Add-ons & Checkout Upsells (Optional Extras with real-time price calculation)
+   - Compact Scrollable Add-ons: Long addon lists are styled compactly with overflow-y-auto to prevent layout stretching.
+   - Premium Upsell & Upgrade Alternative Widget: Displays a single matching higher-priced gig from a Pro/Elite seller in the sidebar to boost platform conversion rate.
+   - IP-Locked Unique View Tracking: Prevents view count manipulation by only incrementing views once per unique IP address using database logs.
+   - Gig Order Tracking & Deliverables
+
+5. Payments, Escrow & Admin Commission
+   - Stripe Milestone & Timecard Payments
+   - Secure Platform Escrow Wallet
+   - Platform Admin Commission Fee (Default 5%)
+
+6. Milestone Revisions Policy
+   - Free Revisions Limit (Default 3)
+   - Paid Revisions (Awaiting Client Funding & Fee Request)
+
+7. Dispute Resolution & Mediation
+   - Escrow Wallet Split Locking
+   - Dispute Room Messaging Log
+   - Admin Mediator Arbitration & Split Payouts
+
+8. Affiliate Program (Refer & Earn)
+   - Referral Code Generation & Tracking
+   - 10% Platform Fee Referral Commission
+
+9. Membership Subscriptions & Credits
+   - Monthly Membership Tiers
+   - Project Posting & Bidding Credit Allocations
+   - Membership-Boosted Related Gigs (Higher tiers prioritized & badged with "Pro/Elite Seller" on Similar Gigs lists)
+
+10. CMS Pages & Blogs
+    - Custom Slug CMS Page Builder (/about-us, /newsletter)
+    - Blog Publisher, Authors, Tags & Comments
+
+11. Messaging & Notifications
+    - Real-Time Messaging & Chat Attachments
+    - Action-triggered In-App Notifications
+    - Notification Deep-link Redirect Navigation
+
+12. SEO Optimization
+    - Dynamic Page Titles & HTML Headings
+    - Search Engine Metadata Configuration
+    - JSON-LD Structured Data Schema Markup (Person, Product, BlogPosting)
+    - Dynamic XML Sitemap Generation (/sitemap.xml)
+    - Robots.txt Crawl Control Configuration (/robots.txt)
+
+13. Design Theme & Site Settings
+    - Light / Dark Mode Global Toggle
+    - Color Palettes & Micro-animations
+    - Social Media & App Store Link Customization
+
+14. Buy2Lancer AI Engine & Smart Features
+    - Conversational Marketplace Guide: Responds to user queries about bidding, memberships, client settings, escrow, and platform usage.
+    - Dynamic Markdown formatting: Native markdown parser renders headings, lists, bold, italics, and inline code blocks into clean HTML.
+    - Semantic Gig & Job Matcher: Queries database gigs/jobs in real-time, outputting matching records as clickable redirect links.
+    - Interactive Escrow Checkout Card: Detects buy/order intent, presenting a live checkout panel. Clients input deliverables and pay via Stripe or Wallet, establishing active contracts directly from chat.
+    - Dual Model Engine: Invokes Google Gemini 1.5 Flash API or falls back to local OpenAI-compatible / Ollama endpoints dynamically depending on key setup.
+    - AI Proposal Writer: Freelancers can instantly draft winning, personalized project cover letters tailored directly to their profile (bio, title, rate, skills) and the specific client job description.
+    - AI Project Matching: An interactive scoring engine that analyses the freelancer's profile against open job descriptions, rendering a color-coded matching percent (0-100%) and a concise match reasoning.
+    - AI Resume Reader & Auto-fill: Integrates with onboarding and settings, allowing freelancers to upload PDF/TXT resumes. AI extracts and auto-fills title, experience years, rate, bio, and highlights matching taxonomy skills/languages.
+    - AI Gig Description Generator: Renders service descriptions instantly using AI. Freelancers provide the Gig title, category, and skills, and AI generates highly structured HTML content ready for the rich text editor.
+
+
+
+====================================================================
+ROLE-BASED FEATURE SPLIT
+====================================================================
+
+---------------------------------
+CLIENT FEATURES (BUYER WORKSPACE)
+---------------------------------
+- Dual Workspace Toggle: Clients can switch to the Buyer Dashboard to post projects, hire talent, and manage orders.
+- Custom Project Posting (Fixed / Hourly): Clients can post custom job listings with pricing structures, descriptions, locations, skills, and budgets.
+- Gig Package Purchasing: Browse the marketplace, choose package tiers, and add upsell add-on extras.
+- Sidebar Upsell Widget: Recommends Pro/Elite seller upgrades in the sidebar.
+- Escrow Milestone Payments: Secure milestone-based payments funded via Stripe or virtual wallet balances.
+- Secure Escrow Wallets: Escrow project funds safely on the platform.
+- Free Revision Allowance: Default allocation of up to 3 revisions on milestone deliverables.
+- Paid Revision Funding: Approve and fund custom pricing fee requests from freelancers for extra revisions.
+- Escrow Split Locking: Lock project funds in escrow to halt release when a conflict arises.
+- Dispute Room Messaging: Message the freelancer and assigned mediator in the Dispute Room.
+- Affiliate Referral Program: Share signup code to earn 10% platform fee commission.
+- Buyer Membership Subscriptions: Monthly tiers (Starter, Professional, Enterprise) that allocate project posting limits.
+- Buy2Lancer AI Assistant Chatbot: Conversational guide to search, match gigs/jobs, check balance, and checkout gigs directly from chat.
+
+-------------------------------------
+FREELANCER FEATURES (SELLER WORKSPACE)
+-------------------------------------
+- Dual Workspace Toggle: Freelancers can switch to the Seller Dashboard to track active contracts, view earnings, and manage proposals.
+- Profile Onboarding Wizard: Multi-step setup for profile biography, professional titles, hourly rates, skills, and experience levels.
+- Profile Completeness Lock: Restricts proposal bidding and gig creation until profile completeness is 100%.
+- Gig Packages Marketplace: Publish service packages with description details and distinct pricing tiers.
+- Compact Scrollable Add-ons: Long addon lists styled compactly with scrolling overflow lists.
+- IP-Locked Unique View Tracking: Prevents view count manipulation on gig pages.
+- Proposal Bidding on Projects: Write cover letters and submit bid proposals using available credits.
+- Order Progress & Deliverables: Monitor active orders and submit deliverables or files for milestone reviews.
+- Wallet Withdrawals: Clear escrow funds into their local virtual wallet after milestone approvals.
+- Paid Revision Requests: Send custom fee requests for work exceeding the free revision limit.
+- Escrow Split Locking: Hold contract funds securely in escrow to prevent unilateral release.
+- Dispute Room Mediation: Participate in dispute chats to defend deliverables and present evidence.
+- Affiliate Referral Program: Share signup link to track and earn lifetime affiliate commission.
+- Seller Membership Subscriptions: Starter, Professional, Enterprise plans that allocate proposal credits, boost search, and add the "Pro/Elite Seller" badge.
+- Buy2Lancer AI Assistant Chatbot: Conversational guide to check active plans, remaining credits, and site navigation.
+- AI Proposal Writer: Instantly draft custom cover letters when applying to client projects.
+- AI Project Matching: Highlight the best-matching projects with score percentages and specific reasoning.
+- AI Resume Reader & Auto-fill: Upload PDF/TXT resumes during onboarding or profile edits to instantly fill out form fields and highlight matched taxonomy skills.
+- AI Gig Description Generator: Auto-generate high-converting rich text descriptions for new or existing gigs.
+
+
+------------------------------
+ADMIN FEATURES (CONTROL PANEL)
+------------------------------
+- Freelancer Profile Vetting: Review, approve, or vet freelancer applications.
+- Project & Proposal Moderation: Audit newly posted job listings and bid proposals to flag spam.
+- Arbitration & Escrow Splits: Enter active Dispute Rooms, review milestones, lock escrow, arbitrate, and divide escrow payouts.
+- Commission Fee Setup: Configure default transaction commission rates (default 5%) across the platform.
+- Custom Slug CMS Page Builder: Create and publish static pages (such as `/about-us` or `/newsletter`).
+- Blog Publisher CMS: Publish blog articles, manage author listings, configure tags, and moderate comment boards.
+- SEO Metadata Configuration: Configure search engine metadata, page title formats, and HTML heading structures.
+- JSON-LD Schema Markup: Structured data configurations (Person, Product, BlogPosting) for rich search indexing.
+- XML Sitemap & Robots Crawling: Automate sitemap generation and robots.txt crawl control rules.
+- Site Settings & Branding: Admin controls to customize light/dark theme defaults, brand color schemes, social media profiles, app store links.
+- Chatbot Model Engine Configuration: Toggle chatbot between OpenAI Gemini and local Qwen/Ollama engine configurations.

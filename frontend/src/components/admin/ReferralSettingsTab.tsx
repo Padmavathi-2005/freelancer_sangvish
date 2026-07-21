@@ -2,7 +2,7 @@
 import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { FiPlus, FiTrash2, FiSave, FiAlertCircle, FiImage, FiSettings, FiPenTool } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiSave, FiAlertCircle, FiImage, FiSettings, FiPenTool, FiUpload } from "react-icons/fi";
 import CanvasEditor from "@/components/CanvasEditor";
 
 interface ReferralTier {
@@ -31,6 +31,33 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
   // Canvas editor
   const [showCanvasEditor, setShowCanvasEditor] = useState(false);
   const [bannerImageUrl, setBannerImageUrl] = useState<string>("");
+  const [uploadingDirect, setUploadingDirect] = useState(false);
+
+  const handleDirectBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingDirect(true);
+      setError("");
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      setBannerImageUrl(data.url);
+      triggerToast("Banner Uploaded!", "Your banner image has been uploaded successfully.");
+    } catch (err: any) {
+      console.error("Direct banner upload error:", err);
+      setError(err.message || "Failed to upload banner image.");
+    } finally {
+      setUploadingDirect(false);
+    }
+  };
 
   const [showToast, setShowToast] = useState(false);
   const [toastTitle, setToastTitle] = useState("Settings Saved");
@@ -391,16 +418,34 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
           </p>
         </div>
 
-        <div className="flex items-start gap-5">
+        <div className="flex items-start gap-3 flex-wrap">
           {/* Open editor button */}
           <button
             type="button"
             onClick={() => setShowCanvasEditor(true)}
-            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-white text-xs font-black rounded-xl shadow-lg shadow-teal-700/20 transition-all cursor-pointer"
+            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-white text-xs font-black rounded-xl shadow-lg shadow-teal-700/20 transition-all cursor-pointer border-0"
           >
-            <FiPenTool className="w-4 h-4" />
+            <FiPenTool className="w-3.5 h-3.5" />
             Open Canvas Designer
           </button>
+
+          {/* Direct image upload button */}
+          <label className="flex items-center gap-2 px-5 py-3 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-black rounded-xl border border-slate-200 transition-all cursor-pointer select-none">
+            {uploadingDirect ? (
+              <div className="w-3.5 h-3.5 border-2 border-t-transparent border-teal-750 rounded-full animate-spin" />
+            ) : (
+              <FiUpload className="w-3.5 h-3.5 text-slate-500" />
+            )}
+            <span>Upload Image Directly</span>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploadingDirect}
+              onChange={handleDirectBannerUpload}
+            />
+          </label>
+        </div>
 
           {/* Preview of existing custom banner */}
           {bannerImageUrl && (
@@ -423,7 +468,6 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
               <span className="text-[9px] text-teal-600 font-semibold">✓ This PNG will be served as the promo banner on user dashboards.</span>
             </div>
           )}
-        </div>
       </div>
 
       {/* Form Action row */}

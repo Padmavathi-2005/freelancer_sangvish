@@ -358,7 +358,7 @@ export default function FreelancerProfileClient() {
           <p className="text-sm text-slate-500 max-w-sm mt-2">{error || "The developer profile you are seeking does not exist."}</p>
           <button
             onClick={() => router.back()}
-            className="mt-6 bg-teal-750 hover:bg-teal-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all"
+            className="mt-6 bg-teal-700 hover:bg-teal-600 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all"
           >
             Go Back
           </button>
@@ -1029,7 +1029,7 @@ export default function FreelancerProfileClient() {
                     <button
                       type="submit"
                       disabled={hiringSubmitting}
-                      className="bg-teal-750 hover:bg-teal-700 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                      className="bg-teal-700 hover:bg-teal-600 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                     >
                       {hiringSubmitting ? "Sending..." : "Submit Hire Offer"}
                     </button>

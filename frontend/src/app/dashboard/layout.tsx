@@ -3,8 +3,16 @@ import { API_URL, API_BASE_URL } from "@/config/api";
 
 const resolveLogoUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+  let cleanUrl = url;
+  const publicIdx = cleanUrl.indexOf("/public/");
+  if (publicIdx !== -1) {
+    cleanUrl = cleanUrl.substring(publicIdx);
+  }
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+    return cleanUrl;
+  }
+  const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
 };
 
 
@@ -12,7 +20,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "./DashboardContext";
-import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX, FiClock, FiShield, FiSearch, FiMail, FiTrendingUp, FiBriefcase, FiUsers, FiPlus } from "react-icons/fi";
+import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX, FiClock, FiShield, FiSearch, FiMail, FiTrendingUp, FiBriefcase, FiUsers, FiPlus, FiFileText } from "react-icons/fi";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import CustomSelect from "@/components/CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
@@ -105,10 +113,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     resumeUrl,
     setResumeUrl,
     selectedSkillIds,
+    setSelectedSkillIds,
     handleToggleSkill,
     selectedLanguageIds,
     setSelectedLanguageIds,
     selectedLanguages,
+    setSelectedLanguages,
     handleUpdateLanguageProficiency,
     step1Error,
     step1Success,
@@ -190,6 +200,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     handleSkip,
     handleSaveClientStep,
     clientNotice,
+    enabledDocFields,
+    userUploadedDocs,
+    loadingDocFields,
+    fetchEnabledDocFields,
+    fetchUserUploadedDocs,
+    handleUploadDocument,
+    isFieldEnabled,
+    isFieldRequired,
+    totalClientSteps,
+    totalFreelancerSteps,
 
     // Project proposal modal and settings confirmation
     showPublishConfirmModal,
@@ -229,6 +249,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const currentMilestonesSum = proposalMilestones.reduce((sum, m) => sum + m.amount, 0);
   const isMilestoneLimitReached = currentMilestonesSum >= proposalBidAmount && proposalBidAmount > 0;
 
+  const [expiryDates, setExpiryDates] = useState<Record<number, string>>({});
+  const [uploadingFields, setUploadingFields] = useState<Record<number, boolean>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<number, string>>({});
+  const [textValues, setTextValues] = useState<Record<number, string>>({});
+
   const pathname = usePathname();
 
   // Scroll to proposal error when it changes
@@ -242,12 +267,153 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       }, 100);
     }
   }, [proposalError]);
+
+  const handleSaveTextValue = async (fieldId: number, textVal: string, expiryDate?: string) => {
+    if (!textVal.trim()) {
+      alert("Please enter a value before saving.");
+      return;
+    }
+    try {
+      setUploadingFields(prev => ({ ...prev, [fieldId]: true }));
+      setFieldErrors(prev => ({ ...prev, [fieldId]: "" }));
+      
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No authorization token found.");
+      
+      const saveRes = await fetch(`${API_URL}/documents/upload`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          field_id: fieldId,
+          text_value: textVal,
+          expiry_date: expiryDate || null
+        })
+      });
+
+      if (!saveRes.ok) {
+        const err = await saveRes.json();
+        throw new Error(err.message || "Failed to save details.");
+      }
+
+      await fetchUserUploadedDocs();
+      triggerToast("success", "Value saved successfully!");
+    } catch (err: any) {
+      setFieldErrors(prev => ({ ...prev, [fieldId]: err.message || "Failed to save value." }));
+    } finally {
+      setUploadingFields(prev => ({ ...prev, [fieldId]: false }));
+    }
+  };
+
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [projectMenuOpen, setProjectMenuOpen] = useState(false);
 
   // Direct Hire UI states
   const [showHireWizard, setShowHireWizard] = useState(false);
   const [hireJobMode, setHireJobMode] = useState<"existing" | "new">("existing");
+
+  // AI Resume Reader State
+  const [parsingResume, setParsingResume] = useState(false);
+  const [parseError, setParseError] = useState("");
+
+  const handleResumeUploadAndParse = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setParsingResume(true);
+    setParseError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const token = localStorage.getItem("token");
+      const uploadRes = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Failed to upload resume file.");
+      }
+
+      const uploadData = await uploadRes.json();
+      const filename = uploadData.filename;
+
+      if (uploadData.url) {
+        setResumeUrl(uploadData.url);
+      }
+
+      // Call parse-resume
+      const parseRes = await fetch(`${API_URL}/ai/parse-resume`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ filename })
+      });
+
+      if (!parseRes.ok) {
+        const errData = await parseRes.json();
+        throw new Error(errData.error || "Failed to parse resume with AI.");
+      }
+
+      const parseData = await parseRes.json();
+      const parsed = parseData.parsedResume;
+
+      if (parsed) {
+        if (parsed.professionalTitle) setProfessionalTitle(parsed.professionalTitle);
+        if (parsed.experienceLevel) setExperienceLevel(parsed.experienceLevel);
+        if (parsed.yearsOfExperience !== undefined) setTotalExperienceYears(String(parsed.yearsOfExperience));
+        if (parsed.hourlyRate) setHourlyRate(String(parsed.hourlyRate));
+
+        // Auto-match skills
+        if (Array.isArray(parsed.skills) && parsed.skills.length > 0) {
+          const matchedIds: number[] = [];
+          parsed.skills.forEach((skillName: string) => {
+            const match = availableSkills.find(s => s.skill_name.toLowerCase() === skillName.toLowerCase());
+            if (match) {
+              matchedIds.push(match.skill_id);
+            }
+          });
+          if (matchedIds.length > 0) {
+            setSelectedSkillIds(matchedIds);
+          }
+        }
+
+        // Auto-match languages
+        if (Array.isArray(parsed.languages) && parsed.languages.length > 0) {
+          const matchedIds: number[] = [];
+          const matchedLangsList: any[] = [];
+          parsed.languages.forEach((langObj: any) => {
+            const name = typeof langObj === "object" ? langObj.language : langObj;
+            const prof = typeof langObj === "object" ? langObj.proficiency : "Fluent";
+            const match = languages.find(l => l.language_name.toLowerCase() === name.toLowerCase());
+            if (match) {
+              matchedIds.push(match.language_id);
+              matchedLangsList.push({ language_id: match.language_id, proficiency: prof });
+            }
+          });
+          if (matchedIds.length > 0) {
+            setSelectedLanguageIds(matchedIds);
+            setSelectedLanguages(matchedLangsList);
+          }
+        }
+        triggerToast("success", "Profile fields auto-filled successfully from resume!");
+      }
+    } catch (err: any) {
+      setParseError(err.message || "An error occurred during resume parsing.");
+    } finally {
+      setParsingResume(false);
+    }
+  };
+
   const [selectedExistingJobId, setSelectedExistingJobId] = useState("");
   const [newJobTitle, setNewJobTitle] = useState("");
   const [newJobDesc, setNewJobDesc] = useState("");
@@ -1382,7 +1548,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* SCROLLABLE MAIN CONTENT AREA */}
-        <div className="flex-1 py-8 px-6 overflow-y-auto relative z-10 w-full flex flex-col gap-8">
+        <div className="flex-1 py-8 px-6 overflow-y-auto relative w-full flex flex-col gap-8">
           {/* Background Decorative Pattern */}
           <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0"></div>
 
@@ -1535,10 +1701,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="relative z-10 flex items-center justify-between border-b border-slate-100/55 pb-4 mb-6 pr-16 sm:pr-24 text-left">
                 <div>
                   <span className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase">Client Onboarding</span>
-                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Step {clientWizardStep} of 3</h2>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Step {clientWizardStep} of {totalClientSteps}</h2>
                 </div>
                 <div className="flex gap-1.5">
-                  {[1, 2, 3].map((step) => (
+                  {Array.from({ length: totalClientSteps }, (_, i) => i + 1).map((step) => (
                     <div
                       key={step}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -1561,7 +1727,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
                 {clientSuccess && (
                   <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold rounded-xl mb-4 animate-pulse">
-                    {clientWizardStep === 3 
+                    {clientWizardStep === totalClientSteps 
                       ? "🎉 Setup complete! Redirecting to workspace..." 
                       : "🎉 Section saved! Moving to next step..."}
                   </div>
@@ -1576,63 +1742,79 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="sm:col-span-2">
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Company Name *</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Acme Corporation"
-                          value={companyName}
-                          onChange={(e) => setCompanyName(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("company_name") && (
+                        <div className="sm:col-span-2">
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Company Name {isFieldRequired("company_name") ? "*" : ""}
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Acme Corporation"
+                            value={companyName}
+                            onChange={(e) => setCompanyName(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Industry *</label>
-                        <CustomSelect
-                          options={[
-                            { value: "Technology", label: "Technology & Software" },
-                            { value: "Finance", label: "Finance & Banking" },
-                            { value: "Healthcare", label: "Healthcare & Medicine" },
-                            { value: "Education", label: "Education & EdTech" },
-                            { value: "Marketing", label: "Marketing & Advertising" },
-                            { value: "Retail", label: "Retail & E-commerce" },
-                            { value: "Other", label: "Other Industry" }
-                          ]}
-                          value={industry}
-                          onChange={(val) => setIndustry(val as string)}
-                          placeholder="Select Industry"
-                        />
-                      </div>
+                      {isFieldEnabled("industry") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Industry {isFieldRequired("industry") ? "*" : ""}
+                          </label>
+                          <CustomSelect
+                            options={[
+                              { value: "Technology", label: "Technology & Software" },
+                              { value: "Finance", label: "Finance & Banking" },
+                              { value: "Healthcare", label: "Healthcare & Medicine" },
+                              { value: "Education", label: "Education & EdTech" },
+                              { value: "Marketing", label: "Marketing & Advertising" },
+                              { value: "Retail", label: "Retail & E-commerce" },
+                              { value: "Other", label: "Other Industry" }
+                            ]}
+                            value={industry}
+                            onChange={(val) => setIndustry(val as string)}
+                            placeholder="Select Industry"
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Company Size *</label>
-                        <CustomSelect
-                          options={[
-                            { value: "1-10", label: "1-10 employees" },
-                            { value: "11-50", label: "11-50 employees" },
-                            { value: "51-200", label: "51-200 employees" },
-                            { value: "201-500", label: "201-500 employees" },
-                            { value: "500+", label: "500+ employees" }
-                          ]}
-                          value={companySize}
-                          onChange={(val) => setCompanySize(val as string)}
-                          placeholder="Select Company Size"
-                        />
-                      </div>
+                      {isFieldEnabled("company_size") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Company Size {isFieldRequired("company_size") ? "*" : ""}
+                          </label>
+                          <CustomSelect
+                            options={[
+                              { value: "1-10", label: "1-10 employees" },
+                              { value: "11-50", label: "11-50 employees" },
+                              { value: "51-200", label: "51-200 employees" },
+                              { value: "201-500", label: "201-500 employees" },
+                              { value: "500+", label: "500+ employees" }
+                            ]}
+                            value={companySize}
+                            onChange={(val) => setCompanySize(val as string)}
+                            placeholder="Select Company Size"
+                          />
+                        </div>
+                      )}
 
-                      <div className="sm:col-span-2">
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Established Year</label>
-                        <input
-                          type="number"
-                          min="1800"
-                          max={new Date().getFullYear()}
-                          placeholder="e.g. 2020"
-                          value={companyEstablishedYear}
-                          onChange={(e) => setCompanyEstablishedYear(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("established_year") && (
+                        <div className="sm:col-span-2">
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Established Year {isFieldRequired("established_year") ? "*" : ""}
+                          </label>
+                          <input
+                            type="number"
+                            min="1800"
+                            max={new Date().getFullYear()}
+                            placeholder="e.g. 2020"
+                            value={companyEstablishedYear}
+                            onChange={(e) => setCompanyEstablishedYear(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1646,26 +1828,34 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     </p>
 
                     <div className="space-y-4">
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Website URL</label>
-                        <input
-                          type="url"
-                          placeholder="https://www.company.com"
-                          value={companyWebsite}
-                          onChange={(e) => setCompanyWebsite(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("company_website") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Website URL {isFieldRequired("company_website") ? "*" : ""}
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://www.company.com"
+                            value={companyWebsite}
+                            onChange={(e) => setCompanyWebsite(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Company Description</label>
-                        <textarea
-                          placeholder="Tell us about what your business does, your mission, and your work culture..."
-                          value={companyDescription}
-                          onChange={(e) => setCompanyDescription(e.target.value)}
-                          className={`${inputClass} h-32`}
-                        />
-                      </div>
+                      {isFieldEnabled("company_description") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Company Description {isFieldRequired("company_description") ? "*" : ""}
+                          </label>
+                          <textarea
+                            placeholder="Tell us about what your business does, your mission, and your work culture..."
+                            value={companyDescription}
+                            onChange={(e) => setCompanyDescription(e.target.value)}
+                            className={`${inputClass} h-32`}
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1679,27 +1869,224 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Hiring Contact Name *</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. John Doe"
-                          value={hiringContactName}
-                          onChange={(e) => setHiringContactName(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("hiring_contact_name") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Hiring Contact Name {isFieldRequired("hiring_contact_name") ? "*" : ""}
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. John Doe"
+                            value={hiringContactName}
+                            onChange={(e) => setHiringContactName(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Hiring Contact Designation *</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Head of Talent Acquisition"
-                          value={hiringContactDesignation}
-                          onChange={(e) => setHiringContactDesignation(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("hiring_contact_designation") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Hiring Contact Designation {isFieldRequired("hiring_contact_designation") ? "*" : ""}
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Head of Talent Acquisition"
+                            value={hiringContactDesignation}
+                            onChange={(e) => setHiringContactDesignation(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* CLIENT STEP 4: DOCUMENT VERIFICATION */}
+                {clientWizardStep >= 4 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-base font-black text-slate-900">Document Verification</h3>
+                      <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
+                        Please upload valid evidence for the following documents. These will be reviewed by our compliance team.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                      {loadingDocFields ? (
+                        <div className="flex items-center justify-center py-10">
+                          <div className="w-6 h-6 border-2 border-t-transparent border-emerald-500 rounded-full animate-spin" />
+                        </div>
+                      ) : enabledDocFields.length === 0 ? (
+                        <div className="p-8 text-center text-slate-400 font-semibold text-xs bg-slate-50 rounded-xl border border-slate-200/50">
+                          No document verification required. You can complete onboarding.
+                        </div>
+                      ) : (
+                        enabledDocFields.map((field) => {
+                          const userDoc = userUploadedDocs.find(d => d.field_id === field.field_id);
+                          const isUploaded = !!userDoc;
+                          const status = userDoc?.status || "Pending";
+                          const isUploading = !!uploadingFields[field.field_id];
+                          const errorMsg = fieldErrors[field.field_id];
+
+                          return (
+                            <div key={field.field_id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col gap-4 transition-all duration-200 text-left">
+                              <div className="flex justify-between items-start gap-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0 shadow-xs">
+                                    <FiFileText className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-black text-slate-808 flex items-center gap-1.5 uppercase tracking-wide">
+                                      {field.field_name}
+                                      {field.is_required && <span className="text-rose-500 font-black">*</span>}
+                                    </h4>
+                                    <p className="text-[10px] text-slate-450 leading-relaxed font-semibold mt-0.5">{field.field_description}</p>
+                                  </div>
+                                </div>
+
+                                {isUploaded && (
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                                    status === "Approved"
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : status === "Rejected"
+                                      ? "bg-rose-50 text-rose-700 border-rose-200"
+                                      : "bg-slate-100 text-slate-500 border-slate-200"
+                                  }`}>
+                                    {status}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-slate-100 pt-4">
+                                <div className="flex flex-col gap-3">
+                                  {/* Expiry Date input if field requires expiry */}
+                                  {field.has_expiry && (
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+                                        Expiration Date
+                                      </label>
+                                      <input
+                                        type="date"
+                                        value={expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "")}
+                                        onChange={(e) => setExpiryDates({ ...expiryDates, [field.field_id]: e.target.value })}
+                                        disabled={status === "Approved"}
+                                        className="bg-white border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-emerald-500 transition-all text-slate-850 font-bold"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {(!field.field_type || field.field_type.startsWith("file_")) ? (
+                                    <div className="flex items-center gap-3">
+                                      <label className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-xs select-none ${status === "Approved" ? "opacity-50 pointer-events-none" : ""}`}>
+                                        <FiFileText className="w-3.5 h-3.5" />
+                                        <span>{isUploading ? "Uploading..." : "Attach Document"}</span>
+                                        <input
+                                          type="file"
+                                          accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
+                                          className="hidden"
+                                          disabled={isUploading || status === "Approved"}
+                                          onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            
+                                            const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
+                                            if (field.has_expiry && !expDate) {
+                                              setFieldErrors({ ...fieldErrors, [field.field_id]: "Please select document expiration date first." });
+                                              return;
+                                            }
+
+                                            try {
+                                              setUploadingFields({ ...uploadingFields, [field.field_id]: true });
+                                              setFieldErrors({ ...fieldErrors, [field.field_id]: "" });
+                                              await handleUploadDocument(field.field_id, file, expDate);
+                                              triggerToast("success", `${field.field_name} uploaded successfully!`);
+                                            } catch (err: any) {
+                                              setFieldErrors({ ...fieldErrors, [field.field_id]: err.message || "Failed to upload file." });
+                                            } finally {
+                                              setUploadingFields({ ...uploadingFields, [field.field_id]: false });
+                                            }
+                                          }}
+                                        />
+                                      </label>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col gap-2">
+                                      <input
+                                        type={field.field_type === 'number' ? 'number' : field.field_type === 'date' ? 'date' : 'text'}
+                                        value={textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "")}
+                                        onChange={(e) => setTextValues({ ...textValues, [field.field_id]: e.target.value })}
+                                        disabled={status === "Approved" || isUploading}
+                                        placeholder={`Enter ${field.field_name}...`}
+                                        className={inputClass}
+                                      />
+                                      <div className="flex items-center gap-3">
+                                        <button
+                                          type="button"
+                                          disabled={status === "Approved" || isUploading}
+                                          onClick={() => {
+                                            const textVal = textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "");
+                                            const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
+                                            handleSaveTextValue(field.field_id, textVal, expDate);
+                                          }}
+                                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-xs select-none disabled:opacity-50"
+                                        >
+                                          <FiCheck className="w-3.5 h-3.5" />
+                                          <span>{isUploading ? "Saving..." : "Save Answer"}</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {errorMsg && (
+                                    <p className="text-[10px] text-rose-500 font-bold select-none">⚠️ {errorMsg}</p>
+                                  )}
+
+                                  {status === "Rejected" && userDoc?.rejection_reason && (
+                                    <p className="text-[10px] text-rose-600 font-bold select-none">Rejection reason: {userDoc.rejection_reason}</p>
+                                  )}
+                                </div>
+
+                                <div className="border border-dashed border-slate-200 bg-white/50 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-1.5 min-h-[90px]">
+                                  {isUploaded ? (
+                                    (!field.field_type || field.field_type.startsWith("file_")) ? (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                          <FiCheck className="w-4 h-4" />
+                                        </div>
+                                        <a
+                                          href={userDoc.file_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-[10px] font-bold text-slate-500 hover:text-teal-700 underline truncate max-w-full px-2"
+                                        >
+                                          {userDoc.file_url.split('/').pop()}
+                                        </a>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                          <FiCheck className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-[11px] font-black text-slate-800 break-all max-w-full px-2">
+                                          {userDoc.text_value}
+                                        </span>
+                                      </>
+                                    )
+                                  ) : (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                                        <FiFileText className="w-4 h-4" />
+                                      </div>
+                                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">No Evidence</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
                 )}
@@ -1720,7 +2107,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   onClick={() => handleSaveClientStep(clientWizardStep)}
                   className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-950 flex items-center gap-1"
                 >
-                  <span>{clientWizardStep === 3 ? "Complete Onboarding ✓" : "Save & Continue →"}</span>
+                  <span>{clientWizardStep === totalClientSteps ? "Complete Onboarding ✓" : "Save & Continue →"}</span>
                 </button>
               </div>
             </div>
@@ -1747,10 +2134,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="relative z-10 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-6 pr-16 sm:pr-24">
                 <div>
                   <span className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase">Freelancer Onboarding</span>
-                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Step {wizardStep} of 4</h2>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Step {wizardStep} of {totalFreelancerSteps}</h2>
                 </div>
                 <div className="flex gap-1.5">
-                  {[1, 2, 3, 4].map((step) => (
+                  {Array.from({ length: totalFreelancerSteps }, (_, i) => i + 1).map((step) => (
                     <div
                       key={step}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
@@ -1775,6 +2162,39 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       Tell clients about your professional domain, level of expertise, availability, and active skills.
                     </p>
 
+                    {/* AI Resume Reader Upload Block */}
+                    <div className="bg-gradient-to-r from-violet-50/50 to-purple-50/50 border border-dashed border-violet-300 rounded-xl p-4 text-center space-y-2.5 relative overflow-hidden transition-all hover:bg-violet-50/80">
+                      <div className="flex flex-col items-center justify-center gap-1.5 select-none">
+                        <FiZap className="text-violet-600 text-xl animate-pulse shrink-0" />
+                        <h4 className="text-xs font-black text-violet-850">AI Resume Reader &amp; Auto-fill</h4>
+                        <p className="text-[10px] text-slate-500 font-semibold leading-relaxed max-w-xs">
+                          Upload your PDF or TXT resume to automatically fill your title, experience, rate, skills, and languages!
+                        </p>
+                      </div>
+
+                      {parsingResume ? (
+                        <div className="flex items-center justify-center gap-2 py-1.5 text-xs text-violet-700 font-bold">
+                          <div className="w-4 h-4 border-2 border-t-transparent border-violet-600 rounded-full animate-spin" />
+                          <span>AI is parsing and auto-filling your profile fields...</span>
+                        </div>
+                      ) : (
+                        <label className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-750 hover:to-purple-750 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-sm hover:shadow-violet-200">
+                          <FiFileText className="w-3.5 h-3.5" />
+                          <span>Upload Resume File</span>
+                          <input
+                            type="file"
+                            accept=".pdf,.txt"
+                            onChange={handleResumeUploadAndParse}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+
+                      {parseError && (
+                        <p className="text-[10px] text-rose-500 font-bold select-none">⚠️ {parseError}</p>
+                      )}
+                    </div>
+
                     {step1Error && (
                       <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold rounded-xl">
                         ⚠️ {step1Error}
@@ -1787,162 +2207,210 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Category *</label>
-                        <CustomSelect
-                          options={categories.map((c) => ({ value: c.category_id, label: c.category_name }))}
-                          value={categoryId}
-                          onChange={(val) => handleCategoryChange(String(val))}
-                          placeholder="Select Category"
-                        />
-                      </div>
+                      {isFieldEnabled("category") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Category {isFieldRequired("category") ? "*" : ""}
+                          </label>
+                          <CustomSelect
+                            options={categories.map((c) => ({ value: c.category_id, label: c.category_name }))}
+                            value={categoryId}
+                            onChange={(val) => handleCategoryChange(String(val))}
+                            placeholder="Select Category"
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Subcategory *</label>
-                        <CustomSelect
-                          options={subCategories.map((sc) => ({ value: sc.sub_category_id, label: sc.sub_category_name }))}
-                          value={subCategoryId}
-                          disabled={!categoryId}
-                          onChange={(val) => setSubCategoryId(String(val))}
-                          placeholder="Select Subcategory"
-                        />
-                      </div>
+                      {isFieldEnabled("category") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Subcategory {isFieldRequired("category") ? "*" : ""}
+                          </label>
+                          <CustomSelect
+                            options={subCategories.map((sc) => ({ value: sc.sub_category_id, label: sc.sub_category_name }))}
+                            value={subCategoryId}
+                            disabled={!categoryId}
+                            onChange={(val) => setSubCategoryId(String(val))}
+                            placeholder="Select Subcategory"
+                          />
+                        </div>
+                      )}
 
-                      <div className="sm:col-span-2">
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Professional Title *</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. Senior Full Stack Engineer (React, Node)"
-                          value={professionalTitle}
-                          onChange={(e) => setProfessionalTitle(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("title") && (
+                        <div className="sm:col-span-2">
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Professional Title {isFieldRequired("title") ? "*" : ""}
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Senior Full Stack Engineer (React, Node)"
+                            value={professionalTitle}
+                            onChange={(e) => setProfessionalTitle(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Experience Level *</label>
-                        <CustomSelect
-                          options={[
-                            { value: "Beginner", label: "Beginner" },
-                            { value: "Intermediate", label: "Intermediate" },
-                            { value: "Expert", label: "Expert" }
-                          ]}
-                          value={experienceLevel}
-                          onChange={(val) => setExperienceLevel(val as string)}
-                          placeholder="Select Experience Level"
-                        />
-                      </div>
+                      {isFieldEnabled("experience_level") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Experience Level {isFieldRequired("experience_level") ? "*" : ""}
+                          </label>
+                          <CustomSelect
+                            options={[
+                              { value: "Beginner", label: "Beginner" },
+                              { value: "Intermediate", label: "Intermediate" },
+                              { value: "Expert", label: "Expert" }
+                            ]}
+                            value={experienceLevel}
+                            onChange={(val) => setExperienceLevel(val as string)}
+                            placeholder="Select Experience Level"
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Years of Experience *</label>
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="e.g. 5"
-                          value={totalExperienceYears}
-                          onChange={(e) => setTotalExperienceYears(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("experience_level") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Years of Experience {isFieldRequired("experience_level") ? "*" : ""}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="e.g. 5"
+                            value={totalExperienceYears}
+                            onChange={(e) => setTotalExperienceYears(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Hourly Rate ($) (Optional)</label>
-                        <input
-                          type="number"
-                          min="0"
-                          placeholder="e.g. 45"
-                          value={hourlyRate}
-                          onChange={(e) => setHourlyRate(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("hourly_rate") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Hourly Rate ($) {isFieldRequired("hourly_rate") ? "*" : ""}
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="e.g. 45"
+                            value={hourlyRate}
+                            onChange={(e) => setHourlyRate(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Availability Status</label>
-                        <CustomSelect
-                          options={[
-                            { value: "Available", label: "Available" },
-                            { value: "Busy", label: "Busy" },
-                            { value: "Not Available", label: "Not Available" }
-                          ]}
-                          value={availabilityStatus}
-                          onChange={(val) => setAvailabilityStatus(val as string)}
-                          placeholder="Select Availability"
-                        />
-                      </div>
+                      {isFieldEnabled("availability_status") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Availability Status {isFieldRequired("availability_status") ? "*" : ""}
+                          </label>
+                          <CustomSelect
+                            options={[
+                              { value: "Available", label: "Available" },
+                              { value: "Busy", label: "Busy" },
+                              { value: "Not Available", label: "Not Available" }
+                            ]}
+                            value={availabilityStatus}
+                            onChange={(val) => setAvailabilityStatus(val as string)}
+                            placeholder="Select Availability"
+                          />
+                        </div>
+                      )}
 
-                      <div className="sm:col-span-2">
-                        <label className="text-xs font-bold block mb-1 text-slate-600">LinkedIn Profile Link</label>
-                        <input
-                          type="url"
-                          placeholder="https://linkedin.com/in/username"
-                          value={linkedinUrl}
-                          onChange={(e) => setLinkedinUrl(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("linkedin") && (
+                        <div className="sm:col-span-2">
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            LinkedIn Profile Link {isFieldRequired("linkedin") ? "*" : ""}
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://linkedin.com/in/username"
+                            value={linkedinUrl}
+                            onChange={(e) => setLinkedinUrl(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Portfolio Website URL</label>
-                        <input
-                          type="url"
-                          placeholder="https://myportfolio.com"
-                          value={portfolioWebsite}
-                          onChange={(e) => setPortfolioWebsite(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
+                      {isFieldEnabled("website") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Portfolio Website URL {isFieldRequired("website") ? "*" : ""}
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://myportfolio.com"
+                            value={portfolioWebsite}
+                            onChange={(e) => setPortfolioWebsite(e.target.value)}
+                            className={inputClass}
+                          />
+                        </div>
+                      )}
 
-                      <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Resume Document URL</label>
-                        <input
-                          type="url"
-                          placeholder="https://drive.google.com/.../resume.pdf"
-                          value={resumeUrl}
-                          onChange={(e) => setResumeUrl(e.target.value)}
-                          className={inputClass}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="text-xs font-bold block mb-1.5 text-slate-600">Select Skills * (At least 1)</label>
-                      {!subCategoryId ? (
-                        <p className="text-xs text-slate-400 italic">Please select a subcategory first to load skills.</p>
-                      ) : availableSkills.length === 0 ? (
-                        <p className="text-xs text-slate-400 italic">No skills registered for this subcategory.</p>
-                      ) : (
-                        <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 rounded-xl border bg-slate-100/50 border-slate-200">
-                          {availableSkills.map((sk) => {
-                            const isChecked = selectedSkillIds.includes(sk.skill_id);
-                            return (
-                              <div
-                                key={sk.skill_id}
-                                onClick={() => handleToggleSkill(sk.skill_id)}
-                                className={`px-3 py-1.5 rounded-lg border text-xxs font-bold cursor-pointer transition-all duration-150 ${
-                                  isChecked
-                                    ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500 font-extrabold"
-                                    : "bg-white border-slate-250 text-slate-600 hover:border-slate-350"
-                                }`}
-                              >
-                                {sk.skill_name}
-                              </div>
-                            );
-                          })}
+                      {isFieldEnabled("github") && (
+                        <div>
+                          <label className="text-xs font-bold block mb-1 text-slate-600">
+                            Resume Document URL {isFieldRequired("github") ? "*" : ""}
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://drive.google.com/.../resume.pdf"
+                            value={resumeUrl}
+                            onChange={(e) => setResumeUrl(e.target.value)}
+                            className={inputClass}
+                          />
                         </div>
                       )}
                     </div>
 
-                    <div className="mt-4">
-                      <label className="text-xs font-bold block mb-1.5 text-slate-600">Select Languages * (At least 1)</label>
-                      <CustomSelect
-                        multiple={true}
-                        options={languages.map((l) => ({ value: l.language_id, label: l.language_name }))}
-                        value={selectedLanguageIds}
-                        onChange={(val) => setSelectedLanguageIds(val as number[])}
-                        placeholder="Select Languages"
-                      />
-                    </div>
+                    {isFieldEnabled("skills") && (
+                      <div className="mt-4">
+                        <label className="text-xs font-bold block mb-1.5 text-slate-600">
+                          Select Skills {isFieldRequired("skills") ? "*" : ""} (At least 1)
+                        </label>
+                        {!subCategoryId ? (
+                          <p className="text-xs text-slate-400 italic">Please select a subcategory first to load skills.</p>
+                        ) : availableSkills.length === 0 ? (
+                          <p className="text-xs text-slate-400 italic">No skills registered for this subcategory.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 rounded-xl border bg-slate-100/50 border-slate-200">
+                            {availableSkills.map((sk) => {
+                              const isChecked = selectedSkillIds.includes(sk.skill_id);
+                              return (
+                                <div
+                                  key={sk.skill_id}
+                                  onClick={() => handleToggleSkill(sk.skill_id)}
+                                  className={`px-3 py-1.5 rounded-lg border text-xxs font-bold cursor-pointer transition-all duration-150 ${
+                                    isChecked
+                                      ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500 font-extrabold"
+                                      : "bg-white border-slate-250 text-slate-600 hover:border-slate-355"
+                                  }`}
+                                >
+                                  {sk.skill_name}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {isFieldEnabled("languages") && (
+                      <div className="mt-4">
+                        <label className="text-xs font-bold block mb-1.5 text-slate-600">
+                          Select Languages {isFieldRequired("languages") ? "*" : ""} (At least 1)
+                        </label>
+                        <CustomSelect
+                          multiple={true}
+                          options={languages.map((l) => ({ value: l.language_id, label: l.language_name }))}
+                          value={selectedLanguageIds}
+                          onChange={(val) => setSelectedLanguageIds(val as number[])}
+                          placeholder="Select Languages"
+                        />
+                      </div>
+                    )}
 
                     {/* Spoken Languages Proficiency Levels Section */}
                     {selectedLanguages.length > 0 && (
@@ -2486,7 +2954,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={handleFinishOnboarding}
+                          onClick={async () => {
+                            setWizardStep(5);
+                            await updateOnboardingStep(5);
+                          }}
                           className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
                         >
                           Skip Project
@@ -2495,11 +2966,261 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           type="submit"
                           className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-955"
                         >
-                          Add & Finish Onboarding
+                          Add & Continue →
                         </button>
                       </div>
                     </div>
                   </form>
+                )}
+
+                {/* STEP 5 FORM - DOCUMENT VERIFICATION */}
+                {wizardStep >= 5 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-base font-black text-slate-900">
+                        {wizardStep === 5 ? "Document Verification" : `Onboarding Step ${wizardStep}`}
+                      </h3>
+                      <p className="text-xs mt-0.5 leading-relaxed text-slate-505 font-medium">
+                        Please upload valid evidence for the following documents. These will be reviewed by our compliance team.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                      {loadingDocFields ? (
+                        <div className="flex items-center justify-center py-10">
+                          <div className="w-6 h-6 border-2 border-t-transparent border-emerald-500 rounded-full animate-spin" />
+                        </div>
+                      ) : (() => {
+                        const freelancerStepFields = enabledDocFields.filter(f => 
+                          (f.applicable_to === 'freelancer' || f.applicable_to === 'both') && 
+                          f.is_enabled && 
+                          (f.step_number || 5) === wizardStep
+                        );
+                        if (freelancerStepFields.length === 0) {
+                          return (
+                            <div className="p-8 text-center text-slate-400 font-semibold text-xs bg-slate-50 rounded-xl border border-slate-200/50">
+                              No verification required for this step. You can proceed.
+                            </div>
+                          );
+                        }
+                        return freelancerStepFields.map((field) => {
+                          const userDoc = userUploadedDocs.find(d => d.field_id === field.field_id);
+                          const isUploaded = !!userDoc;
+                          const status = userDoc?.status || "Pending";
+                          const isUploading = !!uploadingFields[field.field_id];
+                          const errorMsg = fieldErrors[field.field_id];
+
+                          return (
+                            <div key={field.field_id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col gap-4 transition-all duration-200 text-left">
+                              <div className="flex justify-between items-start gap-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0 shadow-xs">
+                                    <FiFileText className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <h4 className="text-xs font-black text-slate-805 flex items-center gap-1.5 uppercase tracking-wide">
+                                      {field.field_name}
+                                      {field.is_required && <span className="text-rose-500 font-black">*</span>}
+                                    </h4>
+                                    <p className="text-[10px] text-slate-450 leading-relaxed font-semibold mt-0.5">{field.field_description}</p>
+                                  </div>
+                                </div>
+
+                                {isUploaded && (
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                                    status === "Approved"
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : status === "Rejected"
+                                      ? "bg-rose-50 text-rose-705 border-rose-200"
+                                      : "bg-slate-100 text-slate-500 border-slate-200"
+                                  }`}>
+                                    {status}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-slate-100 pt-4">
+                                <div className="flex flex-col gap-3">
+                                  {/* Expiry Date input if field requires expiry */}
+                                  {field.has_expiry && (
+                                    <div className="flex flex-col gap-1">
+                                      <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+                                        Expiration Date
+                                      </label>
+                                      <input
+                                        type="date"
+                                        value={expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "")}
+                                        onChange={(e) => setExpiryDates({ ...expiryDates, [field.field_id]: e.target.value })}
+                                        disabled={status === "Approved"}
+                                        className="bg-white border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-emerald-500 transition-all text-slate-850 font-bold"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {(!field.field_type || field.field_type.startsWith("file_")) ? (
+                                    <div className="flex items-center gap-3">
+                                      <label className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-xs select-none ${status === "Approved" ? "opacity-50 pointer-events-none" : ""}`}>
+                                        <FiFileText className="w-3.5 h-3.5" />
+                                        <span>{isUploading ? "Uploading..." : "Attach Document"}</span>
+                                        <input
+                                          type="file"
+                                          accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
+                                          className="hidden"
+                                          disabled={isUploading || status === "Approved"}
+                                          onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            
+                                            const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
+                                            if (field.has_expiry && !expDate) {
+                                              setFieldErrors({ ...fieldErrors, [field.field_id]: "Please select document expiration date first." });
+                                              return;
+                                            }
+
+                                            try {
+                                              setUploadingFields({ ...uploadingFields, [field.field_id]: true });
+                                              setFieldErrors({ ...fieldErrors, [field.field_id]: "" });
+                                              await handleUploadDocument(field.field_id, file, expDate);
+                                              triggerToast("success", `${field.field_name} uploaded successfully!`);
+                                            } catch (err: any) {
+                                              setFieldErrors({ ...fieldErrors, [field.field_id]: err.message || "Failed to upload file." });
+                                            } finally {
+                                              setUploadingFields({ ...uploadingFields, [field.field_id]: false });
+                                            }
+                                          }}
+                                        />
+                                      </label>
+                                    </div>
+                                  ) : (
+                                    <div className="flex flex-col gap-2">
+                                      <input
+                                        type={field.field_type === 'number' ? 'number' : field.field_type === 'date' ? 'date' : 'text'}
+                                        value={textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "")}
+                                        onChange={(e) => setTextValues({ ...textValues, [field.field_id]: e.target.value })}
+                                        disabled={status === "Approved" || isUploading}
+                                        placeholder={`Enter ${field.field_name}...`}
+                                        className={inputClass}
+                                      />
+                                      <div className="flex items-center gap-3">
+                                        <button
+                                          type="button"
+                                          disabled={status === "Approved" || isUploading}
+                                          onClick={() => {
+                                            const textVal = textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "");
+                                            const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
+                                            handleSaveTextValue(field.field_id, textVal, expDate);
+                                          }}
+                                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-xs select-none disabled:opacity-50"
+                                        >
+                                          <FiCheck className="w-3.5 h-3.5" />
+                                          <span>{isUploading ? "Saving..." : "Save Answer"}</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {errorMsg && (
+                                    <p className="text-[10px] text-rose-505 font-bold select-none">⚠️ {errorMsg}</p>
+                                  )}
+
+                                  {status === "Rejected" && userDoc?.rejection_reason && (
+                                    <p className="text-[10px] text-rose-600 font-bold select-none">Rejection reason: {userDoc.rejection_reason}</p>
+                                  )}
+                                </div>
+
+                                <div className="border border-dashed border-slate-200 bg-white/50 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-1.5 min-h-[90px]">
+                                  {isUploaded ? (
+                                    (!field.field_type || field.field_type.startsWith("file_")) ? (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                          <FiCheck className="w-4 h-4" />
+                                        </div>
+                                        <a
+                                          href={userDoc.file_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-[10px] font-bold text-slate-500 hover:text-teal-700 underline truncate max-w-full px-2"
+                                        >
+                                          {userDoc.file_url.split('/').pop()}
+                                        </a>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                          <FiCheck className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-[11px] font-black text-slate-800 break-all max-w-full px-2">
+                                          {userDoc.text_value}
+                                        </span>
+                                      </>
+                                    )
+                                  ) : (
+                                    <>
+                                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-455">
+                                        <FiFileText className="w-4 h-4" />
+                                      </div>
+                                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">No Evidence</span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          setWizardStep(wizardStep - 1);
+                          await updateOnboardingStep(wizardStep - 1);
+                        }}
+                        className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
+                      >
+                        ← Back
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          // Validate required document fields for THIS step
+                          const stepFields = enabledDocFields.filter(f => 
+                            (f.applicable_to === 'freelancer' || f.applicable_to === 'both') && 
+                            f.is_enabled && 
+                            (f.step_number || 5) === wizardStep
+                          );
+                          const missingRequired = stepFields.filter(field => {
+                            if (!field.is_required) return false;
+                            const uploaded = userUploadedDocs.some(d => d.field_id === field.field_id);
+                            return !uploaded;
+                          });
+
+                          if (missingRequired.length > 0) {
+                            const list = missingRequired.map(f => f.field_name).join(", ");
+                            alert(`Please complete all required fields for this step: ${list}`);
+                            return;
+                          }
+
+                          if (wizardStep < totalFreelancerSteps) {
+                            setWizardStep(wizardStep + 1);
+                            await updateOnboardingStep(wizardStep + 1);
+                          } else {
+                            // Submit onboarding
+                            try {
+                              await handleFinishOnboarding();
+                              triggerToast("success", "Onboarding completed successfully!");
+                            } catch (err: any) {
+                              alert(err.message || "Failed to complete onboarding.");
+                            }
+                          }
+                        }}
+                        className="bg-teal-700 hover:bg-teal-850 text-white active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer shadow-sm shadow-teal-750/10"
+                      >
+                        {wizardStep === totalFreelancerSteps ? "Complete Onboarding ✓" : "Save & Continue →"}
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

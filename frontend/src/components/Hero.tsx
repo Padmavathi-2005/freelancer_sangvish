@@ -40,6 +40,33 @@ export default function Hero() {
 
   const skillsToType = ["UI Design", "React", "AI Automation", "SEO", "Next.js", "Python"];
 
+  const [siteTheme, setSiteTheme] = useState("light");
+
+  // Sync theme changes in real-time
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedTheme = localStorage.getItem("siteTheme") || "light";
+      setSiteTheme(savedTheme);
+
+      const handleStorageChange = () => {
+        setSiteTheme(localStorage.getItem("siteTheme") || "light");
+      };
+      window.addEventListener("storage", handleStorageChange);
+
+      const interval = setInterval(() => {
+        const current = localStorage.getItem("siteTheme") || "light";
+        if (current !== siteTheme) {
+          setSiteTheme(current);
+        }
+      }, 300);
+
+      return () => {
+        window.removeEventListener("storage", handleStorageChange);
+        clearInterval(interval);
+      };
+    }
+  }, [siteTheme]);
+
   // Fetch hero settings from admin
   useEffect(() => {
     const fetchHeroSettings = async () => {
@@ -51,7 +78,7 @@ export default function Hero() {
           if (heroSetting) {
             let val = heroSetting.setting_value;
             if (typeof val === "string") {
-              try { val = JSON.parse(val); } catch {}
+              try { val = JSON.parse(val); } catch { }
             }
             if (val) {
               setHeroContent({
@@ -81,7 +108,7 @@ export default function Hero() {
           const data: string[] = await res.json();
           if (data.length > 0) setCompanies(data);
         }
-      } catch {}
+      } catch { }
     };
     fetchCompanies();
   }, []);
@@ -120,14 +147,14 @@ export default function Hero() {
   };
 
   return (
-    <main className="flex-1 relative overflow-hidden bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#ffffff] lg:h-[calc(100vh-80px)] lg:min-h-[560px] lg:max-h-[720px] flex flex-col justify-between z-10 px-4 sm:px-6 lg:px-8">
+    <main className="flex-1 relative overflow-hidden bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#ffffff] dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 lg:h-[calc(100vh-80px)] lg:min-h-[560px] lg:max-h-[720px] flex flex-col justify-between z-10 px-4 sm:px-6 lg:px-8">
 
       {/* Animated gradient mesh blobs and grid overlay */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute inset-0 bg-grid-pattern opacity-60"></div>
-        <div className="absolute -top-12 -left-12 w-96 h-96 bg-[#e6f0ef]/50 rounded-full mix-blend-multiply filter blur-3xl opacity-75 animate-blob"></div>
-        <div className="absolute top-1/4 -right-12 w-[30rem] h-[30rem] bg-teal-100/40 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-16 left-1/3 w-96 h-96 bg-emerald-100/30 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+        <div className="absolute inset-0 bg-grid-pattern opacity-60 dark:opacity-30"></div>
+        <div className="absolute -top-12 -left-12 w-96 h-96 bg-[#e6f0ef]/50 dark:bg-teal-900/10 rounded-full mix-blend-multiply filter blur-3xl opacity-75 animate-blob"></div>
+        <div className="absolute top-1/4 -right-12 w-[30rem] h-[30rem] bg-teal-100/40 dark:bg-emerald-900/10 rounded-full mix-blend-multiply filter blur-3xl opacity-60 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-16 left-1/3 w-96 h-96 bg-emerald-100/30 dark:bg-teal-950/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
       </div>
 
       {/* Main Content */}
@@ -136,12 +163,12 @@ export default function Hero() {
 
           {/* Left Column */}
           <div className="lg:col-span-7 flex flex-col gap-3.5 text-center lg:text-left">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-semibold bg-[#e6f0ef] text-[#0a5a54] self-center lg:self-start border border-[#0a5a54]/10 uppercase tracking-wider">
-              <FiAward className="w-3.5 h-3.5 text-[#0a5a54]" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-semibold bg-[#e6f0ef] dark:bg-zinc-800 text-[#0a5a54] dark:text-zinc-200 self-center lg:self-start border border-[#0a5a54]/10 dark:border-zinc-700/50 uppercase tracking-wider">
+              <FiAward className="w-3.5 h-3.5 text-[#0a5a54] dark:text-zinc-400" />
               {t("hero_badge", heroContent.hero_badge)}
             </span>
 
-            <h1 className="text-3xl sm:text-[2.5rem] lg:text-[2.85rem] xl:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] text-slate-900 font-display whitespace-pre-line">
+            <h1 className="text-3xl sm:text-[2.5rem] lg:text-[2.85rem] xl:text-[3.5rem] font-extrabold tracking-tight leading-[1.1] text-slate-900 dark:text-white font-display whitespace-pre-line">
               {(() => {
                 const titleText = t("hero_title", heroContent.hero_title);
                 const highlight = "Expert Freelancers";
@@ -150,7 +177,7 @@ export default function Hero() {
                   return (
                     <>
                       {parts[0]}
-                      <span className="text-[#0a5a54]">{highlight}</span>
+                      <span className="text-[#0a5a54] dark:text-white font-extrabold">{highlight}</span>
                       {parts[1]}
                     </>
                   );
@@ -159,14 +186,14 @@ export default function Hero() {
               })()}
             </h1>
 
-            <p className="text-slate-600 text-sm sm:text-base max-w-lg mx-auto lg:mx-0 leading-relaxed font-normal">
+            <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base max-w-lg mx-auto lg:mx-0 leading-relaxed font-normal">
               {t("hero_subtitle", heroContent.hero_subtitle)}
             </p>
 
             {/* Search */}
             <form
               onSubmit={handleSearchSubmit}
-              className="w-full max-w-xl mx-auto lg:mx-0 mt-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col sm:flex-row gap-1.5 transition-all duration-300 focus-within:border-[#0a5a54]/40 focus-within:shadow-2xl focus-within:shadow-[#0a5a54]/5"
+              className="hero-search-form w-full max-w-xl mx-auto lg:mx-0 mt-2 bg-white dark:bg-zinc-900 p-1.5 rounded-xl border border-slate-200 dark:border-zinc-700/80 shadow-xl shadow-slate-100 dark:shadow-none flex flex-col sm:flex-row gap-1.5 transition-all duration-300 focus-within:border-[#0a5a54]/40 focus-within:shadow-2xl focus-within:shadow-[#0a5a54]/5"
             >
               <div className="flex-1 flex items-center px-3 gap-2.5 relative">
                 <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -178,16 +205,16 @@ export default function Hero() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
-                  className="w-full text-slate-800 text-sm sm:text-base focus:outline-none bg-transparent py-2.5 z-10"
+                  className="w-full text-slate-800 dark:text-white text-sm sm:text-base focus:outline-none bg-transparent py-2.5 z-10"
                 />
                 {!isFocused && !searchQuery && (
                   <div className="absolute left-[38px] text-slate-400 text-sm sm:text-base pointer-events-none select-none z-0 flex items-center">
                     <span className="hidden sm:inline">{t("hero_search_placeholder", heroContent.hero_search_placeholder)}&nbsp;</span>
                     <span className="sm:hidden">{t("search", "Search")}&nbsp;</span>
                     <span className="text-slate-400/70 font-normal">e.g. </span>
-                    <span className="text-[#0a5a54] font-semibold ml-1 relative">
+                    <span className="text-[#0a5a54] dark:text-white font-semibold ml-1 relative">
                       {currentText}
-                      <span className="absolute -right-[3px] top-[1.5px] bottom-[1.5px] w-[1.5px] bg-[#0a5a54] animate-blink"></span>
+                      <span className="absolute -right-[3px] top-[1.5px] bottom-[1.5px] w-[1.5px] bg-[#0a5a54] dark:bg-white animate-blink"></span>
                     </span>
                   </div>
                 )}
@@ -201,7 +228,7 @@ export default function Hero() {
             </form>
 
             {/* Hot Skills */}
-            <div className="flex flex-wrap gap-2.5 justify-center lg:justify-start items-center text-xs font-semibold text-slate-500 mt-2">
+            <div className="flex flex-wrap gap-2.5 justify-center lg:justify-start items-center text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
               <span>{t("hero_popular_label", heroContent.hero_popular_label).split(":")[0]}:</span>
               {(t("hero_popular_label", heroContent.hero_popular_label).includes(":")
                 ? t("hero_popular_label", heroContent.hero_popular_label).split(":")[1]
@@ -210,7 +237,7 @@ export default function Hero() {
                 <button
                   key={skill}
                   onClick={() => handleQuickTagClick(skill)}
-                  className="hover:text-white hover:bg-[#0a5a54] hover:border-[#0a5a54] border border-emerald-600/20 bg-[#e6f0ef]/50 text-[#0a5a54] px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer"
+                  className="hover:text-white hover:bg-[#0a5a54] hover:border-[#0a5a54] border border-emerald-600/20 dark:border-zinc-700 bg-[#e6f0ef]/50 dark:bg-zinc-800/80 text-[#0a5a54] dark:text-zinc-200 px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer dark:hover:bg-white dark:hover:text-slate-900 text-xs font-semibold"
                 >
                   {skill}
                 </button>
@@ -220,7 +247,7 @@ export default function Hero() {
 
           {/* Right Column: Visual Mockup */}
           <div className="lg:col-span-5 relative w-full flex justify-center items-center py-2 lg:py-0">
-            <div className="relative w-full aspect-[1.12] max-w-[290px] sm:max-w-[360px] xl:max-w-[395px] bg-[#042e2a] rounded-xl p-4 sm:p-6 flex items-center justify-center shadow-xl overflow-visible">
+            <div className="hero-mockup-container relative w-full aspect-[1.12] max-w-[290px] sm:max-w-[360px] xl:max-w-[395px] bg-[#042e2a] rounded-xl p-4 sm:p-6 flex items-center justify-center shadow-xl overflow-visible border border-transparent">
               <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:16px_16px] rounded-xl"></div>
               <div className="absolute -top-6 -right-6 w-32 h-32 bg-teal-400/20 rounded-full filter blur-2xl pointer-events-none"></div>
               <div className="absolute -bottom-6 -left-6 w-36 h-36 bg-emerald-400/20 rounded-full filter blur-2xl pointer-events-none"></div>
@@ -235,9 +262,9 @@ export default function Hero() {
 
               {/* Floating Card: Sarah J. */}
               <div className="absolute top-[12%] -left-2 sm:-left-6 md:-left-[10%] z-20 animate-float-up">
-                <div 
+                <div
                   onClick={() => router.push('/freelancer/sarah-jenkins')}
-                  className="bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
+                  className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100"
                 >
                   <img src="/sarah-avatar.png" alt="Sarah J." className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -258,9 +285,9 @@ export default function Hero() {
 
               {/* Floating Card: David M. */}
               <div className="absolute bottom-[14%] -right-2 sm:-right-6 md:-right-[10%] z-20 animate-float-up">
-                <div 
+                <div
                   onClick={() => router.push('/freelancer/david-m')}
-                  className="bg-white border border-slate-100 rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
+                  className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100"
                 >
                   <img src="/david-avatar.png" alt="David M." className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -285,7 +312,7 @@ export default function Hero() {
       </div>
 
       {/* Trusted Companies Ticker */}
-      <div className="w-full bg-slate-50/80 backdrop-blur-sm border-t border-slate-200/50 pt-5 pb-3.5 overflow-hidden shrink-0 z-10 mt-6 lg:mt-8">
+      <div className="w-full bg-slate-50/80 dark:bg-zinc-900/50 backdrop-blur-sm border-t border-slate-200/50 dark:border-zinc-800/40 pt-5 pb-3.5 overflow-hidden shrink-0 z-10 mt-6 lg:mt-8">
         <p className="text-center text-[10px] sm:text-xs font-bold tracking-[0.22em] text-slate-400/90 uppercase mb-5">
           {t("trusted_title", "Trusted by Innovative Companies Worldwide")}
         </p>

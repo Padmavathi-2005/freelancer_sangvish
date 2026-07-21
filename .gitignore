@@ -64,4 +64,11 @@ backend/backups/
 OllamaSetup.exe
 backend/src/scratch/
 lancerflow-agent/
+backend/api_logs.txt
+backend/check_*.js
+backend/reset_*.js
+backend/public/documents/onboard/*
+!backend/public/documents/onboard/.gitkeep
+backend/public/images/onboard/*
+!backend/public/images/onboard/.gitkeep
 

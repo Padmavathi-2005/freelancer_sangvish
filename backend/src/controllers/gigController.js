@@ -29,7 +29,8 @@ export const createFreelancerGig = async (req, res) => {
       slug,
       plans,
       faqs,
-      seo
+      seo,
+      addons
     } = req.body;
 
     // Validations
@@ -115,6 +116,11 @@ export const createFreelancerGig = async (req, res) => {
     // Save seo if provided
     if (seo) {
       await pool.query("UPDATE gigs SET seo = $1 WHERE gig_id = $2", [typeof seo === 'string' ? seo : JSON.stringify(seo), gig.gig_id]);
+    }
+
+    // Save addons if provided
+    if (addons) {
+      await pool.query("UPDATE gigs SET addons = $1 WHERE gig_id = $2", [typeof addons === 'string' ? addons : JSON.stringify(addons), gig.gig_id]);
     }
 
     // Save skill links if provided
@@ -625,7 +631,8 @@ export const updateFreelancerGig = async (req, res) => {
       slug,
       plans,
       faqs,
-      seo
+      seo,
+      addons
     } = req.body;
 
     // Validations
@@ -734,6 +741,12 @@ export const updateFreelancerGig = async (req, res) => {
       await pool.query("UPDATE gigs SET seo = NULL WHERE gig_id = $1", [parseInt(id)]);
     }
 
+    if (addons) {
+      await pool.query("UPDATE gigs SET addons = $1 WHERE gig_id = $2", [typeof addons === 'string' ? addons : JSON.stringify(addons), parseInt(id)]);
+    } else {
+      await pool.query("UPDATE gigs SET addons = NULL WHERE gig_id = $1", [parseInt(id)]);
+    }
+
     // Update skills (delete old, insert new)
     await pool.query("DELETE FROM gig_skills WHERE gig_id = $1", [parseInt(id)]);
     if (skills && Array.isArray(skills) && skills.length > 0) {
@@ -764,17 +777,29 @@ export const getClientGigById = async (req, res, next) => {
     }
     const isNumeric = /^\d+$/.test(id);
 
-    // Increment views count
+    // Increment views count only for unique IP address per gig
+    let gigId = null;
     if (isNumeric) {
-      await pool.query(
-        "UPDATE gigs SET views = COALESCE(views, 0) + 1 WHERE gig_id = $1",
-        [parseInt(id)]
-      );
+      gigId = parseInt(id);
     } else {
-      await pool.query(
-        "UPDATE gigs SET views = COALESCE(views, 0) + 1 WHERE slug = $1",
-        [id]
+      const gigSlugRes = await pool.query("SELECT gig_id FROM gigs WHERE slug = $1", [id]);
+      if (gigSlugRes.rows.length > 0) {
+        gigId = gigSlugRes.rows[0].gig_id;
+      }
+    }
+
+    if (gigId) {
+      const ip = (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "unknown";
+      const viewLog = await pool.query(
+        "INSERT INTO unique_views_log (view_type, target_id, ip_address) VALUES ('gig', $1, $2) ON CONFLICT DO NOTHING",
+        [gigId.toString(), ip]
       );
+      if (viewLog.rowCount > 0) {
+        await pool.query(
+          "UPDATE gigs SET views = COALESCE(views, 0) + 1 WHERE gig_id = $1",
+          [gigId]
+        );
+      }
     }
 
     const lookupField = isNumeric ? "g.gig_id" : "g.slug";
@@ -896,14 +921,17 @@ export const getSimilarGigs = async (req, res) => {
         c.code as currency_code,
         c.symbol as currency_symbol,
         cat.category_name,
-        sub.sub_category_name
+        sub.sub_category_name,
+        sp.name as freelancer_plan_name,
+        sp.price as freelancer_plan_price
       FROM gigs g
       JOIN users u ON g.freelancer_id = u.user_id
       LEFT JOIN currencies c ON g.currency_id = c.currency_id
       LEFT JOIN categories cat ON g.category_id = cat.category_id
       LEFT JOIN sub_categories sub ON g.sub_category_id = sub.sub_category_id
+      LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
       WHERE g.status = 'Active' AND g.gig_id != $1 AND (g.sub_category_id = $2 OR g.category_id = $3)
-      ORDER BY g.created_at DESC
+      ORDER BY COALESCE(sp.price, 0) DESC, g.created_at DESC
       LIMIT 4
     `;
     const result = await pool.query(query, [gig_id, sub_category_id, category_id]);

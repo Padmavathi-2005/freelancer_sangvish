@@ -1076,6 +1076,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   // Update theme when changes occur
   useEffect(() => {
     const apply = async () => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("siteTheme", siteTheme);
+        localStorage.setItem("primaryColor", primaryColor);
+        localStorage.setItem("secondaryColor", secondaryColor);
+      }
       const { applyTheme } = await import("@/utils/theme");
       applyTheme(siteTheme, primaryColor, secondaryColor);
     };

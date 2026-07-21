@@ -1,0 +1,113 @@
+Method,Endpoint URL,Scope,Purpose / Description
+POST,/api/users/register,User/Public,Register a new account
+POST,/api/users/login,User/Public,Authenticate and log in user
+POST,/api/users/social-login,User/Public,Third-party OAuth login (Google/Facebook)
+GET,/api/users/onboarding-check,User/Auth,Retrieve profile onboarding completeness state
+GET,/api/users/me,User/Auth,Retrieve logged-in member details
+PUT,/api/users/profile,User/Auth,Update user profile settings
+GET,/api/users/client-profile,User/Auth,Retrieve client company profile
+POST,/api/users/client-profile,User/Auth,Create/update client company details
+GET,/api/users/client/hired-freelancers,User/Auth,Retrieve hired freelancers checklist
+GET,/api/users/me/subscription,User/Auth,Retrieve active membership package
+POST,/api/users/subscribe,User/Auth,Subscribe user to membership billing tier
+GET,/api/users/referrals,User/Auth,Retrieve referred users list
+GET,/api/users/affiliate/stats,User/Auth,Retrieve affiliate balance and logs
+GET,/api/users/referral/banner.svg,User/Public,Download dynamic SVG affiliate banner
+POST,/api/payments/stripe/create-session,User/Auth,Initialize Stripe checkout for general contract funding
+POST,/api/payments/stripe/create-subscription-session,User/Auth,Initialize Stripe checkout for subscription plans
+POST,/api/payments/stripe/confirm,User/Auth,Verify checkout session and complete contract direct deposits
+POST,/api/payments/wallet/pay,User/Auth,Pay and escrow deposit directly using internal wallet balance
+POST,/api/payments/proposal/stripe/create-session,User/Auth,Initialize Stripe checkout for proposal contract escrow
+POST,/api/payments/proposal/confirm,User/Auth,Verify proposal deposit and award contract to freelancer
+POST,/api/payments/proposal/pay,User/Auth,Award contract directly using wallet escrow funds
+POST,/api/payments/timecard/stripe/create-session,User/Auth,Initialize Stripe checkout for hourly work timecards
+POST,/api/payments/timecard/confirm,User/Auth,Verify timecard hours deposit and credit to freelancer
+POST,/api/payments/timecard/pay,User/Auth,Pay timecard hours directly using wallet balance
+POST,/api/payments/contract/milestone/:id/release,User/Auth,Client releases milestone funds from escrow to freelancer
+POST,/api/payments/contract/milestone/:id/submit,User/Auth,Freelancer submits milestone work deliverables
+POST,/api/payments/contract/milestone/:id/reject,User/Auth,Client rejects deliverables and requests fixes
+POST,/api/payments/contract/milestone/:id/accept-revision,User/Auth,Freelancer accepts revision request (free or starts paid request)
+POST,/api/payments/contract/milestone/:id/fund-revision,User/Auth,Client funds proposed extra revision fee
+POST,/api/payments/contract/milestone/:id/reject-revision-proposal,User/Auth,Client declines extra revision fee
+POST,/api/payments/contract/milestone/:id/fund,User/Auth,Client funds a milestone deposit
+POST,/api/payments/contract/milestone/:id/request-funding,User/Auth,Freelancer requests funding for next milestone
+POST,/api/payments/contract/milestone/stripe/create-session,User/Auth,Initialize Stripe checkout for revision fee / milestone funding
+POST,/api/payments/contract/milestone/stripe/confirm,User/Auth,Verify and confirm milestone/revision funding
+POST,/api/payments/contract/:id/cancel,User/Auth,Client cancels job contract and requests refund
+POST,/api/payments/contract/:id/freelancer-cancel,User/Auth,Freelancer cancels contract and releases escrow back to client
+POST,/api/payments/contract/:id/start-work,User/Auth,Freelancer confirms contract start and locks cancellation
+POST,/api/payments/contract/:id/dispute,User/Auth,Open a dispute to lock escrow funds
+POST,/api/payments/dispute/:id/respond,User/Auth,Respond/submit evidence to open dispute
+POST,/api/payments/dispute/:id/settle/propose,User/Auth,Propose split settlement offer
+POST,/api/payments/dispute/:id/settle/accept,User/Auth,Accept proposed split settlement and end dispute
+POST,/api/payments/dispute/:id/escalate,User/Auth,Escalate dispute for admin moderation
+GET,/api/settings,User/Public,Get general site settings
+GET,/api/form-field-options,User/Public,Get standard forms dropdown selections
+POST,/api/contact,User/Public,Submit general contact inquiry form
+POST,/api/newsletter/subscribe,User/Public,Add user email to newsletter list
+POST,/api/admin/login,Admin,Authenticate admin credentials
+GET,/api/admin/me,Admin,Get current admin profile
+POST,/api/admin/create,Admin,Create a new administrator account
+GET,/api/admin/all,Admin,List all system administrators
+DELETE,/api/admin/delete/:id,Admin,Delete an admin account
+GET,/api/admin/settings,Admin,Retrieve editable site parameters
+POST,/api/admin/settings,Admin,Modify individual site config setting
+POST,/api/admin/clean-data,Admin,Clear testing databases (caution)
+POST,/api/admin/form-field-options,Admin,Add a form select dropdown option
+DELETE,/api/admin/form-field-options/:id,Admin,Remove a form dropdown option
+GET,/api/admin/backups,Admin,List SQL database backup files
+POST,/api/admin/backups,Admin,Generate new sql database backup
+GET,/api/admin/backups/:filename/download,Admin,Download specific database backup
+DELETE,/api/admin/backups/:filename,Admin,Delete backup file from server
+GET,/api/admin/users,Admin,List registered system users with filters
+PUT,/api/admin/users/:id/toggle-active,Admin,Toggle user account status (active/suspended)
+PUT,/api/admin/users/:id/vetting,Admin,Approve or reject freelancer vetting status
+GET,/api/admin/projects,Admin,List posted projects
+PUT,/api/admin/projects/:id/status,Admin,Moderate project approval (public/review/flagged)
+DELETE,/api/admin/projects/:id,Admin,Delete posted project
+GET,/api/admin/proposals/pending,Admin,List pending proposals for review
+PUT,/api/admin/proposals/:id/vetting,Admin,Approve or reject freelancer proposal
+GET,/api/admin/gigs,Admin,List published freelancer gigs
+PUT,/api/admin/gigs/:id/status,Admin,Moderate gig visibility status
+DELETE,/api/admin/gigs/:id,Admin,Delete gig card
+GET,/api/admin/gig-orders,Admin,List gig purchases
+PUT,/api/admin/gig-orders/:id/status,Admin,Update gig order tracking state
+GET,/api/admin/transactions,Admin,List ledger transactions
+GET,/api/admin/languages,Admin,List languages
+POST,/api/admin/languages,Admin,Create new localization language
+PUT,/api/admin/languages/:id,Admin,Update language properties
+DELETE,/api/admin/languages/:id,Admin,Remove language
+GET,/api/admin/translations/:code,Admin,Get key-value translator list
+POST,/api/admin/translations/:code,Admin,Save/update key-value translation mappings
+POST,/api/admin/translations/add-key,Admin,Register a new global translator key
+GET,/api/admin/currencies,Admin,List currencies
+POST,/api/admin/currencies,Admin,Create new currency config
+PUT,/api/admin/currencies/:id,Admin,Update currency format
+DELETE,/api/admin/currencies/:id,Admin,Delete currency
+GET,/api/admin/subscription-plans,Admin,List membership subscription tiers
+POST,/api/admin/subscription-plans,Admin,Create membership tier
+PUT,/api/admin/subscription-plans/:id,Admin,Update plan pricing/credits
+DELETE,/api/admin/subscription-plans/:id,Admin,Delete plan
+GET,/api/admin/faqs,Admin,List support FAQs
+POST,/api/admin/faqs,Admin,Create FAQ
+DELETE,/api/admin/faqs/:id,Admin,Delete FAQ
+GET,/api/admin/why-choose-features,Admin,List dashboard why-choose indicators
+POST,/api/admin/why-choose-features,Admin,Create landing features indicator
+DELETE,/api/admin/why-choose-features/:id,Admin,Delete feature indicator
+GET,/api/admin/how-it-works-steps,Admin,List landing how-it-works steps
+POST,/api/admin/how-it-works-steps,Admin,Create works step
+DELETE,/api/admin/how-it-works-steps/:id,Admin,Delete works step
+GET,/api/admin/wallet/stats,Admin,Get platform wallet stats (fees collected)
+GET,/api/admin/wallet/withdrawals,Admin,List user payout withdrawal requests
+POST,/api/admin/wallet/withdrawals/:id/approve,Admin,Approve payout and trigger bank transfer
+POST,/api/admin/wallet/withdrawals/:id/reject,Admin,Reject payout request and return funds
+POST,/api/admin/wallet/pay,Admin,Manually send funds/bonuses to a user
+GET,/api/admin/referrals/payouts,Admin,List pending referral payout requests
+POST,/api/admin/referrals/payouts/:id/approve,Admin,Approve referral payout
+POST,/api/admin/referrals/payouts/:id/reject,Admin,Reject referral payout
+GET,/api/admin/affiliates/commissions,Admin,List affiliate commissions
+POST,/api/admin/affiliates/commissions/:id/approve,Admin,Approve affiliate commission entry
+POST,/api/admin/affiliates/commissions/:id/reject,Admin,Reject affiliate commission entry
+GET,/api/admin/disputes,Admin,List escalated client-freelancer disputes
+GET,/api/admin/disputes/:id/messages,Admin,View dispute chat evidence log
+POST,/api/admin/disputes/:id/resolve,Admin,Manually settle dispute and allocate escrow

@@ -131,13 +131,22 @@ export default function SiteSettingsTab({
     setSaveStatus(null);
     setShowToast(false);
 
+    const cleanToRelative = (urlStr: string) => {
+      if (!urlStr) return "";
+      const idx = urlStr.indexOf("/public/");
+      if (idx !== -1) {
+        return urlStr.substring(idx);
+      }
+      return urlStr;
+    };
+
     try {
       // Save settings to DB
       await handleSaveSetting("site_settings", { 
         site_name: siteName, 
-        site_logo: siteLogo,
-        site_favicon: siteFavicon,
-        site_og_image: siteOgImage,
+        site_logo: cleanToRelative(siteLogo),
+        site_favicon: cleanToRelative(siteFavicon),
+        site_og_image: cleanToRelative(siteOgImage),
         site_description: siteDescription,
         site_keywords: siteKeywords,
         site_short_name: siteShortName
@@ -164,15 +173,20 @@ export default function SiteSettingsTab({
   // Helper to format/preview image URLs
   const formatImgSrc = (url: string) => {
     if (!url) return "";
-    if (url.includes("localhost:5000")) {
-      const apiDomain = API_URL.replace("/api", "");
-      return url.replace("http://localhost:5000", apiDomain);
+    let cleanUrl = url;
+    
+    // Clean absolute domains to relative path
+    const publicIdx = cleanUrl.indexOf("/public/");
+    if (publicIdx !== -1) {
+      cleanUrl = cleanUrl.substring(publicIdx);
     }
-    if (url.startsWith("/") && !url.startsWith("/public")) {
-      const apiDomain = API_URL.replace("/api", "");
-      return `${apiDomain}${url}`;
+    
+    if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+      return cleanUrl;
     }
-    return url;
+    
+    const apiDomain = API_URL.replace("/api", "");
+    return `${apiDomain}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
   };
 
   return (

@@ -9,8 +9,16 @@ import { API_URL, API_BASE_URL } from "@/config/api";
 
 const resolveLogoUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+  let cleanUrl = url;
+  const publicIdx = cleanUrl.indexOf("/public/");
+  if (publicIdx !== -1) {
+    cleanUrl = cleanUrl.substring(publicIdx);
+  }
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+    return cleanUrl;
+  }
+  const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
 };
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
@@ -866,7 +874,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Scrollable Main Content */}
-        <main className="flex-1 p-6 lg:p-10 overflow-y-auto relative z-10 w-full flex flex-col gap-8">
+        <main className="flex-1 p-6 lg:p-10 overflow-y-auto relative w-full flex flex-col gap-8">
           
           {/* Stats metrics widgets row */}
           {pathname === "/admin" && (

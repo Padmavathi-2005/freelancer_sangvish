@@ -198,6 +198,17 @@ interface DashboardContextType {
   onboardingStepsStatus: { profile: boolean; career: boolean; verification: boolean; portfolio: boolean };
   setOnboardingStepsStatus: React.Dispatch<React.SetStateAction<{ profile: boolean; career: boolean; verification: boolean; portfolio: boolean }>>;
 
+  enabledDocFields: any[];
+  userUploadedDocs: any[];
+  loadingDocFields: boolean;
+  fetchEnabledDocFields: (role?: string) => Promise<void>;
+  fetchUserUploadedDocs: () => Promise<void>;
+  handleUploadDocument: (fieldId: number, file: File, expiryDate?: string) => Promise<any>;
+  isFieldEnabled: (key: string) => boolean;
+  isFieldRequired: (key: string) => boolean;
+  totalClientSteps: number;
+  totalFreelancerSteps: number;
+
   // Step 1 Form States
   categoryId: string; setCategoryId: (v: string) => void;
   subCategoryId: string; setSubCategoryId: (v: string) => void;
@@ -561,6 +572,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   // Freelancer Wizard steps
   const [wizardStep, setWizardStep] = useState<number>(1);
+  const [enabledDocFields, setEnabledDocFields] = useState<any[]>([]);
+  const [userUploadedDocs, setUserUploadedDocs] = useState<any[]>([]);
+  const [loadingDocFields, setLoadingDocFields] = useState(false);
   const [onboardingStepsStatus, setOnboardingStepsStatus] = useState({
     profile: false,
     career: false,
@@ -1205,6 +1219,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   // Apply theme dynamically
   useEffect(() => {
     const apply = async () => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("siteTheme", siteTheme);
+        localStorage.setItem("primaryColor", primaryColor);
+        localStorage.setItem("secondaryColor", secondaryColor);
+      }
       const { applyTheme } = await import("@/utils/theme");
       applyTheme(siteTheme, primaryColor, secondaryColor);
     };
@@ -1452,16 +1471,22 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setStep1Error("");
     setStep1Success(false);
 
-    if (!categoryId || !subCategoryId || !professionalTitle || !experienceLevel || !totalExperienceYears) {
-      setStep1Error("Please fill out all required fields marked with *");
-      return;
+    const requiredFields = [];
+    if (isFieldRequired("category")) {
+      if (!categoryId) requiredFields.push("Category");
+      if (!subCategoryId) requiredFields.push("Subcategory");
     }
-    if (selectedSkillIds.length === 0) {
-      setStep1Error("Please select at least 1 skill.");
-      return;
+    if (isFieldRequired("title") && !professionalTitle) requiredFields.push("Professional Title");
+    if (isFieldRequired("experience_level")) {
+      if (!experienceLevel) requiredFields.push("Experience Level");
+      if (!totalExperienceYears) requiredFields.push("Years of Experience");
     }
-    if (selectedLanguageIds.length === 0) {
-      setStep1Error("Please select at least 1 language.");
+    if (isFieldRequired("hourly_rate") && !hourlyRate) requiredFields.push("Hourly Rate");
+    if (isFieldRequired("skills") && selectedSkillIds.length === 0) requiredFields.push("Skills");
+    if (isFieldRequired("languages") && selectedLanguageIds.length === 0) requiredFields.push("Languages");
+
+    if (requiredFields.length > 0) {
+      setStep1Error(`Please fill out all required fields: ${requiredFields.join(", ")}`);
       return;
     }
 
@@ -1785,8 +1810,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handlePortfolioSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!projectTitle.trim() && !projectDesc.trim()) {
-      // Both are empty: treat as skipping the optional project and complete onboarding
-      await handleFinishOnboarding();
+      // Both are empty: treat as skipping the optional project and transition to Step 5 (Document Verification)
+      setWizardStep(5);
+      await updateOnboardingStep(5);
       return;
     }
     if (!projectTitle.trim() || !projectDesc.trim()) {
@@ -1812,29 +1838,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         setPortfolioSuccess(true);
-        // Now call complete onboarding to get vetting decision
         setTimeout(async () => {
-          try {
-            const completeRes = await fetch(`${API_URL}/freelancer/onboarding/complete`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
-            });
-            if (completeRes.ok) {
-              const completeData = await completeRes.json();
-              const status = completeData.vettingStatus || "Approved";
-              setVettingStatus(status);
-              localStorage.setItem("vetting_status", status);
-              setOnboardingCompleted(true);
-              localStorage.setItem("onboarding_completed", "true");
-            } else {
-              // fallback — complete locally
-              setOnboardingCompleted(true);
-              localStorage.setItem("onboarding_completed", "true");
-            }
-          } catch {
-            setOnboardingCompleted(true);
-            localStorage.setItem("onboarding_completed", "true");
-          }
+          setPortfolioSuccess(false);
+          setWizardStep(5);
+          await updateOnboardingStep(5);
         }, 1500);
       } else {
         const d = await res.json();
@@ -3240,6 +3247,131 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchEnabledDocFields = async (role?: string) => {
+    try {
+      setLoadingDocFields(true);
+      const roleParam = role ? `?role=${role}` : "";
+      const res = await fetch(`${API_URL}/documents/fields${roleParam}`);
+      if (res.ok) {
+        const data = await res.json();
+        setEnabledDocFields(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch enabled document fields:", e);
+    } finally {
+      setLoadingDocFields(false);
+    }
+  };
+
+  const isFieldEnabled = (key: string) => {
+    const field = enabledDocFields.find(f => f.field_key === key);
+    return field ? field.is_enabled : true;
+  };
+
+  const isFieldRequired = (key: string) => {
+    const field = enabledDocFields.find(f => f.field_key === key);
+    return field ? field.is_required : false;
+  };
+
+  const clientFields = useMemo(() => {
+    return enabledDocFields.filter(f => f.applicable_to === 'client' || f.applicable_to === 'both');
+  }, [enabledDocFields]);
+
+  const totalClientSteps = useMemo(() => {
+    return clientFields.length > 0
+      ? Math.max(4, ...clientFields.map(f => f.step_number || 4))
+      : 4;
+  }, [clientFields]);
+
+  const freelancerFields = useMemo(() => {
+    return enabledDocFields.filter(f => f.applicable_to === 'freelancer' || f.applicable_to === 'both');
+  }, [enabledDocFields]);
+
+  const totalFreelancerSteps = useMemo(() => {
+    return freelancerFields.length > 0
+      ? Math.max(5, ...freelancerFields.map(f => f.step_number || 5))
+      : 5;
+  }, [freelancerFields]);
+
+  const fetchUserUploadedDocs = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const res = await fetch(`${API_URL}/documents/my-docs`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUserUploadedDocs(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch user uploaded documents:", e);
+    }
+  };
+
+  const handleUploadDocument = async (fieldId: number, file: File, expiryDate?: string) => {
+    const token = localStorage.getItem("token");
+    if (!token) throw new Error("No authorization token found.");
+
+    // 1. Upload file to /upload
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const uploadRes = await fetch(`${API_URL}/upload`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData
+    });
+
+    if (!uploadRes.ok) {
+      const err = await uploadRes.json();
+      throw new Error(err.message || "Failed to upload document file.");
+    }
+
+    const uploadData = await uploadRes.json();
+    const fileUrl = uploadData.url;
+
+    // 2. Save document record
+    const saveRes = await fetch(`${API_URL}/documents/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        field_id: fieldId,
+        file_url: fileUrl,
+        expiry_date: expiryDate || null
+      })
+    });
+
+    if (!saveRes.ok) {
+      const err = await saveRes.json();
+      throw new Error(err.message || "Failed to save document details.");
+    }
+
+    // 3. Refresh user uploaded documents list
+    await fetchUserUploadedDocs();
+    return await saveRes.json();
+  };
+
+  // Load enabled doc fields config at the very beginning of the dashboard mount
+  useEffect(() => {
+    fetchEnabledDocFields();
+  }, []);
+
+  useEffect(() => {
+    if (wizardStep >= 5) {
+      fetchUserUploadedDocs();
+    }
+  }, [wizardStep]);
+
+  useEffect(() => {
+    if (clientWizardStep >= 4) {
+      fetchUserUploadedDocs();
+    }
+  }, [clientWizardStep]);
+
   const handleSkipStep2 = async () => {
     setWizardStep(3);
     await updateOnboardingStep(3);
@@ -3285,62 +3417,109 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
   const handleSaveClientStep = async (stepNum: number) => {
     if (stepNum === 1) {
-      if (!companyName.trim() || !industry || !companySize) {
-        triggerToast("error", "Company name, size, and industry are required.");
+      // Validate dynamic step 1 fields
+      const required1 = [];
+      if (isFieldRequired("company_name")) required1.push({ val: companyName, label: "Company Name" });
+      if (isFieldRequired("industry")) required1.push({ val: industry, label: "Industry" });
+      if (isFieldRequired("company_size")) required1.push({ val: companySize, label: "Company Size" });
+      if (isFieldRequired("established_year")) required1.push({ val: companyEstablishedYear, label: "Established Year" });
+      
+      const missing1 = required1.filter(f => !f.val || !f.val.toString().trim());
+      if (missing1.length > 0) {
+        triggerToast("error", `${missing1.map(f => f.label).join(", ")} ${missing1.length > 1 ? "are" : "is"} required.`);
         return;
       }
       setClientWizardStep(2);
     } else if (stepNum === 2) {
-      setClientWizardStep(3);
-    } else if (stepNum === 3) {
-      if (!hiringContactName.trim() || !hiringContactDesignation.trim()) {
-        triggerToast("error", "Hiring contact details are required.");
+      // Validate dynamic step 2 fields
+      const required2 = [];
+      if (isFieldRequired("company_website")) required2.push({ val: companyWebsite, label: "Company Website" });
+      if (isFieldRequired("company_description")) required2.push({ val: companyDescription, label: "Company Description" });
+      
+      const missing2 = required2.filter(f => !f.val || !f.val.toString().trim());
+      if (missing2.length > 0) {
+        triggerToast("error", `${missing2.map(f => f.label).join(", ")} ${missing2.length > 1 ? "are" : "is"} required.`);
         return;
       }
-      try {
-        setClientError("");
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${API_URL}/users/client-profile`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            company_name: companyName.trim(),
-            company_size: companySize,
-            industry,
-            company_website: companyWebsite.trim() || null,
-            company_description: companyDescription.trim() || null,
-            company_established_year: companyEstablishedYear ? parseInt(companyEstablishedYear) : null,
-            hiring_contact_name: hiringContactName.trim(),
-            hiring_contact_designation: hiringContactDesignation.trim(),
-            onboarding_completed: true
-          })
-        });
-
-        if (res.ok) {
-          setClientSuccess(true);
-          triggerToast("success", "Client profile published successfully!");
-          setHasClientProfile(true);
-          setTimeout(async () => {
-            setOnboardingCompleted(true);
-            setShowOnboardingModal(false);
-            localStorage.setItem("onboarding_completed", "true");
-            setForceShowOnboarding(false);
-            if (token) {
-              await runOnboardingCheck(token);
-            }
-          }, 1000);
-        } else {
-          const data = await res.json();
-          setClientError(data.message || "Failed to complete onboarding.");
-          triggerToast("error", data.message || "Failed to complete onboarding.");
-        }
-      } catch (err) {
-        setClientError("Network error.");
-        triggerToast("error", "Network error.");
+      setClientWizardStep(3);
+    } else if (stepNum === 3) {
+      // Validate dynamic step 3 fields
+      const required3 = [];
+      if (isFieldRequired("hiring_contact_name")) required3.push({ val: hiringContactName, label: "Hiring Contact Name" });
+      if (isFieldRequired("hiring_contact_designation")) required3.push({ val: hiringContactDesignation, label: "Hiring Designation" });
+      
+      const missing3 = required3.filter(f => !f.val || !f.val.toString().trim());
+      if (missing3.length > 0) {
+        triggerToast("error", `${missing3.map(f => f.label).join(", ")} ${missing3.length > 1 ? "are" : "is"} required.`);
+        return;
       }
+      
+      if (totalClientSteps > 3) {
+        setClientWizardStep(4);
+      } else {
+        await publishClientProfile();
+      }
+    } else {
+      // Step 4+: Document validation
+      const stepFields = clientFields.filter(f => f.step_number === stepNum && f.is_required && f.is_enabled);
+      const incomplete = stepFields.filter(f => !userUploadedDocs.some(d => d.field_id === f.field_id));
+      if (incomplete.length > 0) {
+        triggerToast("error", `Please complete all required fields for this step: ${incomplete.map(f => f.field_name).join(", ")}`);
+        return;
+      }
+      
+      if (stepNum < totalClientSteps) {
+        setClientWizardStep(stepNum + 1);
+      } else {
+        await publishClientProfile();
+      }
+    }
+  };
+
+  const publishClientProfile = async () => {
+    try {
+      setClientError("");
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/users/client-profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          company_name: companyName.trim() || null,
+          company_size: companySize || null,
+          industry: industry || null,
+          company_website: companyWebsite.trim() || null,
+          company_description: companyDescription.trim() || null,
+          company_established_year: companyEstablishedYear ? parseInt(companyEstablishedYear) : null,
+          hiring_contact_name: hiringContactName.trim() || null,
+          hiring_contact_designation: hiringContactDesignation.trim() || null,
+          onboarding_completed: true
+        })
+      });
+
+      if (res.ok) {
+        setClientSuccess(true);
+        triggerToast("success", "Client profile published successfully!");
+        setHasClientProfile(true);
+        setTimeout(async () => {
+          setOnboardingCompleted(true);
+          setShowOnboardingModal(false);
+          localStorage.setItem("onboarding_completed", "true");
+          setForceShowOnboarding(false);
+          if (token) {
+            await runOnboardingCheck(token);
+          }
+        }, 1000);
+      } else {
+        const data = await res.json();
+        setClientError(data.message || "Failed to complete onboarding.");
+        triggerToast("error", data.message || "Failed to complete onboarding.");
+      }
+    } catch (err) {
+      setClientError("Network error.");
+      triggerToast("error", "Network error.");
     }
   };
 
@@ -3808,8 +3987,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     siteName, setSiteName, siteLogo, setSiteLogo,
     handleRoleSwitch, handleToggleSkill, handleSkipStep2, updateOnboardingStep,
     handleSkipStep3, handleSaveStep3, handleAddProject, handleFinishOnboarding,
-    handleSaveClientStep,
+    handleSaveClientStep, enabledDocFields, userUploadedDocs, loadingDocFields,
+    fetchEnabledDocFields, fetchUserUploadedDocs, handleUploadDocument,
     forceShowOnboarding, setForceShowOnboarding,
+    isFieldEnabled, isFieldRequired, totalClientSteps, totalFreelancerSteps,
     walletInfo, loadingWallet,
     withdrawAmount, setWithdrawAmount,
     withdrawMethod, setWithdrawMethod,
@@ -3863,12 +4044,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     activeTab, siteName, siteLogo,
     handleRoleSwitch, handleToggleSkill, handleSkipStep2, updateOnboardingStep,
     handleSkipStep3, handleSaveStep3, handleAddProject, handleFinishOnboarding,
-    handleSaveClientStep,
+    handleSaveClientStep, enabledDocFields, userUploadedDocs, loadingDocFields,
     walletInfo, loadingWallet, withdrawAmount, withdrawMethod, withdrawAccount, depositAmount,
     freelancerContracts, recommendedClients,
     requestContractPayment, approveContractPayment, startWorkContract, requestMilestoneFunding,
     selectedFreelancerFullProfile, loadingFullProfile,
-    pendingInviteFreelancer
+    pendingInviteFreelancer,
+    isFieldEnabled, isFieldRequired, totalClientSteps, totalFreelancerSteps
   ]);
 
   return (

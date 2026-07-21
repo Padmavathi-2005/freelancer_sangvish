@@ -14,7 +14,8 @@ import {
     socialLogin,
     getReferrals,
     getAffiliateStats,
-    getReferralBanner
+    getReferralBanner,
+    getUserProfile
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -29,6 +30,7 @@ router.get('/client/hired-freelancers', auth, getClientHiredFreelancers);
 router.get('/me/subscription', auth, getMySubscription);
 router.post('/subscribe', auth, subscribeToPlan);
 router.get('/me', auth, getLoggedInUser);
+router.get('/profile', auth, getUserProfile);
 router.put('/profile', auth, updateUserProfile);
 router.get('/referrals', auth, getReferrals);
 router.get('/affiliate/stats', auth, getAffiliateStats);

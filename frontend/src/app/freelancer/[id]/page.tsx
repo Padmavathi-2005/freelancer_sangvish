@@ -120,6 +120,54 @@ export async function generateMetadata({
   };
 }
 
-export default function Page() {
-  return <FreelancerProfileClient />;
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }> | { id: string } | any;
+}) {
+  const resolvedParams = await params;
+  const id = resolvedParams.id;
+  const profileData = await getProfileData(id);
+
+  if (!profileData) {
+    return <FreelancerProfileClient />;
+  }
+
+  const user = profileData.user;
+  const profile = profileData.profile;
+
+  const freelancerName = user?.name || user?.display_name || "Freelancer";
+  const professionalTitle = profile?.professional_title || "Freelancer Specialist";
+  const bio = profile?.bio || "";
+  
+  const siteBaseUrl = "https://freelancer.sangvish.com";
+  const profileImage = user?.profile_image 
+    ? (user.profile_image.startsWith("http") ? user.profile_image : `${siteBaseUrl}${user.profile_image.startsWith("/") ? user.profile_image : `/${user.profile_image}`}`)
+    : `${siteBaseUrl}/default-avatar.png`;
+
+  let skillsList: string[] = [];
+  if (profileData.skills && Array.isArray(profileData.skills)) {
+    skillsList = profileData.skills.map((s: any) => s.skill_name || s);
+  }
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": freelancerName,
+    "image": profileImage,
+    "jobTitle": professionalTitle,
+    "description": bio,
+    "knowsAbout": skillsList,
+    "mainEntityOfPage": `${siteBaseUrl}/freelancer/${user?.slug || id}`
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <FreelancerProfileClient />
+    </>
+  );
 }

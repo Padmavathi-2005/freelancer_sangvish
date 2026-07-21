@@ -217,7 +217,7 @@ export default function Pricing() {
                 key={planId} 
                 className={`relative rounded-xl p-8 flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] border ${cardWidthClass} ${
                   isPopular 
-                    ? "bg-[#063c38] text-white border-transparent shadow-2xl shadow-[#0a5a54]/30 z-10 lg:-translate-y-4" 
+                    ? "pricing-popular-card bg-[#063c38] text-white border-transparent shadow-2xl shadow-[#0a5a54]/30 z-10 lg:-translate-y-4" 
                     : "bg-white text-slate-900 border-slate-200/60 shadow-lg shadow-slate-100/50"
                 }`}
               >

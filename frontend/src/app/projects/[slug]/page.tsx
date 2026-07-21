@@ -21,7 +21,8 @@ import {
   FiSend,
   FiArrowLeft,
   FiAlertTriangle,
-  FiX
+  FiX,
+  FiCpu
 } from "react-icons/fi";
 
 const getMaxDaysFromDuration = (durationStr: string): number => {
@@ -77,6 +78,72 @@ export default function ProjectDetailsPage() {
   const [limitReached, setLimitReached] = useState(false);
   const [limitMsg, setLimitMsg] = useState("");
   const [activePlanName, setActivePlanName] = useState<string>("Standard");
+
+  // AI Proposal Writer state
+  const [generatingProposal, setGeneratingProposal] = useState(false);
+  const [aiProposalError, setAiProposalError] = useState("");
+  const [showAiPanel, setShowAiPanel] = useState(false);
+
+  const handleGenerateProposal = async () => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) {
+      openLoginModal(`/projects/${slug}`);
+      return;
+    }
+    if (!job) return;
+    setGeneratingProposal(true);
+    setAiProposalError("");
+    setShowAiPanel(true);
+    setCoverLetter("");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/ai/generate-proposal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          projectTitle: job.title,
+          projectDescription: job.description,
+          projectBudget: job.budget || job.max_budget,
+          projectType: job.project_type,
+          projectSkills: Array.isArray(job.skills)
+            ? job.skills.map((s: any) => (typeof s === "object" ? s.skill_name : s))
+            : [],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const errorMsg = data.error || "Failed to generate proposal.";
+        setAiProposalError(errorMsg);
+        showToast("error", errorMsg);
+        return;
+      }
+      setCoverLetter(data.proposal || "");
+    } catch (err: any) {
+      const errorMsg = "Network error. Please check your connection and try again.";
+      setAiProposalError(errorMsg);
+      showToast("error", errorMsg);
+    } finally {
+      setGeneratingProposal(false);
+    }
+  };
+
+  // Share link and toast states
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [copiedShare, setCopiedShare] = useState(false);
+  const showToast = (type: "success" | "error", message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  };
+  const handleCopyLink = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedShare(true);
+      showToast("success", "Share link copied to clipboard!");
+      setTimeout(() => setCopiedShare(false), 2000);
+    }
+  };
 
   const fetchJobDetails = async () => {
     try {
@@ -360,7 +427,7 @@ export default function ProjectDetailsPage() {
         {/* Outer Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Details */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
+          <div className="lg:col-span-8 flex flex-col gap-6 self-start">
             <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-5 relative overflow-hidden">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary to-cyan-500" />
               
@@ -583,8 +650,66 @@ export default function ProjectDetailsPage() {
                     </div>
                   )}
 
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cover Letter</label>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cover Letter</label>
+                      {/* AI Generate Button */}
+                      <button
+                        type="button"
+                        onClick={handleGenerateProposal}
+                        disabled={generatingProposal}
+                        title="Generate a cover letter using your profile and this project's details"
+                        className="group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white border-none cursor-pointer transition-all duration-200 shadow-sm hover:shadow-purple-200 disabled:opacity-60 disabled:cursor-not-allowed select-none"
+                      >
+                        {generatingProposal ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-t-transparent border-white rounded-full animate-spin shrink-0" />
+                            <span>Generating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FiCpu className="w-3.5 h-3.5 shrink-0" />
+                            <span>AI Write</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* AI Result Panel */}
+                    {showAiPanel && (
+                      <div className={`rounded-xl border p-3.5 text-[11px] font-semibold leading-relaxed transition-all duration-300 ${
+                        aiProposalError
+                          ? "bg-rose-50 border-rose-200 text-rose-700"
+                          : generatingProposal
+                          ? "bg-violet-50 border-violet-200 text-violet-700"
+                          : "bg-violet-50 border-violet-200 text-slate-700"
+                      }`}>
+                        {aiProposalError ? (
+                          <div className="flex items-start gap-2">
+                            <span className="shrink-0 mt-0.5">⚠️</span>
+                            <span>{aiProposalError}</span>
+                          </div>
+                        ) : generatingProposal ? (
+                          <div className="flex items-center gap-2 text-violet-600">
+                            <div className="w-3.5 h-3.5 border-2 border-t-transparent border-violet-500 rounded-full animate-spin shrink-0" />
+                            <span>AI is crafting your personalised proposal using your profile and this project&apos;s details...</span>
+                          </div>
+                        ) : coverLetter ? (
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-1.5 text-violet-600 font-black text-[10px] uppercase tracking-wider">
+                              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                              Proposal generated — applied to cover letter below
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowAiPanel(false)}
+                              className="self-end text-[9px] font-black text-violet-500 hover:text-violet-700 uppercase tracking-wider cursor-pointer border-none bg-transparent transition"
+                            >Dismiss</button>
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+
                     <textarea
                       required
                       rows={5}
@@ -657,6 +782,69 @@ export default function ProjectDetailsPage() {
               </div>
             </div>
 
+            {/* SHARE THIS PROJECT */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-3 text-left">
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-1.5 select-none">
+                <i className="fa-solid fa-share-nodes text-primary"></i>
+                <span>Share this Project</span>
+              </h3>
+              
+              <div className="flex items-center gap-2 mt-1">
+                {/* WhatsApp */}
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent("Check out this freelance project posting on LancerFlow: " + (job?.title || "") + " " + (typeof window !== "undefined" ? window.location.href : ""))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white flex items-center justify-center transition-all duration-300 border border-emerald-100/50 hover:border-emerald-500 shadow-sm hover:shadow-emerald-100 hover:-translate-y-0.5"
+                  title="Share on WhatsApp"
+                >
+                  <i className="fa-brands fa-whatsapp text-sm"></i>
+                </a>
+
+                {/* LinkedIn */}
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-xl bg-[#0077b5]/10 hover:bg-[#0077b5] text-[#0077b5] hover:text-white flex items-center justify-center transition-all duration-300 border border-[#0077b5]/10 hover:border-[#0077b5] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5"
+                  title="Share on LinkedIn"
+                >
+                  <i className="fa-brands fa-linkedin-in text-sm"></i>
+                </a>
+
+                {/* X / Twitter */}
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Check out this freelance project posting on LancerFlow: " + (job?.title || ""))}&url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-xl bg-slate-900/10 hover:bg-slate-900 text-slate-900 hover:text-white flex items-center justify-center transition-all duration-300 border border-slate-900/10 hover:border-slate-900 shadow-sm hover:shadow-slate-100 hover:-translate-y-0.5"
+                  title="Share on X"
+                >
+                  <i className="fa-brands fa-x-twitter text-sm"></i>
+                </a>
+
+                {/* Facebook */}
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white flex items-center justify-center transition-all duration-300 border border-[#1877F2]/10 hover:border-[#1877F2] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5"
+                  title="Share on Facebook"
+                >
+                  <i className="fa-brands fa-facebook-f text-sm"></i>
+                </a>
+
+                {/* Copy Link */}
+                <button
+                  onClick={handleCopyLink}
+                  className="w-9 h-9 rounded-xl bg-primary-light hover:bg-primary text-primary hover:text-white flex items-center justify-center transition-all duration-300 border border-primary-light hover:border-primary shadow-sm hover:shadow-emerald-50 hover:-translate-y-0.5 cursor-pointer"
+                  title="Copy Link"
+                >
+                  <i className={`fa-solid ${copiedShare ? 'fa-circle-check text-emerald-500' : 'fa-copy'} text-sm`}></i>
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       </main>
@@ -667,6 +855,22 @@ export default function ProjectDetailsPage() {
         onClose={() => setShowLimitModal(false)} 
         message={limitModalMessage} 
       />
+
+      {/* Floating Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999] bg-white border border-slate-200/80 rounded-2xl py-3.5 px-4.5 shadow-2xl shadow-slate-100 flex items-center gap-3 animate-slideUp text-left max-w-sm select-none">
+          {toast.type === "success" ? (
+            <div className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 shrink-0">
+              <FiCheckCircle className="w-4 h-4" />
+            </div>
+          ) : (
+            <div className="w-6 h-6 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-500 shrink-0">
+              <FiAlertTriangle className="w-4 h-4" />
+            </div>
+          )}
+          <span className="text-xs font-bold text-slate-800">{toast.message}</span>
+        </div>
+      )}
 
       <Footer />
     </div>

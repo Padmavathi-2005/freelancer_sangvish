@@ -2,6 +2,8 @@
 @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-primary: #0F766E;
   --color-primary-hover: #0c5c56;
@@ -662,3 +664,240 @@ textarea::placeholder {
   overflow-x: auto;
   margin-bottom: 1.5rem;
 }
+
+/* Chatbot slideUp and fadeIn animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Scoped Dark Mode CSS overrides for landing page sections and cards */
+body.dark {
+  background-color: #09090b !important;
+  color: #fafafa !important;
+}
+
+body.dark main,
+body.dark section,
+body.dark footer {
+  background-color: #09090b !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #fafafa !important;
+}
+
+body.dark .bg-white,
+body.dark .bg-\[\#ffffff\] {
+  background-color: #18181b !important; /* Premium zinc-900 card background */
+}
+
+body.dark .bg-\[\#f8fafc\],
+body.dark .bg-slate-50,
+body.dark .bg-slate-100 {
+  background-color: #09090b !important;
+}
+
+body.dark header {
+  background-color: rgba(9, 9, 11, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+body.dark main.bg-gradient-to-b {
+  background-image: linear-gradient(to bottom, #09090b, #18181b, #09090b) !important;
+}
+
+body.dark .text-slate-900,
+body.dark .text-slate-800,
+body.dark .text-slate-705,
+body.dark .text-slate-855,
+body.dark .text-slate-805 {
+  color: #ffffff !important;
+}
+
+body.dark .text-slate-600,
+body.dark .text-slate-500,
+body.dark .text-slate-550,
+body.dark .text-slate-505 {
+  color: #e4e4e7 !important; /* zinc-200 */
+}
+
+body.dark .border-slate-200,
+body.dark .border-slate-200\/50,
+body.dark .border-slate-200\/60,
+body.dark .border-slate-100 {
+  border-color: rgba(255, 255, 255, 0.22) !important; /* Visible container border */
+}
+
+body.dark .bg-slate-50\/40,
+body.dark .bg-slate-50\/50,
+body.dark .bg-slate-50\/80,
+body.dark .bg-slate-100\/70 {
+  background-color: #18181b !important; /* Premium zinc-900 card background */
+  border-color: rgba(255, 255, 255, 0.22) !important;
+}
+
+body.dark .hover\:bg-white:hover {
+  background-color: #27272a !important; /* Elevate card background to zinc-800 on hover */
+}
+
+body.dark .shadow-lg,
+body.dark .shadow-xl,
+body.dark .shadow-2xl,
+body.dark .shadow-md,
+body.dark .shadow-sm,
+body.dark .shadow-slate-100\/50,
+body.dark .shadow-slate-200\/50,
+body.dark .shadow-slate-200\/60 {
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.dark .hover\:shadow-xl:hover,
+body.dark .hover\:shadow-slate-200\/50:hover,
+body.dark .hover\:shadow-slate-200\/60:hover {
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+body.dark .group\/home div.bg-white,
+body.dark .group\/lang div.bg-white,
+body.dark .group\/curr div.bg-white,
+body.dark .group\/mega div.bg-slate-100\/95 {
+  background-color: #121214 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark .group\/lang button.bg-slate-100,
+body.dark .group\/curr button.bg-slate-100,
+body.dark button[aria-label="Toggle theme"] {
+  background-color: #18181b !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  color: #d4d4d8 !important;
+}
+
+body.dark .group\/lang button.bg-slate-100:hover,
+body.dark .group\/curr button.bg-slate-100:hover,
+body.dark button[aria-label="Toggle theme"]:hover {
+  background-color: #27272a !important;
+}
+
+body.dark input.text-slate-800 {
+  color: #ffffff !important;
+}
+
+body.dark .bg-gradient-to-b.from-slate-100 {
+  background-image: linear-gradient(to bottom, #09090b, #121214) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Fix visibility of #0a5a54 (dark green highlight) in dark mode by converting to white */
+body.dark .text-\[\#0a5a54\] {
+  color: #ffffff !important;
+}
+
+body.dark .bg-\[\#e6f0ef\]\/50 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+body.dark .bg-\[\#0a5a54\] {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+}
+
+body.dark .hover\:bg-\[\#0a5a54\]:hover {
+  background-color: #ffffff !important;
+  color: #09090b !important;
+}
+
+/* Specific overrides for Hero search form, floating cards, and mockup container in dark theme */
+body.dark .hero-floating-card {
+  background-color: #18181b !important; /* Zinc-900 for card container */
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+body.dark .hero-floating-card .text-slate-900 {
+  color: #ffffff !important;
+}
+
+body.dark .hero-floating-card .text-slate-800,
+body.dark .hero-floating-card .text-slate-700 {
+  color: #e4e4e7 !important; /* Zinc-200 */
+}
+
+body.dark .hero-floating-card .text-slate-500 {
+  color: #a1a1aa !important; /* Zinc-400 */
+}
+
+body.dark .hero-floating-card .border-t {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+body.dark .hero-search-form {
+  background-color: #0c0c0e !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+body.dark .hero-search-form input {
+  color: #ffffff !important;
+}
+
+body.dark .hero-search-form .absolute.left-\[38px\] {
+  color: #a1a1aa !important; /* Zinc-400 for main placeholder text */
+}
+
+body.dark .hero-search-form .absolute.left-\[38px\] span {
+  color: #ffffff !important; /* White for dynamically typed skills */
+}
+
+body.dark .hero-mockup-container {
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* Most Popular Pricing Card overrides in Dark Mode */
+body.dark .pricing-popular-card {
+  background-color: #0c3834 !important; /* Richer dark teal background */
+  border-color: rgba(0, 250, 154, 0.4) !important; /* Glowing teal/green border */
+  box-shadow: 0 10px 30px rgba(0, 250, 154, 0.1) !important;
+}
+
+body.dark .pricing-popular-card:hover {
+  background-color: #0e433f !important;
+  border-color: rgba(0, 250, 154, 0.6) !important; /* Brighter glow on hover */
+  box-shadow: 0 15px 40px rgba(0, 250, 154, 0.2) !important;
+}
+
+/* Ensure the stats bar section keeps its rich dark green background in dark theme */
+body.dark section.bg-\[\#063c38\],
+body.dark .bg-\[\#063c38\] {
+  background-color: #063c38 !important;
+}
+
+/* Ensure the success stories quotes are readable in dark theme */
+body.dark blockquote.text-\[\#063c38\] {
+  color: #e4e4e7 !important; /* Zinc-200 highly readable text */
+}
+
+

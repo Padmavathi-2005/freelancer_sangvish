@@ -1,6 +1,7 @@
 "use client";
 import { API_URL } from "@/config/api";
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   FiX, FiImage, FiType, FiSquare, FiTrash2,
   FiChevronUp, FiChevronDown, FiUpload, FiSave,
@@ -160,8 +161,8 @@ export default function CanvasEditor({
 }: CanvasEditorProps) {
   const defaultBg: CanvasBackground = {
     type: "solid",
-    solidColor: "#0f172a",
-    gradient: { from: "#0f172a", to: "#0d9488", direction: "to right" },
+    solidColor: "#ffffff",
+    gradient: { from: "#0f766e", to: "#06b6d4", direction: "to right" },
     imageUrl: "",
     imageSize: "cover",
   };
@@ -177,10 +178,16 @@ export default function CanvasEditor({
   const canvasRef = useRef<HTMLDivElement>(null);
   const selected = elements.find((e) => e.id === selectedId) ?? null;
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
   // ── Load Google Fonts ──────────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!document.querySelector(`link[href="${GOOGLE_FONTS_URL}"]`)) {
+    if (typeof window !== "undefined" && !document.querySelector(`link[href="${GOOGLE_FONTS_URL}"]`)) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
       link.href = GOOGLE_FONTS_URL;
@@ -224,7 +231,7 @@ export default function CanvasEditor({
       text: "Type your text here",
       fontSize: 28, fontFamily: "Inter", fontWeight: "700",
       fontStyle: "normal", textDecoration: "none",
-      color: "#ffffff", textAlign: "left", lineHeight: 1.3,
+      color: "#0f172a", textAlign: "left", lineHeight: 1.3,
     };
     setElements((p) => [...p, el]);
     setSelectedId(el.id);
@@ -488,19 +495,21 @@ export default function CanvasEditor({
   // JSX
   // ─────────────────────────────────────────────────────────────────────────────
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex flex-col" style={{ background: "rgba(2,6,23,0.96)" }}>
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-900/60 backdrop-blur-md">
 
       {/* ══ Top Bar ══════════════════════════════════════════════════════════ */}
-      <div className="flex items-center justify-between px-5 py-3 bg-[#0d1117] border-b border-slate-700/60 shrink-0">
+      <div className="flex items-center justify-between px-5 py-3 bg-white border-b border-slate-200 shrink-0">
         <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
             <span className="w-3 h-3 rounded-full bg-rose-500" />
             <span className="w-3 h-3 rounded-full bg-amber-400" />
             <span className="w-3 h-3 rounded-full bg-green-500" />
           </div>
-          <span className="text-sm font-black text-white tracking-tight ml-1">Canvas Image Editor</span>
-          <span className="text-[10px] text-slate-500 font-semibold bg-slate-800 px-2 py-0.5 rounded-full">
+          <span className="text-sm font-black text-slate-800 tracking-tight ml-1">Canvas Image Editor</span>
+          <span className="text-[10px] text-slate-500 font-bold bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
             {canvasWidth} × {canvasHeight}px
           </span>
         </div>
@@ -508,14 +517,14 @@ export default function CanvasEditor({
           <button
             onClick={handleExport}
             disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-500 disabled:opacity-50 text-white text-xs font-black rounded-lg transition cursor-pointer shadow-lg shadow-teal-900/40"
+            className="flex items-center gap-2 px-4 py-2 bg-teal-700 hover:bg-teal-600 disabled:opacity-50 text-white text-xs font-black rounded-lg transition cursor-pointer shadow-md shadow-teal-900/10 border-0"
           >
             <FiSave className="w-3.5 h-3.5" />
             {saving ? "Exporting…" : "Save & Use Image"}
           </button>
           <button
             onClick={onClose}
-            className="p-2 text-slate-500 hover:text-white hover:bg-slate-700 rounded-lg transition cursor-pointer"
+            className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition cursor-pointer border-0 bg-transparent"
           >
             <FiX className="w-4 h-4" />
           </button>
@@ -526,18 +535,18 @@ export default function CanvasEditor({
       <div className="flex flex-1 overflow-hidden">
 
         {/* ──── Left Panel ──────────────────────────────────────────────────── */}
-        <div className="w-[216px] shrink-0 bg-[#0d1117] border-r border-slate-700/60 flex flex-col overflow-hidden">
+        <div className="w-[216px] shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-hidden">
 
           {/* Tab switcher */}
-          <div className="flex border-b border-slate-700/60 shrink-0">
+          <div className="flex border-b border-slate-200 shrink-0">
             {(["bg", "elements"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setLeftTab(tab)}
-                className={`flex-1 py-2.5 text-[9px] font-black uppercase tracking-widest cursor-pointer transition border-b-2 ${
+                className={`flex-1 py-2.5 text-[9px] font-black uppercase tracking-widest cursor-pointer transition border-b-2 bg-transparent ${
                   leftTab === tab
-                    ? "border-teal-400 text-teal-400"
-                    : "border-transparent text-slate-500 hover:text-slate-300"
+                    ? "border-teal-600 text-teal-700 font-black"
+                    : "border-transparent text-slate-400 hover:text-slate-600"
                 }`}
               >
                 {tab === "bg" ? "Background" : "Elements"}
@@ -555,8 +564,8 @@ export default function CanvasEditor({
                   <div className="flex gap-1">
                     {(["solid", "gradient", "image"] as BgType[]).map((t) => (
                       <button key={t} onClick={() => setBg((p) => ({ ...p, type: t }))}
-                        className={`flex-1 py-1.5 text-[8px] font-black rounded-lg capitalize cursor-pointer transition ${
-                          bg.type === t ? "bg-teal-600 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+                        className={`flex-1 py-1.5 text-[8px] font-black rounded-lg capitalize cursor-pointer transition border-0 ${
+                          bg.type === t ? "bg-teal-700 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                         }`}
                       >{t}</button>
                     ))}
@@ -569,7 +578,7 @@ export default function CanvasEditor({
                     <div className="flex gap-2 items-center">
                       <input type="color" value={bg.solidColor}
                         onChange={(e) => setBg((p) => ({ ...p, solidColor: e.target.value }))}
-                        className="w-9 h-9 rounded-lg cursor-pointer p-0.5 border border-slate-600 bg-transparent shrink-0" />
+                        className="w-9 h-9 rounded-lg cursor-pointer p-0.5 border border-slate-200 bg-transparent shrink-0" />
                       <input type="text" value={bg.solidColor}
                         onChange={(e) => setBg((p) => ({ ...p, solidColor: e.target.value }))}
                         className="input-field flex-1" />
@@ -585,7 +594,7 @@ export default function CanvasEditor({
                           <span className="label-xs">{k === "from" ? "From" : "To"}</span>
                           <input type="color" value={bg.gradient[k]}
                             onChange={(e) => setBg((p) => ({ ...p, gradient: { ...p.gradient, [k]: e.target.value } }))}
-                            className="w-full h-9 rounded-lg cursor-pointer p-0.5 border border-slate-600 bg-transparent" />
+                            className="w-full h-9 rounded-lg cursor-pointer p-0.5 border border-slate-200 bg-transparent" />
                         </div>
                       ))}
                     </div>
@@ -594,8 +603,8 @@ export default function CanvasEditor({
                       <div className="grid grid-cols-4 gap-1">
                         {GRADIENT_DIRECTIONS.map((d) => (
                           <button key={d.value} onClick={() => setBg((p) => ({ ...p, gradient: { ...p.gradient, direction: d.value } }))}
-                            className={`py-2 text-base font-black rounded-lg cursor-pointer transition ${
-                              bg.gradient.direction === d.value ? "bg-teal-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                            className={`py-2 text-base font-black rounded-lg cursor-pointer transition border-0 ${
+                              bg.gradient.direction === d.value ? "bg-teal-700 text-white" : "bg-slate-100 text-slate-650 hover:bg-slate-200"
                             }`}
                           >{d.label}</button>
                         ))}
@@ -606,14 +615,14 @@ export default function CanvasEditor({
 
                 {bg.type === "image" && (
                   <div className="flex flex-col gap-3">
-                    <label className="flex flex-col items-center gap-2 p-4 border border-dashed border-slate-700 rounded-xl cursor-pointer hover:border-teal-500 transition">
-                      <FiUpload className="w-5 h-5 text-slate-500" />
-                      <span className="text-[9px] font-black text-slate-500 uppercase">Upload Image</span>
+                    <label className="flex flex-col items-center gap-2 p-4 border border-dashed border-slate-300 rounded-xl cursor-pointer hover:border-teal-500 transition">
+                      <FiUpload className="w-5 h-5 text-slate-450" />
+                      <span className="text-[9px] font-black text-slate-400 uppercase">Upload Image</span>
                       <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e)} />
                     </label>
                     {bg.imageUrl && (
                       <>
-                        <img src={bg.imageUrl} className="w-full h-20 object-cover rounded-xl border border-slate-700" alt="" />
+                        <img src={bg.imageUrl} className="w-full h-20 object-cover rounded-xl border border-slate-200" alt="" />
                         <div className="flex flex-col gap-1">
                           <span className="label-xs">Fit Mode</span>
                           <select value={bg.imageSize}
@@ -625,7 +634,7 @@ export default function CanvasEditor({
                           </select>
                         </div>
                         <button onClick={() => setBg((p) => ({ ...p, imageUrl: "" }))}
-                          className="text-[9px] font-black text-rose-400 hover:underline text-left">
+                          className="text-[9px] font-black text-rose-500 hover:underline text-left bg-transparent border-0 cursor-pointer">
                           Clear image
                         </button>
                       </>
@@ -642,31 +651,31 @@ export default function CanvasEditor({
                   <span className="label-xs mb-0.5">Add Element</span>
                   <button onClick={addText}
                     className="elem-btn">
-                    <FiType className="w-3.5 h-3.5 text-teal-400 shrink-0" /> Text Layer
+                    <FiType className="w-3.5 h-3.5 text-teal-600 shrink-0" /> Text Layer
                   </button>
                   <button onClick={addImageFrame}
                     className="elem-btn">
-                    <FiImage className="w-3.5 h-3.5 text-blue-400 shrink-0" /> Image Frame
+                    <FiImage className="w-3.5 h-3.5 text-blue-600 shrink-0" /> Image Frame
                   </button>
                   <button onClick={addRect}
                     className="elem-btn">
-                    <FiSquare className="w-3.5 h-3.5 text-amber-400 shrink-0" /> Shape
+                    <FiSquare className="w-3.5 h-3.5 text-amber-600 shrink-0" /> Shape
                   </button>
                 </div>
 
                 {elements.length > 0 && (
-                  <div className="flex flex-col gap-1.5 border-t border-slate-700/60 pt-3">
+                  <div className="flex flex-col gap-1.5 border-t border-slate-200 pt-3">
                     <div className="flex items-center gap-1.5">
-                      <FiLayers className="w-3 h-3 text-slate-500" />
+                      <FiLayers className="w-3 h-3 text-slate-400" />
                       <span className="label-xs">Layers</span>
                     </div>
                     {[...elements].sort((a, b) => b.zIndex - a.zIndex).map((el) => (
                       <button key={el.id}
                         onClick={() => setSelectedId(el.id)}
-                        className={`flex items-center gap-2 px-2.5 py-2 rounded-xl text-[10px] font-bold text-left cursor-pointer transition border ${
+                        className={`flex items-center gap-2 px-2.5 py-2 rounded-xl text-[10px] font-bold text-left cursor-pointer transition border bg-transparent ${
                           selectedId === el.id
-                            ? "bg-teal-600/20 border-teal-500/50 text-teal-300"
-                            : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                            ? "bg-teal-50 border-teal-200 text-teal-700 font-black"
+                            : "bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                         }`}
                       >
                         {el.type === "text"  ? <FiType className="w-3 h-3 shrink-0" />
@@ -678,7 +687,7 @@ export default function CanvasEditor({
                             : el.type === "image" ? "Image Frame"
                             : "Shape"}
                         </span>
-                        <FiEye className="w-3 h-3 shrink-0 text-slate-600" />
+                        <FiEye className="w-3 h-3 shrink-0 text-slate-350" />
                       </button>
                     ))}
                   </div>
@@ -690,16 +699,16 @@ export default function CanvasEditor({
 
         {/* ──── Canvas Area ──────────────────────────────────────────────────── */}
         <div
-          className="flex-1 flex items-center justify-center bg-[#161b22] overflow-auto p-10"
+          className="flex-1 flex items-center justify-center bg-slate-100 overflow-auto p-10"
           onClick={() => setSelectedId(null)}
         >
           {/* Grid dots bg */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              backgroundImage: "radial-gradient(circle, #334155 1px, transparent 1px)",
+              backgroundImage: "radial-gradient(circle, #cbd5e1 1.2px, transparent 1.2px)",
               backgroundSize: "24px 24px",
-              opacity: 0.35,
+              opacity: 0.5,
             }}
           />
 
@@ -713,7 +722,7 @@ export default function CanvasEditor({
               flexShrink: 0,
               cursor: dragging ? "grabbing" : "default",
               borderRadius: 12,
-              boxShadow: "0 30px 90px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)",
+              boxShadow: "0 20px 40px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05)",
               ...bgStyle(),
             }}
             onMouseMove={onMouseMove}
@@ -837,17 +846,17 @@ export default function CanvasEditor({
         </div>
 
         {/* ──── Right Properties Panel ───────────────────────────────────────── */}
-        <div className="w-[220px] shrink-0 bg-[#0d1117] border-l border-slate-700/60 flex flex-col overflow-hidden">
+        <div className="w-[220px] shrink-0 bg-white border-l border-slate-200 flex flex-col overflow-hidden">
           {selected ? (
             <>
-              <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-700/60 shrink-0">
-                <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">
+              <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-200 shrink-0">
+                <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
                   {selected.type === "text" ? "✏️ Text"
                     : selected.type === "image" ? "🖼 Frame"
                     : "⬜ Shape"} Properties
                 </span>
                 <button onClick={deleteSelected}
-                  className="p-1.5 text-rose-400 hover:bg-rose-900/30 rounded-lg transition cursor-pointer"
+                  className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition cursor-pointer border-0 bg-transparent"
                   title="Delete (Del)">
                   <FiTrash2 className="w-3.5 h-3.5" />
                 </button>
@@ -861,7 +870,7 @@ export default function CanvasEditor({
                   <div className="grid grid-cols-2 gap-1.5">
                     {(["x", "y", "width", "height"] as const).map((f) => (
                       <div key={f} className="flex flex-col gap-0.5">
-                        <span className="text-[7px] font-bold text-slate-600 uppercase">{f}</span>
+                        <span className="text-[7px] font-bold text-slate-500 uppercase">{f}</span>
                         <input type="number"
                           value={Math.round(selected[f] as number)}
                           onChange={(e) => updateEl(selected.id, { [f]: parseInt(e.target.value) || 0 })}
@@ -886,18 +895,18 @@ export default function CanvasEditor({
                 {/* Layer order */}
                 <div className="flex gap-1.5">
                   <button onClick={sendBackward}
-                    className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[9px] font-black rounded-lg flex items-center justify-center gap-1 cursor-pointer">
+                    className="flex-1 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-[9px] font-black rounded-lg flex items-center justify-center gap-1 cursor-pointer">
                     <FiChevronDown className="w-3 h-3" /> Back
                   </button>
                   <button onClick={bringForward}
-                    className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[9px] font-black rounded-lg flex items-center justify-center gap-1 cursor-pointer">
+                    className="flex-1 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 text-[9px] font-black rounded-lg flex items-center justify-center gap-1 cursor-pointer">
                     <FiChevronUp className="w-3 h-3" /> Front
                   </button>
                 </div>
 
                 {/* ── Text Properties ── */}
                 {selected.type === "text" && (
-                  <div className="flex flex-col gap-3 border-t border-slate-700/60 pt-3">
+                  <div className="flex flex-col gap-3 border-t border-slate-200 pt-3">
                     <div className="flex flex-col gap-1">
                       <span className="label-xs">Text Content</span>
                       <textarea value={selected.text} rows={3}
@@ -920,14 +929,14 @@ export default function CanvasEditor({
                     <div className="grid grid-cols-2 gap-1.5">
                       <div className="flex flex-col gap-1">
                         <span className="text-[7px] font-extrabold text-slate-500 uppercase">Size</span>
-                        <div className="flex items-center bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+                        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg overflow-hidden">
                           <button onClick={() => updateEl(selected.id, { fontSize: Math.max(8, (selected.fontSize || 16) - 2) })}
-                            className="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer text-sm">−</button>
+                            className="px-2 py-1 text-slate-500 hover:text-slate-700 hover:bg-slate-200 cursor-pointer text-sm border-0 bg-transparent">−</button>
                           <input type="number" value={selected.fontSize}
                             onChange={(e) => updateEl(selected.id, { fontSize: parseInt(e.target.value) || 16 })}
-                            className="flex-1 min-w-0 bg-transparent text-white text-[11px] text-center focus:outline-none" />
+                            className="flex-1 min-w-0 bg-transparent text-slate-800 text-[11px] text-center focus:outline-none border-0" />
                           <button onClick={() => updateEl(selected.id, { fontSize: (selected.fontSize || 16) + 2 })}
-                            className="px-2 py-1 text-slate-400 hover:text-white hover:bg-slate-700 cursor-pointer text-sm">+</button>
+                            className="px-2 py-1 text-slate-500 hover:text-slate-700 hover:bg-slate-200 cursor-pointer text-sm border-0 bg-transparent">+</button>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
@@ -949,27 +958,27 @@ export default function CanvasEditor({
                       {/* Italic */}
                       <button title="Italic"
                         onClick={() => updateEl(selected.id, { fontStyle: selected.fontStyle === "italic" ? "normal" : "italic" })}
-                        className={`w-8 h-8 text-xs font-black italic rounded-lg cursor-pointer transition border ${
+                        className={`w-8 h-8 text-xs font-black italic rounded-lg cursor-pointer transition border bg-transparent ${
                           selected.fontStyle === "italic"
-                            ? "bg-teal-600 border-teal-500 text-white"
-                            : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700"
+                            ? "bg-teal-700 border-teal-700 text-white font-black"
+                            : "border-slate-200 text-slate-500 hover:bg-slate-100"
                         }`}>I</button>
                       {/* Underline */}
                       <button title="Underline"
                         onClick={() => updateEl(selected.id, { textDecoration: selected.textDecoration === "underline" ? "none" : "underline" })}
-                        className={`w-8 h-8 text-xs font-black underline rounded-lg cursor-pointer transition border ${
+                        className={`w-8 h-8 text-xs font-black underline rounded-lg cursor-pointer transition border bg-transparent ${
                           selected.textDecoration === "underline"
-                            ? "bg-teal-600 border-teal-500 text-white"
-                            : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700"
+                            ? "bg-teal-700 border-teal-700 text-white font-black"
+                            : "border-slate-200 text-slate-500 hover:bg-slate-100"
                         }`}>U</button>
                       {/* Alignment */}
                       {(["left", "center", "right"] as const).map((a) => (
                         <button key={a}
                           onClick={() => updateEl(selected.id, { textAlign: a })}
-                          className={`flex-1 h-8 flex items-center justify-center rounded-lg cursor-pointer transition border ${
+                          className={`flex-1 h-8 flex items-center justify-center rounded-lg cursor-pointer transition border bg-transparent ${
                             selected.textAlign === a
-                              ? "bg-teal-600 border-teal-500 text-white"
-                              : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700"
+                              ? "bg-teal-700 border-teal-700 text-white font-black"
+                              : "border-slate-200 text-slate-500 hover:bg-slate-100"
                           }`}>
                           {a === "left" ? <FiAlignLeft className="w-3 h-3" />
                             : a === "center" ? <FiAlignCenter className="w-3 h-3" />
@@ -984,7 +993,7 @@ export default function CanvasEditor({
                       <div className="flex gap-2 items-center">
                         <input type="color" value={selected.color || "#ffffff"}
                           onChange={(e) => updateEl(selected.id, { color: e.target.value })}
-                          className="w-8 h-8 rounded-lg cursor-pointer p-0.5 border border-slate-600 bg-transparent shrink-0" />
+                          className="w-8 h-8 rounded-lg cursor-pointer p-0.5 border border-slate-200 bg-transparent shrink-0" />
                         <input type="text" value={selected.color}
                           onChange={(e) => updateEl(selected.id, { color: e.target.value })}
                           className="input-field flex-1" />
@@ -995,7 +1004,7 @@ export default function CanvasEditor({
                     <div className="flex flex-col gap-1">
                       <div className="flex justify-between">
                         <span className="label-xs">Line Height</span>
-                        <span className="text-[8px] text-slate-400">{selected.lineHeight}×</span>
+                        <span className="text-[8px] text-slate-455">{selected.lineHeight}×</span>
                       </div>
                       <input type="range" min={1} max={3} step={0.1}
                         value={selected.lineHeight}
@@ -1007,18 +1016,18 @@ export default function CanvasEditor({
 
                 {/* ── Image Frame Properties ── */}
                 {selected.type === "image" && (
-                  <div className="flex flex-col gap-3 border-t border-slate-700/60 pt-3">
+                  <div className="flex flex-col gap-3 border-t border-slate-200 pt-3">
                     <label className="elem-btn cursor-pointer">
-                      <FiUpload className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                      <FiUpload className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                       {selected.imageUrl ? "Replace Image" : "Upload Image"}
                       <input type="file" accept="image/*" className="hidden"
                         onChange={(e) => handleImageUpload(e, selected.id)} />
                     </label>
                     {selected.imageUrl && (
                       <>
-                        <img src={selected.imageUrl} className="w-full h-16 object-cover rounded-lg border border-slate-700" alt="" />
+                        <img src={selected.imageUrl} className="w-full h-16 object-cover rounded-lg border border-slate-200" alt="" />
                         <button onClick={() => updateEl(selected.id, { imageUrl: "" })}
-                          className="text-[9px] font-black text-rose-400 hover:underline text-left">Clear image</button>
+                          className="text-[9px] font-black text-rose-500 hover:underline text-left bg-transparent border-0 cursor-pointer">Clear image</button>
                       </>
                     )}
                     <div className="flex flex-col gap-1">
@@ -1047,13 +1056,13 @@ export default function CanvasEditor({
 
                 {/* ── Shape Properties ── */}
                 {selected.type === "rect" && (
-                  <div className="flex flex-col gap-3 border-t border-slate-700/60 pt-3">
+                  <div className="flex flex-col gap-3 border-t border-slate-200 pt-3">
                     <div className="flex flex-col gap-1">
                       <span className="label-xs">Fill Color</span>
                       <div className="flex gap-2 items-center">
                         <input type="color" value={selected.fillColor || "#0d9488"}
                           onChange={(e) => updateEl(selected.id, { fillColor: e.target.value })}
-                          className="w-8 h-8 rounded-lg cursor-pointer p-0.5 border border-slate-600 bg-transparent shrink-0" />
+                          className="w-8 h-8 rounded-lg cursor-pointer p-0.5 border border-slate-200 bg-transparent shrink-0" />
                         <input type="text" value={selected.fillColor || "#0d9488"}
                           onChange={(e) => updateEl(selected.id, { fillColor: e.target.value })}
                           className="input-field flex-1" />
@@ -1075,7 +1084,7 @@ export default function CanvasEditor({
                         <span className="text-[7px] font-extrabold text-slate-500 uppercase">Stroke Color</span>
                         <input type="color" value={selected.strokeColor || "#ffffff"}
                           onChange={(e) => updateEl(selected.id, { strokeColor: e.target.value })}
-                          className="w-full h-8 rounded-lg cursor-pointer p-0.5 border border-slate-600 bg-transparent" />
+                          className="w-full h-8 rounded-lg cursor-pointer p-0.5 border border-slate-200 bg-transparent" />
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-[7px] font-extrabold text-slate-500 uppercase">Stroke Width</span>
@@ -1090,13 +1099,13 @@ export default function CanvasEditor({
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3 p-5 text-center">
-              <FiLayers className="w-8 h-8 text-slate-700" />
-              <p className="text-[10px] font-semibold text-slate-600 leading-relaxed">
+            <div className="flex-1 flex flex-col items-center justify-center gap-3 p-5 text-center bg-white">
+              <FiLayers className="w-8 h-8 text-slate-300" />
+              <p className="text-[10px] font-semibold text-slate-500 leading-relaxed">
                 Click any element on the canvas to edit its properties here
               </p>
-              <p className="text-[9px] text-slate-700 font-semibold">
-                Press <kbd className="bg-slate-800 px-1 py-0.5 rounded text-slate-400">Del</kbd> to delete selected
+              <p className="text-[9px] text-slate-450 font-semibold">
+                Press <kbd className="bg-slate-100 px-1 py-0.5 rounded text-slate-500 border border-slate-200">Del</kbd> to delete selected
               </p>
             </div>
           )}
@@ -1106,11 +1115,12 @@ export default function CanvasEditor({
       {/* Utility CSS classes injected via style tag */}
       <style>{`
         .label-xs { font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
-        .input-field { background: #1e293b; border: 1px solid #334155; color: white; font-size: 11px; padding: 6px 8px; border-radius: 8px; width: 100%; outline: none; font-weight: 600; }
-        .input-field:focus { border-color: #14b8a6; }
-        .elem-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #1e293b; border: 1px solid #334155; color: white; font-size: 12px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.15s; width: 100%; }
-        .elem-btn:hover { background: #263245; border-color: #475569; }
+        .input-field { background: #ffffff !important; border: 1px solid #e2e8f0 !important; color: #0f172a !important; font-size: 11px; padding: 6px 8px; border-radius: 8px; width: 100%; outline: none; font-weight: 600; }
+        .input-field:focus { border-color: #0d9488 !important; }
+        .elem-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; font-size: 12px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: all 0.15s; width: 100%; }
+        .elem-btn:hover { background: #f1f5f9; border-color: #cbd5e1; color: #0f172a; }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -152,6 +152,22 @@ export default function GeneralSettingsTab({
     setLocalClientVetting(enableClientVetting);
   }, [enableClientVetting]);
 
+  // Dynamic preview of the selected colors in real-time
+  useEffect(() => {
+    import("@/utils/theme").then((mod) => {
+      mod.applyTheme(theme, pColor, sColor);
+    });
+  }, [theme, pColor, sColor]);
+
+  // Clean up on unmount: if they didn't save, revert to actual context values
+  useEffect(() => {
+    return () => {
+      import("@/utils/theme").then((mod) => {
+        mod.applyTheme(siteTheme, primaryColor, secondaryColor);
+      });
+    };
+  }, [siteTheme, primaryColor, secondaryColor]);
+
   // Bulk manual save action for General Settings
   const handleBulkSave = async () => {
     setSaving(true);

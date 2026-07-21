@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { FiChevronLeft, FiChevronRight, FiAlertTriangle, FiX } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiAlertTriangle, FiX, FiCpu } from "react-icons/fi";
 import UpgradeOverlay from "./UpgradeOverlay";
 import { API_URL } from "@/config/api";
 
@@ -61,6 +61,136 @@ export default function FindWorkTab({
   const catScrollRef = useRef<HTMLDivElement>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(false);
+
+  // AI Project Matching states
+  const [showAiMatches, setShowAiMatches] = useState(false);
+  const [aiMatches, setAiMatches] = useState<any[]>([]);
+  const [aiMatchLoading, setAiMatchLoading] = useState(false);
+  const [aiMatchError, setAiMatchError] = useState("");
+  const [isLocalFallback, setIsLocalFallback] = useState(false);
+
+  const runLocalMatchingFallback = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      const profileRes = await fetch(`${API_URL}/freelancer/onboarding/details`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!profileRes.ok) throw new Error();
+      const data = await profileRes.json();
+      const profile = data.profile;
+      if (!profile) throw new Error();
+
+      const fSkills = Array.isArray(data.skills)
+        ? data.skills.map((s: any) => (s.skill_name || s.name || "").toLowerCase()).filter(Boolean)
+        : [];
+      const fCatId = profile.category_id?.toString() || "";
+      const fExp = profile.experience_level?.toLowerCase() || "";
+
+      const localMatches = allJobs.map((job) => {
+        let score = 30;
+        let matchedSkills: string[] = [];
+
+        if (fCatId && job.category_id?.toString() === fCatId) {
+          score += 25;
+        }
+
+        const jSkills = Array.isArray(job.skills)
+          ? job.skills.map((s: any) => (typeof s === "object" ? s.skill_name || s.name : s).toLowerCase()).filter(Boolean)
+          : [];
+        
+        jSkills.forEach((js: string) => {
+          if (fSkills.includes(js)) {
+            matchedSkills.push(js);
+          }
+        });
+
+        score += Math.min(35, matchedSkills.length * 15);
+
+        if (fExp && job.experience_level?.toLowerCase() === fExp) {
+          score += 10;
+        }
+
+        score = Math.min(100, score);
+
+        let reason = "";
+        if (matchedSkills.length > 0) {
+          const capitalizedSkills = matchedSkills.slice(0, 3).map(s => s.toUpperCase()).join(", ");
+          reason = `Matched based on your profile skills in ${capitalizedSkills} (${score}% compatibility).`;
+        } else if (fCatId && job.category_id?.toString() === fCatId) {
+          reason = `Matched based on your profile category with ${score}% compatibility.`;
+        } else {
+          reason = `Matched based on your profile experience level (${score}% compatibility).`;
+        }
+
+        return {
+          ...job,
+          score,
+          reason
+        };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
+
+      setAiMatches(localMatches);
+      setIsLocalFallback(true);
+      setAiMatchError("");
+    } catch (err) {
+      setAiMatchError("Local matching failed. Please try again.");
+    }
+  };
+
+  const toggleAiMatches = async () => {
+    if (showAiMatches) {
+      setShowAiMatches(false);
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      triggerToast("error", "You must be logged in to use AI matches.");
+      return;
+    }
+
+    setAiMatchLoading(true);
+    setAiMatchError("");
+    setIsLocalFallback(false);
+    setShowAiMatches(true);
+
+    try {
+      const res = await fetch(`${API_URL}/ai/match-projects`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.warn("AI match failed in FindWorkTab, trying local matching...");
+        await runLocalMatchingFallback();
+        return;
+      }
+      setAiMatches(data.matches || []);
+    } catch (err) {
+      console.warn("AI match network error in FindWorkTab, trying local matching...");
+      await runLocalMatchingFallback();
+    } finally {
+      setAiMatchLoading(false);
+    }
+  };
+
+  // Compute displayed jobs list
+  const displayedJobs = showAiMatches
+    ? aiMatches
+    : allJobs.filter((job) => {
+        const matchesSearch =
+          job.title.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
+          job.description.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
+          (job.category_name && job.category_name.toLowerCase().includes(jobSearchQuery.toLowerCase())) ||
+          (job.sub_category_name && job.sub_category_name.toLowerCase().includes(jobSearchQuery.toLowerCase()));
+        const matchesCategory =
+          jobSelectedCategory === "all" || job.category_name === jobSelectedCategory;
+        return matchesSearch && matchesCategory;
+      });
 
   const handleBidClick = async (e: React.MouseEvent, job: any) => {
     e.stopPropagation();
@@ -198,7 +328,7 @@ export default function FindWorkTab({
 
                 <div>
                   <div className="flex justify-between items-start gap-3">
-                    <div className="flex gap-3 items-center">
+                    <div className="flex gap-3 items-center min-w-0">
                       <div className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${freelancer.avatarColor} flex items-center justify-center font-bold text-base text-white shadow-sm shrink-0`}>
                         {freelancer.name.split(" ").map((n: string) => n[0]).join("")}
                       </div>
@@ -297,18 +427,40 @@ export default function FindWorkTab({
           <p className="text-slate-400 text-xs mt-1 font-semibold">Browse active projects posted by clients and submit your proposals.</p>
         </div>
         
-        {/* Search Input */}
-        <div className="relative w-full sm:w-80 shrink-0">
-          <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            <i className="fa-solid fa-magnifying-glass text-slate-450"></i>
-          </span>
-          <input
-            type="text"
-            placeholder="Search jobs, categories, keywords..."
-            value={jobSearchQuery}
-            onChange={(e) => setJobSearchQuery(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-250 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all font-semibold"
-          />
+        {/* Search Input & AI Matches Toggle */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto shrink-0">
+          <div className="relative w-full sm:w-60 shrink-0">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i className="fa-solid fa-magnifying-glass text-slate-455"></i>
+            </span>
+            <input
+              type="text"
+              placeholder="Search jobs, categories..."
+              value={jobSearchQuery}
+              onChange={(e) => {
+                setJobSearchQuery(e.target.value);
+                if (showAiMatches) setShowAiMatches(false); // turn off AI matches when search is used
+              }}
+              className="w-full bg-slate-50 border border-slate-250 rounded-xl py-2.5 pl-10 pr-4 text-slate-850 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all font-semibold"
+            />
+          </div>
+
+          <button
+            onClick={toggleAiMatches}
+            disabled={aiMatchLoading}
+            className={`flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black border transition-all duration-200 cursor-pointer w-full sm:w-auto justify-center ${
+              showAiMatches
+                ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white border-transparent shadow-md shadow-violet-250"
+                : "bg-white border-violet-200 text-violet-750 hover:bg-violet-50"
+            }`}
+          >
+            {aiMatchLoading ? (
+              <div className="w-3.5 h-3.5 border-2 border-t-transparent border-current rounded-full animate-spin shrink-0" />
+            ) : (
+              <FiCpu className="w-3.5 h-3.5 shrink-0" />
+            )}
+            <span>{showAiMatches ? "Show All" : "AI Matches"}</span>
+          </button>
         </div>
       </div>
 
@@ -389,37 +541,37 @@ export default function FindWorkTab({
           <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
           <p className="text-slate-400 text-xs font-semibold">Loading available projects...</p>
         </div>
-      ) : allJobs.filter((job) => {
-        const matchesSearch =
-          job.title.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
-          job.description.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
-          (job.category_name && job.category_name.toLowerCase().includes(jobSearchQuery.toLowerCase())) ||
-          (job.sub_category_name && job.sub_category_name.toLowerCase().includes(jobSearchQuery.toLowerCase()));
-        const matchesCategory =
-          jobSelectedCategory === "all" || job.category_name === jobSelectedCategory;
-        return matchesSearch && matchesCategory;
-      }).length === 0 ? (
+      ) : aiMatchLoading ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-4 bg-white border border-slate-200/80 rounded-xl p-8 shadow-sm">
+          <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
+          <p className="text-slate-400 text-xs font-semibold">Matching your profile against active projects...</p>
+        </div>
+      ) : displayedJobs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-350 rounded-xl p-8 shadow-inner gap-3">
           <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl">
             <i className="fa-solid fa-briefcase"></i>
           </div>
-          <h3 className="text-sm font-extrabold text-slate-800 mb-1">No matching projects found</h3>
-          <p className="text-slate-400 text-xs max-w-sm font-semibold">Try adjusting your filters or search terms.</p>
+          <h3 className="text-sm font-extrabold text-slate-800 mb-1">
+            {showAiMatches ? "No recommended matches found" : "No matching projects found"}
+          </h3>
+          <p className="text-slate-400 text-xs max-w-sm font-semibold">
+            {showAiMatches ? "Try completing more of your freelancer profile to get better recommendations." : "Try adjusting your filters or search terms."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {allJobs
-            .filter((job) => {
-              const matchesSearch =
-                job.title.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
-                job.description.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
-                (job.category_name && job.category_name.toLowerCase().includes(jobSearchQuery.toLowerCase())) ||
-                (job.sub_category_name && job.sub_category_name.toLowerCase().includes(jobSearchQuery.toLowerCase()));
-              const matchesCategory =
-                jobSelectedCategory === "all" || job.category_name === jobSelectedCategory;
-              return matchesSearch && matchesCategory;
-            })
-            .map((job) => {
+          {showAiMatches && isLocalFallback && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-left shadow-sm">
+              <span className="text-lg shrink-0">💡</span>
+              <div>
+                <p className="text-xs font-black text-amber-800 uppercase tracking-widest leading-none">AI Limits Exceeded</p>
+                <p className="text-[11px] text-amber-700 font-semibold mt-1.5 leading-relaxed">
+                  We've switched to a local search matching algorithm. These jobs are filtered matching your profile expertise, active skills, and category domains.
+                </p>
+              </div>
+            </div>
+          )}
+          {displayedJobs.map((job) => {
               const isApplied = appliedJobIds.has(job.job_id);
               const handleCardClick = () => {
                 if (!isApplied) {
@@ -459,6 +611,16 @@ export default function FindWorkTab({
                           <i className="fa-solid fa-circle-check"></i> Proposal Submitted
                         </span>
                       )}
+                      {showAiMatches && typeof job.score === "number" && (
+                        <span className={`inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full border ${
+                          job.score >= 85 ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                          job.score >= 70 ? "bg-teal-50 text-teal-700 border-teal-200" :
+                          "bg-amber-50 text-amber-700 border-amber-200"
+                        }`}>
+                          <FiCpu className="w-2.5 h-2.5 shrink-0" />
+                          <span>{job.score}% Match</span>
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-slate-400 text-[10px] font-bold">
@@ -487,6 +649,12 @@ export default function FindWorkTab({
                   </div>
                 </div>
                 <p className="text-slate-600 text-xs font-medium leading-relaxed">{job.description}</p>
+                {showAiMatches && job.reason && (
+                  <div className="bg-violet-50/50 border border-violet-100 rounded-xl p-3 text-left">
+                    <p className="text-[10px] font-black text-violet-700 uppercase tracking-widest leading-none">AI Matching Reason</p>
+                    <p className="text-xxs text-violet-600 font-semibold mt-1 leading-relaxed">{job.reason}</p>
+                  </div>
+                )}
                 {(job.skills || job.languages) && (
                   <div className="flex flex-col gap-2 pt-2 mt-1">
                     {job.skills && Array.isArray(job.skills) && job.skills.length > 0 && (
@@ -530,7 +698,7 @@ export default function FindWorkTab({
                     </div>
                     <div className="flex items-center gap-1.5">
                       <i className="fa-solid fa-graduation-cap text-slate-400"></i>
-                      <span>Experience Required: <strong className="text-slate-700">{job.experience_level}</strong></span>
+                      <span>Experience Required: <strong className="text-slate-700">{job.experience_level && job.experience_level !== "null" ? job.experience_level : "Any Experience"}</strong></span>
                     </div>
                     {job.sub_category_name && (
                       <div className="flex items-center gap-1.5">

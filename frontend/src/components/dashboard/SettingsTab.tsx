@@ -1,7 +1,7 @@
 import { API_URL } from "@/config/api";
 import React, { useState, useMemo } from "react";
 import CustomSelect from "../CustomSelect";
-import { FiSettings, FiUser, FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiTrash2, FiPlus, FiCircle } from "react-icons/fi";
+import { FiSettings, FiUser, FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiTrash2, FiPlus, FiCircle, FiFileText, FiUpload } from "react-icons/fi";
 
 interface SettingsTabProps {
   userRole: string | null;
@@ -97,6 +97,47 @@ export default function SettingsTab({
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [slugValidating, setSlugValidating] = useState(false);
   const [uploadingSeoImage, setUploadingSeoImage] = useState(false);
+
+  // Resume Upload State
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [resumeUploadError, setResumeUploadError] = useState("");
+
+  const handleResumeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingResume(true);
+    setResumeUploadError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const token = localStorage.getItem("token");
+      const uploadRes = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Failed to upload resume file.");
+      }
+
+      const uploadData = await uploadRes.json();
+      setProfileBasics({
+        ...profileBasics,
+        resume_url: uploadData.url || ""
+      });
+      triggerToast("success", "Resume uploaded successfully!");
+    } catch (err: any) {
+      setResumeUploadError(err.message || "An error occurred during resume upload.");
+    } finally {
+      setUploadingResume(false);
+    }
+  };
 
   const processSeoImage = (file: File): Promise<File> => {
     const MIN_W = 300, MIN_H = 200, MAX_W = 1200, MAX_H = 630;
@@ -798,6 +839,8 @@ export default function SettingsTab({
                   </div>
                 </div>
 
+
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="flex flex-col gap-1.5 text-left">
                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Professional Title</label>
@@ -882,15 +925,31 @@ export default function SettingsTab({
                       className="bg-slate-50/50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Resume Link (PDF URL)</label>
-                    <input
-                      type="url"
-                      placeholder="https://drive.google.com/..."
-                      value={profileBasics.resume_url}
-                      onChange={(e) => setProfileBasics({ ...profileBasics, resume_url: e.target.value })}
-                      className="bg-slate-50/50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
-                    />
+                  <div className="flex flex-col gap-1.5 text-left col-span-1 md:col-span-2">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Resume (PDF / TXT)</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="url"
+                        placeholder="https://drive.google.com/..."
+                        value={profileBasics.resume_url || ""}
+                        onChange={(e) => setProfileBasics({ ...profileBasics, resume_url: e.target.value })}
+                        className="flex-1 bg-slate-50/50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
+                      />
+                      <label className="flex items-center gap-1.5 px-4 py-3 bg-slate-100 hover:bg-slate-200 border border-slate-250 hover:border-slate-300 text-slate-650 rounded-xl cursor-pointer text-xs font-bold transition-all whitespace-nowrap shadow-sm">
+                        <FiUpload className="w-4 h-4" />
+                        <span>{uploadingResume ? "Uploading..." : "Upload File"}</span>
+                        <input
+                          type="file"
+                          accept=".pdf,.txt"
+                          onChange={handleResumeUpload}
+                          className="hidden"
+                          disabled={uploadingResume}
+                        />
+                      </label>
+                    </div>
+                    {resumeUploadError && (
+                      <p className="text-[10px] text-rose-500 font-bold select-none mt-1">⚠️ {resumeUploadError}</p>
+                    )}
                   </div>
                 </div>
 
@@ -2178,6 +2237,8 @@ export default function SettingsTab({
                   {/* FREELANCER STEP 1: BASICS */}
                   {freelancerSettingsStep === 1 && (
                     <div className="flex flex-col gap-5">
+
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="flex flex-col gap-1.5 text-left">
                           <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Display Name</label>
@@ -2306,15 +2367,31 @@ export default function SettingsTab({
                             className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
                           />
                         </div>
-                        <div className="flex flex-col gap-1.5 text-left">
-                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Resume Link (PDF)</label>
-                          <input
-                            type="url"
-                            placeholder="https://drive.google.com/..."
-                            value={profileBasics.resume_url || ""}
-                            onChange={(e) => setProfileBasics({ ...profileBasics, resume_url: e.target.value })}
-                            className="bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
-                          />
+                        <div className="flex flex-col gap-1.5 text-left col-span-1 md:col-span-2">
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Resume (PDF / TXT)</label>
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="url"
+                              placeholder="https://drive.google.com/..."
+                              value={profileBasics.resume_url || ""}
+                              onChange={(e) => setProfileBasics({ ...profileBasics, resume_url: e.target.value })}
+                              className="flex-1 bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-medium"
+                            />
+                            <label className="flex items-center gap-1.5 px-4 py-3 bg-slate-100 hover:bg-slate-200 border border-slate-250 hover:border-slate-300 text-slate-650 rounded-xl cursor-pointer text-xs font-bold transition-all whitespace-nowrap shadow-sm">
+                              <FiUpload className="w-4 h-4" />
+                              <span>{uploadingResume ? "Uploading..." : "Upload File"}</span>
+                              <input
+                                type="file"
+                                accept=".pdf,.txt"
+                                onChange={handleResumeUpload}
+                                className="hidden"
+                                disabled={uploadingResume}
+                              />
+                            </label>
+                          </div>
+                          {resumeUploadError && (
+                            <p className="text-[10px] text-rose-500 font-bold select-none mt-1">⚠️ {resumeUploadError}</p>
+                          )}
                         </div>
                       </div>
 

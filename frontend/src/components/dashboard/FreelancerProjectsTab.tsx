@@ -481,7 +481,7 @@ export default function FreelancerProjectsTab() {
           /* RECOMMENDED CLIENTS */
           recommendedClients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center text-slate-400">
-              <span className="text-2xl mb-2">✨</span>
+              <FiUser className="text-2xl mb-2 text-slate-400" />
               <h4 className="text-xs font-bold text-slate-600">No client recommendations</h4>
               <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
                 No active hiring clients found that fit recommendations right now.

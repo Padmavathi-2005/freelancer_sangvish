@@ -5,6 +5,7 @@ import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { AuthModalProvider } from "@/context/AuthModalContext";
 import ReferralTracker from "@/components/ReferralTracker";
+import AIChatbot from "@/components/AIChatbot";
 import { API_URL, API_BASE_URL } from "@/config/api";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -119,6 +120,7 @@ export default function RootLayout({
         <LanguageProvider>
           <AuthModalProvider>
             {children}
+            <AIChatbot />
           </AuthModalProvider>
         </LanguageProvider>
       </body>

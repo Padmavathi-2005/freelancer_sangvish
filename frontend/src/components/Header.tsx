@@ -3,13 +3,16 @@ import { API_URL, API_BASE_URL } from "@/config/api";
 
 const resolveLogoUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) {
-    if (url.includes("localhost:5000")) {
-      return url.replace("http://localhost:5000", API_BASE_URL);
-    }
-    return url;
+  let cleanUrl = url;
+  const publicIdx = cleanUrl.indexOf("/public/");
+  if (publicIdx !== -1) {
+    cleanUrl = cleanUrl.substring(publicIdx);
   }
-  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+    return cleanUrl;
+  }
+  const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
 };
 
 
@@ -189,14 +192,30 @@ export default function Header() {
         const res = await fetch(`${API_URL}/settings`);
         if (res.ok) {
           const data = await res.json();
+          let loadedTheme = siteTheme;
+          let loadedPrimary = localStorage.getItem("primaryColor") || "#0d9488";
+          let loadedSecondary = localStorage.getItem("secondaryColor") || "#06b6d4";
+
+          const formatHex = (colorStr: string, fallback: string) => {
+            if (!colorStr) return fallback;
+            const trimmed = colorStr.trim();
+            if (trimmed.startsWith("#")) return trimmed;
+            if (/^[0-9A-Fa-f]{3,8}$/.test(trimmed)) return "#" + trimmed;
+            return trimmed;
+          };
+
           data.forEach((setting: any) => {
-            if (setting.setting_key === "site_settings") {
-              let val = setting.setting_value;
-              if (typeof val === "string") {
-                try {
+            let val = setting.setting_value;
+            if (typeof val === "string") {
+              try {
+                const trimmed = val.trim();
+                if (trimmed.startsWith("{") || trimmed.startsWith("[") || trimmed === "true" || trimmed === "false" || (!isNaN(Number(trimmed)) && trimmed !== "")) {
                   val = JSON.parse(val);
-                } catch (e) {}
-              }
+                }
+              } catch (e) {}
+            }
+
+            if (setting.setting_key === "site_settings") {
               if (val?.site_logo) {
                 setSiteLogo(val.site_logo);
                 localStorage.setItem("cached_site_logo", val.site_logo);
@@ -205,8 +224,36 @@ export default function Header() {
                 setSiteName(val.site_name);
                 localStorage.setItem("cached_site_name", val.site_name);
               }
+            } else if (setting.setting_key === "primary_color") {
+              const localPrimary = localStorage.getItem("primaryColor");
+              if (localPrimary) {
+                loadedPrimary = localPrimary;
+              } else {
+                loadedPrimary = formatHex(val?.color, "#10b981");
+                localStorage.setItem("primaryColor", loadedPrimary);
+              }
+            } else if (setting.setting_key === "secondary_color") {
+              const localSecondary = localStorage.getItem("secondaryColor");
+              if (localSecondary) {
+                loadedSecondary = localSecondary;
+              } else {
+                loadedSecondary = formatHex(val?.color, "#06b6d4");
+                localStorage.setItem("secondaryColor", loadedSecondary);
+              }
+            } else if (setting.setting_key === "theme") {
+              const localTheme = localStorage.getItem("siteTheme");
+              if (localTheme) {
+                loadedTheme = localTheme;
+              } else {
+                loadedTheme = val?.theme || "light";
+                localStorage.setItem("siteTheme", loadedTheme);
+              }
+              setSiteTheme(loadedTheme);
             }
           });
+
+          const { applyTheme } = await import("@/utils/theme");
+          applyTheme(loadedTheme, loadedPrimary, loadedSecondary);
         }
       } catch (err) {
         console.error("Failed to load header brand settings", err);

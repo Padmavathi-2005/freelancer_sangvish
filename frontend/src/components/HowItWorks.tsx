@@ -72,7 +72,7 @@ export default function HowItWorks() {
             {/* Timeline Wrapper */}
             <div className="relative max-w-5xl mx-auto">
               {/* Desktop Horizontal Line */}
-              <div className="absolute top-[22px] left-[5%] right-[5%] h-[2px] bg-slate-200/80 z-0 hidden lg:block" />
+              <div className="absolute top-[22px] left-[10%] right-[10%] h-[2px] bg-slate-200/80 z-0 hidden lg:block" />
 
               {/* Mobile Vertical Line */}
               <div className="absolute left-[22px] top-6 bottom-6 w-[2px] bg-slate-200/80 z-0 lg:hidden" />

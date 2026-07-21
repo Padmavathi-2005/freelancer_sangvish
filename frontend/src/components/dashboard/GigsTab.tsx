@@ -1,6 +1,7 @@
 import { API_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 import CustomSelect from "../CustomSelect";
+import CanvasEditor from "../CanvasEditor";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { 
   FiAlertTriangle, FiCheckCircle, FiCheck, FiImage, FiVideo, FiFileText, 
@@ -99,6 +100,37 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
   const [gigDeliveryDays, setGigDeliveryDays] = useState("3");
   const [gigRevisions, setGigRevisions] = useState("3");
   const [gigImages, setGigImages] = useState("");
+  const [showCanvasEditor, setShowCanvasEditor] = useState(false);
+
+  const handleCanvasSave = async (dataUrl: string) => {
+    try {
+      const blobRes = await fetch(dataUrl);
+      const blob = await blobRes.blob();
+      const file = new File([blob], `gig_cover_${Date.now()}.png`, { type: "image/png" });
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      
+      const existing = gigImages ? gigImages.split(",").map((u) => u.trim()).filter(Boolean) : [];
+      setGigImages([...existing, data.url].join(", "));
+      
+      setShowCanvasEditor(false);
+      triggerToast("success", "Custom showcase image designed and added successfully!");
+    } catch (err: any) {
+      console.error("Canvas upload error:", err);
+      triggerToast("error", err.message || "Failed to upload designed cover image.");
+      setShowCanvasEditor(false);
+    }
+  };
+
   const [gigVideoUrl, setGigVideoUrl] = useState("");
   const [gigDocuments, setGigDocuments] = useState("");
   const [gigCategoryId, setGigCategoryId] = useState("");
@@ -125,6 +157,69 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [seoImage, setSeoImage] = useState("");
+  const [gigAddons, setGigAddons] = useState<Array<{ id: string; title: string; price: string }>>([]);
+
+  // AI Gig Description Generator State
+  const [generatingGigDesc, setGeneratingGigDesc] = useState(false);
+
+  const handleGenerateGigDescription = async () => {
+    if (!gigTitle.trim()) {
+      triggerToast("error", "Please provide a Gig Title first so AI can write a tailored description.");
+      return;
+    }
+    if (!gigCategoryId) {
+      triggerToast("error", "Please select a Category first so AI can generate a description.");
+      return;
+    }
+    if (!gigSubCategoryId) {
+      triggerToast("error", "Please select a Sub-category first so AI can generate a description.");
+      return;
+    }
+    if (gigSelectedSkills.length === 0) {
+      triggerToast("error", "Please select at least one Associated Skill first so AI can generate a description.");
+      return;
+    }
+
+    setGeneratingGigDesc(true);
+    try {
+      const token = localStorage.getItem("token");
+      const categoryObj = gigCategories.find((c: any) => String(c.category_id) === String(gigCategoryId));
+      const subCategoryObj = gigSubCategories.find((s: any) => String(s.sub_category_id) === String(gigSubCategoryId));
+      
+      const skillsList = gigSelectedSkills.map((id: number) => {
+        const skill = gigAvailableSkills.find((s: any) => s.skill_id === id);
+        return skill ? skill.skill_name : "";
+      }).filter(Boolean);
+
+      const res = await fetch(`${API_URL}/ai/generate-gig-description`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          gigTitle,
+          categoryName: categoryObj ? categoryObj.category_name : "",
+          subCategoryName: subCategoryObj ? subCategoryObj.sub_category_name : "",
+          skills: skillsList,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        triggerToast("error", data.error || "Failed to generate gig description.");
+        return;
+      }
+
+      setGigDescription(data.description || "");
+      triggerToast("success", "Gig description generated successfully!");
+    } catch (err) {
+      triggerToast("error", "Network error. Please try again.");
+    } finally {
+      setGeneratingGigDesc(false);
+    }
+  };
+
 
   // Custom packages/plans states
   const [usePlans, setUsePlans] = useState(false);
@@ -602,6 +697,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
           slug: gigSlug,
           plans: usePlans ? activePlans : null,
           faqs: gigFaqs,
+          addons: gigAddons,
           seo: {
             title: seoTitle.trim(),
             description: seoDescription.trim(),
@@ -633,6 +729,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
         setPriceType("single");
         setGigMinPrice("");
         setGigFaqs([]);
+        setGigAddons([]);
         setSeoTitle("");
         setSeoDescription("");
         setSeoImage("");
@@ -795,6 +892,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 setEditingGig(null);
                 setGigError("");
                 setActiveFormStep(1);
+                setGigAddons([]);
               }}
               className="text-xs font-bold text-slate-505 hover:text-slate-855 bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-slate-200 hover:bg-slate-200/60"
             >
@@ -1627,6 +1725,77 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       Enable price negotiation (allow clients to propose custom budgets)
                     </label>
                   </div>
+
+                  {/* Gig Add-ons Section */}
+                  <div className="sm:col-span-2 flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-xl p-5 mt-2 text-left">
+                    <div>
+                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Gig Add-ons (Upsells)</h4>
+                      <p className="text-[10px] text-slate-405 mt-0.5 font-semibold">Offer optional extras that clients can purchase with this service (e.g. source files, fast delivery).</p>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      {gigAddons.map((addon, idx) => (
+                        <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center gap-3 relative shadow-sm hover:shadow transition-shadow">
+                          <div className="flex-grow grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="sm:col-span-2 text-left">
+                              <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Add-on Title *</label>
+                              <input
+                                type="text"
+                                required
+                                placeholder="e.g. Provide editable vector source files"
+                                value={addon.title}
+                                onChange={(e) => {
+                                  const updated = [...gigAddons];
+                                  updated[idx].title = e.target.value;
+                                  setGigAddons(updated);
+                                }}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-850 focus:outline-none focus:bg-white transition"
+                              />
+                            </div>
+                            <div className="text-left">
+                              <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Extra Price ($) *</label>
+                              <input
+                                type="number"
+                                required
+                                min="1"
+                                placeholder="e.g. 25"
+                                value={addon.price}
+                                onChange={(e) => {
+                                  const updated = [...gigAddons];
+                                  updated[idx].price = e.target.value;
+                                  setGigAddons(updated);
+                                }}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:bg-white font-bold transition"
+                              />
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = gigAddons.filter((_, i) => i !== idx);
+                              setGigAddons(updated);
+                            }}
+                            className="text-rose-500 hover:text-rose-700 hover:scale-105 transition-all text-xs font-black cursor-pointer border-none bg-transparent self-end pb-2"
+                            title="Remove Add-on"
+                          >
+                            <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGigAddons([...gigAddons, { id: Date.now().toString(), title: "", price: "" }]);
+                      }}
+                      className="text-xxs font-black text-primary hover:text-primary-hover flex items-center justify-center gap-1.5 bg-white border border-dashed border-primary/30 rounded-xl py-3 w-full cursor-pointer hover:bg-slate-50/50 transition-all"
+                    >
+                      <span>+ Add Custom Extra Add-on</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Step 2 Footer */}
@@ -1700,6 +1869,16 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         className="hidden"
                       />
                     </label>
+
+                    {/* Design Card */}
+                    <button
+                      type="button"
+                      onClick={() => setShowCanvasEditor(true)}
+                      className="w-20 h-20 border-2 border-dashed border-slate-250 hover:border-primary/50 hover:bg-slate-50/50 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all gap-1 select-none text-slate-400 bg-transparent group"
+                    >
+                      <FiType className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
+                      <span className="text-[9px] font-black uppercase text-slate-500">Design</span>
+                    </button>
                   </div>
                    <input
                     id="gig-images-input"
@@ -1862,6 +2041,27 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     >
                       <FiEye className="w-3 h-3" />
                       <span>{previewHtml ? "Edit Mode" : "Preview Description"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGenerateGigDescription}
+                      disabled={generatingGigDesc}
+                      title="Generate a professional description using AI"
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black rounded-lg cursor-pointer transition-all border bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-750 hover:to-purple-750 border-none disabled:opacity-60"
+                    >
+                      {generatingGigDesc ? (
+                        <>
+                          <div className="w-3 h-3 border-2 border-t-transparent border-white rounded-full animate-spin" />
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                          </svg>
+                          <span>AI Write</span>
+                        </>
+                      )}
                     </button>
                   </div>
 
@@ -2264,9 +2464,19 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
             setGigPlans={setGigPlans}
             setFeatureRows={setFeatureRows}
             setGigFaqs={setGigFaqs}
+            setGigAddons={setGigAddons}
             setSeoTitle={setSeoTitle}
             setSeoDescription={setSeoDescription}
             setSeoImage={setSeoImage}
+          />
+        )}
+
+        {showCanvasEditor && (
+          <CanvasEditor
+            onSave={handleCanvasSave}
+            onClose={() => setShowCanvasEditor(false)}
+            canvasWidth={800}
+            canvasHeight={450}
           />
         )}
       </div>
@@ -2311,6 +2521,7 @@ export function GigConsoleModal({
   setGigPlans,
   setFeatureRows,
   setGigFaqs,
+  setGigAddons,
   setSeoTitle,
   setSeoDescription,
   setSeoImage,
@@ -2348,6 +2559,7 @@ export function GigConsoleModal({
   setGigPlans: (arr: any[]) => void;
   setFeatureRows: (arr: any[]) => void;
   setGigFaqs: (arr: Array<{ q: string; a: string }>) => void;
+  setGigAddons: (arr: Array<{ id: string; title: string; price: string }>) => void;
   setSeoTitle: (s: string) => void;
   setSeoDescription: (s: string) => void;
   setSeoImage: (s: string) => void;
@@ -2580,6 +2792,11 @@ export function GigConsoleModal({
               setGigFaqs(
                 g.faqs
                   ? (typeof g.faqs === "string" ? JSON.parse(g.faqs) : g.faqs)
+                  : []
+              );
+              setGigAddons(
+                g.addons
+                  ? (typeof g.addons === "string" ? JSON.parse(g.addons) : g.addons)
                   : []
               );
               const loadedSeo = g.seo 

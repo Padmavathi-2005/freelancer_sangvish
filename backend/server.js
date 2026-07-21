@@ -54,6 +54,133 @@ try {
     `);
     console.log('✅ gigs table payment option columns check completed');
 
+    // Startup migration for gigs addons (upsell / cross-sell)
+    await pool.query(`
+      ALTER TABLE gigs 
+      ADD COLUMN IF NOT EXISTS addons JSONB DEFAULT NULL
+    `);
+    console.log('✅ gigs table addons column check completed');
+
+    // Backfill default addons for existing gigs so they are testable
+    await pool.query(`
+      UPDATE gigs 
+      SET addons = '[
+        {"id": "default-1", "title": "Extra Fast 1-Day Delivery", "price": "50"},
+        {"id": "default-2", "title": "Source Files & Vector Assets", "price": "30"},
+        {"id": "default-3", "title": "Commercial Use License", "price": "45"}
+      ]'::jsonb
+      WHERE addons IS NULL
+    `);
+    console.log('✅ gigs table default addons backfilled');
+
+    // Upgrade some freelancers in the database to paid plans for testing cross-selling/boosting
+    await pool.query(`
+      WITH freelancer_ids AS (
+        SELECT DISTINCT freelancer_id FROM gigs
+      ),
+      numbered_freelancers AS (
+        SELECT freelancer_id, row_number() OVER () as rn FROM freelancer_ids
+      )
+      UPDATE users u
+      SET active_plan_id = CASE 
+        WHEN nf.rn % 3 = 1 THEN (SELECT plan_id FROM subscription_plans WHERE name = 'Enterprise' AND plan_role = 'seller' LIMIT 1)
+        WHEN nf.rn % 3 = 2 THEN (SELECT plan_id FROM subscription_plans WHERE name = 'Professional' AND plan_role = 'seller' LIMIT 1)
+        ELSE NULL
+      END
+      FROM numbered_freelancers nf
+      WHERE u.user_id = nf.freelancer_id;
+    `);
+    console.log('✅ Freelancers membership plans upgraded for testing cross-selling');
+
+    // Seed test freelancers and gigs for cross-selling verification
+    const testFreelancersCheck = await pool.query("SELECT * FROM gigs WHERE title = 'Premium Enterprise UI/UX Design & Brand System'");
+    if (testFreelancersCheck.rows.length === 0) {
+      console.log('🌱 Seeding John Doe & Jane Smith freelancers with gigs for cross-selling demo...');
+      
+      // Clean up any old test gigs and users to ensure a clean run
+      await pool.query("DELETE FROM gigs WHERE title IN ('Premium Enterprise UI/UX Design & Brand System', 'Pro Figma Interactive Prototyping & User Flow Vetting')");
+      await pool.query("DELETE FROM freelancer_profiles WHERE user_id IN (SELECT user_id FROM users WHERE email IN ('john@example.com', 'jane@example.com'))");
+      await pool.query("DELETE FROM users WHERE email IN ('john@example.com', 'jane@example.com')");
+
+      // Get all active category/subcategory combinations present in existing gigs
+      const activeCatsRes = await pool.query(`
+        SELECT DISTINCT category_id, sub_category_id, currency_id FROM gigs WHERE category_id IS NOT NULL AND sub_category_id IS NOT NULL LIMIT 5
+      `);
+
+      if (activeCatsRes.rows.length > 0) {
+        // 1. Create John Doe (Elite Seller)
+        const johnRes = await pool.query(`
+          INSERT INTO users (first_name, last_name, email, password_hash, referral_code, active_plan_id)
+          VALUES (
+            'John', 'Doe', 'john@example.com', 
+            '$2b$10$K7/L6f2lC6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6', 'REFJOHN',
+            (SELECT plan_id FROM subscription_plans WHERE name = 'Enterprise' AND plan_role = 'seller' LIMIT 1)
+          ) RETURNING user_id
+        `);
+        const johnId = johnRes.rows[0].user_id;
+
+        // 2. Create Jane Smith (Pro Seller)
+        const janeRes = await pool.query(`
+          INSERT INTO users (first_name, last_name, email, password_hash, referral_code, active_plan_id)
+          VALUES (
+            'Jane', 'Smith', 'jane@example.com', 
+            '$2b$10$K7/L6f2lC6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6F6', 'REFJANE',
+            (SELECT plan_id FROM subscription_plans WHERE name = 'Professional' AND plan_role = 'seller' LIMIT 1)
+          ) RETURNING user_id
+        `);
+        const janeId = janeRes.rows[0].user_id;
+
+        // Insert freelancer profiles for both using the first active category
+        const firstCat = activeCatsRes.rows[0];
+        await pool.query(`
+          INSERT INTO freelancer_profiles (user_id, professional_title, hourly_rate, bio, vetting_status, category_id, sub_category_id, experience_level, total_experience_years, availability_status)
+          VALUES ($1, 'Elite UI/UX Architect', 120.00, 'I build high-end corporate applications and premium UX prototypes.', 'Approved', $2, $3, 'Expert', 8, 'Available')
+          ON CONFLICT DO NOTHING
+        `, [johnId, firstCat.category_id, firstCat.sub_category_id]);
+
+        await pool.query(`
+          INSERT INTO freelancer_profiles (user_id, professional_title, hourly_rate, bio, vetting_status, category_id, sub_category_id, experience_level, total_experience_years, availability_status)
+          VALUES ($1, 'Senior Figma Specialist', 75.00, 'Specialist in rapid prototyping, Figma libraries, and design handoffs.', 'Approved', $2, $3, 'Expert', 5, 'Available')
+          ON CONFLICT DO NOTHING
+        `, [janeId, firstCat.category_id, firstCat.sub_category_id]);
+
+        // Loop through all active categories and seed gigs for both John and Jane in each one!
+        for (const row of activeCatsRes.rows) {
+          const { category_id, sub_category_id, currency_id } = row;
+          const slugSuffix = `${category_id}-${sub_category_id}`;
+
+          // Create John's gig for this category
+          await pool.query(`
+            INSERT INTO gigs (freelancer_id, category_id, sub_category_id, title, description, price, currency_id, delivery_days, revisions, images, status, slug)
+            VALUES (
+              $1, $2, $3, 
+              'Premium Enterprise UI/UX Design & Brand System', 
+              'Design high-fidelity interactive wireframes, brand assets, and custom design guidelines for large-scale SaaS platforms.', 
+              650.00, $4, 5, 5, 
+              '["https://images.unsplash.com/photo-1541462608143-67571c6738dd?auto=format&fit=crop&w=800&q=80"]'::jsonb, 
+              'Active', 
+              $5
+            )
+          `, [johnId, category_id, sub_category_id, currency_id, `premium-enterprise-ui-ux-${slugSuffix}`]);
+
+          // Create Jane's gig for this category
+          await pool.query(`
+            INSERT INTO gigs (freelancer_id, category_id, sub_category_id, title, description, price, currency_id, delivery_days, revisions, images, status, slug)
+            VALUES (
+              $1, $2, $3, 
+              'Pro Figma Interactive Prototyping & User Flow Vetting', 
+              'Translate mockups into fully functional prototypes with clean design logic and smooth web transitions.', 
+              280.00, $4, 3, 3, 
+              '["https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&w=800&q=80"]'::jsonb, 
+              'Active', 
+              $5
+            )
+          `, [janeId, category_id, sub_category_id, currency_id, `pro-figma-interactive-prototyping-${slugSuffix}`]);
+        }
+        console.log('🌱 Seeded cross-selling demo data: John Doe (Elite) & Jane Smith (Pro) across all active categories.');
+      }
+    }
+
     // Startup migration for freelancer_profiles bio column
     await pool.query(`
       ALTER TABLE freelancer_profiles 
@@ -75,6 +202,19 @@ try {
       ADD COLUMN IF NOT EXISTS submitted_files TEXT
     `);
     console.log('✅ contracts table submitted_files column check completed');
+
+    // Startup migration for unique_views_log table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS unique_views_log (
+        id SERIAL PRIMARY KEY,
+        view_type VARCHAR(50) NOT NULL,
+        target_id VARCHAR(100) NOT NULL,
+        ip_address VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT unique_view_log_constraint UNIQUE (view_type, target_id, ip_address)
+      )
+    `);
+    console.log('✅ unique_views_log table check completed');
 
     // Startup migration for gig_reviews
     await pool.query(`
