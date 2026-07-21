@@ -348,7 +348,7 @@ interface AdminContextType {
   fetchError: string | null;
 
   disputes: DisputeCase[];
-  resolveDispute: (id: string, resolution: DisputeCase["status"]) => void;
+  resolveDispute: (id: string, resolution: DisputeCase["status"], customPercent?: number) => void;
   fetchDisputes: () => Promise<void>;
   pendingVettingCount: number;
   activeDisputesCount: number;
@@ -1699,7 +1699,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const resolveDispute = async (id: string, resolution: DisputeCase["status"]) => {
+  const resolveDispute = async (id: string, resolution: DisputeCase["status"], customPercent?: number) => {
     let verdict = "";
     let client_refund_percent = 0;
 
@@ -1711,7 +1711,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       client_refund_percent = 0;
     } else if (resolution.includes("Split")) {
       verdict = "Partial Split";
-      client_refund_percent = 50;
+      client_refund_percent = customPercent !== undefined ? customPercent : 50;
     }
 
     if (verdict) {

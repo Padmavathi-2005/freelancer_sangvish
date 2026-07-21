@@ -95,7 +95,7 @@ export default function FreelancerProjectsTab() {
   const filteredContracts = useMemo(() => {
     if (activeSubTab === "ongoing") {
       return freelancerContracts.filter(
-        (c) => c.status === "Hired" || c.status === "Work Started" || c.status === "In Progress" || c.status === "Under Review"
+        (c) => c.status === "Hired" || c.status === "Work Started" || c.status === "In Progress" || c.status === "Under Review" || c.status === "Disputed" || c.status === "Work Completed"
       );
     }
     if (activeSubTab === "completed") {
@@ -107,7 +107,7 @@ export default function FreelancerProjectsTab() {
   // Compute metrics
   const ongoingCount = useMemo(() => {
     return freelancerContracts.filter(
-      (c) => c.status === "Hired" || c.status === "Work Started" || c.status === "In Progress" || c.status === "Under Review"
+      (c) => c.status === "Hired" || c.status === "Work Started" || c.status === "In Progress" || c.status === "Under Review" || c.status === "Disputed" || c.status === "Work Completed"
     ).length;
   }, [freelancerContracts]);
 

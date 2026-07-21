@@ -38,6 +38,7 @@ router.get('/categories-stats', async (req, res) => {
             LEFT JOIN freelancer_profiles fp
                 ON fp.category_id = c.category_id
                 AND fp.onboarding_completed = true
+                AND fp.vetting_status = 'Approved'
             GROUP BY c.category_id, c.category_name, c.category_image, c.description, c.category_video
             ORDER BY freelancer_count DESC
         `);

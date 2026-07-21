@@ -16,9 +16,11 @@ const recalculateJobStatus = async (jobId) => {
 
     const numFreelancersStr = jobRes.rows[0]?.num_freelancers || "1 freelancer";
     let limit = 1;
-    if (numFreelancersStr.includes("2-5")) {
+    if (numFreelancersStr.includes("2-3")) {
+      limit = 3;
+    } else if (numFreelancersStr.includes("2-5")) {
       limit = 5;
-    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("5+") || numFreelancersStr.includes("many")) {
+    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("5+") || numFreelancersStr.includes("many") || numFreelancersStr.includes("4+")) {
       limit = 999;
     } else {
       const match = numFreelancersStr.match(/^(\d+)/);

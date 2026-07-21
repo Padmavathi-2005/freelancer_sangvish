@@ -169,7 +169,7 @@ export const Job = {
         c.progress AS contract_progress,
         c.contract_id,
         COALESCE(j.is_featured = TRUE AND j.featured_at + (sp.featured_project_duration * INTERVAL '1 day') >= CURRENT_TIMESTAMP, false) as is_featured,
-        (SELECT COUNT(*) FROM proposals WHERE job_id = j.job_id) AS proposal_count
+        (SELECT COUNT(*) FROM proposals WHERE job_id = j.job_id AND status != 'Pending Approval') AS proposal_count
       FROM jobs j
       JOIN users u ON j.client_id = u.user_id
       LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id

@@ -886,10 +886,17 @@ export const requestContractPayment = async (req, res) => {
             return res.status(400).json({ message: `Contract cannot request payment in state: ${contract.status}` });
         }
 
+        const { submitted_files } = req.body;
+        const serializedFiles = submitted_files ? (typeof submitted_files === 'string' ? submitted_files : JSON.stringify(submitted_files)) : null;
         // Update contract
         await pool.query(
-            "UPDATE contracts SET status = 'Under Review', progress = 100, submitted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $1",
-            [parseInt(id)]
+            "UPDATE contracts SET status = 'Under Review', progress = 100, submitted_files = $1, submitted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $2",
+            [serializedFiles, parseInt(id)]
+        );
+        // Synchronize contract milestones status to Under Review
+        await pool.query(
+            "UPDATE contract_milestones SET status = 'Under Review', submitted_files = $1, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $2 AND (status = 'Pending' OR status = 'Revision Requested')",
+            [serializedFiles, parseInt(id)]
         );
 
         // 1. Fetch Client and Freelancer Details
@@ -1542,6 +1549,7 @@ export const getPublicFreelancers = async (req, res) => {
             LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
             WHERE fp.onboarding_completed = true
               AND u.is_active = true
+              AND fp.vetting_status = 'Approved'
             ORDER BY is_featured DESC, u.created_at DESC
         `;
         const result = await pool.query(query);
@@ -1604,6 +1612,7 @@ export const getRecommendedFreelancers = async (req, res) => {
               JOIN freelancer_profiles fp ON u.user_id = fp.user_id
               WHERE fp.onboarding_completed = true
                 AND u.is_active = true
+                AND fp.vetting_status = 'Approved'
                 AND u.user_id != $1
             )
             SELECT *
@@ -1881,7 +1890,7 @@ export const getPublicClientProfile = async (req, res) => {
             `SELECT j.*, 
                     cat.category_name, 
                     sub.sub_category_name,
-                    (SELECT COUNT(*) FROM proposals WHERE job_id = j.job_id) as proposal_count
+                    (SELECT COUNT(*) FROM proposals WHERE job_id = j.job_id AND status != 'Pending Approval') as proposal_count
              FROM jobs j
              LEFT JOIN categories cat ON j.category_id = cat.category_id
              LEFT JOIN sub_categories sub ON j.sub_category_id = sub.sub_category_id

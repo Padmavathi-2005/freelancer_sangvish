@@ -338,7 +338,7 @@ export default function FreelancerProfileClient() {
           </p>
           <a
             href="/login"
-            className="mt-6 bg-teal-700 hover:bg-teal-650 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all transform active:scale-95"
+            className="mt-6 bg-primary hover:bg-primary-hover text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all transform active:scale-95"
           >
             Log In to Continue
           </a>
@@ -358,7 +358,7 @@ export default function FreelancerProfileClient() {
           <p className="text-sm text-slate-500 max-w-sm mt-2">{error || "The developer profile you are seeking does not exist."}</p>
           <button
             onClick={() => router.back()}
-            className="mt-6 bg-teal-700 hover:bg-teal-600 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all"
+            className="mt-6 bg-primary hover:bg-primary-hover text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all"
           >
             Go Back
           </button>
@@ -476,7 +476,7 @@ export default function FreelancerProfileClient() {
             {loggedInUserId && (loggedInUserId === Number(user?.user_id) || loggedInUserId === Number(profile?.user_id)) ? (
               <button
                 onClick={() => router.push("/dashboard?tab=settings")}
-                className="flex-1 md:flex-none justify-center bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+                className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
               >
                 <FiSliders className="w-4 h-4" />
                 <span>Edit Profile</span>
@@ -510,7 +510,7 @@ export default function FreelancerProfileClient() {
                       setShowHireModal(true);
                     }
                   }}
-                  className="flex-1 md:flex-none justify-center bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                 >
                   Hire Freelancer
                 </button>
@@ -1029,7 +1029,7 @@ export default function FreelancerProfileClient() {
                     <button
                       type="submit"
                       disabled={hiringSubmitting}
-                      className="bg-teal-700 hover:bg-teal-600 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                      className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                     >
                       {hiringSubmitting ? "Sending..." : "Submit Hire Offer"}
                     </button>

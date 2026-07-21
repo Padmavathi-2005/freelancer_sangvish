@@ -848,11 +848,38 @@ export default function ProjectMilestoneTracker({
                             const currentHiredSum = jobContracts.reduce((sum, c) => sum + parseFloat(c.budget), 0);
                             const bidAmount = parseFloat(proposal.bid_amount);
                             
-                            if (projectMaxBudget > 0 && (currentHiredSum + bidAmount) > projectMaxBudget) {
+                            const numFreelancersStr = job.num_freelancers || "1 freelancer";
+                            let limit = 1;
+                            if (numFreelancersStr.includes("2-3")) {
+                              limit = 3;
+                            } else if (numFreelancersStr.includes("2-5")) {
+                              limit = 5;
+                            } else if (
+                              numFreelancersStr.includes("More than 5") ||
+                              numFreelancersStr.includes("5+") ||
+                              numFreelancersStr.includes("many") ||
+                              numFreelancersStr.includes("4+")
+                            ) {
+                              limit = 999;
+                            } else {
+                              const match = numFreelancersStr.match(/^(\d+)/);
+                              if (match) {
+                                limit = parseInt(match[1]);
+                              }
+                            }
+
+                            const isMultiHire = limit > 1;
+                            const isBudgetExceeded = isMultiHire
+                              ? bidAmount > projectMaxBudget
+                              : (currentHiredSum + bidAmount) > projectMaxBudget;
+
+                            if (projectMaxBudget > 0 && isBudgetExceeded) {
                               triggerToast(
                                 "error",
                                 "Hiring budget limit exceeded!",
-                                `Total project budget is $${projectMaxBudget.toLocaleString()}, but you have already committed $${currentHiredSum.toLocaleString()} to active hired freelancers. Hiring this freelancer for $${bidAmount.toLocaleString()} would exceed the limit.`
+                                isMultiHire
+                                  ? `Total project budget is $${projectMaxBudget.toLocaleString()} per freelancer, but the candidate's bid of $${bidAmount.toLocaleString()} exceeds this limit.`
+                                  : `Total project budget is $${projectMaxBudget.toLocaleString()}, but you have already committed $${currentHiredSum.toLocaleString()} to active hired freelancers. Hiring this freelancer for $${bidAmount.toLocaleString()} would exceed the limit.`
                               );
                               return;
                             }
@@ -2785,41 +2812,57 @@ export default function ProjectMilestoneTracker({
                                     return (
                                       <div className="flex gap-2 w-full">
                                         {remainingFree > 0 ? (
-                                          <button
-                                            onClick={() => handleAcceptRevision(m.milestone_id, 0)}
-                                            disabled={milestoneActionLoading}
-                                            className="w-full text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 py-1.5 rounded-lg cursor-pointer transition-all disabled:opacity-50 text-center"
-                                          >
-                                            Accept (Free)
-                                          </button>
-                                        ) : (
-                                          <div className="flex gap-1.5 w-full">
-                                            <input
-                                              type="number"
-                                              placeholder="Fee ($)"
-                                              min={0}
-                                              value={customRevisionFee}
-                                              onChange={(e) => {
-                                                const val = e.target.value;
-                                                if (val !== "" && parseFloat(val) < 0) return;
-                                                setCustomRevisionFee(val);
-                                              }}
-                                              className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-center text-[10px] font-bold focus:outline-none focus:border-primary/40 min-w-0"
-                                            />
+                                          <div className="flex gap-2 w-full">
                                             <button
-                                              onClick={() => {
-                                                const feeVal = parseFloat(customRevisionFee);
-                                                if (isNaN(feeVal) || feeVal < 0) {
-                                                  alert("Please enter a valid extra fee (0 or greater).");
-                                                  return;
-                                                }
-                                                handleAcceptRevision(m.milestone_id, feeVal);
-                                                setCustomRevisionFee("");
-                                              }}
-                                              disabled={milestoneActionLoading || customRevisionFee === ""}
-                                              className="text-[10px] font-black text-white bg-primary hover:bg-primary-hover px-3.5 py-1.5 rounded-lg cursor-pointer transition-all disabled:opacity-50 border-0 shrink-0"
+                                              onClick={() => handleAcceptRevision(m.milestone_id, 0)}
+                                              disabled={milestoneActionLoading}
+                                              className="flex-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 py-1.5 rounded-lg cursor-pointer transition-all disabled:opacity-50 text-center"
                                             >
-                                              Set Fee
+                                              Accept (Free)
+                                            </button>
+                                            <button
+                                              onClick={() => setShowDisputeModal(true)}
+                                              className="flex-1 text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 py-1.5 rounded-lg cursor-pointer transition-all text-center"
+                                            >
+                                              File a Dispute
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <div className="flex flex-col gap-2 w-full">
+                                            <div className="flex gap-1.5 w-full">
+                                              <input
+                                                type="number"
+                                                placeholder="Fee ($)"
+                                                min={0}
+                                                value={customRevisionFee}
+                                                onChange={(e) => {
+                                                  const val = e.target.value;
+                                                  if (val !== "" && parseFloat(val) < 0) return;
+                                                  setCustomRevisionFee(val);
+                                                }}
+                                                className="flex-1 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-center text-[10px] font-bold focus:outline-none focus:border-primary/40 min-w-0"
+                                              />
+                                              <button
+                                                onClick={() => {
+                                                  const feeVal = parseFloat(customRevisionFee);
+                                                  if (isNaN(feeVal) || feeVal < 0) {
+                                                    alert("Please enter a valid extra fee (0 or greater).");
+                                                    return;
+                                                  }
+                                                  handleAcceptRevision(m.milestone_id, feeVal);
+                                                  setCustomRevisionFee("");
+                                                }}
+                                                disabled={milestoneActionLoading || customRevisionFee === ""}
+                                                className="text-[10px] font-black text-white bg-primary hover:bg-primary-hover px-3.5 py-1.5 rounded-lg cursor-pointer transition-all disabled:opacity-50 border-0 shrink-0"
+                                              >
+                                                Set Fee
+                                              </button>
+                                            </div>
+                                            <button
+                                              onClick={() => setShowDisputeModal(true)}
+                                              className="w-full text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 py-1.5 rounded-lg cursor-pointer transition-all text-center"
+                                            >
+                                              File a Dispute
                                             </button>
                                           </div>
                                         )}
@@ -2941,31 +2984,39 @@ export default function ProjectMilestoneTracker({
                                 <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-0.5">
                                   Freelancer has accepted the revision but requested an extra fee of <strong className="text-slate-800">${parseFloat(m.extra_revision_fee).toFixed(2)}</strong> because the free revisions limit ({activeContract.revisions_limit}) was reached.
                                 </p>
-                                <div className="flex gap-2 w-full">
-                                  <button
-                                     onClick={() => {
-                                       setActivePaymentModal({
-                                         type: "revision",
-                                         id: m.milestone_id,
-                                         amount: parseFloat(m.extra_revision_fee),
-                                         title: `Revision for: ${m.title}`
-                                       });
-                                       setModalPayMethod("stripe");
-                                       setModalPayError("");
-                                     }}
-                                     disabled={milestoneActionLoading}
-                                     className="flex-1 bg-primary hover:bg-primary-hover text-white text-[10px] font-extrabold py-1.5 rounded-lg shadow-sm border-0 cursor-pointer text-center"
-                                   >
-                                     Fund (${parseFloat(m.extra_revision_fee).toFixed(2)})
-                                   </button>
+                                <div className="flex flex-col gap-2 w-full">
+                                   <div className="flex gap-2 w-full">
+                                     <button
+                                        onClick={() => {
+                                          setActivePaymentModal({
+                                            type: "revision",
+                                            id: m.milestone_id,
+                                            amount: parseFloat(m.extra_revision_fee),
+                                            title: `Revision for: ${m.title}`
+                                          });
+                                          setModalPayMethod("stripe");
+                                          setModalPayError("");
+                                        }}
+                                        disabled={milestoneActionLoading}
+                                        className="flex-1 bg-primary hover:bg-primary-hover text-white text-[10px] font-extrabold py-1.5 rounded-lg shadow-sm border-0 cursor-pointer text-center"
+                                      >
+                                        Fund (${parseFloat(m.extra_revision_fee).toFixed(2)})
+                                      </button>
+                                      <button
+                                        onClick={() => handleRejectRevisionProposal(m.milestone_id)}
+                                        disabled={milestoneActionLoading}
+                                        className="flex-1 bg-rose-50 hover:bg-rose-100 border border-rose-250 text-rose-600 text-[10px] font-extrabold py-1.5 rounded-lg cursor-pointer transition-all text-center"
+                                      >
+                                        Decline
+                                      </button>
+                                   </div>
                                    <button
-                                     onClick={() => handleRejectRevisionProposal(m.milestone_id)}
-                                     disabled={milestoneActionLoading}
-                                     className="flex-1 bg-rose-50 hover:bg-rose-100 border border-rose-250 text-rose-600 text-[10px] font-extrabold py-1.5 rounded-lg cursor-pointer transition-all text-center"
-                                   >
-                                     Decline
-                                   </button>
-                                </div>
+                                      onClick={() => setShowDisputeModal(true)}
+                                      className="w-full text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 py-1.5 rounded-lg cursor-pointer transition-all text-center"
+                                    >
+                                      File a Dispute
+                                    </button>
+                                 </div>
                               </div>
                             ) : m.revision_status === "In Progress" ? (
                               <div className="flex flex-col gap-2 bg-primary/5 border border-primary/20 rounded-xl p-3.5 text-left max-w-[320px] ml-auto w-full">
@@ -3214,13 +3265,23 @@ export default function ProjectMilestoneTracker({
       {/* 6. Action Buttons Footer */}
       {activeContract && activeContract.status !== "Cancelled" && activeContract.status !== "Completed" && activeContract.status !== "Disputed" && (
         <div className="border-t border-slate-105 pt-4 flex justify-end gap-3 items-center">
-          {activeContract.status === "Hired" && userRole === "client" && (
-            <button
-              onClick={handleCancelContract}
-              className="px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
-            >
-              Cancel Contract & Refund Escrow
-            </button>
+          {userRole === "client" && (activeContract.status === "Work Started" || activeContract.status === "In Progress" || activeContract.status === "Hired") && (
+            <div className="flex gap-3">
+              {activeContract.status === "Hired" && (
+                <button
+                  onClick={handleCancelContract}
+                  className="px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  Cancel Contract & Refund Escrow
+                </button>
+              )}
+              <button
+                onClick={() => setShowDisputeModal(true)}
+                className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                File a Dispute
+              </button>
+            </div>
           )}
 
           {userRole === "freelancer" && (activeContract.status === "Work Started" || activeContract.status === "In Progress" || activeContract.status === "Hired") && (() => {
@@ -3315,6 +3376,12 @@ export default function ProjectMilestoneTracker({
                   </div>
 
                   <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowDisputeModal(true)}
+                      className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                    >
+                      File a Dispute
+                    </button>
                     <button
                       onClick={handleFreelancerCancelContract}
                       className="px-4 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"

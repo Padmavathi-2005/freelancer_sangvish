@@ -3305,7 +3305,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <i className="fa-solid fa-graduation-cap text-slate-400"></i>
-                  <span>Exp: <strong className="text-slate-700">{applyingJob.experience_level}</strong></span>
+                  <span>Exp: <strong className="text-slate-700">{applyingJob.experience_level && applyingJob.experience_level !== "null" ? applyingJob.experience_level : "Intermediate"}</strong></span>
                 </div>
                 {applyingJob.sub_category_name && (
                   <div className="flex items-center gap-1.5">

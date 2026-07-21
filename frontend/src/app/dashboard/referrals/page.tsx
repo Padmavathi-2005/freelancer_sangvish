@@ -16,6 +16,8 @@ interface ReferralData {
   referral_code: string;
   referred_users: ReferredUser[];
   total_earned: number;
+  signup_bonus?: number;
+  enable_signup_bonus?: boolean;
 }
 
 export default function ReferralsPage() {
@@ -217,8 +219,10 @@ export default function ReferralsPage() {
           <ol className="list-decimal pl-4 text-xs font-semibold text-slate-500 leading-relaxed space-y-1">
             <li>Copy your referral link above and share it with your professional network.</li>
             <li>Your friends use the link to register a new account on our platform.</li>
-            <li>Upon registering, they receive a **$5.00 signup bonus** directly into their wallet.</li>
-            <li>When they fund their first job milestone, pay for a gig, or clear a contract, you instantly receive a **$10.00 referral reward** in your wallet.</li>
+            {data?.enable_signup_bonus !== false && (
+              <li>Upon registering, they receive a **${(data?.signup_bonus ?? 5.00).toFixed(2)} signup bonus** (pending admin verification & approval) directly into their wallet.</li>
+            )}
+            <li>When they fund their first job milestone, pay for a gig, or clear a contract, you instantly receive a promoter payout reward in your wallet.</li>
           </ol>
         </div>
       </div>

@@ -18,7 +18,7 @@ export default function CTA() {
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 select-none">
           <a
             href="/register"
-            className="w-full sm:w-auto bg-[#0a5a54] hover:bg-[#073f3a] text-white font-bold text-sm sm:text-base px-8 py-4 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-[#0a5a54]/15 active:scale-[0.98] cursor-pointer text-center no-underline"
+            className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-bold text-sm sm:text-base px-8 py-4 rounded-xl transition-all duration-200 hover:shadow-lg active:scale-[0.98] cursor-pointer text-center no-underline"
           >
             {t("cta_btn_primary", "Get Started Now")}
           </a>

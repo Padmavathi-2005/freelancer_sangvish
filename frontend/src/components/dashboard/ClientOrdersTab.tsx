@@ -37,6 +37,223 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
 
   const { handleStartConversation } = useDashboard();
 
+  const [showDisputeModal, setShowDisputeModal] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("Work quality is poor");
+  const [disputeDescription, setDisputeDescription] = useState("");
+  const [disputeLoading, setDisputeLoading] = useState(false);
+  const [disputeReasons, setDisputeReasons] = useState<string[]>([
+    "Work not delivered",
+    "Work quality is poor",
+    "Requirements not followed",
+    "Freelancer is unresponsive",
+    "Other"
+  ]);
+
+  useEffect(() => {
+    const fetchDisputeReasons = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const setting = data.find((s: any) => s.setting_key === "client_dispute_reasons" || s.setting_key === "dispute_reasons");
+          if (setting) {
+            let val = setting.setting_value;
+            if (typeof val === "string") val = JSON.parse(val);
+            if (Array.isArray(val) && val.length > 0) {
+              setDisputeReasons(val);
+              setDisputeReason(val[0]);
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load dispute reasons:", e);
+      }
+    };
+    fetchDisputeReasons();
+  }, []);
+
+  const handleCancelGigOrder = async (contractId: number, budget: number) => {
+    if (!confirm(`Are you sure you want to cancel this gig order and request a 100% refund of your escrowed funds ($${budget.toFixed(2)})?\n\nThis action cannot be undone.`)) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/${contractId}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Gig order cancelled and refunded!");
+        await fetchClientApplications();
+        if (selectedGigOrderDetails) {
+          const updated = { ...selectedGigOrderDetails, status: "Cancelled", contract_status: "Cancelled" };
+          setSelectedGigOrderDetails(updated);
+          handleUpdateGigApplication(updated);
+        }
+      } else {
+        triggerToast("error", data.message || "Failed to cancel gig order.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Failed to cancel order.");
+    }
+  };
+
+  const handleRaiseDispute = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGigOrderDetails?.contract_id) return;
+    if (!disputeDescription.trim()) {
+      alert("Please provide a description of your dispute.");
+      return;
+    }
+
+    try {
+      setDisputeLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/${selectedGigOrderDetails.contract_id}/dispute`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          reason: disputeReason,
+          description: disputeDescription.trim()
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Dispute raised successfully!", "Check your inbox chat thread for the mediation interface.");
+        setShowDisputeModal(false);
+        setDisputeDescription("");
+        await fetchClientApplications();
+        if (selectedGigOrderDetails) {
+          const updated = { ...selectedGigOrderDetails, contract_status: "Disputed" };
+          setSelectedGigOrderDetails(updated);
+          handleUpdateGigApplication(updated);
+        }
+      } else {
+        triggerToast("error", data.message || "Failed to raise dispute.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Network error. Please try again.");
+    } finally {
+      setDisputeLoading(false);
+    }
+  };
+
+  const renderContractActions = (app: any) => {
+    if (!app || !app.contract_id) return null;
+
+    return (
+      <div className="flex flex-col gap-4 w-full mt-4">
+        {/* Under Review -> Display submitted files for the client */}
+        {app.contract_status === "Under Review" && app.submitted_files && (() => {
+          let filesList = [];
+          try {
+            filesList = JSON.parse(app.submitted_files);
+          } catch (e) {
+            if (app.submitted_files.includes("http")) {
+              filesList = app.submitted_files.split(",").map((url: string) => ({ name: "Submitted Deliverable", url }));
+            }
+          }
+          if (!Array.isArray(filesList) || filesList.length === 0) return null;
+          return (
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 text-left flex flex-col gap-3">
+              <div>
+                <p className="text-xs font-black text-slate-800">Submitted Deliverables for Review</p>
+                <p className="text-[10px] text-slate-500 font-semibold mt-0.5">
+                  The freelancer has submitted these files for your review. Please inspect them before marking the order as completed.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                {filesList.map((file: any, idx: number) => (
+                  <a
+                    key={idx}
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-900 transition hover:underline"
+                  >
+                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    <span>{file.name || "View Deliverable"}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Hired / Work hasn't started -> Client can cancel and get 100% refund */}
+        {app.contract_status === "Hired" && (
+          <div className="bg-rose-50/50 border border-rose-200/60 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-left">
+              <p className="text-xs font-black text-rose-800">Cancel Order & Refund Escrow</p>
+              <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-relaxed">
+                You can cancel this order and receive a 100% refund of your escrowed budget since the freelancer hasn't started work yet.
+              </p>
+            </div>
+            <button
+              onClick={() => handleCancelGigOrder(app.contract_id, parseFloat(app.price))}
+              className="bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-all shrink-0 cursor-pointer border-0"
+            >
+              Cancel Order
+            </button>
+          </div>
+        )}
+
+        {/* Active work -> Client can raise a dispute */}
+        {app.contract_status !== "Hired" &&
+         app.contract_status !== "Cancelled" &&
+         app.contract_status !== "Completed" &&
+         app.contract_status !== "Disputed" && (
+          <div className="bg-amber-50/55 border border-amber-250/50 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-left">
+              <p className="text-xs font-black text-amber-850">Need to raise a dispute?</p>
+              <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-relaxed">
+                If the freelancer is unresponsive or delivered work does not match specifications, you can raise an official dispute case for mediation.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDisputeModal(true)}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-all shrink-0 cursor-pointer border-0"
+            >
+              File a Dispute
+            </button>
+          </div>
+        )}
+
+        {/* Dispute opened */}
+        {app.contract_status === "Disputed" && (
+          <div className="bg-rose-50/55 border border-rose-250/50 rounded-xl p-5 text-left flex items-start gap-3">
+            <FiAlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-black text-rose-800">This order is under dispute arbitration</p>
+              <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-relaxed">
+                An active dispute case has been opened. Escrow disbursements are locked pending review. Please communicate in the mediation chat thread.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Cancelled */}
+        {app.contract_status === "Cancelled" && (
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 text-left flex items-start gap-3">
+            <FiX className="w-5 h-5 text-slate-500 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-black text-slate-700">This order has been cancelled</p>
+              <p className="text-[10px] text-slate-450 font-semibold mt-0.5 leading-relaxed">
+                The contract has been cancelled and all escrowed funds have been fully refunded back to your wallet.
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const handleOpenChat = async (freelancerId: number) => {
     await handleStartConversation(freelancerId);
     setActiveTab("inbox");
@@ -215,6 +432,9 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
 
   // ─── Payment Panel ─────────────────────────────────────────────────────────
   const renderPaymentPanel = (app: any) => {
+    if (!app) return null;
+    if (app.contract_id) return null;
+
     const { hasMilestones, upfront, total } = getUpfront(app);
 
     if (app.status === "Pending") {
@@ -650,6 +870,8 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
           </div>
         )}
 
+        {renderContractActions(selectedGigOrderDetails)}
+
         {/* Payment Panel */}
         {renderPaymentPanel(selectedGigOrderDetails)}
 
@@ -917,6 +1139,8 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 </div>
               )}
 
+              {renderContractActions(selectedGigOrderDetails)}
+
               {/* Payment Info / Action panel */}
               {renderPaymentPanel(selectedGigOrderDetails)}
 
@@ -934,6 +1158,79 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 />
               </div>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      {/* Raise Dispute Modal */}
+      {showDisputeModal && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-fadeIn"
+          style={{ background: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative flex flex-col gap-4 text-left">
+            <button
+              onClick={() => setShowDisputeModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
+
+            <div>
+              <h3 className="text-base font-black text-slate-800">Raise a Contract Dispute</h3>
+              <p className="text-xs text-slate-450 mt-1">Provide the details of your claim. An administrator will review the case for mediation.</p>
+            </div>
+
+            <form onSubmit={handleRaiseDispute} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Reason for Dispute</label>
+                <select
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-teal-700 transition"
+                >
+                  {disputeReasons.map((r, i) => (
+                    <option key={i} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Detailed Explanation</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={disputeDescription}
+                  onChange={(e) => setDisputeDescription(e.target.value)}
+                  placeholder="Explain the reason for the dispute, including what was not delivered or what expectations were missed..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-850 focus:outline-none focus:border-teal-700 transition resize-none leading-relaxed"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowDisputeModal(false)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-extrabold text-slate-600 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={disputeLoading}
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 border-0"
+                >
+                  {disputeLoading ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <span>Submit Dispute</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body

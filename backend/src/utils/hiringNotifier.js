@@ -53,9 +53,11 @@ export async function handlePostHireNotificationsAndActions({ proposalId, bidAmo
     // Parse num_freelancers to determine the limit
     let limit = 1;
     const numFreeStr = proposalDetails.num_freelancers || "1 freelancer";
-    if (numFreeStr.includes("2-5")) {
+    if (numFreeStr.includes("2-3")) {
+      limit = 3;
+    } else if (numFreeStr.includes("2-5")) {
       limit = 5;
-    } else if (numFreeStr.includes("More than 5") || numFreeStr.includes("many") || numFreeStr.includes("5+")) {
+    } else if (numFreeStr.includes("More than 5") || numFreeStr.includes("5+") || numFreeStr.includes("many") || numFreeStr.includes("4+")) {
       limit = 999;
     } else {
       const match = numFreeStr.match(/^(\d+)/);

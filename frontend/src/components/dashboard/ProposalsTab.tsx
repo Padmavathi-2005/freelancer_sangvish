@@ -1543,7 +1543,7 @@ export default function ProposalsTab({
               </div>
               <div className="flex items-center gap-1.5">
                 <i className="fa-solid fa-graduation-cap text-slate-400 text-sm"></i>
-                <span>Experience: <strong className="text-slate-700 font-bold">{selectedProjectDetails.experience_level}</strong></span>
+                <span>Experience: <strong className="text-slate-700 font-bold">{selectedProjectDetails.experience_level && selectedProjectDetails.experience_level !== "null" ? selectedProjectDetails.experience_level : "Intermediate"}</strong></span>
               </div>
               {selectedProjectDetails.duration && (
                 <div className="flex items-center gap-1.5">
@@ -1773,7 +1773,7 @@ export default function ProposalsTab({
                     </div>
                     <div className="flex items-center gap-1.5">
                       <i className="fa-solid fa-graduation-cap text-slate-400 text-sm"></i>
-                      <span>Experience: <strong className="text-slate-700 font-bold">{job.experience_level}</strong></span>
+                      <span>Experience: <strong className="text-slate-700 font-bold">{job.experience_level && job.experience_level !== "null" ? job.experience_level : "Intermediate"}</strong></span>
                     </div>
                   </div>
                 </div>
@@ -2109,7 +2109,7 @@ export default function ProposalsTab({
             </div>
             <div className="flex items-center gap-1.5">
               <i className="fa-solid fa-graduation-cap text-slate-400"></i>
-              <span>Experience: <strong className="text-slate-700">{proposal.job_experience_level}</strong></span>
+              <span>Experience: <strong className="text-slate-700">{proposal.job_experience_level && proposal.job_experience_level !== "null" ? proposal.job_experience_level : "Intermediate"}</strong></span>
             </div>
             {proposal.sub_category_name && (
               <div className="flex items-center gap-1.5">

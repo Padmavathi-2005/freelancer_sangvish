@@ -19,7 +19,7 @@ interface TransactionsTabProps {
   itemsPerPage: number;
 
   disputes: DisputeCase[];
-  resolveDispute: (id: string, resolution: DisputeCase["status"]) => void;
+  resolveDispute: (id: string, resolution: DisputeCase["status"], customPercent?: number) => void;
 }
 
 export default function TransactionsTab({
@@ -41,6 +41,57 @@ export default function TransactionsTab({
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
   const [loadingChatId, setLoadingChatId] = useState<string | null>(null);
+
+  const renderMessageText = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const lines = text.split("\n");
+    return lines.map((line, lIdx) => {
+      const parts = [];
+      let lastIndex = 0;
+      let match;
+      urlRegex.lastIndex = 0;
+      while ((match = urlRegex.exec(line)) !== null) {
+        const url = match[0];
+        const matchIndex = match.index;
+        if (matchIndex > lastIndex) {
+          parts.push(line.substring(lastIndex, matchIndex));
+        }
+        const isImage = /\.(png|jpe?g|gif|webp)(\?.*)?$/i.test(url);
+        if (isImage) {
+          parts.push(
+            <span key={matchIndex} className="block mt-1">
+              <a href={url} target="_blank" rel="noreferrer" className="text-teal-700 hover:underline font-extrabold block mb-1">
+                {url}
+              </a>
+              <img 
+                src={url} 
+                alt="Uploaded preview" 
+                className="max-h-24 max-w-full rounded-lg border border-slate-200 shadow-sm object-contain" 
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+              />
+            </span>
+          );
+        } else {
+          parts.push(
+            <a key={matchIndex} href={url} target="_blank" rel="noreferrer" className="text-teal-700 hover:underline font-extrabold break-all">
+              {url}
+            </a>
+          );
+        }
+        lastIndex = urlRegex.lastIndex;
+      }
+      if (lastIndex < line.length) {
+        parts.push(line.substring(lastIndex));
+      }
+      return (
+        <span key={lIdx} className="block min-h-[1em]">
+          {parts.length > 0 ? parts : line}
+        </span>
+      );
+    });
+  };
 
   const handleToggleChat = async (disputeId: string) => {
     if (activeChatId === disputeId) {
@@ -263,10 +314,43 @@ export default function TransactionsTab({
                           Payout Freelancer (100%)
                         </button>
                         <button
-                          onClick={() => resolveDispute(disp.id, "Resolved (Split)")}
+                          onClick={() => {
+                            const val = window.prompt(
+                              `Enter the Client Refund percentage (0 to 100%):\n(For example: 50 for a 50/50 split, or type a dollar amount like $150 to refund that exact amount of $${disp.amount})`,
+                              "50"
+                            );
+                            if (val === null) return;
+                            
+                            let percent = parseFloat(val.replace(/[%$]/g, "").trim());
+                            if (isNaN(percent) || percent < 0) {
+                              alert("Please enter a valid number.");
+                              return;
+                            }
+                            
+                            if (val.includes("$")) {
+                              percent = (percent / disp.amount) * 100;
+                            }
+                            
+                            if (percent < 0 || percent > 100) {
+                              alert(`Refund must be between 0% and 100% (or $0 and $${disp.amount}).`);
+                              return;
+                            }
+                            
+                            const clientRefund = disp.amount * (percent / 100);
+                            const freelancerPayout = disp.amount - clientRefund;
+                            
+                            if (window.confirm(
+                              `Confirm Split Decision:\n\n` +
+                              `• Client Refund: ${percent.toFixed(1)}% ($${clientRefund.toFixed(2)})\n` +
+                              `• Freelancer Payout: ${(100 - percent).toFixed(1)}% ($${freelancerPayout.toFixed(2)})\n\n` +
+                              `Proceed with resolution?`
+                            )) {
+                              resolveDispute(disp.id, "Resolved (Split)", percent);
+                            }
+                          }}
                           className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-800 transition-all text-xs font-bold rounded-lg cursor-pointer"
                         >
-                          Split 50 / 50
+                          Split / Custom
                         </button>
                         <button
                           onClick={() => handleToggleChat(disp.id)}
@@ -306,13 +390,32 @@ export default function TransactionsTab({
                           {chatMessages.map((msg, index) => {
                             let textContent = msg.message_text;
                             let isSystem = false;
-                            try {
-                              if (textContent.startsWith("{")) {
-                                const parsed = JSON.parse(textContent);
-                                textContent = parsed.message || parsed.details || textContent;
-                                isSystem = true;
-                              }
-                            } catch (e) {}
+                            
+                            if (textContent.startsWith("System:") || textContent.startsWith("[Buy2Lancer")) {
+                              isSystem = true;
+                            } else {
+                              try {
+                                if (textContent.startsWith("{")) {
+                                  const parsed = JSON.parse(textContent);
+                                  isSystem = true;
+                                  if (parsed.isDispute) {
+                                    if (parsed.type === "dispute_opened") {
+                                      textContent = `Dispute Raised. Reason: ${parsed.reason}. Description: "${parsed.description}". Escrow Held: $${parsed.budget}.`;
+                                    } else if (parsed.type === "dispute_resolved") {
+                                      textContent = `Dispute Resolved. Verdict: ${parsed.verdict}. Details: ${parsed.details}`;
+                                    } else if (parsed.type === "dispute_contested") {
+                                      textContent = `Dispute Contested. Explanation: "${parsed.explanation}"`;
+                                    } else if (parsed.type === "settlement_proposed") {
+                                      textContent = `Settlement Proposed. Split: Client ${parsed.client_refund_percent}%, Freelancer ${parsed.freelancer_pay_percent}%`;
+                                    } else {
+                                      textContent = parsed.message || parsed.details || textContent;
+                                    }
+                                  } else {
+                                    textContent = parsed.message || parsed.details || textContent;
+                                  }
+                                }
+                              } catch (e) {}
+                            }
 
                             const isClientSender = parseInt(String(msg.sender_id || '0')) === parseInt(String(disp.client_id || '0'));
 
@@ -334,7 +437,7 @@ export default function TransactionsTab({
                                     ? "CLIENT"
                                     : "FREELANCER"}
                                 </span>
-                                <p className="font-medium whitespace-pre-wrap">{textContent}</p>
+                                <div className={`font-medium whitespace-pre-wrap leading-relaxed ${isSystem ? "text-center" : "text-left"}`}>{renderMessageText(textContent)}</div>
                               </div>
                             );
                           })}

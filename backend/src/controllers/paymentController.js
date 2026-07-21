@@ -21,9 +21,11 @@ const recalculateJobStatus = async (jobId) => {
 
     const numFreelancersStr = jobRes.rows[0]?.num_freelancers || "1 freelancer";
     let limit = 1;
-    if (numFreelancersStr.includes("2-5")) {
+    if (numFreelancersStr.includes("2-3")) {
+      limit = 3;
+    } else if (numFreelancersStr.includes("2-5")) {
       limit = 5;
-    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("5+") || numFreelancersStr.includes("many")) {
+    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("5+") || numFreelancersStr.includes("many") || numFreelancersStr.includes("4+")) {
       limit = 999;
     } else {
       const match = numFreelancersStr.match(/^(\d+)/);
@@ -408,17 +410,20 @@ export const confirmStripePayment = async (req, res) => {
             "SELECT * FROM gig_application_milestones WHERE application_id = $1 ORDER BY id ASC",
             [parseInt(application_id)]
           );
+          let mIndex = 0;
           for (const m of appMilestones.rows) {
+            const payStatus = mIndex === 0 ? 'Funded' : 'Pending';
             await pool.query(
               `INSERT INTO contract_milestones (contract_id, title, description, amount, start_date, end_date, status, payment_status)
-               VALUES ($1, $2, $3, $4, $5, $6, 'Pending', 'Pending')`,
-              [contract.contract_id, m.title, m.description || null, parseFloat(m.amount), m.start_date, m.end_date]
+               VALUES ($1, $2, $3, $4, $5, $6, 'Pending', $7)`,
+              [contract.contract_id, m.title, m.description || null, parseFloat(m.amount), m.start_date, m.end_date, payStatus]
             );
+            mIndex++;
           }
         } else {
           await pool.query(
             `INSERT INTO contract_milestones (contract_id, title, amount, status, payment_status)
-             VALUES ($1, 'Entire Project Scope', $2, 'Pending', 'Pending')`,
+             VALUES ($1, 'Entire Project Scope', $2, 'Pending', 'Funded')`,
             [contract.contract_id, orderPrice]
           );
         }
@@ -440,7 +445,7 @@ export const confirmStripePayment = async (req, res) => {
 
     // Notify freelancer that payment was received
     try {
-      const { default: Notification } = await import("../models/Notification.js");
+      const { default: Notification } = await import("../models/notificationModel.js");
       await Notification.create({
         userId: app.freelancer_id,
         title: "Payment Received",
@@ -587,17 +592,20 @@ export const payWithWallet = async (req, res) => {
             "SELECT * FROM gig_application_milestones WHERE application_id = $1 ORDER BY id ASC",
             [parseInt(application_id)]
           );
+          let mIndex = 0;
           for (const m of appMilestones.rows) {
+            const payStatus = mIndex === 0 ? 'Funded' : 'Pending';
             await pool.query(
               `INSERT INTO contract_milestones (contract_id, title, description, amount, start_date, end_date, status, payment_status)
-               VALUES ($1, $2, $3, $4, $5, $6, 'Pending', 'Pending')`,
-              [contract.contract_id, m.title, m.description || null, parseFloat(m.amount), m.start_date, m.end_date]
+               VALUES ($1, $2, $3, $4, $5, $6, 'Pending', $7)`,
+              [contract.contract_id, m.title, m.description || null, parseFloat(m.amount), m.start_date, m.end_date, payStatus]
             );
+            mIndex++;
           }
         } else {
           await pool.query(
             `INSERT INTO contract_milestones (contract_id, title, amount, status, payment_status)
-             VALUES ($1, 'Entire Project Scope', $2, 'Pending', 'Pending')`,
+             VALUES ($1, 'Entire Project Scope', $2, 'Pending', 'Funded')`,
             [contract.contract_id, orderPrice]
           );
         }
@@ -615,6 +623,26 @@ export const payWithWallet = async (req, res) => {
     } catch (txErr) {
       await pool.query("ROLLBACK");
       throw txErr;
+    }
+
+    // Notify freelancer that payment was received
+    try {
+      const { default: Notification } = await import("../models/notificationModel.js");
+      await Notification.create({
+        userId: app.freelancer_id,
+        title: "Payment Received",
+        message: `Client has paid for the gig order "${app.gig_title}". The contract is now active.`,
+        type: "payment",
+        referenceId: application_id.toString(),
+      });
+      if (req.io) {
+        req.io.to(`user_${app.freelancer_id}`).emit("new_notification", {
+          title: "Payment Received",
+          message: `Client paid $${upfrontAmount.toFixed(2)} for "${app.gig_title}".`,
+        });
+      }
+    } catch (notifErr) {
+      console.error("Payment notification error:", notifErr);
     }
 
     return res.status(200).json({
@@ -868,9 +896,11 @@ const processProposalHireTransaction = async (proposal, upfrontAmount, method) =
     const numFreelancersStr = numFreelancersQuery.rows[0]?.num_freelancers || "1 freelancer";
     
     let limit = 1;
-    if (numFreelancersStr.includes("2-5")) {
+    if (numFreelancersStr.includes("2-3")) {
+      limit = 3;
+    } else if (numFreelancersStr.includes("2-5")) {
       limit = 5;
-    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("many") || numFreelancersStr.includes("5+")) {
+    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("many") || numFreelancersStr.includes("5+") || numFreelancersStr.includes("4+")) {
       limit = 999;
     } else {
       const match = numFreelancersStr.match(/^(\d+)/);
@@ -920,7 +950,7 @@ export const createStripeProposalSession = async (req, res) => {
     }
 
     const proposalRes = await pool.query(
-      `SELECT p.*, j.title as job_title, j.client_id, j.budget as job_budget, j.max_budget as job_max_budget, j.min_budget as job_min_budget
+      `SELECT p.*, j.title as job_title, j.client_id, j.budget as job_budget, j.max_budget as job_max_budget, j.min_budget as job_min_budget, j.num_freelancers
        FROM proposals p
        JOIN jobs j ON p.job_id = j.job_id
        WHERE p.proposal_id = $1`,
@@ -955,9 +985,32 @@ export const createStripeProposalSession = async (req, res) => {
     );
     const currentCommitted = parseFloat(contractSumRes.rows[0].total || 0);
     const maxBudget = parseFloat(proposal.job_max_budget || proposal.job_budget || 0);
-    if (maxBudget > 0 && (currentCommitted + bidAmount) > maxBudget) {
+    
+    const numFreelancersStr = proposal.num_freelancers || "1 freelancer";
+    let limit = 1;
+    if (numFreelancersStr.includes("2-3")) {
+      limit = 3;
+    } else if (numFreelancersStr.includes("2-5")) {
+      limit = 5;
+    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("5+") || numFreelancersStr.includes("many") || numFreelancersStr.includes("4+")) {
+      limit = 999;
+    } else {
+      const match = numFreelancersStr.match(/^(\d+)/);
+      if (match) {
+        limit = parseInt(match[1]);
+      }
+    }
+
+    const isMultiHire = limit > 1;
+    const isBudgetExceeded = isMultiHire
+      ? bidAmount > maxBudget
+      : (currentCommitted + bidAmount) > maxBudget;
+
+    if (maxBudget > 0 && isBudgetExceeded) {
       return res.status(400).json({
-        message: `Hiring limit exceeded. Total project budget is $${maxBudget.toLocaleString()}, but you have already committed $${currentCommitted.toLocaleString()} to active contracts. Hiring this candidate at $${bidAmount.toLocaleString()} would exceed the budget limit.`
+        message: isMultiHire
+          ? `Hiring limit exceeded. Total project budget is $${maxBudget.toLocaleString()} per freelancer, but the candidate's bid of $${bidAmount.toLocaleString()} exceeds this limit.`
+          : `Hiring limit exceeded. Total project budget is $${maxBudget.toLocaleString()}, but you have already committed $${currentCommitted.toLocaleString()} to active contracts. Hiring this candidate at $${bidAmount.toLocaleString()} would exceed the budget limit.`
       });
     }
 
@@ -1081,7 +1134,7 @@ export const payProposalDirectly = async (req, res) => {
     }
 
     const proposalRes = await pool.query(
-      `SELECT p.*, j.title as job_title, j.client_id, j.budget as job_budget, j.max_budget as job_max_budget, j.min_budget as job_min_budget
+      `SELECT p.*, j.title as job_title, j.client_id, j.budget as job_budget, j.max_budget as job_max_budget, j.min_budget as job_min_budget, j.num_freelancers
        FROM proposals p
        JOIN jobs j ON p.job_id = j.job_id
        WHERE p.proposal_id = $1`,
@@ -1116,9 +1169,32 @@ export const payProposalDirectly = async (req, res) => {
     );
     const currentCommitted = parseFloat(contractSumRes.rows[0].total || 0);
     const maxBudget = parseFloat(proposal.job_max_budget || proposal.job_budget || 0);
-    if (maxBudget > 0 && (currentCommitted + bidAmount) > maxBudget) {
+    
+    const numFreelancersStr = proposal.num_freelancers || "1 freelancer";
+    let limit = 1;
+    if (numFreelancersStr.includes("2-3")) {
+      limit = 3;
+    } else if (numFreelancersStr.includes("2-5")) {
+      limit = 5;
+    } else if (numFreelancersStr.includes("More than 5") || numFreelancersStr.includes("5+") || numFreelancersStr.includes("many") || numFreelancersStr.includes("4+")) {
+      limit = 999;
+    } else {
+      const match = numFreelancersStr.match(/^(\d+)/);
+      if (match) {
+        limit = parseInt(match[1]);
+      }
+    }
+
+    const isMultiHire = limit > 1;
+    const isBudgetExceeded = isMultiHire
+      ? bidAmount > maxBudget
+      : (currentCommitted + bidAmount) > maxBudget;
+
+    if (maxBudget > 0 && isBudgetExceeded) {
       return res.status(400).json({
-        message: `Hiring limit exceeded. Total project budget is $${maxBudget.toLocaleString()}, but you have already committed $${currentCommitted.toLocaleString()} to active contracts. Hiring this candidate at $${bidAmount.toLocaleString()} would exceed the budget limit.`
+        message: isMultiHire
+          ? `Hiring limit exceeded. Total project budget is $${maxBudget.toLocaleString()} per freelancer, but the candidate's bid of $${bidAmount.toLocaleString()} exceeds this limit.`
+          : `Hiring limit exceeded. Total project budget is $${maxBudget.toLocaleString()}, but you have already committed $${currentCommitted.toLocaleString()} to active contracts. Hiring this candidate at $${bidAmount.toLocaleString()} would exceed the budget limit.`
       });
     }
 
@@ -1387,6 +1463,16 @@ export const submitMilestoneWork = async (req, res) => {
       "UPDATE contract_milestones SET status = 'Under Review', submitted_files = $1, revision_status = 'None', updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $2",
       [submitted_files || null, milestoneId]
     );
+
+    // Synchronize contract status to 'Under Review' if this is a single milestone contract
+    const totalMilestonesRes = await pool.query("SELECT COUNT(*) FROM contract_milestones WHERE contract_id = $1", [contract.contract_id]);
+    const totalCount = parseInt(totalMilestonesRes.rows[0].count);
+    if (totalCount === 1) {
+      await pool.query(
+        "UPDATE contracts SET status = 'Under Review', progress = 100, submitted_files = $1, submitted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $2",
+        [submitted_files ? (typeof submitted_files === 'string' ? submitted_files : JSON.stringify(submitted_files)) : null, contract.contract_id]
+      );
+    }
 
     try {
       const { default: Notification } = await import("../models/notificationModel.js");

@@ -1,6 +1,7 @@
 import { API_URL } from "@/config/api";
 import React, { useState } from "react";
-import { FiCheck, FiDollarSign, FiClock, FiX } from "react-icons/fi";
+import { createPortal } from "react-dom";
+import { FiCheck, FiDollarSign, FiClock, FiX, FiExternalLink, FiFileText } from "react-icons/fi";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 
 interface GigMilestoneTrackerProps {
@@ -20,13 +21,16 @@ export default function GigMilestoneTracker({
   const [activeRevisionId, setActiveRevisionId] = useState<number | null>(null);
   const [milestoneFeedback, setMilestoneFeedback] = useState("");
   const [milestoneActionLoading, setMilestoneActionLoading] = useState(false);
+  const [submittingMilestoneId, setSubmittingMilestoneId] = useState<number | null>(null);
+  const [milestoneFiles, setMilestoneFiles] = useState<{ name: string; url: string }[]>([]);
+  const [isMilestoneUploading, setIsMilestoneUploading] = useState(false);
 
   const refreshApplication = async () => {
     try {
       const token = localStorage.getItem("token");
       const endpoint = userRole === "client" 
-        ? `${API_URL}/client/gigs/applications`
-        : `${API_URL}/gigs/applications`;
+        ? `${API_URL}/freelancer/client/gigs/applications`
+        : `${API_URL}/freelancer/gigs/applications`;
       
       const res = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}` }
@@ -43,17 +47,61 @@ export default function GigMilestoneTracker({
     }
   };
 
-  const handleSubmitMilestone = async (milestoneId: number) => {
+  const handleUploadMilestoneFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setIsMilestoneUploading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const filesArray = Array.from(e.target.files);
+      const newUploads: any[] = [];
+      for (const file of filesArray) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch(`${API_URL}/upload`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+          body: formData
+        });
+        if (res.ok) {
+          const data = await res.json();
+          newUploads.push({ name: file.name, url: data.url });
+        } else {
+          triggerToast("error", `Failed to upload file: ${file.name}`);
+        }
+      }
+      if (newUploads.length > 0) {
+        setMilestoneFiles(prev => [...prev, ...newUploads]);
+        triggerToast("success", `${newUploads.length} file(s) uploaded successfully!`);
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Error uploading files.");
+    } finally {
+      setIsMilestoneUploading(false);
+    }
+  };
+
+  const handleSubmitMilestone = async (milestoneId: number, files: { name: string; url: string }[] = []) => {
     try {
       setMilestoneActionLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/payments/contract/milestone/${milestoneId}/submit`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          submitted_files: files.length > 0 ? JSON.stringify(files) : null
+        })
       });
       const data = await res.json();
       if (res.ok) {
         triggerToast("success", "Work submitted successfully!", "Awaiting client review.");
+        setSubmittingMilestoneId(null);
+        setMilestoneFiles([]);
         await refreshApplication();
       } else {
         triggerToast("error", data.message || "Failed to submit work.");
@@ -130,13 +178,8 @@ export default function GigMilestoneTracker({
 
   const price = parseFloat(application.price);
   if (milestoneList.length === 0) {
-    const gm1 = Math.round(price * 0.3 * 100) / 100;
-    const gm2 = Math.round(price * 0.5 * 100) / 100;
-    const gm3 = Math.round((price - gm1 - gm2) * 100) / 100;
     milestoneList = [
-      { id: "gm1", title: "Project initiation and requirements analysis", percentage: 30, amount: gm1, completed: false, paid: false },
-      { id: "gm2", title: "Core implementation and layout staging", percentage: 50, amount: gm2, completed: false, paid: false },
-      { id: "gm3", title: "Final testing, polish and deployment handoff", percentage: 20, amount: gm3, completed: false, paid: false }
+      { id: "gm1", title: "Entire Gig Scope", percentage: 100, amount: price, completed: false, paid: false }
     ];
   }
 
@@ -277,6 +320,36 @@ export default function GigMilestoneTracker({
                         ⚠ Feedback: {m.feedback}
                       </p>
                     )}
+                    {hasContract && m.submitted_files && (() => {
+                      let filesList = [];
+                      try {
+                        filesList = JSON.parse(m.submitted_files);
+                      } catch (e) {
+                        if (m.submitted_files.includes("http")) {
+                          filesList = m.submitted_files.split(",").map((url: string) => ({ name: "Submitted Deliverable", url }));
+                        }
+                      }
+                      if (!Array.isArray(filesList) || filesList.length === 0) return null;
+                      return (
+                        <div className="mt-2.5 bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-left">
+                          <span className="text-[9px] font-black text-slate-405 uppercase tracking-widest block mb-2">Submitted Deliverables</span>
+                          <div className="flex flex-col gap-1.5">
+                            {filesList.map((file: any, idx: number) => (
+                              <a
+                                key={idx}
+                                href={file.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-900 transition hover:underline"
+                              >
+                                <FiExternalLink className="w-3.5 h-3.5" />
+                                <span className="truncate max-w-[250px]">{file.name || "View Deliverable"}</span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -293,7 +366,10 @@ export default function GigMilestoneTracker({
                         </span>
                       ) : (
                         <button
-                          onClick={() => handleSubmitMilestone(m.milestone_id)}
+                          onClick={() => {
+                            setSubmittingMilestoneId(m.milestone_id);
+                            setMilestoneFiles([]);
+                          }}
                           disabled={milestoneActionLoading}
                           className="bg-primary hover:bg-primary-hover text-white text-[10px] font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
                         >
@@ -384,6 +460,116 @@ export default function GigMilestoneTracker({
           );
         })}
       </div>
+      {/* Submit deliverables modal */}
+      {submittingMilestoneId !== null && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-fadeIn"
+          style={{ background: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FiFileText className="text-primary text-sm shrink-0" />
+                <h3 className="text-sm font-extrabold text-slate-800">Submit Milestone Deliverables</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setSubmittingMilestoneId(null);
+                  setMilestoneFiles([]);
+                }}
+                className="text-slate-404 hover:text-slate-650 font-bold text-xs bg-transparent border-0 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4 text-left">
+              <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-col gap-2">
+                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Milestone details</span>
+                {(() => {
+                  const currentM = milestoneList.find((m: any) => m.milestone_id === submittingMilestoneId || (m.id && m.id === submittingMilestoneId.toString()));
+                  return (
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-850">{currentM?.title || "Milestone Deliverable"}</h4>
+                      <p className="text-[10px] text-primary font-extrabold mt-0.5">${parseFloat(currentM?.amount || "0").toLocaleString()}</p>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div>
+                <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Upload Files / Deliverables</h5>
+                <div className="flex items-center gap-3">
+                  <label className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white font-extrabold text-[11px] rounded-xl cursor-pointer transition-all border-0 shadow-sm flex items-center gap-1.5 select-none">
+                    <span>Add Deliverable File</span>
+                    <input 
+                      type="file" 
+                      multiple 
+                      onChange={handleUploadMilestoneFile} 
+                      disabled={isMilestoneUploading}
+                      className="hidden" 
+                    />
+                  </label>
+                  {isMilestoneUploading && (
+                    <span className="text-xs text-slate-400 font-semibold italic animate-pulse">Uploading file(s)...</span>
+                  )}
+                </div>
+
+                {milestoneFiles.length > 0 && (
+                  <div className="mt-3 border-t border-slate-200/60 pt-2.5">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1.5">Files ready to submit ({milestoneFiles.length})</p>
+                    <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1">
+                      {milestoneFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs">
+                          <span className="font-semibold text-slate-700 truncate max-w-[250px]">{file.name}</span>
+                          <button 
+                            type="button"
+                            onClick={() => setMilestoneFiles(prev => prev.filter((_, i) => i !== idx))}
+                            className="text-rose-650 hover:text-rose-805 font-bold bg-transparent border-0 cursor-pointer text-xs"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 border-t border-slate-100 pt-4 mt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubmittingMilestoneId(null);
+                    setMilestoneFiles([]);
+                  }}
+                  disabled={milestoneActionLoading}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmitMilestone(submittingMilestoneId!, milestoneFiles)}
+                  disabled={milestoneActionLoading || isMilestoneUploading}
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50 border-0 text-center"
+                >
+                  {milestoneActionLoading ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-t-white border-primary/40 rounded-full animate-spin"></div>
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <span>Submit Deliverable</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

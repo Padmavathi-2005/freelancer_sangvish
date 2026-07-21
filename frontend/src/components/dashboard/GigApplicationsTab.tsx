@@ -31,6 +31,11 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
 
   const [activeFilterTab, setActiveFilterTab] = useState<"pending" | "active" | "completed" | "all">("all");
   const [selectedGigOrder, setSelectedGigOrder] = useState<any | null>(null);
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [submittingContractId, setSubmittingContractId] = useState<number | null>(null);
+  const [deliverableFiles, setDeliverableFiles] = useState<{ name: string; url: string }[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState("Work quality is poor");
   const [disputeDescription, setDisputeDescription] = useState("");
@@ -138,35 +143,86 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
     }
   };
 
-  const handleSubmitDeliverables = async (contractId: number) => {
+  const handleUploadDeliverableFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setIsUploading(true);
     try {
+      const token = localStorage.getItem("token");
+      const filesArray = Array.from(e.target.files);
+      const newUploads: any[] = [];
+      for (const file of filesArray) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch(`${API_URL}/upload`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          },
+          body: formData
+        });
+        if (res.ok) {
+          const data = await res.json();
+          newUploads.push({ name: file.name, url: data.url });
+        } else {
+          triggerToast("error", `Failed to upload file: ${file.name}`);
+        }
+      }
+      if (newUploads.length > 0) {
+        setDeliverableFiles(prev => [...prev, ...newUploads]);
+        triggerToast("success", `${newUploads.length} file(s) uploaded successfully!`);
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Error uploading files.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSubmitDeliverables = async (contractId: number, files: { name: string; url: string }[] = []) => {
+    try {
+      setIsSubmitting(true);
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/freelancer/contracts/${contractId}/request-payment`, {
         method: "PUT",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` 
+        },
+        body: JSON.stringify({
+          submitted_files: files.length > 0 ? JSON.stringify(files) : null
+        })
       });
       const data = await res.json();
       if (res.ok) {
         triggerToast("success", "Deliverables submitted!", "Notification sent to client for payment approval.");
+        setShowSubmitModal(false);
+        setDeliverableFiles([]);
+        setSubmittingContractId(null);
         await fetchFreelancerApplications();
-        // Update selectedGigOrder state
-        const refreshed = gigApplications.find(a => a.application_id === selectedGigOrder.application_id);
-        if (refreshed) {
-          setSelectedGigOrder({
-            ...refreshed,
-            contract_status: "Under Review"
-          });
-        } else {
-          setSelectedGigOrder((prev: any) => ({
-            ...prev,
-            contract_status: "Under Review"
-          }));
+        // Update selectedGigOrder state safely
+        if (selectedGigOrder) {
+          const refreshed = gigApplications.find(a => a.application_id === selectedGigOrder.application_id);
+          if (refreshed) {
+            setSelectedGigOrder({
+              ...refreshed,
+              contract_status: "Under Review"
+            });
+          } else {
+            setSelectedGigOrder((prev: any) => ({
+              ...prev,
+              contract_status: "Under Review"
+            }));
+          }
         }
       } else {
         triggerToast("error", data.message || "Failed to submit deliverables.");
       }
     } catch (err) {
+      console.error(err);
       triggerToast("error", "Network error. Failed to submit deliverables.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -479,9 +535,9 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                 </button>
                 <button
                   onClick={() => {
-                    if (confirm("Are you sure you want to submit your deliverables and request milestone payment?")) {
-                      handleSubmitDeliverables(app.contract_id);
-                    }
+                    setSubmittingContractId(app.contract_id);
+                    setDeliverableFiles([]);
+                    setShowSubmitModal(true);
                   }}
                   className="bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-all cursor-pointer border-0"
                 >
@@ -498,6 +554,38 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                 <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-relaxed">
                   You submitted the completed service files. The client has been notified to review and release your escrow payout.
                 </p>
+                {app.submitted_files && (() => {
+                  let filesList = [];
+                  try {
+                    filesList = JSON.parse(app.submitted_files);
+                  } catch (e) {
+                    if (app.submitted_files.includes("http")) {
+                      filesList = app.submitted_files.split(",").map((url: string) => ({ name: "Submitted Deliverable", url }));
+                    }
+                  }
+                  if (!Array.isArray(filesList) || filesList.length === 0) return null;
+                  return (
+                    <div className="mt-2.5 bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-left">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Submitted Deliverables</span>
+                      <div className="flex flex-col gap-1.5">
+                        {filesList.map((file: any, idx: number) => (
+                          <a
+                            key={idx}
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-900 transition hover:underline"
+                          >
+                            <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            <span className="truncate max-w-[250px]">{file.name || "View Deliverable"}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
               <button
                 onClick={() => setShowDisputeModal(true)}
@@ -755,6 +843,115 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
             </div>
           ))}
         </div>
+      )}
+      {/* Submit Deliverables Modal */}
+      {showSubmitModal && submittingContractId !== null && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-fadeIn"
+          style={{ background: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
+        >
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+            <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="text-sm font-extrabold text-slate-800">Submit Deliverables</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowSubmitModal(false);
+                  setDeliverableFiles([]);
+                  setSubmittingContractId(null);
+                }}
+                className="text-slate-404 hover:text-slate-650 font-bold text-xs bg-transparent border-0 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 flex flex-col gap-4 text-left">
+              <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-col gap-2">
+                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Order details</span>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-850">{selectedGigOrder?.gig_title || "Gig Order"}</h4>
+                  <p className="text-[10px] text-primary font-extrabold mt-0.5">${parseFloat(selectedGigOrder?.price || "0").toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div>
+                <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Upload Files / Deliverables</h5>
+                <div className="flex items-center gap-3">
+                  <label className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white font-extrabold text-[11px] rounded-xl cursor-pointer transition-all border-0 shadow-sm flex items-center gap-1.5 select-none font-bold">
+                    <span>Add Deliverable File</span>
+                    <input 
+                      type="file" 
+                      multiple 
+                      onChange={handleUploadDeliverableFile} 
+                      disabled={isUploading}
+                      className="hidden" 
+                    />
+                  </label>
+                  {isUploading && (
+                    <span className="text-xs text-slate-400 font-semibold italic animate-pulse">Uploading file(s)...</span>
+                  )}
+                </div>
+
+                {deliverableFiles.length > 0 && (
+                  <div className="mt-3 border-t border-slate-200/60 pt-2.5">
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1.5">Files ready to submit ({deliverableFiles.length})</p>
+                    <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1">
+                      {deliverableFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs">
+                          <span className="font-semibold text-slate-700 truncate max-w-[250px]">{file.name}</span>
+                          <button 
+                            type="button"
+                            onClick={() => setDeliverableFiles(prev => prev.filter((_, i) => i !== idx))}
+                            className="text-rose-650 hover:text-rose-805 font-bold bg-transparent border-0 cursor-pointer text-xs"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 border-t border-slate-100 pt-4 mt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSubmitModal(false);
+                    setDeliverableFiles([]);
+                    setSubmittingContractId(null);
+                  }}
+                  disabled={isSubmitting}
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmitDeliverables(submittingContractId!, deliverableFiles)}
+                  disabled={isSubmitting || isUploading}
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-md flex items-center justify-center gap-1.5 disabled:opacity-50 border-0 text-center font-bold"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-t-white border-primary/40 rounded-full animate-spin"></div>
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <span>Submit Deliverable</span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

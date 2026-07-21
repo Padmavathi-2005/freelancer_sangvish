@@ -52,8 +52,9 @@ export const register = async (req, res) => {
                 referred_by
             );
 
-        // Create wallet for the user
+        // Create wallet for the user (with initial balance of 0.00 since signup bonus is pending approval)
         let signupBonus = 0.00;
+        let isSignupBonusEnabled = true;
         if (referred_by) {
             signupBonus = 5.00; // Default fallback
             try {
@@ -63,8 +64,13 @@ export const register = async (req, res) => {
                     if (typeof settingsVal === "string") {
                         settingsVal = JSON.parse(settingsVal);
                     }
-                    if (settingsVal && settingsVal.signup_bonus !== undefined) {
-                        signupBonus = parseFloat(settingsVal.signup_bonus);
+                    if (settingsVal) {
+                        if (settingsVal.signup_bonus !== undefined) {
+                            signupBonus = parseFloat(settingsVal.signup_bonus);
+                        }
+                        if (settingsVal.enable_signup_bonus !== undefined) {
+                            isSignupBonusEnabled = settingsVal.enable_signup_bonus === true || settingsVal.enable_signup_bonus === "true";
+                        }
                     }
                 }
             } catch (err) {
@@ -72,19 +78,26 @@ export const register = async (req, res) => {
             }
         }
         await pool.query(
-            "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, $2, 'USD')",
-            [user.user_id, signupBonus]
+            "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD')",
+            [user.user_id]
         );
 
-        if (referred_by) {
-            const walletRes = await pool.query("SELECT wallet_id FROM wallets WHERE user_id = $1", [user.user_id]);
-            const walletId = walletRes.rows[0].wallet_id;
-
+        if (referred_by && isSignupBonusEnabled && signupBonus > 0) {
+            // Create a pending payout request for the referred user's signup bonus
             await pool.query(`
-                INSERT INTO wallet_transactions 
-                (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
-                VALUES (NULL, $1, $2, 'referral_signup_bonus', 'completed', 'Referral sign-up bonus reward')
-            `, [walletId, signupBonus]);
+                INSERT INTO referral_payouts (referrer_id, referred_id, amount, status, details)
+                VALUES ($1, $2, $3, 'pending', $4)
+            `, [
+                referred_by,
+                user.user_id,
+                signupBonus,
+                'pending',
+                JSON.stringify({
+                    type: "signup_bonus",
+                    trigger: "registration",
+                    timestamp: new Date().toISOString()
+                })
+            ]);
         }
 
         const token = jwt.sign(
@@ -599,8 +612,9 @@ export const socialLogin = async (req, res) => {
                 referred_by
             );
 
-            // Create wallet for the user
+            // Create wallet for the user (with initial balance of 0.00 since signup bonus is pending approval)
             let signupBonus = 0.00;
+            let isSignupBonusEnabled = true;
             if (referred_by) {
                 signupBonus = 5.00; // Default fallback
                 try {
@@ -610,8 +624,13 @@ export const socialLogin = async (req, res) => {
                         if (typeof settingsVal === "string") {
                             settingsVal = JSON.parse(settingsVal);
                         }
-                        if (settingsVal && settingsVal.signup_bonus !== undefined) {
-                            signupBonus = parseFloat(settingsVal.signup_bonus);
+                        if (settingsVal) {
+                            if (settingsVal.signup_bonus !== undefined) {
+                                signupBonus = parseFloat(settingsVal.signup_bonus);
+                            }
+                            if (settingsVal.enable_signup_bonus !== undefined) {
+                                isSignupBonusEnabled = settingsVal.enable_signup_bonus === true || settingsVal.enable_signup_bonus === "true";
+                            }
                         }
                     }
                 } catch (err) {
@@ -619,19 +638,26 @@ export const socialLogin = async (req, res) => {
                 }
             }
             await pool.query(
-                "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, $2, 'USD')",
-                [user.user_id, signupBonus]
+                "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD')",
+                [user.user_id]
             );
 
-            if (referred_by) {
-                const walletRes = await pool.query("SELECT wallet_id FROM wallets WHERE user_id = $1", [user.user_id]);
-                const walletId = walletRes.rows[0].wallet_id;
-
+            if (referred_by && isSignupBonusEnabled && signupBonus > 0) {
+                // Create a pending payout request for the referred user's signup bonus
                 await pool.query(`
-                    INSERT INTO wallet_transactions 
-                    (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
-                    VALUES (NULL, $1, $2, 'referral_signup_bonus', 'completed', 'Referral sign-up bonus reward')
-                `, [walletId, signupBonus]);
+                    INSERT INTO referral_payouts (referrer_id, referred_id, amount, status, details)
+                    VALUES ($1, $2, $3, 'pending', $4)
+                `, [
+                    referred_by,
+                    user.user_id,
+                    signupBonus,
+                    'pending',
+                    JSON.stringify({
+                        type: "signup_bonus",
+                        trigger: "registration",
+                        timestamp: new Date().toISOString()
+                    })
+                ]);
             }
         }
 
@@ -679,7 +705,10 @@ export const getReferrals = async (req, res) => {
                     ELSE 'pending_order'
                 END as status
             FROM users u
-            LEFT JOIN referral_payouts rp ON rp.referred_id = u.user_id AND rp.referrer_id = u.referred_by
+            LEFT JOIN referral_payouts rp 
+              ON rp.referred_id = u.user_id 
+              AND rp.referrer_id = u.referred_by
+              AND (rp.details->>'type' IS NULL OR rp.details->>'type' != 'signup_bonus')
             WHERE u.referred_by = $1
             ORDER BY u.created_at DESC
         `, [userId]);
@@ -697,10 +726,31 @@ export const getReferrals = async (req, res) => {
             totalEarned = parseFloat(earningsRes.rows[0].total || 0);
         }
 
+        // 4. Fetch settings configurations
+        let signupBonusAmount = 5.00;
+        let isSignupBonusEnabled = true;
+        try {
+            const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+            if (settingsRes.rows.length > 0) {
+                let settingsVal = settingsRes.rows[0].setting_value;
+                if (typeof settingsVal === "string") {
+                    settingsVal = JSON.parse(settingsVal);
+                }
+                if (settingsVal) {
+                    if (settingsVal.signup_bonus !== undefined) signupBonusAmount = parseFloat(settingsVal.signup_bonus);
+                    if (settingsVal.enable_signup_bonus !== undefined) {
+                        isSignupBonusEnabled = settingsVal.enable_signup_bonus === true || settingsVal.enable_signup_bonus === "true";
+                    }
+                }
+            }
+        } catch(e) {}
+
         res.status(200).json({
             referral_code: referralCode,
             referred_users: referredUsersRes.rows,
-            total_earned: totalEarned
+            total_earned: totalEarned,
+            signup_bonus: signupBonusAmount,
+            enable_signup_bonus: isSignupBonusEnabled
         });
     } catch (error) {
         res.status(500).json({ message: error.message });

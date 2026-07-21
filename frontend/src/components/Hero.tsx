@@ -221,7 +221,7 @@ export default function Hero() {
               </div>
               <button
                 type="submit"
-                className="bg-[#0a5a54] hover:bg-[#073f3a] text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all duration-200 shrink-0 active:scale-[0.98] cursor-pointer hover:shadow-lg hover:shadow-[#0a5a54]/10"
+                className="bg-primary hover:bg-primary-hover text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all duration-200 shrink-0 active:scale-[0.98] cursor-pointer hover:shadow-lg"
               >
                 {t("hero_search_btn", heroContent.hero_search_btn)}
               </button>

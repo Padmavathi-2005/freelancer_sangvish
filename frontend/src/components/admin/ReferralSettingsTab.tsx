@@ -16,6 +16,7 @@ interface ReferralSettingsTabProps {
 
 export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSettingsTabProps) {
   const [signupBonus, setSignupBonus] = useState<number>(5.00);
+  const [enableSignupBonus, setEnableSignupBonus] = useState<boolean>(true);
   const [tiers, setTiers] = useState<ReferralTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -85,6 +86,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             }
             if (val) {
               setSignupBonus(val.signup_bonus !== undefined ? parseFloat(val.signup_bonus) : 5.00);
+              setEnableSignupBonus(val.enable_signup_bonus !== undefined ? val.enable_signup_bonus === true || val.enable_signup_bonus === "true" : true);
               setTiers(Array.isArray(val.tiers) ? val.tiers : []);
               
               setBannerHeadline(val.banner_headline || "Invite Friends & Earn");
@@ -165,6 +167,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
 
       const payload = {
         signup_bonus: signupBonus,
+        enable_signup_bonus: enableSignupBonus,
         tiers: sortedTiers,
         banner_headline: bannerHeadline,
         banner_subline: bannerSubline,
@@ -234,18 +237,35 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
         </div>
       )}
 
-      {/* Row 1: Referred Sign-up reward */}
-      <div className="flex flex-col gap-1.5 max-w-xs">
-        <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Referred User Sign-up Bonus ($)</label>
-        <input
-          type="number"
-          step="0.01"
-          required
-          value={signupBonus}
-          onChange={(e) => setSignupBonus(parseFloat(e.target.value) || 0)}
-          className="border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-700 transition"
-        />
-        <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Amount credited immediately to referred user's wallet upon registration</span>
+      {/* Row 1: Referred Sign-up reward configuration */}
+      <div className="flex flex-col gap-4 max-w-xs">
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="enableSignupBonus"
+            checked={enableSignupBonus}
+            onChange={(e) => setEnableSignupBonus(e.target.checked)}
+            className="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500 cursor-pointer"
+          />
+          <label htmlFor="enableSignupBonus" className="text-xs font-extrabold text-slate-800 cursor-pointer">
+            Enable Referred Sign-up Bonus
+          </label>
+        </div>
+
+        {enableSignupBonus && (
+          <div className="flex flex-col gap-1.5 animate-fadeIn">
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Referred User Sign-up Bonus ($)</label>
+            <input
+              type="number"
+              step="0.01"
+              required
+              value={signupBonus}
+              onChange={(e) => setSignupBonus(parseFloat(e.target.value) || 0)}
+              className="border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-700 transition"
+            />
+            <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Amount credited to referred user's wallet after admin review and approval</span>
+          </div>
+        )}
       </div>
 
       {/* Row 2: Referrer Tiers Grid */}

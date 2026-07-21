@@ -45,6 +45,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     adminNotifications = [],
     setAdminNotifications,
     setHighlightedDisputeId,
+    transactionsSubTab,
     setTransactionsSubTab,
     categoriesSubTab,
     setCategoriesSubTab,
@@ -509,8 +510,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <button
-            onClick={() => setActiveTab("transactions")}
-            className={navBtnClass("transactions", ["disputes"])}
+            onClick={() => {
+              setActiveTab("transactions");
+              setTransactionsSubTab("transactions");
+            }}
+            className={navBtnClass("transactions", [], activeTab === "transactions" && transactionsSubTab !== "disputes")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiDollarSign className="w-4 h-4 shrink-0" />
@@ -523,7 +527,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               setActiveTab("transactions");
               setTransactionsSubTab("disputes");
             }}
-            className={navBtnClass("notifications", ["disputes"])}
+            className={navBtnClass("notifications", [], activeTab === "transactions" && transactionsSubTab === "disputes")}
           >
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">

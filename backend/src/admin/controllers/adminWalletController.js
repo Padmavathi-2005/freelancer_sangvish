@@ -267,6 +267,7 @@ export const getReferralPayouts = async (req, res) => {
         rp.status,
         rp.amount,
         rp.created_at,
+        rp.details,
         referrer.first_name || ' ' || COALESCE(referrer.last_name, '') as referrer_name,
         referrer.email as referrer_email,
         referred.first_name || ' ' || COALESCE(referred.last_name, '') as referred_name,
@@ -321,15 +322,26 @@ export const approveReferralPayout = async (req, res) => {
     const referrerId = payout.referrer_id;
     const referredUserId = payout.referred_id;
 
-    // 2. Fetch or create referrer's wallet
-    let referrerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [referrerId]);
-    let referrerWallet = referrerWalletRes.rows[0];
-    if (!referrerWallet) {
+    // Check payout type in details
+    let isSignupBonus = false;
+    try {
+      const details = typeof payout.details === "string" ? JSON.parse(payout.details) : (payout.details || {});
+      if (details.type === "signup_bonus") {
+        isSignupBonus = true;
+      }
+    } catch (e) {}
+
+    const recipientUserId = isSignupBonus ? referredUserId : referrerId;
+
+    // 2. Fetch or create recipient's wallet
+    let recipientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [recipientUserId]);
+    let recipientWallet = recipientWalletRes.rows[0];
+    if (!recipientWallet) {
       const ins = await pool.query(
         "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
-        [referrerId]
+        [recipientUserId]
       );
-      referrerWallet = ins.rows[0];
+      recipientWallet = ins.rows[0];
     }
 
     // 3. Fetch system wallet
@@ -352,22 +364,27 @@ export const approveReferralPayout = async (req, res) => {
         [payAmt, sysWallet.wallet_id]
       );
 
-      // b. Add to referrer wallet
+      // b. Add to recipient wallet
       await pool.query(
         "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
-        [payAmt, referrerWallet.wallet_id]
+        [payAmt, recipientWallet.wallet_id]
       );
 
       // c. Record transaction log
-      const descriptionMatch = `Referral reward for user_id = ${referredUserId}`;
+      const txType = isSignupBonus ? 'referral_signup_bonus' : 'referral_bonus';
+      const txDesc = isSignupBonus 
+        ? `Referral sign-up bonus reward`
+        : `Referral reward for user_id = ${referredUserId}`;
+
       await pool.query(
         `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
-         VALUES ($1, $2, $3, 'referral_bonus', 'completed', $4)`,
+         VALUES ($1, $2, $3, $4, 'completed', $5)`,
         [
           sysWallet.wallet_id,
-          referrerWallet.wallet_id,
+          recipientWallet.wallet_id,
           payAmt,
-          descriptionMatch
+          txType,
+          txDesc
         ]
       );
 
@@ -378,13 +395,40 @@ export const approveReferralPayout = async (req, res) => {
       );
 
       await pool.query("COMMIT");
+
+      // e. Dispatch notification
+      try {
+        const { default: Notification } = await import("../../../models/notificationModel.js");
+        const title = isSignupBonus ? "Sign-up Bonus Released! 🎁" : "Referral Reward Approved! 💰";
+        const message = isSignupBonus
+          ? `Your referral sign-up bonus of $${payAmt.toFixed(2)} has been approved and credited to your wallet.`
+          : `Your referral reward payout of $${payAmt.toFixed(2)} has been approved and credited to your wallet.`;
+
+        const notif = await Notification.create({
+          userId: recipientUserId,
+          title,
+          message,
+          type: "payment",
+          referenceId: payoutId.toString()
+        });
+
+        if (req.io) {
+          req.io.to(`user_${recipientUserId}`).emit("new_notification", notif);
+          req.io.to(`user_${recipientUserId}`).emit("wallet_balance_updated", { amount: payAmt });
+        }
+      } catch (notifErr) {
+        console.error("Failed to send referral payout notification:", notifErr);
+      }
+
     } catch (txErr) {
       await pool.query("ROLLBACK");
       throw txErr;
     }
 
     return res.status(200).json({
-      message: `Successfully approved referral payout of $${payAmt.toFixed(2)} to referrer #${referrerId}.`
+      message: isSignupBonus
+        ? `Successfully approved referral sign-up bonus of $${payAmt.toFixed(2)} to user #${recipientUserId}.`
+        : `Successfully approved referral payout of $${payAmt.toFixed(2)} to referrer #${recipientUserId}.`
     });
   } catch (error) {
     console.error("Error in approveReferralPayout:", error);

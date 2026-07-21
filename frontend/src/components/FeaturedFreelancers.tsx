@@ -310,7 +310,7 @@ export default function FeaturedFreelancers() {
                           router.push("/talent");
                         }
                       }}
-                      className="bg-[#0a5a54] hover:bg-[#073f3a] text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.97] hover:shadow-lg hover:shadow-[#0a5a54]/10 cursor-pointer border-none"
+                      className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.97] hover:shadow-lg cursor-pointer border-none"
                     >
                       Hire Now
                     </button>

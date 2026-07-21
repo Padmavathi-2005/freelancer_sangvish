@@ -33,6 +33,7 @@ interface ReferralPayout {
   referred_phone_verified: boolean;
   duplicate_phone_count: number;
   has_completed_order: boolean;
+  details?: string | any;
 }
 
 export default function AdminReferralsPage() {
@@ -89,11 +90,19 @@ export default function AdminReferralsPage() {
     fetchPayouts();
   }, []);
 
-  const handleApprove = async (payoutId: number) => {
-    if (!window.confirm("Are you sure you want to approve this referral payout? $10.00 will be paid to the referrer's wallet.")) return;
+  const handleApprove = async (p: ReferralPayout) => {
+    let detailsObj: any = {};
+    try {
+      detailsObj = typeof p.details === "string" ? JSON.parse(p.details) : (p.details || {});
+    } catch (e) {}
+    const isSignup = detailsObj.type === "signup_bonus";
+    const recipient = isSignup ? p.referred_name : p.referrer_name;
+    const targetRole = isSignup ? "referred user" : "promoter";
+    
+    if (!window.confirm(`Are you sure you want to approve this referral payout? $${parseFloat(p.amount).toFixed(2)} will be paid to the ${targetRole} (${recipient}).`)) return;
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await fetch(`${API_URL}/admin/referrals/payouts/${payoutId}/approve`, {
+      const res = await fetch(`${API_URL}/admin/referrals/payouts/${p.payout_id}/approve`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`
@@ -266,6 +275,7 @@ export default function AdminReferralsPage() {
                 }`}>
                   <th className="px-6 py-4">Referrer</th>
                   <th className="px-6 py-4">Referred Person</th>
+                  <th className="px-6 py-4">Type</th>
                   <th className="px-6 py-4">Verification Audit</th>
                   <th className="px-6 py-4">Fraud Flags</th>
                   <th className="px-6 py-4">Status</th>
@@ -310,6 +320,26 @@ export default function AdminReferralsPage() {
                             </span>
                           )}
                         </div>
+                      </td>
+
+                      {/* Payout Type */}
+                      <td className="px-6 py-4.5">
+                        {(() => {
+                          let detailsObj: any = {};
+                          try {
+                            detailsObj = typeof p.details === "string" ? JSON.parse(p.details) : (p.details || {});
+                          } catch (e) {}
+                          const isSignup = detailsObj.type === "signup_bonus";
+                          return (
+                            <span className={`inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border ${
+                              isSignup 
+                                ? "bg-violet-50 text-violet-700 border-violet-100 dark:bg-violet-950/20 dark:text-violet-400 dark:border-violet-900" 
+                                : "bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-950/20 dark:text-teal-400 dark:border-teal-900"
+                            }`}>
+                              {isSignup ? "Sign-up Reward" : "Promoter Reward"}
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Verification Audit details */}
@@ -383,7 +413,7 @@ export default function AdminReferralsPage() {
                         {p.status === "pending" ? (
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={() => handleApprove(p.payout_id)}
+                              onClick={() => handleApprove(p)}
                               className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-white bg-emerald-650 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-600/15 transition-all cursor-pointer ${
                                 !isLegit ? "opacity-75" : ""
                               }`}
