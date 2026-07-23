@@ -917,7 +917,9 @@ export const getSimilarGigs = async (req, res) => {
     const query = `
       SELECT 
         g.*,
-        COALESCE(u.display_name, u.name, TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), 'Freelancer') as freelancer_name,
+        COALESCE(NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''), u.username, 'Freelancer') as freelancer_name,
+        u.slug as freelancer_slug,
+        u.profile_image as freelancer_image,
         c.code as currency_code,
         c.symbol as currency_symbol,
         cat.category_name,

@@ -8,6 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuthModal } from "@/context/AuthModalContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/context/LanguageContext";
 import { 
   FiBriefcase, 
   FiClock, 
@@ -53,6 +54,7 @@ const getMaxDaysFromDuration = (durationStr: string): number => {
 };
 
 export default function ProjectDetailsPage() {
+  const { t } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const { openLoginModal } = useAuthModal();
@@ -445,7 +447,7 @@ export default function ProjectDetailsPage() {
           className="self-start text-xs font-black text-slate-500 hover:text-primary transition flex items-center gap-1.5 cursor-pointer bg-transparent border-none p-0"
         >
           <FiArrowLeft className="w-4 h-4" />
-          <span>Back to Projects</span>
+          <span>{t("btn_back_to_projects", "Back to Projects")}</span>
         </button>
 
         {/* Outer Grid */}
@@ -474,28 +476,28 @@ export default function ProjectDetailsPage() {
               {/* Badges strip */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 border border-slate-100 p-4 rounded-xl">
                 <div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Project Type</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{t("project_type", "Project Type")}</span>
                   <span className="text-xs font-extrabold text-slate-800 mt-1 block flex items-center gap-1">
                     <FiBriefcase className="w-3.5 h-3.5 text-primary" />
                     {job.project_type || "Fixed"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Experience Level</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{t("experience_level", "Experience Level")}</span>
                   <span className="text-xs font-extrabold text-slate-800 mt-1 block flex items-center gap-1">
                     <FiUser className="w-3.5 h-3.5 text-primary" />
                     {job.experience_level || "Intermediate"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Duration</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{t("duration", "Duration")}</span>
                   <span className="text-xs font-extrabold text-slate-800 mt-1 block flex items-center gap-1">
                     <FiClock className="w-3.5 h-3.5 text-primary" />
                     {job.duration || "1-3 months"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Location</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{t("location", "Location")}</span>
                   <span className="text-xs font-extrabold text-slate-808 mt-1 block flex items-center gap-1">
                     <FiMapPin className="w-3.5 h-3.5 text-primary" />
                     {job.location || "Remote"}
@@ -505,7 +507,7 @@ export default function ProjectDetailsPage() {
 
               {/* Description */}
               <div className="flex flex-col gap-2">
-                <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider">Project Description</h3>
+                <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider">{t("project_description", "Project Description")}</h3>
                 <p className="text-xs text-slate-600 font-bold leading-relaxed whitespace-pre-wrap">
                   {job.description}
                 </p>
@@ -514,7 +516,7 @@ export default function ProjectDetailsPage() {
               {/* Skills */}
               {Array.isArray(job.skills) && job.skills.length > 0 && (
                 <div className="flex flex-col gap-2 border-t border-slate-100 pt-5">
-                  <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider">Skills Required</h3>
+                  <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider">{t("skills_required", "Skills Required")}</h3>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {job.skills.map((skill: any, idx: number) => {
                       const name = typeof skill === "object" ? skill.skill_name : skill;
@@ -531,7 +533,7 @@ export default function ProjectDetailsPage() {
               {/* Languages */}
               {Array.isArray(job.languages) && job.languages.length > 0 && (
                 <div className="flex flex-col gap-2 border-t border-slate-100 pt-5">
-                  <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider">Preferred Languages</h3>
+                  <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider">{t("preferred_languages", "Preferred Languages")}</h3>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {job.languages.map((lang: any, idx: number) => {
                       const name = typeof lang === "object" ? lang.language_name : lang;
@@ -555,7 +557,7 @@ export default function ProjectDetailsPage() {
               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-1.5">
-                  <span className="text-emerald-600">★</span> Affiliate Share
+                  <span className="text-emerald-600">★</span> {t("affiliate_share", "Affiliate Share")}
                 </h3>
                 <p className="text-[11px] font-semibold text-slate-500 leading-normal">
                   Share this project link. If a user registers and books/completes this project, you will earn a recurring 10% commission on the platform service fee!
@@ -584,7 +586,7 @@ export default function ProjectDetailsPage() {
 
             {/* Budget / Hiring card */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Project Budget</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{t("project_budget", "Project Budget")}</span>
               <div className="flex items-center justify-center gap-1 text-primary font-black text-2xl">
                 <FiDollarSign className="w-6 h-6" />
                 <span>
@@ -606,7 +608,7 @@ export default function ProjectDetailsPage() {
             {/* Proposal submit form */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
-                Submit Proposal
+                {t("submit_proposal", "Submit Proposal")}
               </h3>
 
               {!localStorage.getItem("token") ? (
@@ -662,7 +664,7 @@ export default function ProjectDetailsPage() {
                 <form onSubmit={handleSubmitProposal} className="flex flex-col gap-4 text-left">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">
-                      {job.project_type === "Hourly" ? "Your Hourly Rate ($/hr)" : "Your Bid Amount ($)"}
+                      {job.project_type === "Hourly" ? t("your_hourly_rate", "Your Hourly Rate ($/hr)") : t("your_bid_amount", "Your Bid Amount ($)")}
                     </label>
                     <input
                       type="number"
@@ -676,13 +678,13 @@ export default function ProjectDetailsPage() {
                     {bidAmount && !isNaN(parseFloat(bidAmount)) && (
                       <div className="mt-2 text-[10px] text-slate-500 font-bold flex flex-col gap-1.5 bg-slate-100/60 rounded-xl p-3 border border-slate-200/50 animate-fadeIn">
                         <div className="flex justify-between items-center text-slate-600">
-                          <span>Platform Service Fee ({activePlanName === "Professional" ? "2.0%" : activePlanName === "Enterprise" ? "0.0%" : "5.0%"}):</span>
+                          <span>{t("platform_service_fee", "Platform Service Fee")} ({activePlanName === "Professional" ? "2.0%" : activePlanName === "Enterprise" ? "0.0%" : "5.0%"}):</span>
                           <span className="text-rose-600 font-bold">
                             -${(parseFloat(bidAmount) * (activePlanName === "Professional" ? 0.02 : activePlanName === "Enterprise" ? 0.00 : 0.05)).toFixed(2)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-emerald-700 border-t border-slate-200/80 pt-2 font-black">
-                          <span>Your Estimated Net Payout:</span>
+                          <span>{t("estimated_net_payout", "Your Estimated Net Payout")}:</span>
                           <span className="text-emerald-605 font-black text-xs">
                             +${(parseFloat(bidAmount) * (activePlanName === "Professional" ? 0.98 : activePlanName === "Enterprise" ? 1.00 : 0.95)).toFixed(2)}
                           </span>
@@ -693,7 +695,7 @@ export default function ProjectDetailsPage() {
 
                   {job.project_type !== "Hourly" && (
                     <div>
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estimated Delivery Days</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t("estimated_delivery_days", "Estimated Delivery Days")}</label>
                       <input
                         type="number"
                         required
@@ -708,7 +710,7 @@ export default function ProjectDetailsPage() {
 
                   <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cover Letter</label>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("cover_letter", "Cover Letter")}</label>
                       {/* AI Generate Button */}
                       <button
                         type="button"
@@ -725,7 +727,7 @@ export default function ProjectDetailsPage() {
                         ) : (
                           <>
                             <FiCpu className="w-3.5 h-3.5 shrink-0" />
-                            <span>AI Write</span>
+                            <span>{t("ai_write", "AI Write")}</span>
                           </>
                         )}
                       </button>
@@ -769,7 +771,7 @@ export default function ProjectDetailsPage() {
                     <textarea
                       required
                       rows={5}
-                      placeholder="Describe your relevant skills, approach, and why you are the best fit for this project..."
+                      placeholder={t("cover_letter_placeholder", "Describe your relevant skills, approach, and why you are the best fit for this project...")}
                       value={coverLetter}
                       onChange={(e) => setCoverLetter(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-850 focus:border-primary focus:outline-none resize-none h-28"
@@ -790,7 +792,7 @@ export default function ProjectDetailsPage() {
                     ) : (
                       <>
                         <FiSend className="w-3.5 h-3.5" />
-                        <span>Submit Proposal</span>
+                        <span>{t("submit_proposal", "Submit Proposal")}</span>
                       </>
                     )}
                   </button>
@@ -801,23 +803,23 @@ export default function ProjectDetailsPage() {
             {/* Client info card */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
-                About Client
+                {t("about_client", "About Client")}
               </h3>
               
               <div className="flex flex-col gap-3">
                 <div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Client Name</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{t("client_name", "Client Name")}</span>
                   <span className="text-xs font-extrabold text-slate-800 block mt-0.5">{job.company_name || job.client_name}</span>
                 </div>
                 {job.industry && (
                   <div>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Industry</span>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{t("industry", "Industry")}</span>
                     <span className="text-xs font-extrabold text-slate-800 block mt-0.5">{job.industry}</span>
                   </div>
                 )}
                 {job.website && (
                   <div>
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Website</span>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{t("website", "Website")}</span>
                     <a
                       href={job.website.startsWith("http") ? job.website : `https://${job.website}`}
                       target="_blank"
@@ -830,7 +832,7 @@ export default function ProjectDetailsPage() {
                   </div>
                 )}
                 <div>
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Member Since</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{t("member_since", "Member Since")}</span>
                   <span className="text-xs font-bold text-slate-500 block mt-0.5">
                     {new Date(job.client_member_since).toLocaleDateString(undefined, { year: 'numeric', month: 'long' })}
                   </span>
@@ -842,7 +844,7 @@ export default function ProjectDetailsPage() {
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-3 text-left">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-1.5 select-none">
                 <i className="fa-solid fa-share-nodes text-primary"></i>
-                <span>Share this Project</span>
+                <span>{t("share_this_project", "Share this Project")}</span>
               </h3>
               
               <div className="flex items-center gap-2 mt-1">
@@ -876,7 +878,9 @@ export default function ProjectDetailsPage() {
                   className="w-9 h-9 rounded-xl bg-slate-900/10 hover:bg-slate-900 text-slate-900 hover:text-white flex items-center justify-center transition-all duration-300 border border-slate-900/10 hover:border-slate-900 shadow-sm hover:shadow-slate-100 hover:-translate-y-0.5"
                   title="Share on X"
                 >
-                  <i className="fa-brands fa-x-twitter text-sm"></i>
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
                 </a>
 
                 {/* Facebook */}

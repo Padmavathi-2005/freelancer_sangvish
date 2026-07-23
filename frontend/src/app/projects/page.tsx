@@ -598,7 +598,7 @@ function ProjectsSearchContent() {
 
         {/* Left Side: Filtering Sidebar */}
         <aside className={`lg:col-span-3 space-y-6 ${showMobileFilter ? "block animate-fadeIn" : "hidden lg:block"}`}>
-          <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xxs space-y-5 sticky top-20">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xxs space-y-5 sticky top-24 h-fit">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
                 <FiSliders className="w-4 h-4 text-teal-700" />

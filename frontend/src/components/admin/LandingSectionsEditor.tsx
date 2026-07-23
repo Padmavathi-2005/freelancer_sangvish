@@ -34,8 +34,36 @@ export default function LandingSectionsEditor({
   // Dynamic sections lists
   const [whyChooseFeats, setWhyChooseFeats] = useState<any[]>([]);
   const [howItWorksSteps, setHowItWorksSteps] = useState<any[]>([]);
+  const [featuresPool, setFeaturesPool] = useState<any[]>([]);
   const [loadingFeats, setLoadingFeats] = useState(true);
   const [loadingSteps, setLoadingSteps] = useState(true);
+
+  // New feature item draft
+  const [newFeatTag, setNewFeatTag] = useState("");
+  const [newFeatTitle, setNewFeatTitle] = useState("");
+  const [newFeatDesc, setNewFeatDesc] = useState("");
+  const [newFeatBadge, setNewFeatBadge] = useState("");
+  const [newFeatIcon, setNewFeatIcon] = useState("zap");
+  const [newFeatImg, setNewFeatImg] = useState("");
+
+  const fetchFeaturesPool = async () => {
+    try {
+      const res = await fetch(`${API_URL}/settings`);
+      if (res.ok) {
+        const data = await res.json();
+        const item = data.find((s: any) => s.setting_key === "home2_features_list");
+        if (item && item.setting_value) {
+          let val = item.setting_value;
+          if (typeof val === "string") {
+            try { val = JSON.parse(val); } catch (e) {}
+          }
+          if (Array.isArray(val)) setFeaturesPool(val);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   // Fetch dynamic Why Choose Us
   const fetchWhyChooseFeats = async () => {
@@ -106,6 +134,17 @@ export default function LandingSectionsEditor({
         hero_popular_label: dbVals.hero_popular_label || (code === "EN" ? (frontendHeroContent?.hero_popular_label || "Popular: UI Design, React, AI Automation, SEO") : ""),
         search: dbVals.search || (code === "EN" ? (frontendHeroContent?.search || "Search") : ""),
 
+        // Home 2 Hero Section
+        home2_hero_title_prefix: dbVals.home2_hero_title_prefix || (code === "EN" ? "Transform" : ""),
+        home2_hero_title_highlight: dbVals.home2_hero_title_highlight || (code === "EN" ? "Your Team with" : ""),
+        home2_hero_title_suffix: dbVals.home2_hero_title_suffix || (code === "EN" ? "Top Talent Discovery" : ""),
+        home2_hero_subtitle: dbVals.home2_hero_subtitle || (code === "EN" ? "Flourish in a thriving freelance ecosystem dedicated to excellence and limitless opportunities." : ""),
+        home2_search_placeholder: dbVals.home2_search_placeholder || (code === "EN" ? "Search by keyword" : ""),
+        home2_filter_label: dbVals.home2_filter_label || (code === "EN" ? "Sellers" : ""),
+        home2_search_btn: dbVals.home2_search_btn || (code === "EN" ? "Search" : ""),
+        home2_popular_label: dbVals.home2_popular_label || (code === "EN" ? "Popular categories" : ""),
+        home2_category_chips: dbVals.home2_category_chips || (code === "EN" ? "Digital marketing, Analytics & Strategy, AI Services" : ""),
+
         // General headings
         trusted_title: dbVals.trusted_title || (code === "EN" ? "Trusted by Innovative Companies Worldwide" : ""),
         categories_title: dbVals.categories_title || (code === "EN" ? "Browse Popular Categories" : ""),
@@ -144,6 +183,7 @@ export default function LandingSectionsEditor({
     loadLangs();
     fetchWhyChooseFeats();
     fetchHowItWorksSteps();
+    fetchFeaturesPool();
   }, []);
 
   useEffect(() => {
@@ -337,7 +377,23 @@ export default function LandingSectionsEditor({
             activeSubTab === "hero" ? "text-teal-750 font-black border-b-2 border-teal-750" : "hover:text-slate-800"
           }`}
         >
-          Hero Section
+          Home 1 Hero
+        </button>
+        <button 
+          onClick={() => setActiveSubTab("home2_hero")}
+          className={`pb-3 transition-all relative ${
+            activeSubTab === "home2_hero" ? "text-teal-750 font-black border-b-2 border-teal-750" : "hover:text-slate-800"
+          }`}
+        >
+          Home 2 Hero
+        </button>
+        <button 
+          onClick={() => setActiveSubTab("home2_features")}
+          className={`pb-3 transition-all relative ${
+            activeSubTab === "home2_features" ? "text-teal-750 font-black border-b-2 border-teal-750" : "hover:text-slate-800"
+          }`}
+        >
+          Home 2 Features Pool
         </button>
         <button 
           onClick={() => setActiveSubTab("general_sections")}
@@ -438,6 +494,302 @@ export default function LandingSectionsEditor({
                 onChange={(e) => updateLangField(selectedContentLang, "hero_popular_label", e.target.value)}
                 className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition"
               />
+            </div>
+          </div>
+        )}
+
+        {activeSubTab === "home2_hero" && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Title Prefix ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Transform"
+                value={translationsByLang[selectedContentLang]?.home2_hero_title_prefix || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_hero_title_prefix", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-amber-600 uppercase tracking-wider">Title Highlighted Text ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Your Team with"
+                value={translationsByLang[selectedContentLang]?.home2_hero_title_highlight || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_hero_title_highlight", e.target.value)}
+                className="bg-amber-50 border border-amber-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-amber-500 font-bold"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Title Suffix ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Top Talent Discovery"
+                value={translationsByLang[selectedContentLang]?.home2_hero_title_suffix || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_hero_title_suffix", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 md:col-span-3">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hero Subtitle ({selectedContentLang})</label>
+              <textarea
+                rows={2}
+                placeholder="e.g. Flourish in a thriving freelance ecosystem..."
+                value={translationsByLang[selectedContentLang]?.home2_hero_subtitle || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_hero_subtitle", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Search Input Placeholder ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Search by keyword"
+                value={translationsByLang[selectedContentLang]?.home2_search_placeholder || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_search_placeholder", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Search Filter Label ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Sellers"
+                value={translationsByLang[selectedContentLang]?.home2_filter_label || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_filter_label", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Search Button Text ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Search"
+                value={translationsByLang[selectedContentLang]?.home2_search_btn || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_search_btn", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Popular Label ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Popular categories"
+                value={translationsByLang[selectedContentLang]?.home2_popular_label || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_popular_label", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Popular Category Chips (Comma Separated) ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="Digital marketing, Analytics & Strategy, AI Services"
+                value={translationsByLang[selectedContentLang]?.home2_category_chips || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_category_chips", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            {/* Home 2 Feature Banner Customization */}
+            <div className="flex flex-col gap-1.5 md:col-span-3 pt-4 border-t border-slate-200/60 mt-2">
+              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">Home 2 Featured Banner Section</span>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Banner Badge ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Verified Global Network"
+                value={translationsByLang[selectedContentLang]?.home2_banner_badge || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_banner_badge", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Banner Title ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Empowering Top Talent & Enterprise Teams Worldwide"
+                value={translationsByLang[selectedContentLang]?.home2_banner_title || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_banner_title", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Banner Button Text ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="e.g. Explore Talent Directory"
+                value={translationsByLang[selectedContentLang]?.home2_banner_btn || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_banner_btn", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Banner Image URL / Relative Path</label>
+              <input
+                type="text"
+                placeholder="/home2_banner.png"
+                value={translationsByLang[selectedContentLang]?.home2_banner_image || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_banner_image", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Home 2 Features Pool Subtab */}
+        {activeSubTab === "home2_features" && (
+          <div className="flex flex-col gap-6">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
+              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">Add New Feature to Pool</span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input
+                  type="text"
+                  placeholder="Category Tag (e.g. ESCROW SECURITY)"
+                  value={newFeatTag}
+                  onChange={(e) => setNewFeatTag(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Badge (e.g. 100% Safe)"
+                  value={newFeatBadge}
+                  onChange={(e) => setNewFeatBadge(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none"
+                />
+                <select
+                  value={newFeatIcon}
+                  onChange={(e) => setNewFeatIcon(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none"
+                >
+                  <option value="zap">Zap / Lightning</option>
+                  <option value="cpu">CPU / AI Smart</option>
+                  <option value="shield">Shield / Protection</option>
+                  <option value="credit_card">Credit Card / Payouts</option>
+                  <option value="user_check">User Check / Verified</option>
+                  <option value="message">Message / Chat</option>
+                  <option value="lock">Lock / Secure</option>
+                  <option value="award">Award / NDA</option>
+                  <option value="trending">Trending / Growth</option>
+                  <option value="clock">Clock / Fast Hire</option>
+                  <option value="globe">Globe / Worldwide</option>
+                  <option value="check">Checkmark / Guarantee</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Image URL / Relative Path (e.g. /home2_banner.png)"
+                  value={newFeatImg}
+                  onChange={(e) => setNewFeatImg(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none md:col-span-3"
+                />
+                <input
+                  type="text"
+                  placeholder="Feature Title"
+                  value={newFeatTitle}
+                  onChange={(e) => setNewFeatTitle(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none md:col-span-3"
+                />
+                <textarea
+                  placeholder="Feature Description"
+                  rows={2}
+                  value={newFeatDesc}
+                  onChange={(e) => setNewFeatDesc(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium focus:outline-none md:col-span-3"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!newFeatTitle.trim()) return;
+                  const newItem = {
+                    id: Date.now(),
+                    tag: newFeatTag.trim() || "PLATFORM FEATURE",
+                    badge: newFeatBadge.trim(),
+                    title: newFeatTitle.trim(),
+                    desc: newFeatDesc.trim(),
+                    iconName: newFeatIcon,
+                    image: newFeatImg.trim() || undefined
+                  };
+                  const updated = [...featuresPool, newItem];
+                  setFeaturesPool(updated);
+                  setNewFeatTag("");
+                  setNewFeatBadge("");
+                  setNewFeatTitle("");
+                  setNewFeatDesc("");
+                  setNewFeatImg("");
+
+                  try {
+                    await fetch(`${API_URL}/settings`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        setting_key: "home2_features_list",
+                        setting_value: JSON.stringify(updated)
+                      })
+                    });
+                  } catch (e) {
+                    console.error("Failed to save feature item:", e);
+                  }
+                }}
+                className="bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs px-4 py-2 rounded-lg transition self-start cursor-pointer border-none"
+              >
+                + Add Feature to Pool
+              </button>
+            </div>
+
+            {/* Current Pool List */}
+            <div className="flex flex-col gap-3">
+              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                Features Pool ({featuresPool.length} Total Items Available — System randomly displays 7 on each page load)
+              </span>
+
+              {featuresPool.map((feat, idx) => (
+                <div key={idx} className="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-teal-750 uppercase bg-teal-50 px-2 py-0.5 rounded">{feat.tag}</span>
+                      {feat.badge && <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">{feat.badge}</span>}
+                    </div>
+                    <h4 className="text-xs font-bold text-slate-900">{feat.title}</h4>
+                    <p className="text-[11px] text-slate-500">{feat.desc}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const updated = featuresPool.filter((_, i) => i !== idx);
+                      setFeaturesPool(updated);
+                      try {
+                        await fetch(`${API_URL}/settings`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            setting_key: "home2_features_list",
+                            setting_value: JSON.stringify(updated)
+                          })
+                        });
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    }}
+                    className="text-rose-600 hover:text-rose-800 text-xs font-bold px-3 py-1.5 rounded bg-rose-50 hover:bg-rose-100 border-none cursor-pointer shrink-0"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         )}

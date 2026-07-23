@@ -325,7 +325,7 @@ function TalentSearchContent() {
       {/* Search Type Switcher */}
       <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none overflow-x-auto max-w-full no-scrollbar">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 sm:gap-6 shrink-0 w-max sm:w-full">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Category</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("search_category", "Search Category")}</span>
           <div className="flex gap-2">
             <button
               onClick={() => {
@@ -386,7 +386,7 @@ function TalentSearchContent() {
 
         {/* Left Side: Filtering Sidebar */}
         <aside className={`lg:col-span-3 space-y-6 ${showMobileFilter ? "block animate-fadeIn" : "hidden lg:block"}`}>
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 sticky top-6">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 sticky top-24 h-fit">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
                 <FiSliders className="w-4 h-4 text-teal-700" />
@@ -418,9 +418,9 @@ function TalentSearchContent() {
             {/* Subcategory Filter */}
             {selectedCategory && activeSubcategories.length > 0 && (
               <div className="space-y-2">
-                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Subcategory</label>
+                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("subcategory", "Subcategory")}</label>
                 <CustomSelect
-                  placeholder="All Subcategories"
+                  placeholder={t("all_subcategories", "All Subcategories")}
                   value={selectedSubcategory}
                   options={activeSubcategories.map((s) => ({ value: s.sub_category_id.toString(), label: s.sub_category_name }))}
                   onChange={(val) => setSelectedSubcategory(val)}
@@ -430,18 +430,18 @@ function TalentSearchContent() {
 
             {/* Hourly Rate Range */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Hourly Rate Range ($)</label>
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("hourly_rate_range", "Hourly Rate Range ($)")}</label>
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="number"
-                  placeholder="Min"
+                  placeholder={t("min", "Min")}
                   value={minRate}
                   onChange={(e) => setMinRate(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
                 />
                 <input
                   type="number"
-                  placeholder="Max"
+                  placeholder={t("max", "Max")}
                   value={maxRate}
                   onChange={(e) => setMaxRate(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
@@ -451,25 +451,25 @@ function TalentSearchContent() {
 
             {/* Experience Level */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Experience Level</label>
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("experience_level", "Experience Level")}</label>
               <select
                 value={experienceLevel}
                 onChange={(e) => setExperienceLevel(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
               >
-                <option value="">Any Level</option>
-                <option value="Beginner">Entry Level</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Expert">Expert</option>
+                <option value="">{t("any_level", "Any Level")}</option>
+                <option value="Beginner">{t("entry_level", "Entry Level")}</option>
+                <option value="Intermediate">{t("intermediate", "Intermediate")}</option>
+                <option value="Expert">{t("expert", "Expert")}</option>
               </select>
             </div>
 
             {/* Specific Skill Filter */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Filter by Skill</label>
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("filter_by_skill", "Filter by Skill")}</label>
               <input
                 type="text"
-                placeholder="e.g. React, Figma..."
+                placeholder={t("filter_by_skill_placeholder", "e.g. React, Figma...")}
                 value={filterSkill}
                 onChange={(e) => setFilterSkill(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-750 focus:outline-none"
@@ -485,7 +485,7 @@ function TalentSearchContent() {
                   onChange={(e) => setVettedOnly(e.target.checked)}
                   className="rounded border-slate-300 text-primary focus:ring-primary w-4 h-4 cursor-pointer"
                 />
-                <span className="text-xs font-extrabold text-slate-700">Vetted Contractors Only</span>
+                <span className="text-xs font-extrabold text-slate-700">{t("vetted_contractors_only", "Vetted Contractors Only")}</span>
               </label>
             </div>
           </div>
@@ -502,7 +502,7 @@ function TalentSearchContent() {
               </span>
               <input
                 type="text"
-                placeholder="Search for freelancers..."
+                placeholder={t("search_freelancers_placeholder", "Search for freelancers...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
@@ -512,18 +512,18 @@ function TalentSearchContent() {
             {/* Stats and Sort */}
             <div className="flex flex-wrap items-center gap-4 shrink-0 select-none">
               <p className="text-slate-500 text-xs font-bold">
-                Showing <span className="text-slate-800 font-extrabold">{sortedFreelancers.length}</span> professionals
+                {t("showing", "Showing")} <span className="text-slate-800 font-extrabold">{sortedFreelancers.length}</span> {t("professionals", "professionals")}
               </p>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none">Sort By</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none">{t("sort_by", "Sort By")}</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
                 >
-                  <option value="recommended">Recommended</option>
-                  <option value="rate_desc">Hourly Rate: High to Low</option>
-                  <option value="rate_asc">Hourly Rate: Low to High</option>
+                  <option value="recommended">{t("sort_recommended", "Recommended")}</option>
+                  <option value="rate_desc">{t("sort_rate_high_low", "Hourly Rate: High to Low")}</option>
+                  <option value="rate_asc">{t("sort_rate_low_high", "Hourly Rate: Low to High")}</option>
                 </select>
               </div>
             </div>

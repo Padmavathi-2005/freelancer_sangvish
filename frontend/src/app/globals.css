@@ -615,13 +615,13 @@ textarea:-ms-input-placeholder {
 }
 
 /* Form controls (inputs, selects, buttons) */
-.dark input[type="text"],
-.dark input[type="number"],
-.dark input[type="email"],
-.dark input[type="password"],
-.dark input[type="url"],
-.dark select,
-.dark textarea {
+.dark input[type="text"]:not(.border-none):not(.border-0):not(.no-border),
+.dark input[type="number"]:not(.border-none):not(.border-0):not(.no-border),
+.dark input[type="email"]:not(.border-none):not(.border-0):not(.no-border),
+.dark input[type="password"]:not(.border-none):not(.border-0):not(.no-border),
+.dark input[type="url"]:not(.border-none):not(.border-0):not(.no-border),
+.dark select:not(.border-none):not(.border-0):not(.no-border),
+.dark textarea:not(.border-none):not(.border-0):not(.no-border) {
   background-color: #0f172a !important;
   border-color: #1e293b !important;
   color: #f1f5f9 !important;
@@ -1011,24 +1011,28 @@ body.dark blockquote.text-\[\#063c38\] {
 /* ──────────────────────────────────────────────────────────────────────── */
 
 /* Form controls (inputs, textareas, selects) and borders */
-input[type="text"],
-input[type="number"],
-input[type="email"],
-input[type="password"],
-input[type="url"],
-select,
-textarea {
+input[type="text"]:not(.border-none):not(.border-0):not(.no-border),
+input[type="number"]:not(.border-none):not(.border-0):not(.no-border),
+input[type="email"]:not(.border-none):not(.border-0):not(.no-border),
+input[type="password"]:not(.border-none):not(.border-0):not(.no-border),
+input[type="url"]:not(.border-none):not(.border-0):not(.no-border),
+select:not(.border-none):not(.border-0):not(.no-border),
+textarea:not(.border-none):not(.border-0):not(.no-border) {
   border: 1px solid #cbd5e1 !important; /* solid slate-300 border for input controls in light mode */
 }
 
-.dark input[type="text"],
-.dark input[type="number"],
-.dark input[type="email"],
-.dark input[type="password"],
-.dark input[type="url"],
-.dark select,
-.dark textarea {
+.dark input[type="text"]:not(.border-none):not(.border-0):not(.no-border),
+.dark input[type="number"]:not(.border-none):not(.border-0):not(.no-border),
+.dark input[type="email"]:not(.border-none):not(.border-0):not(.no-border),
+.dark input[type="password"]:not(.border-none):not(.border-0):not(.no-border),
+.dark input[type="url"]:not(.border-none):not(.border-0):not(.no-border),
+.dark select:not(.border-none):not(.border-0):not(.no-border),
+.dark textarea:not(.border-none):not(.border-0):not(.no-border) {
   border: 1px solid #475569 !important; /* solid slate-600 border for input controls in dark mode */
+}
+
+.border-none, .border-0, .no-border {
+  border: none !important;
 }
 
 /* Card boxes, settings card boxes, and sub-sidebar containers */

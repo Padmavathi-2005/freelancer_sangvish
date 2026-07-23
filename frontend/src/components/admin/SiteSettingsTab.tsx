@@ -26,6 +26,7 @@ export default function SiteSettingsTab({
   const [googlePlayUrl, setGooglePlayUrl] = useState("https://play.google.com");
   const [instagramUrl, setInstagramUrl] = useState("https://instagram.com");
   const [linkedinUrl, setLinkedinUrl] = useState("https://linkedin.com");
+  const [defaultHomePage, setDefaultHomePage] = useState("home_1");
 
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -115,11 +116,13 @@ export default function SiteSettingsTab({
             const rawGooglePlay = data.find((s: any) => s.setting_key === "google_play_url")?.setting_value;
             const rawInstagram = data.find((s: any) => s.setting_key === "instagram_url")?.setting_value;
             const rawLinkedin = data.find((s: any) => s.setting_key === "linkedin_url")?.setting_value;
+            const rawDefaultHome = data.find((s: any) => s.setting_key === "default_home_page")?.setting_value;
 
             if (rawAppStore) setAppStoreUrl(rawAppStore);
             if (rawGooglePlay) setGooglePlayUrl(rawGooglePlay);
             if (rawInstagram) setInstagramUrl(rawInstagram);
             if (rawLinkedin) setLinkedinUrl(rawLinkedin);
+            if (rawDefaultHome) setDefaultHomePage(typeof rawDefaultHome === "string" ? rawDefaultHome.replace(/"/g, "") : rawDefaultHome);
           }
       } catch (e) {
         console.error("Failed to load settings options", e);
@@ -160,6 +163,7 @@ export default function SiteSettingsTab({
       await handleSaveSetting("google_play_url", googlePlayUrl, "site_settings");
       await handleSaveSetting("instagram_url", instagramUrl, "site_settings");
       await handleSaveSetting("linkedin_url", linkedinUrl, "site_settings");
+      await handleSaveSetting("default_home_page", defaultHomePage, "site_settings");
 
       triggerToast("Settings Saved", "Site identity and SEO settings saved successfully!");
       setSaveStatus({ type: "success", text: "✓ Site settings saved successfully!" });
@@ -171,7 +175,7 @@ export default function SiteSettingsTab({
     }
   };
 
-  const inputClass = "w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm";
+  const inputClass = "w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm cursor-pointer";
   const labelClass = "text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1";
 
   // Helper to format/preview image URLs
@@ -203,7 +207,7 @@ export default function SiteSettingsTab({
             <FiGlobe className="w-5 h-5 text-slate-500" />
             <span>Site Identity & SEO Settings</span>
           </h3>
-          <p className="text-slate-505 text-xs mt-0.5 font-semibold">Configure site name, logo, favicon, social graph details, and meta descriptions for SEO.</p>
+          <p className="text-slate-505 text-xs mt-0.5 font-semibold">Configure site name, logo, default home page design, favicon, and social meta descriptions.</p>
         </div>
         <button
           onClick={handleBulkSave}
@@ -224,6 +228,57 @@ export default function SiteSettingsTab({
           {saveStatus.text}
         </div>
       )}
+
+      {/* HOME PAGE DESIGN VARIATIONS SECTION */}
+      <div className="border-b border-slate-100 pb-8">
+        <h4 className="text-sm font-extrabold text-slate-855 mb-1">Default Home Page Layout</h4>
+        <p className="text-xs text-slate-505 mb-5 font-semibold">Select the active landing page layout presented to visitors on the website home route (/)</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          <div className="md:col-span-7 flex flex-col gap-1">
+            <label className={labelClass}>Active Default Layout</label>
+            <select
+              value={defaultHomePage}
+              onChange={(e) => setDefaultHomePage(e.target.value)}
+              className={inputClass}
+            >
+              <option value="home_1">Home 1 — Classic Marketplace (Services, Projects, Pricing & FAQ)</option>
+              <option value="home_2">Home 2 — Modern Talent Portal (Vetted Freelancers & Top Services)</option>
+              <option value="home_3">Home 3 — Enterprise Hub (Dual Search, Live Tenders & Escrow)</option>
+            </select>
+          </div>
+
+          <div className="md:col-span-5 flex flex-wrap items-center gap-2.5 pt-2 sm:pt-0">
+            <a
+              href="/home-1"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-black bg-slate-100 hover:bg-slate-200 text-slate-700 transition border border-slate-200 shadow-xs"
+            >
+              <span>Preview Home 1</span>
+              <FiExternalLink className="w-3.5 h-3.5 text-slate-500" />
+            </a>
+            <a
+              href="/home-2"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-black bg-teal-50 hover:bg-teal-100 text-teal-800 transition border border-teal-200 shadow-xs"
+            >
+              <span>Preview Home 2</span>
+              <FiExternalLink className="w-3.5 h-3.5 text-teal-600" />
+            </a>
+            <a
+              href="/home-3"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-black bg-slate-900 hover:bg-slate-800 text-white transition border border-slate-800 shadow-xs"
+            >
+              <span>Preview Home 3</span>
+              <FiExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+            </a>
+          </div>
+        </div>
+      </div>
 
       {/* BRANDING ASSETS SECTION */}
       <div className="border-b border-slate-100 pb-8">

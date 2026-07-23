@@ -1,27 +1,61 @@
 "use client";
 
-import React, { useEffect } from "react";
-import Header from "@/components/Header";
-import Hero from "@/components/Hero";
-import Categories from "@/components/Categories";
-import FeaturedFreelancers from "@/components/FeaturedFreelancers";
-import PopularServices from "@/components/PopularServices";
-import RecentProjects from "@/components/RecentProjects";
-import Pricing from "@/components/Pricing";
-import WhyChoose from "@/components/WhyChoose";
-import HowItWorks from "@/components/HowItWorks";
-import SuccessStories from "@/components/SuccessStories";
-import FAQ from "@/components/FAQ";
-import CTA from "@/components/CTA";
-import Footer from "@/components/Footer";
+import React, { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { API_URL } from "@/config/api";
+import Home1 from "@/components/home/Home1";
+import Home2 from "@/components/home/Home2";
+import Home3 from "@/components/home/Home3";
 
-export default function Home() {
+function MainHomeContent() {
+  const searchParams = useSearchParams();
+  const presetParam = searchParams.get("preset");
+  const [homeLayout, setHomeLayout] = useState<string>("home_1");
+
+  useEffect(() => {
+    // If preset query param explicitly provided, override layout immediately
+    if (presetParam === "1" || presetParam === "home_1") {
+      setHomeLayout("home_1");
+      return;
+    }
+    if (presetParam === "2" || presetParam === "home_2") {
+      setHomeLayout("home_2");
+      return;
+    }
+    if (presetParam === "3" || presetParam === "home_3") {
+      setHomeLayout("home_3");
+      return;
+    }
+
+    // Otherwise fetch admin setting from API
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          data.forEach((setting: any) => {
+            let val = setting.setting_value;
+            if (typeof val === "string") {
+              try {
+                const parsed = JSON.parse(val);
+                if (typeof parsed === "string") val = parsed;
+              } catch (e) {}
+            }
+            if (setting.setting_key === "default_home_page" && val) {
+              setHomeLayout(val);
+            }
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load home page setting:", err);
+      }
+    };
+    fetchSettings();
+  }, [presetParam]);
+
   useEffect(() => {
     const fetchSEO = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL
-          ? `${process.env.NEXT_PUBLIC_API_URL}/api`
-          : "https://freelancer.sangvish.com/api";
         const res = await fetch(`${API_URL}/seo?route=/`);
         if (res.ok) {
           const seo = await res.json();
@@ -36,16 +70,6 @@ export default function Home() {
             descMeta.setAttribute("content", seo.meta_description || "");
             document.head.appendChild(descMeta);
           }
-          
-          let kwMeta = document.querySelector('meta[name="keywords"]');
-          if (kwMeta) {
-            kwMeta.setAttribute("content", seo.meta_keywords || "");
-          } else {
-            kwMeta = document.createElement("meta");
-            kwMeta.setAttribute("name", "keywords");
-            kwMeta.setAttribute("content", seo.meta_keywords || "");
-            document.head.appendChild(kwMeta);
-          }
         }
       } catch (err) {
         console.error("Failed to load page SEO dynamic metadata:", err);
@@ -54,32 +78,26 @@ export default function Home() {
     fetchSEO();
   }, []);
 
+  if (homeLayout === "home_2" || homeLayout === "2") {
+    return <Home2 />;
+  }
+
+  if (homeLayout === "home_3" || homeLayout === "3") {
+    return <Home3 />;
+  }
+
+  return <Home1 />;
+}
+
+export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-zinc-50 font-sans w-full max-w-full relative">
-      <Header />
-      <Hero />
-      <Categories />
-      <FeaturedFreelancers />
-      <PopularServices />
-      <RecentProjects />
-      <Pricing />
-      <WhyChoose />
-      <HowItWorks />
-      <SuccessStories />
-      <FAQ />
-      
-      {/* Merged Background Container for CTA and Footer */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 border-t border-slate-200/60 w-full mt-auto">
-        {/* Subtle decorative blurs */}
-        <div className="absolute top-[-20%] left-[-15%] w-[45rem] h-[45rem] bg-teal-500/5 rounded-full filter blur-[100px] pointer-events-none"></div>
-        <div className="absolute bottom-[-10%] right-[-15%] w-[45rem] h-[45rem] bg-emerald-500/5 rounded-full filter blur-[100px] pointer-events-none"></div>
-        
-        <div className="relative z-10 w-full">
-          <CTA />
-          <Footer transparent={true} />
-        </div>
+    <Suspense fallback={
+      <div className="flex flex-col min-h-screen bg-slate-50 justify-center items-center">
+        <div className="w-10 h-10 border-4 border-slate-200 border-t-teal-600 rounded-full animate-spin" />
       </div>
-    </div>
+    }>
+      <MainHomeContent />
+    </Suspense>
   );
 }
 

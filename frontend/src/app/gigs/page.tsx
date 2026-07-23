@@ -489,7 +489,7 @@ function GigsSearchContent() {
 
         {/* Left Side: Filtering Sidebar */}
         <aside className={`lg:col-span-3 space-y-6 ${showMobileFilter ? "block animate-fadeIn" : "hidden lg:block"}`}>
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 sticky top-6">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 sticky top-24 h-fit">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
                 <FiSliders className="w-4 h-4 text-teal-700" />

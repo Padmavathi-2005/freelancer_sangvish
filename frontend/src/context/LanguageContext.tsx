@@ -300,7 +300,43 @@ const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
     promoted: "PROMU",
     hire_expert_freelancers: "Engager des Freelances Experts",
     promoted_desc: "Obtenez des solutions sur mesure adaptées précisément à votre budget et à vos délais.",
-    hover_category_prompt: "Survolez n'importe quelle catégorie ci-dessus pour explorer les sous-catégories."
+    hover_category_prompt: "Survolez n'importe quelle catégorie ci-dessus pour explorer les sous-catégories.",
+    btn_back_to_projects: "Retour aux Projets",
+    project_type: "Type de Projet",
+    experience_level: "Niveau d'Expérience",
+    duration: "Durée Estimée",
+    location: "Emplacement",
+    project_description: "Description du Projet",
+    skills_required: "Compétences Requises",
+    preferred_languages: "Langues Préférées",
+    project_budget: "Budget du Projet",
+    submit_proposal: "Soumettre une Proposition",
+    about_client: "À Propos du Client",
+    client_name: "Nom du Client",
+    industry: "Secteur d'Activité",
+    website: "Site Web",
+    member_since: "Membre Depuis",
+    share_this_project: "Partager ce Projet",
+    search_category: "Catégorie de Recherche",
+    search_freelancers_placeholder: "Rechercher des freelances...",
+    showing: "Affichage de",
+    professionals: "professionnels",
+    sort_by: "Trier par",
+    sort_recommended: "Recommandé",
+    sort_rate_high_low: "Tarif Horaire : Du + Élevé au - Élevé",
+    sort_rate_low_high: "Tarif Horaire : Du - Élevé au + Élevé",
+    home2_hero_title_prefix: "Transformez",
+    home2_hero_title_highlight: "Votre Équipe avec",
+    home2_hero_title_suffix: "La Découverte des Meilleurs Talents",
+    home2_hero_subtitle: "Épanouissez-vous dans un écosystème freelance dynamique dédié à l'excellence et aux opportunités illimitées.",
+    home2_search_placeholder: "Rechercher par mot-clé",
+    home2_filter_label: "Vendeurs",
+    home2_search_btn: "Rechercher",
+    home2_popular_label: "Catégories populaires",
+    home2_category_chips: "Marketing numérique, Analyse et Stratégie, Services IA",
+    home2_cs_badge: "Meilleurs Plans à Choisir",
+    home2_cs_title: "Conçu Avec Attention et Proche de Vos Besoins",
+    home2_cs_subtitle: "Entrez dans un monde de possibilités illimitées, où les talents extraordinaires s'épanouissent."
   },
   ES: {
     nav_categories: "Categorías",
@@ -431,7 +467,18 @@ const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
 export function useLanguage() {
   const context = useContext(LanguageContext);
   if (context === undefined) {
-    throw new Error("useLanguage must be used within a LanguageProvider");
+    return {
+      currentLanguage: "EN",
+      currentCurrency: "USD",
+      activeLanguages: [{ code: "EN", name: "English", is_default: true }],
+      currencies: [{ code: "USD", symbol: "$", rate: 1 }],
+      t: (key: string, fallback?: string) => fallback || key,
+      changeLanguage: () => {},
+      changeCurrency: () => {},
+      convertPrice: (price: number | string) => (typeof price === "string" ? parseFloat(price) || 0 : price),
+      formatPrice: (price: number | string) => `$${(typeof price === "string" ? parseFloat(price) || 0 : price).toFixed(2)}`,
+      loading: false
+    };
   }
   return context;
 }

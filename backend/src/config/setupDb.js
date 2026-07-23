@@ -1168,6 +1168,15 @@ async function setupTables() {
       console.log("✅ Migration to 'form_field_options' complete.");
     }
 
+    // Seed default_home_page setting if missing
+    const homeCheck = await pool.query("SELECT 1 FROM settings WHERE setting_key = 'default_home_page'");
+    if (homeCheck.rows.length === 0) {
+      await pool.query(
+        "INSERT INTO settings (setting_key, setting_value, category) VALUES ('default_home_page', '\"home_1\"', 'site_settings')"
+      );
+      console.log("🌱 Seeded default_home_page setting = home_1");
+    }
+
   } catch (error) {
     console.error("❌ Error setting up database tables:", error.message);
   } finally {
