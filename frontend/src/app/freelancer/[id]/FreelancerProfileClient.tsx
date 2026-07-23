@@ -7,6 +7,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuthModal } from "@/context/AuthModalContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   FiMail,
   FiExternalLink,
@@ -22,10 +23,12 @@ import {
   FiGlobe,
   FiAlertTriangle,
   FiCheckCircle,
-  FiSliders
+  FiSliders,
+  FiUser
 } from "react-icons/fi";
 
 export default function FreelancerProfileClient() {
+  const { t } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -67,6 +70,7 @@ export default function FreelancerProfileClient() {
   const [selectedJobForInvite, setSelectedJobForInvite] = useState("");
   const [inviteBidAmount, setInviteBidAmount] = useState("");
   const [inviteDeliveryDays, setInviteDeliveryDays] = useState("7");
+  const [inviteOption, setInviteOption] = useState<"existing" | "new">("existing");
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -94,7 +98,7 @@ export default function FreelancerProfileClient() {
     fetchClientJobs();
   }, []);
 
-  const openJobs = clientJobs.filter((job: any) => job.status === "Open" || job.status === "Pending");
+  const openJobs = clientJobs.filter((job: any) => (job.status === "Open" || job.status === "Pending") && !job.contract_id);
   useEffect(() => {
     if (openJobs.length > 0 && !selectedJobForInvite) {
       setSelectedJobForInvite(openJobs[0].job_id.toString());
@@ -387,14 +391,14 @@ export default function FreelancerProfileClient() {
       )}
 
       {/* Breadcrumb Navigation */}
-      <div className="bg-slate-50 text-left border-b border-slate-200/50">
+      <div className="hidden sm:block bg-slate-50 text-left border-b border-slate-200/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
           <button
             onClick={() => router.back()}
             className="flex items-center gap-1.5 text-xs font-extrabold text-slate-500 hover:text-teal-700 transition-colors"
           >
             <FiArrowLeft className="w-4 h-4" />
-            <span>Back</span>
+            <span>{t("btn_back", "Back")}</span>
           </button>
         </div>
       </div>
@@ -414,58 +418,81 @@ export default function FreelancerProfileClient() {
               <img
                 src={user.profile_image.startsWith("/") && !user.profile_image.startsWith("/public") ? `https://freelancer.sangvish.com${user.profile_image}` : user.profile_image}
                 alt={user.name || "Freelancer"}
-                className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl object-cover border-4 border-white shadow-xl"
+                className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl object-cover border-4 border-white shadow-xl ring-2 ring-slate-200/60"
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-xl bg-teal-700/10 text-teal-800 flex items-center justify-center font-black text-3xl sm:text-4xl border-4 border-white shadow-xl">
+              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-3xl sm:text-4xl border-4 border-white shadow-xl ring-2 ring-slate-200/60 select-none">
                 {(user.name || user.email || "Freelancer").substring(0, 2).toUpperCase()}
               </div>
             )}
 
             {/* Profile Info */}
-            <div className="text-slate-800">
-              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2.5">
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{user.name || user.email || "Freelancer"}</h1>
+            <div className="text-slate-800 flex flex-col items-center md:items-start text-center md:text-left">
+              {/* Name & Verified Badge */}
+              <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                  {user.first_name || user.last_name
+                    ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+                    : user.display_name || user.name || user.email || "Freelancer"}
+                </h1>
+                <svg className="w-5 h-5 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+
+              {/* Status Badges Row */}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-2">
                 {user?.is_featured && (
-                  <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider animate-pulse shrink-0 flex items-center gap-1">
-                    <FiStar className="w-2.5 h-2.5 fill-white text-white shrink-0" />
+                  <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1">
+                    <FiStar className="w-3 h-3 fill-white text-white shrink-0" />
                     <span>{siteShortName}'s Choice</span>
                   </span>
                 )}
-                <svg className="w-6 h-6 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
                 {profile?.availability_status === "Available" ? (
-                  <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                    Available
+                  <span className="text-[10px] font-black bg-emerald-100/90 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    {t("available_now", "Available Now")}
                   </span>
                 ) : (
-                  <span className="text-[9px] font-black bg-amber-100 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                    Busy
+                  <span className="text-[10px] font-black bg-amber-100/90 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    {t("currently_busy", "Currently Busy")}
                   </span>
                 )}
               </div>
-              <p className="text-xs sm:text-sm text-teal-800 font-extrabold mt-1.5">
-                {profile?.role || "Elite Freelancer Professional"}
+
+              {/* Professional Title / Role */}
+              <p className="text-sm sm:text-base text-teal-800 font-extrabold mt-2">
+                {profile?.professional_title || profile?.role || "Elite Freelancer Professional"}
               </p>
               
-              {/* Quick Profile Stats */}
-              <div className="flex flex-wrap justify-center md:justify-start items-center gap-x-5 gap-y-1.5 mt-4 text-xxs sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                <div className="flex items-center gap-1">
-                  <FiStar className="w-4 h-4 text-amber-450 fill-amber-450" />
-                  <span className="text-slate-800 font-black">5.0 Rating</span>
-                  <span className="text-slate-400 font-bold">(15 jobs)</span>
+              {/* Quick Profile Stat Cards */}
+              <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 sm:gap-3 mt-4">
+                <div className="bg-white/90 border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-2xs flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                  <FiStar className="w-3.5 h-3.5 text-amber-450 fill-amber-450 shrink-0" />
+                  <span className="font-black">
+                    {reviews && reviews.length > 0 
+                      ? (reviews.reduce((acc: number, r: any) => acc + Number(r.rating), 0) / reviews.length).toFixed(1)
+                      : "5.0"}
+                  </span>
+                  <span className="text-slate-400 font-bold">
+                    ({Math.max(data?.completedJobs ?? 0, reviews.length)} {t("jobs", "jobs")})
+                  </span>
                 </div>
-                <div className="w-1 h-1 bg-slate-200 rounded-full" />
-                <div>
-                  <span className="text-slate-400">Hourly Rate: </span>
-                  <span className="text-slate-800 font-black">{profile?.hourly_rate ? `$${parseFloat(profile.hourly_rate).toFixed(0)}/hr` : "N/A"}</span>
+
+                <div className="bg-white/90 border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-2xs flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                  <span className="text-slate-400 font-semibold">{t("hourly_rate", "Hourly Rate")}:</span>
+                  <span className="font-black text-teal-700">
+                    {profile?.hourly_rate ? `$${parseFloat(profile.hourly_rate).toFixed(0)}/hr` : "N/A"}
+                  </span>
                 </div>
-                <div className="w-1 h-1 bg-slate-200 rounded-full" />
-                <div>
-                  <span className="text-slate-400">Exp Level: </span>
-                  <span className="text-slate-800 font-black">{profile?.experience_level || "Expert"}</span>
+
+                <div className="bg-white/90 border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-2xs flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                  <span className="text-slate-400 font-semibold">{t("exp_level", "Exp Level")}:</span>
+                  <span className="font-black text-slate-800">
+                    {profile?.experience_level || "Expert"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -476,10 +503,10 @@ export default function FreelancerProfileClient() {
             {loggedInUserId && (loggedInUserId === Number(user?.user_id) || loggedInUserId === Number(profile?.user_id)) ? (
               <button
                 onClick={() => router.push("/dashboard?tab=settings")}
-                className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+                className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-2"
               >
                 <FiSliders className="w-4 h-4" />
-                <span>Edit Profile</span>
+                <span>{t("btn_edit_profile", "Edit Profile")}</span>
               </button>
             ) : (
               <>
@@ -494,10 +521,10 @@ export default function FreelancerProfileClient() {
                       router.push(`/dashboard?tab=inbox&contactId=${id}`);
                     }
                   }}
-                  className="flex-1 md:flex-none justify-center bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs px-5 py-3 rounded-xl transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+                  className="flex-1 md:flex-none justify-center bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs px-5 py-3.5 rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-2"
                 >
                   <FiMessageSquare className="w-4 h-4 text-slate-400" />
-                  <span>Send Message</span>
+                  <span>{t("btn_send_message", "Send Message")}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -510,9 +537,10 @@ export default function FreelancerProfileClient() {
                       setShowHireModal(true);
                     }
                   }}
-                  className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-black text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border-none flex items-center gap-2"
                 >
-                  Hire Freelancer
+                  <FiUser className="w-4 h-4" />
+                  <span>{t("btn_hire_freelancer", "Hire Freelancer")}</span>
                 </button>
               </>
             )}
@@ -530,7 +558,7 @@ export default function FreelancerProfileClient() {
             {/* Professional Summary */}
             <div className="text-left">
               <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 mb-4 select-none">
-                Professional Bio
+                {t("professional_bio", "Professional Bio")}
               </h2>
               <p className="text-sm leading-relaxed text-slate-600 font-medium whitespace-pre-line text-left">
                 {profile?.bio || profile?.company_description || `Highly qualified and meticulous specialist in web application architectures and developer integration. Possessing extensive experience in resolving frontend performance layouts, developing secure backend API systems, and customizing comprehensive user interface designs. Committed to implementing code solutions aligned with user requirement specifications.`}
@@ -958,102 +986,179 @@ export default function FreelancerProfileClient() {
               <p className="text-slate-405 text-xs font-semibold mt-1">Inviting developer: {user.name}</p>
             </div>
 
-            <form onSubmit={handleHireSubmit} className="flex flex-col gap-4">
-              {openJobs.length > 0 ? (
-                <>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Select Project *</label>
-                    <select
-                      required
-                      value={selectedJobForInvite}
-                      onChange={(e) => setSelectedJobForInvite(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold"
-                    >
-                      {openJobs.map((job: any) => (
-                        <option key={job.job_id} value={job.job_id}>
-                          {job.title} (${parseFloat(job.budget).toFixed(2)})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            {/* Option Selector Tabs */}
+            <div className="flex bg-slate-100 p-1 rounded-xl mb-5 gap-1">
+              <button
+                type="button"
+                onClick={() => setInviteOption("existing")}
+                className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer border-none ${
+                  inviteOption === "existing"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800 bg-transparent"
+                }`}
+              >
+                Select Existing Project
+              </button>
+              <button
+                type="button"
+                onClick={() => setInviteOption("new")}
+                className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-black transition-all cursor-pointer border-none ${
+                  inviteOption === "new"
+                    ? "bg-white text-slate-900 shadow-xs"
+                    : "text-slate-500 hover:text-slate-800 bg-transparent"
+                }`}
+              >
+                Post a New Project
+              </button>
+            </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+            {inviteOption === "existing" ? (
+              <form onSubmit={handleHireSubmit} className="flex flex-col gap-4">
+                {openJobs.length > 0 ? (
+                  <>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Proposed Budget ($) *</label>
-                      <input
-                        type="number"
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Select Project *</label>
+                      <select
                         required
-                        min={1}
-                        value={inviteBidAmount}
-                        onChange={(e) => setInviteBidAmount(e.target.value)}
+                        value={selectedJobForInvite}
+                        onChange={(e) => setSelectedJobForInvite(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold"
-                      />
+                      >
+                        {openJobs.map((job: any) => (
+                          <option key={job.job_id} value={job.job_id}>
+                            {job.title} (${parseFloat(job.budget).toFixed(2)})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Proposed Budget ($) *</label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          value={inviteBidAmount}
+                          onChange={(e) => setInviteBidAmount(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Delivery Time (Days) *</label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          value={inviteDeliveryDays}
+                          onChange={(e) => setInviteDeliveryDays(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold"
+                        />
+                      </div>
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Delivery Time (Days) *</label>
-                      <input
-                        type="number"
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Project Details / Message *</label>
+                      <textarea
                         required
-                        min={1}
-                        value={inviteDeliveryDays}
-                        onChange={(e) => setInviteDeliveryDays(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold"
+                        rows={4}
+                        placeholder="Introduce your project and outline the specific details, duration, requirements, or proposed rate..."
+                        value={hireMessage}
+                        onChange={(e) => setHireMessage(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold resize-none"
                       />
                     </div>
-                  </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Project Details / Message *</label>
-                    <textarea
-                      required
-                      rows={4}
-                      placeholder="Introduce your project and outline the specific details, duration, requirements, or proposed rate..."
-                      value={hireMessage}
-                      onChange={(e) => setHireMessage(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold resize-none"
-                    />
-                  </div>
+                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowHireModal(false);
+                          setHireMessage("");
+                        }}
+                        className="px-5 py-2.5 rounded-xl font-bold text-xs border border-slate-200 text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={hiringSubmitting}
+                        className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        {hiringSubmitting ? "Sending..." : "Submit Hire Offer"}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-center py-6">
+                    <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 mb-4 shadow-xs">
+                      <FiBriefcase className="w-7 h-7" />
+                    </div>
+                    <h4 className="text-sm font-black text-slate-850 mb-1.5">No Active Projects Found</h4>
+                    <p className="text-slate-500 text-xs font-medium max-w-xs mb-6 leading-relaxed">
+                      You don't have any open projects to select right now. Switch to Client mode or click <span className="font-bold text-teal-700">'Post a New Project'</span> above to create one.
+                    </p>
 
-                  <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 mt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowHireModal(false);
-                        setHireMessage("");
-                      }}
-                      className="px-5 py-2.5 rounded-xl font-bold text-xs border border-slate-200 text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={hiringSubmitting}
-                      className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                    >
-                      {hiringSubmitting ? "Sending..." : "Submit Hire Offer"}
-                    </button>
+                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                      <button
+                        type="button"
+                        onClick={() => setShowHireModal(false)}
+                        className="w-full sm:w-1/3 py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl text-xs transition-all cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setInviteOption("new")}
+                        className="w-full sm:w-2/3 py-3 bg-gradient-to-r from-primary to-cyan-600 hover:brightness-110 text-white rounded-xl text-xs font-extrabold shadow-md transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 border-0"
+                      >
+                        <FiBriefcase className="w-4 h-4" />
+                        <span>Post a New Project Now</span>
+                      </button>
+                    </div>
                   </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center text-center py-6">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-4 border border-slate-200">
-                    <i className="fa-solid fa-folder-open text-lg"></i>
-                  </div>
-                  <h4 className="text-xs font-extrabold text-slate-800 mb-1">No open projects found</h4>
-                  <p className="text-slate-405 text-xxs font-semibold max-w-xs mb-6">
-                    You need to post a project first before you can send an invite to {user.name || "Freelancer"}.
-                  </p>
+                )}
+              </form>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-6">
+                <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 mb-4 shadow-xs">
+                  <FiBriefcase className="w-7 h-7" />
+                </div>
+                <h4 className="text-sm font-black text-slate-850 mb-1.5">Post a New Project Request</h4>
+                <p className="text-slate-500 text-xs font-medium max-w-xs mb-6 leading-relaxed">
+                  Post your project requirements in the Client Dashboard to send a targeted hiring invitation to <span className="font-bold text-slate-800">{user.name || "this freelancer"}</span>.
+                </p>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
                   <button
                     type="button"
                     onClick={() => setShowHireModal(false)}
-                    className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer text-center border-0"
+                    className="w-full sm:w-1/3 py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl text-xs transition-all cursor-pointer"
                   >
-                    Go Back
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        localStorage.setItem("activeRole", "client");
+                        localStorage.setItem("userRole", "client");
+                        localStorage.setItem("role", "client");
+                        window.dispatchEvent(new Event("roleChange"));
+                        window.dispatchEvent(new Event("storage"));
+                      } catch (e) {}
+                      setShowHireModal(false);
+                      router.push("/dashboard?tab=my-projects&action=create");
+                    }}
+                    className="w-full sm:w-2/3 py-3 bg-gradient-to-r from-primary to-cyan-600 hover:brightness-110 text-white rounded-xl text-xs font-extrabold shadow-md transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 border-0"
+                  >
+                    <FiBriefcase className="w-4 h-4" />
+                    <span>Go to Client Dashboard to Create</span>
                   </button>
                 </div>
-              )}
-            </form>
+              </div>
+            )}
           </div>
         </div>
       )}

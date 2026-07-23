@@ -214,7 +214,6 @@ Logo: ${siteLogo}`;
 Congratulations! You have been successfully hired by ${clientName} for the project "${proposalDetails.job_title}"!
 - Bid Amount: $${parseFloat(bidAmount).toFixed(2)}
 - Delivery Timeline: ${proposalDetails.delivery_days} days
-Site Logo: ${siteLogo}
 Please coordinate details and milestones in this chat room.`;
         const msg = await MessageModel.createMessage(conversationId, proposalDetails.client_id, platformMsg);
 

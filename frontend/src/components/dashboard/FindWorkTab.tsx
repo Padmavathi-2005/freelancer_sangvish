@@ -182,11 +182,25 @@ export default function FindWorkTab({
   const displayedJobs = showAiMatches
     ? aiMatches
     : allJobs.filter((job) => {
-        const matchesSearch =
-          job.title.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
-          job.description.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
-          (job.category_name && job.category_name.toLowerCase().includes(jobSearchQuery.toLowerCase())) ||
-          (job.sub_category_name && job.sub_category_name.toLowerCase().includes(jobSearchQuery.toLowerCase()));
+        let matchesSearch = true;
+        if (jobSearchQuery.trim()) {
+          const q = jobSearchQuery.toLowerCase().trim();
+          const matchTitle = job.title?.toLowerCase().includes(q);
+          const matchDesc = job.description?.toLowerCase().includes(q);
+          const matchCategory = job.category_name?.toLowerCase().includes(q);
+          const matchSubCat = job.sub_category_name?.toLowerCase().includes(q);
+          const matchClient = (job.client_name || job.username || job.posted_by || "")?.toLowerCase().includes(q);
+          const matchBudget = (job.budget || job.max_budget) ? `${job.budget || job.max_budget}`.includes(q) || `$${job.budget || job.max_budget}`.includes(q) : false;
+          const matchType = job.project_type?.toLowerCase().includes(q);
+          const matchDuration = job.duration?.toLowerCase().includes(q) || (job.delivery_days ? `${job.delivery_days}`.includes(q) || `${job.delivery_days} days`.toLowerCase().includes(q) : false);
+          const matchLevel = job.experience_level?.toLowerCase().includes(q);
+          const matchSkills = Array.isArray(job.skills) && job.skills.some((s: any) => {
+            const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
+            return str.toLowerCase().includes(q);
+          });
+
+          matchesSearch = matchTitle || matchDesc || matchCategory || matchSubCat || matchClient || matchBudget || matchType || matchDuration || matchLevel || matchSkills;
+        }
         const matchesCategory =
           jobSelectedCategory === "all" || job.category_name === jobSelectedCategory;
         return matchesSearch && matchesCategory;

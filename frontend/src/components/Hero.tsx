@@ -40,6 +40,87 @@ export default function Hero() {
 
   const skillsToType = ["UI Design", "React", "AI Automation", "SEO", "Next.js", "Python"];
 
+  interface HeroFreelancer {
+    name: string;
+    professional_title: string;
+    rating: number;
+    hourly_rate: string | number;
+    profile_image: string;
+    slug: string;
+  }
+
+  const [topFreelancers, setTopFreelancers] = useState<HeroFreelancer[]>([
+    {
+      name: "Sarah J.",
+      professional_title: "Senior UI Designer",
+      rating: 4.9,
+      hourly_rate: 85,
+      profile_image: "/sarah-avatar.png",
+      slug: "sarah-jenkins"
+    },
+    {
+      name: "David M.",
+      professional_title: "AI Engineer",
+      rating: 5.0,
+      hourly_rate: 120,
+      profile_image: "/david-avatar.png",
+      slug: "david-m"
+    }
+  ]);
+
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+
+  const getInitials = (name: string) => {
+    if (!name) return "FL";
+    const parts = name.replace(/\./g, "").trim().split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  useEffect(() => {
+    const fetchTopFreelancers = async () => {
+      try {
+        const res = await fetch(`${API_URL}/freelancer/public/list`);
+        if (res.ok) {
+          const freelancers = await res.json();
+          // Sort by rating DESC, then by completed_jobs DESC
+          const sorted = freelancers.sort((a: any, b: any) => {
+            const rA = parseFloat(a.rating || 0);
+            const rB = parseFloat(b.rating || 0);
+            if (rB !== rA) return rB - rA;
+            return (b.completed_jobs || 0) - (a.completed_jobs || 0);
+          });
+
+          if (sorted.length >= 2) {
+            const formatted = sorted.slice(0, 2).map((f: any) => {
+              let displayName = f.display_name || f.name;
+              if (f.name && f.name.includes(" ")) {
+                const parts = f.name.split(" ");
+                displayName = `${parts[0]} ${parts[1].charAt(0)}.`;
+              }
+              return {
+                name: displayName,
+                professional_title: f.professional_title || "Freelancer Specialist",
+                rating: parseFloat(f.rating || 0),
+                hourly_rate: f.hourly_rate ? parseFloat(f.hourly_rate).toFixed(0) : "N/A",
+                profile_image: f.profile_image 
+                  ? (f.profile_image.startsWith("http") ? f.profile_image : `${API_URL.replace("/api", "")}${f.profile_image.startsWith("/") ? f.profile_image : `/${f.profile_image}`}`)
+                  : "",
+                slug: f.slug || f.user_id.toString()
+              };
+            });
+            setTopFreelancers(formatted);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch top rated freelancers for hero:", err);
+      }
+    };
+    fetchTopFreelancers();
+  }, []);
+
   const [siteTheme, setSiteTheme] = useState("light");
 
   // Sync theme changes in real-time
@@ -163,8 +244,8 @@ export default function Hero() {
 
           {/* Left Column */}
           <div className="lg:col-span-7 flex flex-col gap-3.5 text-center lg:text-left">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-semibold bg-[#e6f0ef] dark:bg-zinc-800 text-[#0a5a54] dark:text-zinc-200 self-center lg:self-start border border-[#0a5a54]/10 dark:border-zinc-700/50 uppercase tracking-wider">
-              <FiAward className="w-3.5 h-3.5 text-[#0a5a54] dark:text-zinc-400" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-semibold bg-primary-light dark:bg-zinc-800 text-primary dark:text-zinc-200 self-center lg:self-start border border-primary/20 dark:border-zinc-700/50 uppercase tracking-wider">
+              <FiAward className="w-3.5 h-3.5 text-primary dark:text-zinc-400" />
               {t("hero_badge", heroContent.hero_badge)}
             </span>
 
@@ -177,7 +258,7 @@ export default function Hero() {
                   return (
                     <>
                       {parts[0]}
-                      <span className="text-[#0a5a54] dark:text-white font-extrabold">{highlight}</span>
+                      <span className="text-primary dark:text-white font-extrabold">{highlight}</span>
                       {parts[1]}
                     </>
                   );
@@ -193,7 +274,7 @@ export default function Hero() {
             {/* Search */}
             <form
               onSubmit={handleSearchSubmit}
-              className="hero-search-form w-full max-w-xl mx-auto lg:mx-0 mt-2 bg-white dark:bg-zinc-900 p-1.5 rounded-xl border border-slate-200 dark:border-zinc-700/80 shadow-xl shadow-slate-100 dark:shadow-none flex flex-col sm:flex-row gap-1.5 transition-all duration-300 focus-within:border-[#0a5a54]/40 focus-within:shadow-2xl focus-within:shadow-[#0a5a54]/5"
+              className="hero-search-form w-full max-w-xl mx-auto lg:mx-0 mt-2 bg-white dark:bg-zinc-900 p-1.5 rounded-xl border border-slate-200 dark:border-zinc-700/80 shadow-xl shadow-slate-100 dark:shadow-none flex flex-col sm:flex-row gap-1.5 transition-all duration-300 focus-within:border-primary/40 focus-within:shadow-2xl focus-within:shadow-primary/5"
             >
               <div className="flex-1 flex items-center px-3 gap-2.5 relative">
                 <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -208,13 +289,13 @@ export default function Hero() {
                   className="w-full text-slate-800 dark:text-white text-sm sm:text-base focus:outline-none bg-transparent py-2.5 z-10"
                 />
                 {!isFocused && !searchQuery && (
-                  <div className="absolute left-[38px] text-slate-400 text-sm sm:text-base pointer-events-none select-none z-0 flex items-center">
+                  <div className="absolute left-[38px] text-slate-400 dark:text-slate-350 text-sm sm:text-base pointer-events-none select-none z-0 flex items-center">
                     <span className="hidden sm:inline">{t("hero_search_placeholder", heroContent.hero_search_placeholder)}&nbsp;</span>
                     <span className="sm:hidden">{t("search", "Search")}&nbsp;</span>
-                    <span className="text-slate-400/70 font-normal">e.g. </span>
-                    <span className="text-[#0a5a54] dark:text-white font-semibold ml-1 relative">
+                    <span className="text-slate-400/70 dark:text-slate-400 font-normal">e.g. </span>
+                    <span className="text-primary dark:text-white font-semibold ml-1 relative">
                       {currentText}
-                      <span className="absolute -right-[3px] top-[1.5px] bottom-[1.5px] w-[1.5px] bg-[#0a5a54] dark:bg-white animate-blink"></span>
+                      <span className="absolute -right-[3px] top-[1.5px] bottom-[1.5px] w-[1.5px] bg-primary dark:bg-white animate-blink"></span>
                     </span>
                   </div>
                 )}
@@ -237,7 +318,7 @@ export default function Hero() {
                 <button
                   key={skill}
                   onClick={() => handleQuickTagClick(skill)}
-                  className="hover:text-white hover:bg-[#0a5a54] hover:border-[#0a5a54] border border-emerald-600/20 dark:border-zinc-700 bg-[#e6f0ef]/50 dark:bg-zinc-800/80 text-[#0a5a54] dark:text-zinc-200 px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer dark:hover:bg-white dark:hover:text-slate-900 text-xs font-semibold"
+                  className="hover:text-white hover:bg-primary hover:border-primary border border-primary/20 dark:border-zinc-700 bg-primary-light dark:bg-zinc-800/80 text-primary dark:text-zinc-200 px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer dark:hover:bg-white dark:hover:text-slate-900 text-xs font-semibold"
                 >
                   {skill}
                 </button>
@@ -260,51 +341,89 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* Floating Card: Sarah J. */}
-              <div className="absolute top-[12%] -left-2 sm:-left-6 md:-left-[10%] z-20 animate-float-up">
-                <div
-                  onClick={() => router.push('/freelancer/sarah-jenkins')}
-                  className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100"
-                >
-                  <img src="/sarah-avatar.png" alt="Sarah J." className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="font-extrabold text-slate-900 text-xs truncate">Sarah J.</span>
-                      <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <p className="text-[10px] font-semibold text-slate-500 truncate">Senior UI Designer</p>
-                    <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
-                      <span className="text-[#0a5a54] flex items-center gap-0.5">★ <span className="text-slate-800">4.9</span></span>
-                      <span className="text-slate-700">$85/hr</span>
+              {/* Floating Card: 1st Pick */}
+              {topFreelancers[0] && (
+                <div className="absolute top-[12%] -left-2 sm:-left-6 md:-left-[10%] z-20 animate-float-up">
+                  <div
+                    onClick={() => router.push(`/freelancer/${topFreelancers[0].slug}`)}
+                    className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100"
+                  >
+                    {!topFreelancers[0].profile_image || imageErrors[topFreelancers[0].slug] ? (
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-extrabold text-white shrink-0 text-xs shadow-sm select-none">
+                        {getInitials(topFreelancers[0].name)}
+                      </div>
+                    ) : (
+                      <img 
+                        src={topFreelancers[0].profile_image} 
+                        alt={topFreelancers[0].name} 
+                        className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0"
+                        onError={() => {
+                          setImageErrors(prev => ({ ...prev, [topFreelancers[0].slug]: true }));
+                        }}
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="font-extrabold text-slate-900 text-xs truncate">{topFreelancers[0].name}</span>
+                        <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <p className="text-[10px] font-semibold text-slate-500 truncate">{topFreelancers[0].professional_title}</p>
+                      <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
+                        <span className="text-primary flex items-center gap-0.5">★ <span className="text-slate-800">{topFreelancers[0].rating}</span></span>
+                        <span className="text-slate-700">
+                          {typeof topFreelancers[0].hourly_rate === 'number' || !isNaN(Number(topFreelancers[0].hourly_rate)) 
+                            ? `$${parseFloat(topFreelancers[0].hourly_rate.toString()).toFixed(0)}/hr` 
+                            : "N/A"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Floating Card: David M. */}
-              <div className="absolute bottom-[14%] -right-2 sm:-right-6 md:-right-[10%] z-20 animate-float-up">
-                <div
-                  onClick={() => router.push('/freelancer/david-m')}
-                  className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100"
-                >
-                  <img src="/david-avatar.png" alt="David M." className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className="font-extrabold text-slate-900 text-xs truncate">David M.</span>
-                      <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <p className="text-[10px] font-semibold text-slate-500 truncate">AI Engineer</p>
-                    <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
-                      <span className="text-[#0a5a54] flex items-center gap-0.5">★ <span className="text-slate-800">5.0</span></span>
-                      <span className="text-slate-700">$120/hr</span>
+              {/* Floating Card: 2nd Pick */}
+              {topFreelancers[1] && (
+                <div className="absolute bottom-[14%] -right-2 sm:-right-6 md:-right-[10%] z-20 animate-float-up">
+                  <div
+                    onClick={() => router.push(`/freelancer/${topFreelancers[1].slug}`)}
+                    className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100"
+                  >
+                    {!topFreelancers[1].profile_image || imageErrors[topFreelancers[1].slug] ? (
+                      <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-extrabold text-white shrink-0 text-xs shadow-sm select-none">
+                        {getInitials(topFreelancers[1].name)}
+                      </div>
+                    ) : (
+                      <img 
+                        src={topFreelancers[1].profile_image} 
+                        alt={topFreelancers[1].name} 
+                        className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0"
+                        onError={() => {
+                          setImageErrors(prev => ({ ...prev, [topFreelancers[1].slug]: true }));
+                        }}
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <span className="font-extrabold text-slate-900 text-xs truncate">{topFreelancers[1].name}</span>
+                        <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <p className="text-[10px] font-semibold text-slate-500 truncate">{topFreelancers[1].professional_title}</p>
+                      <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
+                        <span className="text-primary flex items-center gap-0.5">★ <span className="text-slate-800">{topFreelancers[1].rating}</span></span>
+                        <span className="text-slate-700">
+                          {typeof topFreelancers[1].hourly_rate === 'number' || !isNaN(Number(topFreelancers[1].hourly_rate)) 
+                            ? `$${parseFloat(topFreelancers[1].hourly_rate.toString()).toFixed(0)}/hr` 
+                            : "N/A"}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
 

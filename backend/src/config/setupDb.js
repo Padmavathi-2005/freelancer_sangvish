@@ -729,6 +729,29 @@ async function setupTables() {
             }
           }
         ])
+      },
+      {
+        title: "Affiliate Terms and Conditions",
+        slug: "affiliate-terms",
+        status: "Published",
+        content_type: "Builder",
+        content: JSON.stringify([
+          {
+            id: "aff-t1",
+            type: "Title",
+            data: {
+              title: "Affiliate Agreement & Terms",
+              subtitle: "Last revised: July 2026"
+            }
+          },
+          {
+            id: "aff-r1",
+            type: "RichText",
+            data: {
+              content: "<p>Welcome to the LancerFlow Affiliate Program. Please review our official terms and conditions below before joining.</p><h4>1. Commission Model</h4><p>You will earn exactly 10% of the platform service fees collected by LancerFlow from transactions completed by users who sign up via your general referral link or any specific project/gig links.</p><h4>2. Payment Terms</h4><p>Commissions are tracked in a pending state until transactions are fully completed and cleared of disputes. Approved commissions will be credited directly to your main wallet balance.</p><h4>3. Specific Link Sharing</h4><p>As an affiliate, you are authorized to share individual gig cards and project cards. These custom shared links will store referral tokens in visitor sessions for up to 30 days.</p><h4>4. Spam and Compliance</h4><p>Any form of malicious link spamming, self-referral, fake registrations, or deceptive marketing practices is strictly prohibited and will result in immediate termination of your affiliate account and forfeiture of any earnings.</p>"
+            }
+          }
+        ])
       }
     ];
 
@@ -816,7 +839,8 @@ async function setupTables() {
     if (checkSite.rows.length === 0) {
       const siteDefaults = {
         site_name: "Buy2Lancer",
-        site_logo: "/public/logo.png"
+        site_logo: "/public/logo.png",
+        site_logo_dark: "/public/logo.png"
       };
       await pool.query(
         "INSERT INTO settings (category, setting_key, setting_value) VALUES ('site_settings', 'site_settings', $1)",
@@ -905,12 +929,12 @@ async function setupTables() {
         -- Freelancer Plans
         ('Starter', 'For individuals and small teams.', 0.00, '', '["Basic talent search", "Standard support", "5% transaction fee"]', 'Current Plan', FALSE, TRUE, 'seller', 5, 3, FALSE, 0, 5, 'Day(s)', 30),
         ('Professional', 'For growing businesses needing top talent.', 99.00, '/month', '["Advanced AI matching", "Priority 24/7 support", "2% transaction fee", "Dedicated account manager"]', 'Upgrade Now', TRUE, FALSE, 'seller', 20, 15, TRUE, 10, 50, 'Day(s)', 30),
-        ('Enterprise', 'Custom solutions for large organizations.', 999.00, '/month', '["Unlimited talent search", "Dedicated success team", "0% transaction fee", "Custom API integration"]', 'Contact Sales', FALSE, FALSE, 'seller', 99999, 99999, TRUE, 20, 99999, 'Day(s)', 30),
+        ('Enterprise', 'Custom solutions for large organizations.', 999.00, '/month', '["Unlimited talent search", "Dedicated success team", "0% transaction fee", "Custom API integration"]', 'Buy Plan', FALSE, FALSE, 'seller', 99999, 99999, TRUE, 20, 99999, 'Day(s)', 30),
         
         -- Client (Buyer) Plans
         ('Starter', 'For individuals and small business owners.', 0.00, '', '["3 Job Listings / month", "Standard Job Listings Visibility"]', 'Active Plan', FALSE, TRUE, 'buyer', 0, 3, FALSE, 0, 5, 'Day(s)', 30),
         ('Professional', 'For growing teams needing elite top talent.', 99.00, '/month', '["15 Job Listings / month", "Highlight & Feature Job Listings", "Priority Support"]', 'Upgrade Now', TRUE, FALSE, 'buyer', 0, 15, TRUE, 10, 50, 'Day(s)', 30),
-        ('Enterprise', 'Dedicated recruitment solutions for large businesses.', 999.00, '/month', '["Unlimited Job Listings", "Highlight & Feature Job Listings", "Dedicated Success Manager"]', 'Contact Sales', FALSE, FALSE, 'buyer', 0, 99999, TRUE, 20, 99999, 'Day(s)', 30)
+        ('Enterprise', 'Dedicated recruitment solutions for large businesses.', 999.00, '/month', '["Unlimited Job Listings", "Highlight & Feature Job Listings", "Dedicated Success Manager"]', 'Buy Plan', FALSE, FALSE, 'buyer', 0, 99999, TRUE, 20, 99999, 'Day(s)', 30)
       `);
       console.log("🌱 Seeded default subscription plans (both Seller and Buyer tiers).");
     }

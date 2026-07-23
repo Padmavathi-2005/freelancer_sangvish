@@ -56,6 +56,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [isAdminNotificationsOpen, setIsAdminNotificationsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [siteLogo, setSiteLogo] = useState("");
+  const [siteLogoDark, setSiteLogoDark] = useState("");
   const [siteName, setSiteName] = useState("");
   const [mounted, setMounted] = useState(false);
   const [marketingMenuOpen, setMarketingMenuOpen] = useState(false);
@@ -64,6 +65,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     setMounted(true);
     if (typeof window !== "undefined") {
       setSiteLogo(localStorage.getItem("cached_site_logo") || "");
+      setSiteLogoDark(localStorage.getItem("cached_site_logo_dark") || "");
       setSiteName(localStorage.getItem("cached_site_name") || "");
     }
     const fetchSettings = async () => {
@@ -82,6 +84,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               if (val?.site_logo) {
                 setSiteLogo(val.site_logo);
                 localStorage.setItem("cached_site_logo", val.site_logo);
+              }
+              if (val?.site_logo_dark) {
+                setSiteLogoDark(val.site_logo_dark);
+                localStorage.setItem("cached_site_logo_dark", val.site_logo_dark);
               }
               if (val?.site_name) {
                 setSiteName(val.site_name);
@@ -122,6 +128,18 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   };
 
   const isDark = adminTheme === "dark";
+
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      if (isDark) {
+        document.body.classList.add("dark");
+        document.body.classList.remove("light");
+      } else {
+        document.body.classList.add("light");
+        document.body.classList.remove("dark");
+      }
+    }
+  }, [isDark]);
 
   useEffect(() => {
     if (activeTab === "general_settings" || activeTab === "site_settings" || activeTab === "site_management" || activeTab === "payment_settings" || activeTab === "frontend_content" || activeTab === "dispute_reasons" || activeTab === "footer_links" || activeTab === "social_login") {
@@ -279,9 +297,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             href="/"
             className="flex items-center gap-2.5 hover:opacity-80 transition-all cursor-pointer min-w-0"
           >
-            {mounted && siteLogo ? (
+            {mounted && ((isDark && siteLogoDark) ? siteLogoDark : siteLogo) ? (
               <img 
-                src={resolveLogoUrl(siteLogo)} 
+                src={resolveLogoUrl((isDark && siteLogoDark) ? siteLogoDark : siteLogo)} 
                 alt={siteName || "Logo"} 
                 className="h-8 w-auto object-contain shrink-0" 
               />
@@ -733,7 +751,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
             <h1 className={headerTitleClass}>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                isDark ? "bg-teal-950/80 text-teal-400 border border-teal-900" : "bg-teal-50 text-teal-750 border border-teal-200"
+                isDark ? "bg-teal-500/10 text-teal-400 border border-teal-500/30" : "bg-teal-50 text-teal-750 border border-teal-200"
               }`}>Admin</span>
               Control Terminal
             </h1>

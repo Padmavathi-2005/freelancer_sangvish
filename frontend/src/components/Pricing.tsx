@@ -172,8 +172,8 @@ export default function Pricing() {
             onClick={() => setSelectedRole("seller")}
             className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-none ${
               selectedRole === "seller"
-                ? "bg-[#063c38] text-white shadow-md"
-                : "bg-transparent text-slate-500 hover:text-[#063c38]"
+                ? "bg-primary text-white shadow-md"
+                : "bg-transparent text-slate-500 hover:text-primary"
             }`}
           >
             Freelancer Plans
@@ -182,8 +182,8 @@ export default function Pricing() {
             onClick={() => setSelectedRole("buyer")}
             className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-none ${
               selectedRole === "buyer"
-                ? "bg-[#063c38] text-white shadow-md"
-                : "bg-transparent text-slate-500 hover:text-[#063c38]"
+                ? "bg-primary text-white shadow-md"
+                : "bg-transparent text-slate-500 hover:text-primary"
             }`}
           >
             Client Plans
@@ -217,12 +217,12 @@ export default function Pricing() {
                 key={planId} 
                 className={`relative rounded-xl p-8 flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] border ${cardWidthClass} ${
                   isPopular 
-                    ? "pricing-popular-card bg-[#063c38] text-white border-transparent shadow-2xl shadow-[#0a5a54]/30 z-10 lg:-translate-y-4" 
+                    ? "pricing-popular-card bg-primary text-white border-transparent shadow-2xl shadow-primary/30 z-10 lg:-translate-y-4" 
                     : "bg-white text-slate-900 border-slate-200/60 shadow-lg shadow-slate-100/50"
                 }`}
               >
                 {isPopular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#22c55e] text-white font-extrabold text-[10px] tracking-wider uppercase py-1.5 px-5 rounded-full shadow-md">
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-primary-hover text-white font-extrabold text-[10px] tracking-wider uppercase py-1.5 px-5 rounded-full shadow-md">
                     Most Popular
                   </div>
                 )}
@@ -230,7 +230,7 @@ export default function Pricing() {
                 <div>
                   {/* Card Header */}
                   <div className="mb-6">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-emerald-300" : "text-teal-700"}`}>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-white/90" : "text-primary"}`}>
                       {dbPlan.name} Plan
                     </span>
                     <p className={`text-xxs mt-1 font-semibold leading-relaxed ${isPopular ? "text-slate-200" : "text-slate-405"}`}>
@@ -255,7 +255,7 @@ export default function Pricing() {
                   <ul className="flex flex-col gap-3 border-t border-slate-100/10 pt-6">
                     {realFeatures.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2.5 text-xs font-semibold">
-                        <FiCheck className={`w-4 h-4 mt-0.5 shrink-0 ${isPopular ? "text-emerald-400" : "text-teal-600"}`} />
+                        <FiCheck className={`w-4 h-4 mt-0.5 shrink-0 ${isPopular ? "text-white" : "text-primary"}`} />
                         <span className={isPopular ? "text-slate-100" : "text-slate-650"}>
                           {feature}
                         </span>
@@ -278,11 +278,11 @@ export default function Pricing() {
                       href={`/pricing/${planId}`}
                       className={`w-full font-black text-xs py-3.5 rounded-xl block text-center transition active:scale-[0.98] cursor-pointer ${
                         isPopular
-                          ? "bg-[#22c55e] hover:bg-[#1eb051] text-white shadow-md shadow-emerald-950/20"
-                          : "bg-teal-700 hover:bg-teal-800 text-white shadow-sm"
+                          ? "bg-white text-slate-900 hover:bg-slate-100 shadow-md"
+                          : "bg-primary text-white hover:bg-primary-hover"
                       }`}
                     >
-                      {dbPlan.button_text || "Upgrade Now"}
+                      {parseFloat((dbPlan.price || 0).toString()) === 0 ? "Get Started Free" : "Buy Plan"}
                     </Link>
                   )}
                 </div>

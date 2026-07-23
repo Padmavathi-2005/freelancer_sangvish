@@ -29,6 +29,7 @@ export default function UpgradeOverlay({ isOpen, onClose, message }: UpgradeOver
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [activePlanId, setActivePlanId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,14 +43,40 @@ export default function UpgradeOverlay({ isOpen, onClose, message }: UpgradeOver
     const fetchPlans = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`${API_URL}/subscription-plans`);
-        if (res.ok) {
-          const data = await res.json();
-          // Filter to show only paid seller plans (Freelancer paid options)
-          const sellerPlans = data.filter(
-            (p: Plan) => p.plan_role === "seller" && parseFloat(p.price.toString()) > 0
+        const token = localStorage.getItem("token");
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const [plansRes, userRes] = await Promise.all([
+          fetch(`${API_URL}/subscription-plans`),
+          token ? fetch(`${API_URL}/users/profile`, { headers }) : Promise.resolve(null)
+        ]);
+
+        let activeId: number | null = null;
+        if (userRes && userRes.ok) {
+          const userData = await userRes.json();
+          activeId = userData.active_plan_id ?? null;
+          setActivePlanId(activeId);
+        }
+
+        if (plansRes.ok) {
+          const data = await plansRes.json();
+          const role = localStorage.getItem("onboarding_role") || "seller";
+          const targetRole = role === "client" ? "buyer" : "seller";
+
+          // Filter to show only paid plans matching the user's active role
+          const rolePlans = data.filter(
+            (p: Plan) => p.plan_role === targetRole && parseFloat(p.price.toString()) > 0
           );
-          setPlans(sellerPlans);
+
+          // Only display plans that are higher tier than the user's current plan
+          const displayedPlans = activeId
+            ? rolePlans.filter((p: Plan) => p.plan_id > activeId)
+            : rolePlans;
+
+          setPlans(displayedPlans);
         }
       } catch (err) {
         console.error("Failed to load plans in overlay", err);
@@ -210,7 +237,7 @@ export default function UpgradeOverlay({ isOpen, onClose, message }: UpgradeOver
                         : "bg-teal-700 hover:bg-teal-800 text-white hover:shadow-teal-900/10"
                     }`}
                   >
-                    {plan.button_text || `Upgrade to ${plan.name}`}
+                    {plan.button_text && plan.button_text !== "Contact Sales" ? plan.button_text : "Buy Plan"}
                   </button>
                 </div>
               );

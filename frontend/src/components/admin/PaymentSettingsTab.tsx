@@ -3,6 +3,7 @@ import { API_URL } from "@/config/api";
 
 
 import React, { useState, useEffect } from "react";
+import { useAdmin } from "@/app/admin/AdminContext";
 
 interface PaypalKeys {
   client_id: string;
@@ -10,6 +11,9 @@ interface PaypalKeys {
 }
 
 export default function PaymentSettingsTab() {
+  const { adminTheme } = useAdmin();
+  const isDark = adminTheme === "dark";
+
   const [paypalClientId, setPaypalClientId] = useState("");
   const [paypalSecretKey, setPaypalSecretKey] = useState("");
   const [showSecret, setShowSecret] = useState(false);
@@ -192,12 +196,17 @@ export default function PaymentSettingsTab() {
       </div>
 
       {/* ───── PAYPAL GATEWAY ───── */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div className={`border rounded-xl shadow-sm overflow-hidden ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+        <div className={`px-6 py-4 border-b flex items-center justify-between ${isDark ? "border-slate-850" : "border-slate-100"}`}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-base">🅿</div>
+            <div className="w-8 h-8 rounded-xl payment-logo-bg border border-slate-200/80 flex items-center justify-center shadow-sm shrink-0">
+              <svg viewBox="0 0 24 24" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20.072 6.587c0 3.968-3.06 6.75-7.391 6.75H9.6l-1.077 6.81h-3.41l2.223-14.07h6.666c4.053 0 6.07 1.84 6.07 4.51z" fill="#00457C" />
+                <path d="M17.848 9.087c0 3.968-3.06 6.75-7.392 6.75H7.376l-1.077 6.81H2.889l2.223-14.07h6.666c4.054 0 6.07 1.84 6.07 4.51z" fill="#0079C1" opacity="0.85" />
+              </svg>
+            </div>
             <div>
-              <h2 className="text-sm font-extrabold text-slate-800">PayPal Gateway</h2>
+              <h2 className={`text-sm font-extrabold ${isDark ? "text-white" : "text-slate-800"}`}>PayPal Gateway</h2>
               <p className="text-[10px] text-slate-400 font-semibold">Sandbox / Live API credentials for PayPal payment processing.</p>
             </div>
           </div>
@@ -215,7 +224,7 @@ export default function PaymentSettingsTab() {
                 value={paypalClientId}
                 onChange={(e) => setPaypalClientId(e.target.value)}
                 placeholder="ATz535WHbPQjJg..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 transition"
               />
             </div>
 
@@ -229,7 +238,7 @@ export default function PaymentSettingsTab() {
                   value={paypalSecretKey}
                   onChange={(e) => setPaypalSecretKey(e.target.value)}
                   placeholder="ELbaeu4ByL74re4E..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 pr-10 text-xs font-mono text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 pr-10 text-xs font-mono text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 transition"
                 />
                 <button
                   type="button"
@@ -252,14 +261,14 @@ export default function PaymentSettingsTab() {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <div className={`flex items-center justify-between pt-2 border-t ${isDark ? "border-slate-850" : "border-slate-100"}`}>
             <p className="text-[10px] text-slate-400 font-semibold">
               Keys are stored securely in the platform settings database.
             </p>
             <button
               type="submit"
               disabled={saving}
-              className="bg-slate-800 hover:bg-slate-900 text-white rounded-xl px-5 py-2 text-xs font-black transition shadow-sm cursor-pointer disabled:opacity-50"
+              className="bg-slate-800 dark:bg-slate-900 hover:bg-slate-900 dark:hover:bg-slate-800 text-white rounded-xl px-5 py-2 text-xs font-black transition shadow-sm cursor-pointer disabled:opacity-50 border border-slate-700 dark:border-slate-600"
             >
               {saving ? "Saving..." : "Save PayPal Keys"}
             </button>
@@ -268,12 +277,16 @@ export default function PaymentSettingsTab() {
       </div>
 
       {/* ───── STRIPE GATEWAY ───── */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+      <div className={`border rounded-xl shadow-sm overflow-hidden ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+        <div className={`px-6 py-4 border-b flex items-center justify-between ${isDark ? "border-slate-850" : "border-slate-100"}`}>
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-base">⚡</div>
+            <div className="w-8 h-8 rounded-xl payment-logo-bg border border-slate-200/80 flex items-center justify-center shadow-sm shrink-0">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 text-[#635BFF] fill-current" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13.962 10.3c0-1.03-.616-1.54-1.637-1.54-.925 0-1.492.42-1.492 1.22 0 .97 1.002 1.25 2.158 1.57 1.295.36 2.673.74 2.673 2.37 0 1.94-1.572 2.76-3.15 2.76-1.742 0-3.238-.72-3.238-2.61v-.15h1.76c.077.85.74 1.18 1.478 1.18 1.002 0 1.48-.48 1.48-1.09 0-.96-.913-1.2-2.073-1.52-1.32-.36-2.587-.76-2.587-2.31 0-1.8 1.39-2.59 3.017-2.59 1.492 0 2.91.56 2.91 2.3v.19h-1.83z" />
+              </svg>
+            </div>
             <div>
-              <h2 className="text-sm font-extrabold text-slate-800">Stripe Gateway</h2>
+              <h2 className={`text-sm font-extrabold ${isDark ? "text-white" : "text-slate-800"}`}>Stripe Gateway</h2>
               <p className="text-[10px] text-slate-400 font-semibold">Sandbox / Live API credentials for Stripe payment processing.</p>
             </div>
           </div>
@@ -291,7 +304,7 @@ export default function PaymentSettingsTab() {
                 value={stripePublicKey}
                 onChange={(e) => setStripePublicKey(e.target.value)}
                 placeholder="pk_test_51OuCU4..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 transition"
               />
             </div>
 
@@ -305,7 +318,7 @@ export default function PaymentSettingsTab() {
                   value={stripeSecretKey}
                   onChange={(e) => setStripeSecretKey(e.target.value)}
                   placeholder="sk_test_51OuCU4..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 pr-10 text-xs font-mono text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 pr-10 text-xs font-mono text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 transition"
                 />
                 <button
                   type="button"
@@ -328,14 +341,14 @@ export default function PaymentSettingsTab() {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <div className={`flex items-center justify-between pt-2 border-t ${isDark ? "border-slate-850" : "border-slate-100"}`}>
             <p className="text-[10px] text-slate-400 font-semibold">
               Keys are stored securely in the platform settings database.
             </p>
             <button
               type="submit"
               disabled={savingStripe}
-              className="bg-slate-800 hover:bg-slate-900 text-white rounded-xl px-5 py-2 text-xs font-black transition shadow-sm cursor-pointer disabled:opacity-50"
+              className="bg-slate-800 dark:bg-slate-900 hover:bg-slate-900 dark:hover:bg-slate-800 text-white rounded-xl px-5 py-2 text-xs font-black transition shadow-sm cursor-pointer disabled:opacity-50 border border-slate-700 dark:border-slate-600"
             >
               {savingStripe ? "Saving..." : "Save Stripe Keys"}
             </button>
@@ -344,11 +357,11 @@ export default function PaymentSettingsTab() {
       </div>
 
       {/* ───── ADMIN PAYOUT ACCOUNT ───── */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-base">🏦</div>
+      <div className={`border rounded-xl shadow-sm overflow-hidden ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+        <div className={`px-6 py-4 border-b flex items-center gap-3 ${isDark ? "border-slate-850" : "border-slate-100"}`}>
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-base border ${isDark ? "bg-slate-900 border-slate-800 text-teal-400" : "bg-teal-50 border-teal-100 text-teal-700"}`}>🏦</div>
           <div>
-            <h2 className="text-sm font-extrabold text-slate-800">Admin Payout Account Details</h2>
+            <h2 className={`text-sm font-extrabold ${isDark ? "text-white" : "text-slate-800"}`}>Admin Payout Account Details</h2>
             <p className="text-[10px] text-slate-400 font-semibold">UPI and Bank account where real user withdrawal payments are received.</p>
           </div>
         </div>
@@ -361,28 +374,28 @@ export default function PaymentSettingsTab() {
               value={upiId}
               onChange={(e) => setUpiId(e.target.value)}
               placeholder="admin@okhdfcbank"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition"
+              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 transition"
             />
           </div>
 
-          <div className="border-t border-slate-100 pt-5 space-y-1.5">
+          <div className={`border-t pt-5 space-y-1.5 ${isDark ? "border-slate-850" : "border-slate-100"}`}>
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider mb-3">Bank Wire Transfer Details</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Account Holder Name</label>
-                <input type="text" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} placeholder="John Doe" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition" />
+                <input type="text" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} placeholder="John Doe" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 transition" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Bank Name</label>
-                <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="HDFC Bank" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition" />
+                <input type="text" value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="HDFC Bank" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 transition" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Account Number</label>
-                <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="XXXX XXXX XXXX" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition" />
+                <input type="text" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="XXXX XXXX XXXX" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 transition" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">IFSC Code</label>
-                <input type="text" value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase())} placeholder="HDFC0001234" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 placeholder-slate-300 focus:outline-none focus:border-teal-700 transition" />
+                <input type="text" value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase())} placeholder="HDFC0001234" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-500 focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 transition" />
               </div>
             </div>
           </div>
@@ -393,14 +406,14 @@ export default function PaymentSettingsTab() {
             </div>
           )}
 
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <div className={`flex items-center justify-between pt-2 border-t ${isDark ? "border-slate-850" : "border-slate-100"}`}>
             <p className="text-[10px] text-slate-400 font-semibold">
               These details appear when users request withdrawals.
             </p>
             <button
               type="submit"
               disabled={savingBank}
-              className="bg-teal-700 hover:bg-teal-800 text-white rounded-xl px-5 py-2 text-xs font-black transition shadow-sm cursor-pointer disabled:opacity-50"
+              className="bg-teal-700 hover:bg-teal-800 text-white rounded-xl px-5 py-2 text-xs font-black transition shadow-sm cursor-pointer disabled:opacity-50 border border-teal-600 dark:border-teal-500"
             >
               {savingBank ? "Saving..." : "Save Bank Details"}
             </button>
@@ -409,9 +422,9 @@ export default function PaymentSettingsTab() {
       </div>
 
       {/* ───── FUTURE INTEGRATIONS ───── */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100">
-          <h2 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+      <div className={`border rounded-xl shadow-sm overflow-hidden ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+        <div className={`px-6 py-4 border-b ${isDark ? "border-slate-850" : "border-slate-100"}`}>
+          <h2 className={`text-sm font-extrabold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}>
             <span>🔮</span> Future Payment Integrations
           </h2>
           <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
@@ -424,14 +437,14 @@ export default function PaymentSettingsTab() {
             { name: "Razorpay", icon: "🇮🇳", desc: "India-first payment gateway", status: "Coming Soon" },
             { name: "Crypto / USDT", icon: "₿", desc: "Blockchain wallet transfers", status: "Planned" },
           ].map((gw) => (
-            <div key={gw.name} className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl opacity-60 select-none">
-              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-lg shrink-0">
+            <div key={gw.name} className={`flex items-center gap-3 p-4 border rounded-xl opacity-60 select-none ${isDark ? "bg-slate-900 border-slate-800 text-slate-200" : "bg-slate-50 border-slate-200 text-slate-800"}`}>
+              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center text-lg shrink-0 ${isDark ? "bg-slate-950 border-slate-850" : "bg-white border-slate-200"}`}>
                 {gw.icon}
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-black text-slate-700">{gw.name}</p>
+                <p className={`text-xs font-black ${isDark ? "text-slate-200" : "text-slate-700"}`}>{gw.name}</p>
                 <p className="text-[10px] text-slate-400 font-semibold">{gw.desc}</p>
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-500 font-black">{gw.status}</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-black">{gw.status}</span>
               </div>
             </div>
           ))}

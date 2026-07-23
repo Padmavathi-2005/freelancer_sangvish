@@ -176,10 +176,10 @@ export default function PricingPage() {
 
             {!loading && hasBuyerPlans && (
               <div className="mt-8 inline-flex items-center bg-slate-100/80 dark:bg-slate-850/80 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-1 gap-1 shadow-sm">
-                <button onClick={() => setRoleTab("seller")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "seller" ? "bg-teal-700 text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-205"}`}>
+                <button onClick={() => setRoleTab("seller")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "seller" ? "bg-primary text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-205"}`}>
                   Freelancer Plans
                 </button>
-                <button onClick={() => setRoleTab("buyer")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "buyer" ? "bg-teal-700 text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-205"}`}>
+                <button onClick={() => setRoleTab("buyer")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "buyer" ? "bg-primary text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-205"}`}>
                   Client Plans
                 </button>
               </div>
@@ -235,7 +235,7 @@ export default function PricingPage() {
                     {/* Popular badge */}
                     {isPopular && (
                       <div className="flex justify-center pt-3 pb-0">
-                        <span className="shimmer-badge rotateBadge flex items-center gap-1.5 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
+                        <span className="shimmer-badge rotateBadge flex items-center gap-1.5 bg-primary-hover text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
                           <FiStar className="w-2.5 h-2.5" style={{ animation: "rotateBadge 2s ease-in-out infinite" }} />
                           Most Popular
                         </span>
@@ -243,31 +243,31 @@ export default function PricingPage() {
                     )}
                     {isActive && !isPopular && (
                       <div className="absolute top-3 right-3">
-                        <span className="bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">✓ Active</span>
+                        <span className="bg-primary text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">✓ Active</span>
                       </div>
                     )}
 
                     {/* Header */}
-                    <div className={`px-7 pt-7 pb-6 ${isPopular ? "bg-[#053531]" : isLight ? "bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/80" : "bg-[#1e293b] border-b border-slate-700/50"}`}>
+                    <div className={`px-7 pt-7 pb-6 ${isPopular ? "bg-primary text-white" : isLight ? "bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/80" : "bg-[#1e293b] border-b border-slate-700/50"}`}>
                       {plan.badge_image && (
                         <img src={plan.badge_image} alt={plan.name} className="w-9 h-9 rounded-xl object-cover mb-3 border border-white/20 shadow"
                           onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
                       )}
-                      <p className={`text-[9px] font-black uppercase tracking-widest ${isPopular ? "text-teal-200" : isLight ? "text-teal-600 dark:text-teal-400" : "text-amber-400"}`}>
+                      <p className={`text-[9px] font-black uppercase tracking-widest ${isPopular ? "text-white/90" : isLight ? "text-primary" : "text-amber-400"}`}>
                         {plan.name}
                       </p>
                       <div className="mt-3 flex items-baseline gap-1.5">
-                        <span className={`text-4xl font-black tracking-tight ${isLight ? "text-slate-900 dark:text-white" : "text-white"}`}>
+                        <span className={`text-4xl font-black tracking-tight ${isPopular ? "text-white" : isLight ? "text-slate-900 dark:text-white" : "text-white"}`}>
                           {isFree ? "Free" : `$${price % 1 === 0 ? Math.round(price) : price.toFixed(2)}`}
                         </span>
                         {!isFree && (
-                          <span className={`text-xs font-bold ${isLight ? "text-slate-450 dark:text-slate-400" : "text-slate-300"}`}>
+                          <span className={`text-xs font-bold ${isPopular ? "text-slate-200" : isLight ? "text-slate-450 dark:text-slate-400" : "text-slate-300"}`}>
                             {plan.plan_duration ? `/ ${plan.plan_duration} days` : `/ ${plan.period || "mo"}`}
                           </span>
                         )}
                       </div>
                       {plan.description && (
-                        <p className={`text-[11px] font-semibold mt-1.5 leading-relaxed ${isPopular ? "text-teal-100/70" : isLight ? "text-slate-400 dark:text-slate-400" : "text-slate-300"}`}>
+                        <p className={`text-[11px] font-semibold mt-1.5 leading-relaxed ${isPopular ? "text-slate-200" : isLight ? "text-slate-400 dark:text-slate-400" : "text-slate-300"}`}>
                           {plan.description}
                         </p>
                       )}
@@ -278,8 +278,8 @@ export default function PricingPage() {
                       {features.length > 0
                         ? features.map((f, i) => (
                             <div key={i} className="flex items-center gap-3" style={{ animation: `fadeUp 0.4s cubic-bezier(.22,1,.36,1) ${delay} both`, animationDelay: `${parseFloat(delay) + i * 0.06}s` }}>
-                              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isPopular ? "bg-teal-500/20" : isLight ? "bg-teal-50 dark:bg-slate-805" : "bg-slate-700"}`}>
-                                <FiCheck className={`w-3 h-3 ${isPopular ? "text-emerald-300" : isLight ? "text-teal-600 dark:text-teal-400" : "text-amber-400"}`} />
+                              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isPopular ? "bg-primary-light" : isLight ? "bg-primary-light" : "bg-slate-700"}`}>
+                                <FiCheck className={`w-3 h-3 ${isPopular ? "text-primary" : isLight ? "text-primary" : "text-amber-400"}`} />
                               </span>
                               <span className={`text-[11px] font-semibold ${isPopular ? "text-slate-100" : isLight ? "text-slate-700 dark:text-slate-300" : "text-slate-300"}`}>{f}</span>
                             </div>
@@ -294,12 +294,10 @@ export default function PricingPage() {
                         href={`/pricing/${plan.plan_id}`}
                         className={`btn-shine w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold transition-all duration-200 active:scale-[0.98] ${
                           isActive
-                            ? "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-250 dark:border-emerald-900/60 text-emerald-700 dark:text-emerald-400"
+                            ? "bg-primary-light border border-primary/20 text-primary"
                             : isPopular
-                            ? "bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg shadow-emerald-900/30"
-                            : isLight
-                            ? "bg-slate-900 hover:bg-slate-700 dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-900 text-white shadow"
-                            : "bg-amber-500 hover:bg-amber-400 text-white shadow"
+                            ? "bg-primary hover:bg-primary-hover text-white shadow-lg shadow-primary/30"
+                            : "bg-primary hover:bg-primary-hover text-white shadow-sm"
                         }`}
                       >
                         {isActive ? "Current Plan" : isFree ? "Get Started Free" : plan.button_text || `Choose ${plan.name}`}

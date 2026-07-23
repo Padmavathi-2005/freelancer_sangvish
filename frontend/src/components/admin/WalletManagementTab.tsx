@@ -11,8 +11,11 @@ export default function WalletManagementTab() {
     fetchWithdrawalRequests,
     handleApproveWithdrawal,
     handleRejectWithdrawal,
-    handlePayToUser
+    handlePayToUser,
+    adminTheme
   } = useAdmin();
+
+  const isDark = adminTheme === "dark";
 
   const [activeSubTab, setActiveSubTab] = useState<"requests" | "ledger" | "transactions" | "pay">("requests");
 
@@ -389,7 +392,7 @@ export default function WalletManagementTab() {
                   />
                 </div>
 
-                <div className="border border-slate-100 rounded-xl divide-y divide-slate-50 max-h-[350px] overflow-y-auto bg-white shadow-sm scrollbar-thin">
+                <div className="space-y-3 max-h-[350px] overflow-y-auto bg-transparent scrollbar-thin pr-1">
                   {(() => {
                     const filteredWalletsForPay = wallets.filter((w: any) => {
                       const query = searchUserQuery.toLowerCase();
@@ -418,31 +421,31 @@ export default function WalletManagementTab() {
                             setTransferSuccessMsg("");
                             setTransferError("");
                           }}
-                          className={`p-3.5 flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 ${
+                          className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all duration-200 ${
                             isSelected
-                              ? "bg-teal-50/70 border-l-4 border-l-teal-600 pl-2.5"
-                              : "hover:bg-slate-50/50 border-l-4 border-l-transparent"
+                              ? (isDark ? "bg-teal-950/20 border-teal-500 text-white" : "bg-teal-50/60 border-teal-600 text-slate-900 animate-pulse")
+                              : (isDark ? "bg-slate-900/60 border-slate-800 hover:bg-slate-900 hover:border-slate-700 text-slate-300" : "bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-800")
                           }`}
                         >
                           <div className="min-w-0">
-                            <p className={`text-xs font-black ${isSelected ? "text-teal-900" : "text-slate-800"}`}>
+                            <p className={`text-xs font-black ${isSelected ? (isDark ? "text-teal-400" : "text-teal-950") : (isDark ? "text-slate-100" : "text-slate-900")}`}>
                               {w.user_name || "Platform User"}
                             </p>
-                            <p className="text-[10px] text-slate-450 font-semibold truncate">{w.email}</p>
+                            <p className={`text-[10px] font-semibold truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>{w.email}</p>
                             <div className="flex gap-1.5 mt-1">
                               <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
                                 w.role === "Client"
-                                  ? "bg-blue-50 text-blue-600 border border-blue-100"
-                                  : "bg-teal-50 text-teal-600 border border-teal-100"
+                                  ? (isDark ? "bg-blue-950/40 text-blue-400 border border-blue-900/50" : "bg-blue-50 text-blue-600 border border-blue-100")
+                                  : (isDark ? "bg-teal-950/40 text-teal-400 border border-teal-900/50" : "bg-teal-50 text-teal-600 border border-teal-100")
                               }`}>
                                 {w.role}
                               </span>
-                              <span className="text-[9px] text-slate-400 font-semibold">ID: #{w.user_id}</span>
+                              <span className={`text-[9px] font-semibold ${isDark ? "text-slate-500" : "text-slate-400"}`}>ID: #{w.user_id}</span>
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-xs font-black text-slate-850">${parseFloat(w.balance).toFixed(2)}</p>
-                            <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Current Balance</span>
+                            <p className={`text-xs font-black ${isDark ? "text-slate-105" : "text-slate-900"}`}>${parseFloat(w.balance).toFixed(2)}</p>
+                            <span className={`text-[9px] uppercase font-bold tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}>Current Balance</span>
                           </div>
                         </div>
                       );

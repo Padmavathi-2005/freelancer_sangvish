@@ -2,6 +2,7 @@
 import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { FiCopy, FiCheck, FiUsers, FiDollarSign, FiAward, FiInfo, FiActivity } from "react-icons/fi";
 
 interface LedgerEntry {
@@ -16,6 +17,7 @@ interface LedgerEntry {
 
 interface AffiliateData {
   referral_code: string;
+  is_affiliate: boolean;
   total_referred: number;
   pending_commissions: number;
   approved_commissions: number;
@@ -27,6 +29,16 @@ export default function AffiliatePortalPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // Affiliate enrollment states
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchAffiliateStats = async () => {
@@ -55,6 +67,39 @@ export default function AffiliatePortalPage() {
     fetchAffiliateStats();
   }, []);
 
+  const handleJoinAffiliate = async () => {
+    setJoining(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/users/affiliate/join`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const statsRes = await fetch(`${API_URL}/users/affiliate/stats`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          setData(stats);
+        }
+        setShowTermsModal(false);
+      } else {
+        const errData = await res.json();
+        alert(errData.message || "Failed to join affiliate program.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error joining program.");
+    } finally {
+      setJoining(false);
+    }
+  };
+
   const handleCopyLink = () => {
     if (!data?.referral_code) return;
     const link = `${window.location.origin}/register?ref=${data.referral_code}`;
@@ -80,6 +125,113 @@ export default function AffiliatePortalPage() {
     );
   }
 
+  if (data && !data.is_affiliate) {
+    return (
+      <div className="flex-grow max-w-2xl mx-auto w-full px-4 pt-2 pb-2 flex flex-col gap-6 text-center animate-fadeIn">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-black text-slate-805 tracking-tight">Become an Affiliate Partner</h1>
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Earn recurring commissions on platform fees</p>
+        </div>
+        <p className="text-sm text-slate-500 font-semibold leading-relaxed max-w-lg mx-auto">
+          Unlock your affiliate referral links and start earning recurring commissions. Invite freelancers, contractors, or clients to LancerFlow and receive <span className="text-emerald-700 font-extrabold">10% of all service fees</span> collected from their transactions!
+        </p>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm text-left flex flex-col gap-4 mt-2">
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3">Why Join LancerFlow Affiliates?</h3>
+          <ul className="space-y-3.5 text-xs font-semibold text-slate-500">
+            <li className="flex items-start gap-2.5">
+              <span className="text-emerald-600 mt-0.5 font-bold">✓</span>
+              <span><strong>Recurring Revenue</strong>: Earn a lifetime 10% cut of our platform fees from every project or gig completed by your referrals.</span>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="text-emerald-600 mt-0.5 font-bold">✓</span>
+              <span><strong>Item-Level Sharing</strong>: Generate special affiliate links for specific projects or gigs. When shared, any bookings made will earn you commissions.</span>
+            </li>
+            <li className="flex items-start gap-2.5">
+              <span className="text-emerald-600 mt-0.5 font-bold">✓</span>
+              <span><strong>Real-time Ledger & Dashboard</strong>: Track referred users, review pending payout cycles, and request withdrawal to your wallet.</span>
+            </li>
+          </ul>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setShowTermsModal(true)}
+          className="mt-2 bg-teal-700 hover:bg-teal-850 text-white font-extrabold text-xs py-3.5 px-8 rounded-xl shadow-md transition cursor-pointer self-center border-none flex items-center gap-1.5"
+        >
+          Join Affiliate Program
+        </button>
+
+        {/* Terms & Conditions Pop-up Modal rendered at body level using createPortal */}
+        {showTermsModal && mounted && createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+            <div 
+              className="absolute inset-0 bg-slate-900/50 backdrop-blur-[1px] transition-opacity"
+              onClick={() => setShowTermsModal(false)}
+            />
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm p-5 relative z-10 flex flex-col gap-4 text-left animate-fadeIn">
+              <div>
+                <h3 className="text-sm font-black text-slate-805">Affiliate Program Agreement</h3>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Please review and agree to join</p>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center flex flex-col items-center gap-2.5">
+                <p className="text-[10px] font-semibold text-slate-500 leading-relaxed">
+                  Before joining the program, you must read the official Affiliate Terms page:
+                </p>
+                <a
+                  href="/affiliate-terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[10px] font-black text-teal-700 hover:text-teal-850 hover:underline transition-all bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-xs"
+                >
+                  📄 Read Affiliate Terms
+                </a>
+              </div>
+
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="w-4 h-4 rounded text-teal-600 border-slate-350 focus:ring-teal-500 cursor-pointer"
+                />
+                <span className="text-xs font-bold text-slate-655">I review and accept the Affiliate Agreement Terms</span>
+              </label>
+
+              <div className="flex gap-3 justify-end pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowTermsModal(false)}
+                  disabled={joining}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600 rounded-lg transition cursor-pointer disabled:opacity-50"
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  onClick={handleJoinAffiliate}
+                  disabled={joining || !agreed}
+                  className="px-5 py-2 bg-teal-700 hover:bg-teal-855 text-white text-xs font-extrabold rounded-lg shadow-sm transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5 border-none"
+                >
+                  {joining ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-t-transparent border-white rounded-full animate-spin" />
+                      <span>Joining...</span>
+                    </>
+                  ) : (
+                    "Accept & Join"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </div>
+    );
+  }
+
   const affiliateLink = data?.referral_code
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/register?ref=${data.referral_code}`
     : "";
@@ -94,41 +246,41 @@ export default function AffiliatePortalPage() {
       </div>
 
       {/* Hero Promo Box */}
-      <div className="bg-gradient-to-tr from-slate-900 via-slate-950 to-teal-950 text-white p-8 rounded-2xl shadow-xl relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="bg-white border border-slate-200 text-slate-800 p-8 rounded-2xl shadow-sm relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="absolute top-[-20%] left-[-10%] w-[24rem] h-[24rem] bg-teal-500/5 rounded-full filter blur-[80px] pointer-events-none" />
         
-        <div className="flex-1 flex flex-col gap-3 relative z-10 text-center md:text-left">
-          <span className="bg-emerald-500/25 border border-emerald-500/20 text-emerald-300 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full w-fit mx-auto md:mx-0">
+        <div className="flex-grow flex flex-col gap-3 relative z-10 text-center md:text-left">
+          <span className="bg-emerald-50/70 border border-emerald-250 text-emerald-700 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full w-fit mx-auto md:mx-0">
             Recurring Payouts
           </span>
-          <h2 className="text-2xl font-black tracking-tight leading-tight">
+          <h2 className="text-2xl font-black tracking-tight leading-tight text-slate-855">
             Earn 10% of Platform Fees on Referred Users
           </h2>
-          <p className="text-slate-300 text-xs font-semibold leading-relaxed max-w-md">
-            Invite contractors or hiring managers to the platform. Unlike one-off refer rewards, you earn a <strong className="text-emerald-400">recurring 10% commission</strong> on every single service fee the platform collects from their contracts and projects!
+          <p className="text-slate-500 text-xs font-semibold leading-relaxed max-w-md">
+            Invite contractors or hiring managers to the platform. Unlike one-off refer rewards, you earn a <strong className="text-emerald-700">recurring 10% commission</strong> on every single service fee the platform collects from their contracts and projects!
           </p>
         </div>
 
         {/* Copy affiliate link box */}
-        <div className="w-full md:max-w-md bg-white/5 border border-white/10 p-5 rounded-xl flex flex-col gap-3 backdrop-blur-md relative z-10">
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Your Affiliate Referral Link</label>
-          <div className="flex items-center gap-2 bg-slate-950/45 border border-white/10 rounded-lg p-2.5">
+        <div className="w-full md:max-w-md bg-slate-50 border border-slate-200 p-5 rounded-xl flex flex-col gap-3 relative z-10">
+          <label className="text-[10px] font-black text-slate-450 uppercase tracking-widest">Your Affiliate Referral Link</label>
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-2.5">
             <input
               type="text"
               readOnly
               value={affiliateLink}
-              className="flex-1 bg-transparent text-xs font-bold text-slate-100 outline-none select-all"
+              className="flex-1 bg-transparent text-xs font-bold text-slate-800 outline-none select-all"
             />
             <button
               onClick={handleCopyLink}
               className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white p-2 rounded-lg cursor-pointer flex items-center justify-center shrink-0"
               title="Copy link"
             >
-              {copied ? <FiCheck className="w-4 h-4 text-emerald-400" /> : <FiCopy className="w-4 h-4" />}
+              {copied ? <FiCheck className="w-4 h-4 text-emerald-500" /> : <FiCopy className="w-4 h-4" />}
             </button>
           </div>
           {copied && (
-            <span className="text-[10px] font-bold text-emerald-400 text-right animate-fade-in select-none">
+            <span className="text-[10px] font-bold text-emerald-600 text-right animate-fade-in select-none">
               Link copied to clipboard!
             </span>
           )}
@@ -187,8 +339,8 @@ export default function AffiliatePortalPage() {
           <ol className="list-decimal pl-4 text-xs font-semibold text-slate-500 leading-relaxed space-y-1">
             <li>Referred users must register through your unique link to bind to your affiliate account.</li>
             <li>When referred clients pay freelancers, or referred freelancers complete paid jobs, a service fee is collected by the system.</li>
-            <li>You receive **10%** of that service fee as a commission.</li>
-            <li>Commissions are recorded instantly in your ledger as **Pending**. Once approved by the administrator, they are moved to **Approved** and paid directly to your wallet balance.</li>
+            <li>You receive <strong>10%</strong> of that service fee as a commission.</li>
+            <li>Commissions are recorded instantly in your ledger as <strong>Pending</strong>. Once approved by the administrator, they are moved to <strong>Approved</strong> and paid directly to your wallet balance.</li>
           </ol>
         </div>
       </div>

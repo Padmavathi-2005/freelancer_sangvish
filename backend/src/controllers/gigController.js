@@ -917,24 +917,21 @@ export const getSimilarGigs = async (req, res) => {
     const query = `
       SELECT 
         g.*,
-        u.first_name || COALESCE(' ' || u.last_name, '') as freelancer_name,
+        COALESCE(u.display_name, u.name, TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), 'Freelancer') as freelancer_name,
         c.code as currency_code,
         c.symbol as currency_symbol,
         cat.category_name,
-        sub.sub_category_name,
-        sp.name as freelancer_plan_name,
-        sp.price as freelancer_plan_price
+        sub.sub_category_name
       FROM gigs g
-      JOIN users u ON g.freelancer_id = u.user_id
+      LEFT JOIN users u ON g.freelancer_id = u.user_id
       LEFT JOIN currencies c ON g.currency_id = c.currency_id
       LEFT JOIN categories cat ON g.category_id = cat.category_id
       LEFT JOIN sub_categories sub ON g.sub_category_id = sub.sub_category_id
-      LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
       WHERE g.status = 'Active' AND g.gig_id != $1 AND (g.sub_category_id = $2 OR g.category_id = $3)
-      ORDER BY COALESCE(sp.price, 0) DESC, g.created_at DESC
+      ORDER BY g.created_at DESC
       LIMIT 4
     `;
-    const result = await pool.query(query, [gig_id, sub_category_id, category_id]);
+    const result = await pool.query(query, [gig_id, sub_category_id || 0, category_id || 0]);
     return res.status(200).json(result.rows);
   } catch (error) {
     console.error("Error fetching similar gigs:", error);
@@ -996,7 +993,7 @@ export const createGigReview = async (req, res) => {
     await pool.query(
       `UPDATE gigs 
        SET reviews_count = (SELECT COUNT(*) FROM gig_reviews WHERE gig_id = $1),
-           reviews_avg_rating = (SELECT COALESCE(ROUND(AVG(rating), 1), 5.0) FROM gig_reviews WHERE gig_id = $1)
+           reviews_avg_rating = (SELECT COALESCE(ROUND(AVG(rating), 1), 0.0) FROM gig_reviews WHERE gig_id = $1)
        WHERE gig_id = $1`,
       [parseInt(id)]
     );

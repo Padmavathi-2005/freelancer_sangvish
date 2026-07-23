@@ -484,49 +484,49 @@ export default function TaxonomiesTab({
 
   if (tabName === "cleanup") {
     return (
-      <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm flex flex-col gap-6 animate-fadeIn text-left">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 shadow-sm flex flex-col gap-6 animate-fadeIn text-left">
         <div>
-          <h3 className="text-lg font-black text-slate-800">Database Cleanup & Reset</h3>
-          <p className="text-slate-505 text-xs sm:text-sm mt-0.5">
+          <h3 className="text-lg font-black text-slate-800 dark:text-white">Database Cleanup & Reset</h3>
+          <p className="text-slate-500 dark:text-slate-300 text-xs sm:text-sm mt-0.5">
             Reset transaction and order data. The following database table records will be permanently deleted:
           </p>
         </div>
 
-        <div className="bg-rose-50/50 border border-rose-200/60 rounded-xl p-6 flex flex-col gap-4">
-          <h4 className="text-xs font-black text-rose-800 uppercase tracking-wider">Affected Tables</h4>
-          <ul className="list-disc pl-5 text-xs text-rose-700 font-semibold space-y-2">
+        <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-6 flex flex-col gap-4">
+          <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Affected Tables</h4>
+          <ul className="list-disc pl-5 text-xs text-slate-700 dark:text-white font-medium space-y-2.5 leading-relaxed">
             <li>
-              <strong>Gigs & Skills (<code>gigs</code>, <code>gig_skills</code>)</strong>:
-              Deletes all listed freelancer services and skill associations.
+              <strong className="text-slate-900 dark:text-white">Gigs & Skills (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">gigs</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">gig_skills</code>)</strong>:
+              <span className="dark:text-white"> Deletes all listed freelancer services and skill associations.</span>
             </li>
             <li>
-              <strong>Jobs & Bid Proposals (<code>jobs</code>, <code>proposals</code>)</strong>:
-              Deletes all client-posted custom jobs and developer bid proposals.
+              <strong className="text-slate-900 dark:text-white">Jobs & Bid Proposals (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">jobs</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">proposals</code>)</strong>:
+              <span className="dark:text-white"> Deletes all client-posted custom jobs and developer bid proposals.</span>
             </li>
             <li>
-              <strong>Gig Applications & Orders (<code>gig_applications</code>)</strong>:
-              Deletes all client applications and active/completed gig orders.
+              <strong className="text-slate-900 dark:text-white">Gig Applications & Orders (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">gig_applications</code>)</strong>:
+              <span className="dark:text-white"> Deletes all client applications and active/completed gig orders.</span>
             </li>
             <li>
-              <strong>Contracts (<code>contracts</code>)</strong>:
-              Deletes all escrow contracts, milestones progress, and project history.
+              <strong className="text-slate-900 dark:text-white">Contracts (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">contracts</code>)</strong>:
+              <span className="dark:text-white"> Deletes all escrow contracts, milestones progress, and project history.</span>
             </li>
             <li>
-              <strong>Wallet Transactions & Withdrawals (<code>wallet_transactions</code>, <code>withdrawal_requests</code>)</strong>:
-              Deletes all transfer logs, deposit records, and withdrawal requests.
+              <strong className="text-slate-900 dark:text-white">Wallet Transactions & Withdrawals (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">wallet_transactions</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">withdrawal_requests</code>)</strong>:
+              <span className="dark:text-slate-200"> Deletes all transfer logs, deposit records, and withdrawal requests.</span>
             </li>
             <li>
-              <strong>User & Escrow Wallets (<code>wallets</code>)</strong>:
-              Resets all client, freelancer, and system wallets back to an initial balance of <code>$0.00</code>.
+              <strong className="text-slate-900 dark:text-white">User & Escrow Wallets (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">wallets</code>)</strong>:
+              <span className="dark:text-white"> Resets all client, freelancer, and system wallets back to an initial balance of </span><code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">$0.00</code>.
             </li>
             <li>
-              <strong>Messages & Conversations (<code>messages</code>, <code>conversations</code>)</strong>:
-              Deletes all chat messages and workspace communication channels.
+              <strong className="text-slate-900 dark:text-white">Messages & Conversations (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">messages</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">conversations</code>)</strong>:
+              <span className="dark:text-white"> Deletes all chat messages and workspace communication channels.</span>
             </li>
           </ul>
         </div>
 
-        <div className="pt-4 border-t border-slate-100 flex items-center gap-4">
+        <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-4">
           <button
             onClick={handleCleanDb}
             disabled={cleaning}

@@ -12,9 +12,12 @@ import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CustomSelect from "@/components/CustomSelect";
+import { useLanguage } from "@/context/LanguageContext";
 import { FiStar, FiHeart, FiClock, FiSearch, FiSliders, FiRefreshCw, FiChevronRight, FiGrid } from "react-icons/fi";
 
 function GigsSearchContent() {
+  const { t, formatPrice } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -29,6 +32,7 @@ function GigsSearchContent() {
   const [experienceLevel, setExperienceLevel] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("popular");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   // Dynamic SEO Setup
   useEffect(() => {
@@ -70,6 +74,41 @@ function GigsSearchContent() {
   // Wishlist and Toast states
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const uStr = localStorage.getItem("user");
+      if (uStr) {
+        const u = JSON.parse(uStr);
+        if (u && (u.user_id || u.id)) setCurrentUserId(Number(u.user_id || u.id));
+      }
+    } catch (e) {}
+  }, []);
+
+  // Affiliate states
+  const [isAffiliate, setIsAffiliate] = useState(false);
+  const [userReferralCode, setUserReferralCode] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_URL}/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const profile = await res.json();
+          setIsAffiliate(profile.is_affiliate === true || profile.is_affiliate === 1);
+          setUserReferralCode(profile.referral_code || "");
+        }
+      } catch (err) {
+        console.error("Error fetching user profile for affiliate check:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -195,15 +234,44 @@ function GigsSearchContent() {
 
   // Filter & Sort Logic
   const filteredGigs = gigs.filter((gig) => {
-    // 1. Text search (title, description, freelancer name)
+    // 1. Text search across ALL details with smart day & word matching
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      const matchTitle = gig.title?.toLowerCase().includes(query);
-      const matchDesc = gig.description?.toLowerCase().includes(query);
-      const matchCategory = gig.category_name?.toLowerCase().includes(query);
-      const matchFreelancer = gig.freelancer_name?.toLowerCase().includes(query);
-      if (!matchTitle && !matchDesc && !matchCategory && !matchFreelancer) {
-        return false;
+      const query = searchQuery.toLowerCase().trim();
+
+      // Check if query is a day pattern like "3d", "3 days", "3day", "7d", "7 days"
+      const dayMatch = query.match(/^(\d+)\s*d(ays?)?$/i);
+      if (dayMatch) {
+        const targetDays = parseInt(dayMatch[1]);
+        const gigDays = parseInt(gig.delivery_days || 0);
+        if (gigDays > 0 && gigDays <= targetDays) {
+          // Matched by delivery days!
+        } else {
+          // If gig delivery days exceeds searched days, check if title/skills contain explicit word match
+          const hasTitleMatch = gig.title && new RegExp(`\\b${query}\\b`, "i").test(gig.title);
+          const hasSkillMatch = Array.isArray(gig.skills) && gig.skills.some((s: any) => {
+            const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
+            return new RegExp(`\\b${query}\\b`, "i").test(str);
+          });
+          if (!hasTitleMatch && !hasSkillMatch) return false;
+        }
+      } else {
+        const matchTitle = gig.title?.toLowerCase().includes(query);
+        const matchDesc = gig.description ? (query.length <= 3 ? new RegExp(`\\b${query}\\b`, "i").test(gig.description) : gig.description.toLowerCase().includes(query)) : false;
+        const matchCategory = gig.category_name?.toLowerCase().includes(query);
+        const matchSubCat = gig.sub_category_name?.toLowerCase().includes(query);
+        const matchFreelancer = (gig.freelancer_name || gig.seller_name || gig.username || "")?.toLowerCase().includes(query);
+        const matchPrice = gig.price ? `${gig.price}` === query || `$${gig.price}` === query : false;
+        const matchLevel = gig.experience_level?.toLowerCase().includes(query);
+        const matchLocation = (gig.location || gig.country || "")?.toLowerCase().includes(query);
+        const matchSkills = Array.isArray(gig.skills) && gig.skills.some((s: any) => {
+          const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
+          return str.toLowerCase().includes(query);
+        });
+        const matchTags = Array.isArray(gig.tags) && gig.tags.some((t: any) => `${t}`.toLowerCase().includes(query));
+
+        if (!matchTitle && !matchDesc && !matchCategory && !matchSubCat && !matchFreelancer && !matchPrice && !matchLevel && !matchLocation && !matchSkills && !matchTags) {
+          return false;
+        }
       }
     }
 
@@ -358,8 +426,8 @@ function GigsSearchContent() {
       <Header />
 
       {/* Search Type Switcher */}
-      <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6">
+      <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none overflow-x-auto max-w-full no-scrollbar">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 sm:gap-6 shrink-0 w-max sm:w-full">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Category</span>
           <div className="flex gap-2">
             <button
@@ -371,7 +439,7 @@ function GigsSearchContent() {
               }}
               className="px-4 py-2 rounded-xl text-xs font-black bg-primary text-white shadow-sm transition-all cursor-pointer border-none"
             >
-              Explore Gigs
+              {t("nav_gigs", "Explore Gigs")}
             </button>
             <button
               onClick={() => {
@@ -382,7 +450,7 @@ function GigsSearchContent() {
               }}
               className="px-4 py-2 rounded-xl text-xs font-black bg-slate-50 hover:bg-slate-100 text-slate-655 transition-all cursor-pointer border-none"
             >
-              Find Projects
+              {t("nav_projects", "Find Projects")}
             </button>
             <button
               onClick={() => {
@@ -393,68 +461,73 @@ function GigsSearchContent() {
               }}
               className="px-4 py-2 rounded-xl text-xs font-black bg-slate-50 hover:bg-slate-100 text-slate-655 transition-all cursor-pointer border-none"
             >
-              Hire Freelancers
+              {t("nav_talent", "Hire Freelancers")}
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Grid Workspace */}
-      <main className="max-w-[1600px] mx-auto w-full py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+      <main className="max-w-[1600px] mx-auto w-full py-6 sm:py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
         
+        {/* Mobile Filter Toggle Button */}
+        <div className="lg:hidden col-span-1">
+          <button
+            type="button"
+            onClick={() => setShowMobileFilter(!showMobileFilter)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-xl shadow-xs text-xs font-black text-slate-800 hover:bg-slate-50 transition cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <FiSliders className="w-4 h-4 text-teal-700" />
+              <span>{t("refine_search", "Refine Search & Filters")}</span>
+            </span>
+            <span className="text-xxs font-extrabold bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+              {t("filters", "Filters")}
+            </span>
+          </button>
+        </div>
+
         {/* Left Side: Filtering Sidebar */}
-        <aside className="lg:col-span-3 space-y-6">
+        <aside className={`lg:col-span-3 space-y-6 ${showMobileFilter ? "block animate-fadeIn" : "hidden lg:block"}`}>
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 sticky top-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
                 <FiSliders className="w-4 h-4 text-teal-700" />
-                <span>Refine Search</span>
+                <span>{t("refine_search", "Refine Search")}</span>
               </h2>
               <button
                 onClick={handleResetFilters}
                 className="text-[10px] font-bold text-slate-400 hover:text-teal-700 transition flex items-center gap-1 cursor-pointer border-0 bg-transparent"
               >
                 <FiRefreshCw className="w-3 h-3" />
-                <span>Reset</span>
+                <span>{t("reset", "Reset")}</span>
               </button>
             </div>
 
             {/* Category Filter */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Category</label>
-              <select
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("category", "Category")}</label>
+              <CustomSelect
+                placeholder={t("all_categories", "All Categories")}
                 value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
+                options={categories.map((c) => ({ value: c.category_name, label: c.category_name }))}
+                onChange={(val) => {
+                  setSelectedCategory(val);
                   setSelectedSubcategory("");
                 }}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.category_id} value={c.category_name}>
-                    {c.category_name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             {/* Subcategory Filter (Displays only if a category is selected or is filtered) */}
             {selectedCategory && activeSubcategories.length > 0 && (
               <div className="space-y-2 animate-fadeIn">
-                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Subcategory</label>
-                <select
+                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("subcategory", "Subcategory")}</label>
+                <CustomSelect
+                  placeholder={t("all_subcategories", "All Subcategories")}
                   value={selectedSubcategory}
-                  onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-                >
-                  <option value="">All Subcategories</option>
-                  {activeSubcategories.map((s) => (
-                    <option key={s.sub_category_id} value={s.sub_category_name}>
-                      {s.sub_category_name}
-                    </option>
-                  ))}
-                </select>
+                  options={activeSubcategories.map((s) => ({ value: s.sub_category_name, label: s.sub_category_name }))}
+                  onChange={(val) => setSelectedSubcategory(val)}
+                />
               </div>
             )}
 
@@ -488,47 +561,47 @@ function GigsSearchContent() {
             {/* Delivery Days Filter */}
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Delivery Speed</label>
-              <select
+              <CustomSelect
+                placeholder="Any time duration"
                 value={maxDeliveryDays}
-                onChange={(e) => setMaxDeliveryDays(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">Any time duration</option>
-                <option value="1">Up to 24 hours</option>
-                <option value="3">Up to 3 days</option>
-                <option value="7">Up to 7 days</option>
-                <option value="14">Up to 14 days</option>
-              </select>
+                options={[
+                  { value: "1", label: "Up to 24 hours" },
+                  { value: "3", label: "Up to 3 days" },
+                  { value: "7", label: "Up to 7 days" },
+                  { value: "14", label: "Up to 14 days" },
+                ]}
+                onChange={(val) => setMaxDeliveryDays(val)}
+              />
             </div>
 
             {/* Rating Filter */}
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Minimum Rating</label>
-              <select
+              <CustomSelect
+                placeholder="Any Rating"
                 value={filterRating}
-                onChange={(e) => setFilterRating(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">Any Rating</option>
-                <option value="4.5">4.5 Stars &amp; Up</option>
-                <option value="4.0">4.0 Stars &amp; Up</option>
-                <option value="3.5">3.5 Stars &amp; Up</option>
-              </select>
+                options={[
+                  { value: "4.5", label: "4.5 Stars & Up" },
+                  { value: "4.0", label: "4.0 Stars & Up" },
+                  { value: "3.5", label: "3.5 Stars & Up" },
+                ]}
+                onChange={(val) => setFilterRating(val)}
+              />
             </div>
 
             {/* Experience Level */}
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Contractor Level</label>
-              <select
+              <CustomSelect
+                placeholder="Any Level"
                 value={experienceLevel}
-                onChange={(e) => setExperienceLevel(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">Any Level</option>
-                <option value="Beginner">Entry Level</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Expert">Expert</option>
-              </select>
+                options={[
+                  { value: "Beginner", label: "Entry Level" },
+                  { value: "Intermediate", label: "Intermediate" },
+                  { value: "Expert", label: "Expert" },
+                ]}
+                onChange={(val) => setExperienceLevel(val)}
+              />
             </div>
           </div>
         </aside>
@@ -545,7 +618,7 @@ function GigsSearchContent() {
               </span>
               <input
                 type="text"
-                placeholder="Search for service gigs..."
+                placeholder={t("search_gigs_placeholder", "Search for service gigs...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
@@ -555,19 +628,19 @@ function GigsSearchContent() {
             {/* Stats and Sort */}
             <div className="flex flex-wrap items-center gap-4 shrink-0 select-none">
               <p className="text-xs font-bold text-slate-500">
-                Showing <strong className="text-slate-800">{sortedGigs.length}</strong> active gigs
+                {t("showing", "Showing")} <strong className="text-slate-800">{sortedGigs.length}</strong> {t("active_gigs", "active gigs")}
               </p>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Sort by</span>
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">{t("sort_by", "Sort by")}</span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-750 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
                 >
-                  <option value="popular">Recommended / Popular</option>
-                  <option value="rating">Top Rated Status</option>
-                  <option value="price_asc">Price: Low to High</option>
-                  <option value="price_desc">Price: High to Low</option>
+                  <option value="popular">{t("sort_popular", "Recommended / Popular")}</option>
+                  <option value="rating">{t("sort_rating", "Top Rated Status")}</option>
+                  <option value="price_asc">{t("price_low_high", "Price: Low to High")}</option>
+                  <option value="price_desc">{t("price_high_low", "Price: High to Low")}</option>
                 </select>
               </div>
             </div>
@@ -575,26 +648,24 @@ function GigsSearchContent() {
 
           {/* Results grid */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <div className="w-10 h-10 border-4 border-teal-700/20 border-t-teal-700 rounded-full animate-spin" />
-              <p className="text-xs font-bold text-slate-450 uppercase tracking-wider">Scanning marketplace database...</p>
+            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl gap-4">
+              <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
+              <p className="text-xs font-bold text-slate-400">{t("loading_gigs", "Loading service gigs...")}</p>
             </div>
           ) : sortedGigs.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center flex flex-col items-center justify-center gap-4 max-w-xl mx-auto shadow-sm animate-fadeIn">
-              <div className="w-16 h-16 bg-slate-50 rounded-xl flex items-center justify-center text-3xl shadow-inner border border-slate-100">
-                🔍
+            <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl text-center p-6">
+              <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 text-2xl mb-4">
+                👋
               </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-extrabold text-slate-800">No Services Found</h3>
-                <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                  We couldn't find any active services matching your filter criteria. Try adjusting the keywords, price ranges, or click reset to browse all.
-                </p>
-              </div>
+              <h3 className="text-base font-black text-slate-850">{t("no_gigs_found", "No service gigs found")}</h3>
+              <p className="text-xs text-slate-500 font-bold max-w-sm mt-2">
+                {t("no_gigs_desc", "Try adjusting your price range, delivery speed, rating filter, or searching for other keywords.")}
+              </p>
               <button
                 onClick={handleResetFilters}
-                className="mt-2 bg-teal-700 hover:bg-teal-800 text-white font-extrabold px-6 py-2.5 rounded-xl text-xs shadow-md shadow-teal-700/10 hover:shadow-lg transition-all cursor-pointer active:scale-95"
+                className="mt-6 bg-primary hover:bg-primary-hover text-white text-xs font-black py-2.5 px-6 rounded-xl shadow-sm transition cursor-pointer border-none"
               >
-                Clear All Filters
+                {t("clear_filters", "Clear All Filters")}
               </button>
             </div>
           ) : (
@@ -615,41 +686,47 @@ function GigsSearchContent() {
                   const reviews = parseInt(gig.reviews_count || 0);
                   const rating = reviews > 0 ? parseFloat(gig.reviews_avg_rating).toFixed(1) : "0.0";
 
+                  const isOwner = Boolean(currentUserId && (Number(gig.user_id) === currentUserId || Number(gig.freelancer_id) === currentUserId || Number(gig.user?.user_id) === currentUserId));
+
                   return (
-                     <div
-                       key={gig.gig_id}
+                    <div
+                      key={gig.gig_id}
                        onClick={() => router.push(`/gigs/${gig.slug || gig.gig_id}`)}
                        className="group border border-slate-200/60 rounded-xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02] hover:border-teal-500/25 hover:shadow-xl hover:shadow-slate-200/50 cursor-pointer bg-white justify-between"
-                     >
+                      >
                        <div>
                          {/* Thumbnail block */}
                          {coverUrl ? (
                            <div className="relative w-full h-44 overflow-hidden bg-slate-100">
                              <img src={coverUrl} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" alt={gig.title} />
-                             <button
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleToggleWishlist(gig);
-                               }}
-                               className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
-                               title="Add to wishlist"
-                             >
-                               <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(gig.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
-                             </button>
+                             {!isOwner && (
+                               <button
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   handleToggleWishlist(gig);
+                                 }}
+                                 className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 shadow-md flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
+                                 title="Add to wishlist"
+                               >
+                                 <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(gig.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-500 dark:text-slate-300"}`} />
+                               </button>
+                             )}
                            </div>
                          ) : (
-                           <div className="relative w-full h-44 bg-gradient-to-tr from-slate-50 to-slate-100/55 flex items-center justify-center text-slate-350 select-none text-xxs font-extrabold tracking-wider uppercase">
+                           <div className="relative w-full h-44 bg-gradient-to-tr from-slate-50 to-slate-100/55 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center text-slate-350 select-none text-xxs font-extrabold tracking-wider uppercase">
                              🎨 Service Preview Showcase
-                             <button
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleToggleWishlist(gig);
-                               }}
-                               className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
-                               title="Add to wishlist"
-                             >
-                               <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(gig.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
-                             </button>
+                             {!isOwner && (
+                               <button
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   handleToggleWishlist(gig);
+                                 }}
+                                 className="absolute top-3 right-3 w-8 h-8 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 shadow-md flex items-center justify-center border border-slate-200 dark:border-slate-700 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
+                                 title="Add to wishlist"
+                               >
+                                 <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(gig.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-500 dark:text-slate-300"}`} />
+                               </button>
+                             )}
                            </div>
                          )}
 
@@ -662,7 +739,7 @@ function GigsSearchContent() {
                              {gig.wishlist_count > 0 && (
                                <span className="text-[9px] font-bold text-rose-500 flex items-center gap-0.5 select-none">
                                  <FiHeart className="w-3 h-3 fill-rose-500" />
-                                 <span>{gig.wishlist_count} saves</span>
+                                 <span>{gig.wishlist_count} {t("saves", "saves")}</span>
                                </span>
                              )}
                            </div>
@@ -691,7 +768,7 @@ function GigsSearchContent() {
                                  </div>
                                )}
                                <span className="text-[10px] text-slate-500 font-bold hover:text-teal-750 group-hover/author:text-teal-700 transition-colors">
-                                 By {gig.freelancer_name}
+                                 {t("by", "By")} {gig.freelancer_name}
                                </span>
                              </div>
                            )}
@@ -704,17 +781,33 @@ function GigsSearchContent() {
                              </div>
                              <div className="flex items-center gap-1">
                                <FiClock className="w-3 h-3 shrink-0" />
-                               <span>{gig.delivery_days || 3}d delivery</span>
+                               <span>{gig.delivery_days || 3}d {t("delivery", "delivery")}</span>
                              </div>
                            </div>
                          </div>
                        </div>
 
-                       {/* Footer Block */}
-                       <div className="px-5 pb-5 pt-3.5 flex items-center justify-between text-xs font-bold text-slate-400 select-none">
-                         <span className="uppercase tracking-wider">Starting At</span>
-                         <span className="text-base font-extrabold text-slate-900">${parseFloat(gig.price || 0).toLocaleString()}</span>
-                       </div>
+                        {/* Footer Block */}
+                        <div className="px-5 pb-5 pt-3.5 flex flex-col gap-3 border-t border-slate-100 mt-3">
+                          {isAffiliate && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const link = `${window.location.origin}/gigs/${gig.gig_id}?ref=${userReferralCode}`;
+                                navigator.clipboard.writeText(link);
+                                showToast("success", "Affiliate gig link copied!");
+                              }}
+                              className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 rounded-xl shadow-sm transition cursor-pointer text-center block border-none"
+                              title="Copy Affiliate Link"
+                            >
+                              Share & Earn
+                            </button>
+                          )}
+                          <div className="flex items-center justify-between text-xs font-bold text-slate-400 select-none">
+                            <span className="uppercase tracking-wider">{t("starting_at", "Starting At")}</span>
+                            <span className="text-base font-extrabold text-slate-900">${parseFloat(gig.price || 0).toLocaleString()}</span>
+                          </div>
+                        </div>
                      </div>
                   );
                 })}
@@ -723,7 +816,7 @@ function GigsSearchContent() {
               {totalPages > 1 && (
                 <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-100 text-xs font-bold select-none text-slate-805">
                   <span className="text-slate-400">
-                    Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedGigs.length)} of {sortedGigs.length} active gigs
+                    {t("showing", "Showing")} {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedGigs.length)} {t("of", "of")} {sortedGigs.length} {t("active_gigs", "active gigs")}
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -731,14 +824,14 @@ function GigsSearchContent() {
                       disabled={currentPage === 1}
                       className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     >
-                      Previous
+                      {t("btn_previous", "Previous")}
                     </button>
                     <button
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                       className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     >
-                      Next
+                      {t("btn_next", "Next")}
                     </button>
                   </div>
                 </div>

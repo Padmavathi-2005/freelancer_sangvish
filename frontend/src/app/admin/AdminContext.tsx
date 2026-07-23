@@ -1022,9 +1022,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
             };
 
             if (setting.setting_key === "primary_color") {
-              setPrimaryColor(formatHex(val?.color, "#10b981"));
+              const colorVal = typeof val === "string" ? val : (val?.color || val?.primary_color);
+              if (colorVal) setPrimaryColor(formatHex(colorVal, "#0f766e"));
             } else if (setting.setting_key === "secondary_color") {
-              setSecondaryColor(formatHex(val?.color, "#06b6d4"));
+              const colorVal = typeof val === "string" ? val : (val?.color || val?.secondary_color);
+              if (colorVal) setSecondaryColor(formatHex(colorVal, "#06b6d4"));
             } else if (setting.setting_key === "theme") {
               setSiteTheme(val?.theme || "light");
             } else if (setting.setting_key === "platform_fee") {

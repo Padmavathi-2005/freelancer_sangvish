@@ -277,6 +277,7 @@ interface DashboardContextType {
   siteTheme: string; setSiteTheme: (v: string) => void;
   siteName: string; setSiteName: (v: string) => void;
   siteLogo: string; setSiteLogo: (v: string) => void;
+  siteLogoDark: string; setSiteLogoDark: (v: string) => void;
 
   // Core Dashboard State (merged from Dashboard.tsx)
   userName: string; setUserName: React.Dispatch<React.SetStateAction<string>>;
@@ -674,6 +675,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [siteTheme, setSiteThemeState] = useState("light");
   const [siteName, setSiteName] = useState("Buy2Lancer");
   const [siteLogo, setSiteLogo] = useState("/public/logo.png");
+  const [siteLogoDark, setSiteLogoDark] = useState("/public/logo.png");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -982,9 +984,64 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const [freelancersList, setFreelancersList] = useState<Freelancer[]>([]);
+
+  useEffect(() => {
+    const fetchFreelancers = async () => {
+      try {
+        const res = await fetch(`${API_URL}/freelancers/public/list`);
+        if (res.ok) {
+          const data = await res.json();
+          const mapped: Freelancer[] = data.map((f: any, index: number) => {
+            const colors = [
+              "from-violet-500 to-indigo-500",
+              "from-cyan-500 to-blue-500",
+              "from-emerald-500 to-teal-500",
+              "from-rose-500 to-pink-500",
+              "from-amber-500 to-orange-500",
+              "from-purple-500 to-fuchsia-500"
+            ];
+            const avatarColor = colors[index % colors.length];
+
+            let category: "development" | "design" | "marketing" | "ai" = "development";
+            const catName = (f.category_name || "").toLowerCase();
+            if (catName.includes("dev") || catName.includes("software") || catName.includes("program")) {
+              category = "development";
+            } else if (catName.includes("design") || catName.includes("creative") || catName.includes("ux") || catName.includes("ui")) {
+              category = "design";
+            } else if (catName.includes("market") || catName.includes("sale") || catName.includes("growth")) {
+              category = "marketing";
+            } else if (catName.includes("ai") || catName.includes("intelligence") || catName.includes("machine") || catName.includes("ml")) {
+              category = "ai";
+            }
+
+            return {
+              id: f.user_id.toString(),
+              name: f.name || "Freelancer Partner",
+              avatarColor,
+              role: f.professional_title || "Freelancer Expert",
+              rating: typeof f.rating !== "undefined" && f.rating !== null ? parseFloat(f.rating) : 5.0,
+              completedJobs: typeof f.completed_jobs !== "undefined" && f.completed_jobs !== null ? parseInt(f.completed_jobs) : 0,
+              hourlyRate: parseFloat(f.hourly_rate) || 50,
+              skills: Array.isArray(f.skills) ? f.skills : [],
+              bio: f.bio || "No professional overview bio provided yet by this freelancer partner.",
+              verified: f.vetting_status === "Approved",
+              category
+            };
+          });
+          setFreelancersList(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching public freelancers in DashboardContext:", err);
+      }
+    };
+    fetchFreelancers();
+  }, []);
+
   // Filter freelancers
   const filteredFreelancers = useMemo(() => {
-    return freelancersData.filter((freelancer) => {
+    const list = freelancersList.length > 0 ? freelancersList : freelancersData;
+    return list.filter((freelancer) => {
       const matchesCategory = selectedCategory === "all" || freelancer.category === selectedCategory;
       const matchesSearch =
         freelancer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -992,7 +1049,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         freelancer.skills.some((skill) => skill.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, freelancersList]);
 
   const triggerToast = (type: "success" | "warning" | "error", message: string, details?: string) => {
     setApiAlert({ show: true, type, message, details });
@@ -1206,6 +1263,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             } else if (setting.setting_key === "site_settings") {
               if (val?.site_name) setSiteName(val.site_name);
               if (val?.site_logo) setSiteLogo(val.site_logo);
+              if (val?.site_logo_dark) setSiteLogoDark(val.site_logo_dark);
             }
           });
         }
@@ -3178,6 +3236,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         const data = await res.json();
+        await fetchConversations();
         setActiveTab("inbox");
         setSelectedConvId(data.conversationId);
         setSelectedFreelancerProfile(null);
@@ -3984,7 +4043,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     handleGigToggleSkill, handleCreateGigSubmit, deleteExperience, deleteEducation,
     deleteCertification, handleSaveStep, handleSaveClientStepSettings,
     handleStartConversation, handleUpdateGigApplication, setActiveTab, activeTab,
-    siteName, setSiteName, siteLogo, setSiteLogo,
+    siteName, setSiteName, siteLogo, setSiteLogo, siteLogoDark, setSiteLogoDark,
     handleRoleSwitch, handleToggleSkill, handleSkipStep2, updateOnboardingStep,
     handleSkipStep3, handleSaveStep3, handleAddProject, handleFinishOnboarding,
     handleSaveClientStep, enabledDocFields, userUploadedDocs, loadingDocFields,
@@ -4041,7 +4100,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     notifications, unreadNotificationsCount, isNotificationsOpen, filteredFreelancers,
     profileStep, isEditingProfile, showPublishConfirmModal, clientBasics, profileBasics,
     selectedSkills, availableSkillsList, apiAlert, stepsStatus, profileCompletionProgress,
-    activeTab, siteName, siteLogo,
+    activeTab, siteName, siteLogo, siteLogoDark, setSiteLogoDark,
     handleRoleSwitch, handleToggleSkill, handleSkipStep2, updateOnboardingStep,
     handleSkipStep3, handleSaveStep3, handleAddProject, handleFinishOnboarding,
     handleSaveClientStep, enabledDocFields, userUploadedDocs, loadingDocFields,

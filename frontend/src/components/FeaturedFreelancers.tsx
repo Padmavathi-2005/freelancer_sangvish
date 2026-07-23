@@ -22,6 +22,8 @@ interface Freelancer {
   skills: string[];
   slug?: string;
   is_featured?: boolean;
+  rating?: number;
+  completed_jobs?: number;
 }
 
 const FALLBACK_FREELANCERS: Freelancer[] = [
@@ -163,7 +165,7 @@ export default function FeaturedFreelancers() {
           </div>
           <Link
             href="/talent"
-            className="inline-flex items-center gap-1 text-sm font-bold text-[#0a5a54] hover:text-[#073f3a] transition-all duration-200 group shrink-0"
+            className="inline-flex items-center gap-1 text-sm font-bold text-primary hover:opacity-80 transition-all duration-200 group shrink-0"
           >
             {t("featured_btn", "See all")}
             <span className="transform group-hover:translate-x-1 transition-transform">→</span>
@@ -217,7 +219,7 @@ export default function FeaturedFreelancers() {
                 <div
                   key={freelancer.user_id || index}
                   onClick={handleCardClick}
-                  className="bg-slate-50/50 border border-slate-200/60 rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:bg-white hover:border-[#0a5a54]/30 hover:shadow-xl hover:shadow-slate-200/50 flex flex-col justify-between cursor-pointer"
+                  className="bg-slate-50/50 border border-slate-200/60 rounded-xl p-6 transition-all duration-300 hover:scale-[1.02] hover:bg-white hover:border-primary/30 hover:shadow-xl hover:shadow-slate-200/50 flex flex-col justify-between cursor-pointer"
                 >
                   <div>
                     {/* Profile Header */}
@@ -232,7 +234,7 @@ export default function FeaturedFreelancers() {
                           }}
                         />
                       ) : (
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#0a5a54]/20 to-[#0a5a54]/10 flex items-center justify-center font-bold text-lg text-[#0a5a54] border border-[#0a5a54]/10 shrink-0">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center font-bold text-lg text-primary border border-primary/10 shrink-0">
                           {getInitials(freelancer.name || freelancer.email || "Freelancer")}
                         </div>
                       )}
@@ -255,7 +257,7 @@ export default function FeaturedFreelancers() {
                           {freelancer.professional_title || freelancer.category_name || "Freelancer"}
                         </p>
                         <div className="flex items-center gap-1 mt-1 text-xs">
-                          <span className="text-[#0a5a54] font-bold">★ 5.0</span>
+                          <span className="text-primary font-bold">★ {freelancer.rating ? freelancer.rating.toFixed(1) : "5.0"}</span>
                           {freelancer.experience_level && (
                             <span className="text-slate-400 font-medium">• {freelancer.experience_level}</span>
                           )}
@@ -280,7 +282,7 @@ export default function FeaturedFreelancers() {
                       )}
                       {freelancer.skills.length === 0 && !freelancer.sub_category_name && (
                         <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-xs font-semibold italic">
-                          Skills not listed
+                          {t("skills_not_listed", "Skills not listed")}
                         </span>
                       )}
                     </div>
@@ -290,12 +292,12 @@ export default function FeaturedFreelancers() {
                   <div className="flex items-center justify-between pt-4 border-t border-slate-100">
                     <div className="flex flex-col">
                       <span className="text-xxs uppercase tracking-wider text-slate-400 font-bold">
-                        {freelancer.hourly_rate ? "Hourly Rate" : "Rate"}
+                        {freelancer.hourly_rate ? t("hourly_rate", "Hourly Rate") : t("rate", "Rate")}
                       </span>
                       <span className="text-base font-extrabold text-slate-900">
                         {freelancer.hourly_rate
                           ? `$${parseFloat(freelancer.hourly_rate).toLocaleString()}/hr`
-                          : "Request Quote"}
+                          : t("request_quote", "Request Quote")}
                       </span>
                     </div>
                     <button
@@ -312,7 +314,7 @@ export default function FeaturedFreelancers() {
                       }}
                       className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all duration-200 active:scale-[0.97] hover:shadow-lg cursor-pointer border-none"
                     >
-                      Hire Now
+                      {t("btn_hire_now", "Hire Now")}
                     </button>
                   </div>
                 </div>

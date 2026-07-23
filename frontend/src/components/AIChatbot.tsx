@@ -280,6 +280,9 @@ export default function AIChatbot() {
                 setSiteLogo(val.site_logo);
                 localStorage.setItem("cached_site_logo", val.site_logo);
               }
+              if (val?.site_logo_dark) {
+                localStorage.setItem("cached_site_logo_dark", val.site_logo_dark);
+              }
               if (val?.site_name) {
                 setSiteName(val.site_name);
                 localStorage.setItem("cached_site_name", val.site_name);

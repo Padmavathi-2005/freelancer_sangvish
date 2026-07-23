@@ -92,8 +92,8 @@ export default function PopularServices() {
         {/* Section Header */}
         <div className="flex items-center justify-between border-b border-slate-200/60 pb-4">
           <div>
-            <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase block mb-1">
-              Top Ranked Services
+            <span className="text-[10px] font-black text-primary tracking-widest uppercase block mb-1">
+              {t("top_ranked_services", "Top Ranked Services")}
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
               {t("popular_services_title", "Popular Services")}
@@ -101,10 +101,10 @@ export default function PopularServices() {
           </div>
           <button
             onClick={() => router.push("/gigs")}
-            className="flex items-center gap-1.5 text-xs font-black text-teal-700 hover:text-teal-800 transition-colors bg-teal-50 border border-teal-150 px-4 py-2.5 rounded-xl shadow-sm cursor-pointer group"
+            className="flex items-center gap-1.5 text-xs font-black text-primary hover:opacity-80 transition-colors bg-primary-light border border-primary/20 px-4 py-2.5 rounded-xl shadow-sm cursor-pointer group"
           >
             <FiGrid className="w-3.5 h-3.5 shrink-0" />
-            <span>View All</span>
+            <span>{t("view_all", "View All")}</span>
             <FiArrowRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5" />
           </button>
         </div>
@@ -250,17 +250,31 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
           </div>
         )}
         {/* Category badge overlaid on image */}
-        <span className="absolute top-3 left-3 text-[9px] font-black text-teal-700 bg-white/90 border border-teal-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm">
+        <span className="absolute top-3 left-3 text-[9px] font-black text-primary bg-white/90 border border-primary/20 px-2.5 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm">
           {gig.category_name || "Development"}
         </span>
         {/* Interactive wishlist button */}
-        <button
-          onClick={toggleWishlist}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
-          title="Save to wishlist"
-        >
-          <FiHeart className={`w-3.5 h-3.5 transition-colors ${isSaved ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
-        </button>
+        {(() => {
+          let currentUserId: number | null = null;
+          try {
+            const uStr = localStorage.getItem("user");
+            if (uStr) {
+              const u = JSON.parse(uStr);
+              if (u && (u.user_id || u.id)) currentUserId = Number(u.user_id || u.id);
+            }
+          } catch (e) {}
+          const isOwner = Boolean(currentUserId && (Number(gig.user_id) === currentUserId || Number(gig.freelancer_id) === currentUserId || Number(gig.user?.user_id) === currentUserId));
+          if (isOwner) return null;
+          return (
+            <button
+              onClick={toggleWishlist}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
+              title="Save to wishlist"
+            >
+              <FiHeart className={`w-3.5 h-3.5 transition-colors ${isSaved ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
+            </button>
+          );
+        })()}
       </div>
 
       {/* Content */}

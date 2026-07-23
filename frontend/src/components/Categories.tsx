@@ -108,6 +108,7 @@ function SkeletonCard() {
 
 // ─── Category card ────────────────────────────────────────────────────────────
 function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void }) {
+  const { t } = useLanguage();
   const count = parseInt(cat.freelancer_count || "0");
   const imgSrc = cat.category_image
     ? cat.category_image.startsWith("http")
@@ -120,7 +121,7 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
       onClick={onClick}
       className="group rounded-xl border border-slate-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 overflow-hidden cursor-pointer
                  transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70 hover:shadow-zinc-950/30
-                 hover:border-[#0F766E]/30 flex flex-col"
+                 hover:border-primary/30 flex flex-col"
     >
       {/* Image / icon area */}
       <div className="relative h-44 bg-slate-50 dark:bg-zinc-850 flex items-center justify-center overflow-hidden shrink-0">
@@ -131,15 +132,15 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center gap-2 text-[#0F766E]/40">
+          <div className="flex flex-col items-center justify-center gap-2 text-primary/40">
             <CategoryIcon name={cat.category_name} />
           </div>
         )}
         {/* Freelancer count badge */}
         {count > 0 && (
           <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full
-                           bg-[#0F766E] text-white shadow-sm">
-            {count.toLocaleString()} active
+                           bg-primary text-white shadow-sm">
+            {count.toLocaleString()} {t("active", "active")}
           </span>
         )}
       </div>
@@ -162,11 +163,11 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
             onClick();
           }}
           className="mt-auto w-full flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-3 rounded-xl
-                     bg-[#0F766E] text-white
-                     hover:bg-[#06b6d4]
-                     transition-all duration-300 group-hover:shadow-md group-hover:shadow-[#0F766E]/20"
+                     bg-primary text-white
+                     hover:bg-primary-hover
+                     transition-all duration-300 group-hover:shadow-md group-hover:shadow-primary/20"
         >
-          Browse
+          {t("btn_browse", "Browse")}
           <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5">
             <path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
           </svg>
@@ -175,8 +176,6 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
     </div>
   );
 }
-
-
 
 // ─── Main section ─────────────────────────────────────────────────────────────
 export default function Categories() {
@@ -219,14 +218,13 @@ export default function Categories() {
           {/* View all — primary filled, secondary on hover */}
           <button
             onClick={() => router.push("/categories")}
-            className="flex-shrink-0 inline-flex items-center gap-2
-                       text-sm font-bold text-white bg-[#0F766E]
+            className="flex-shrink-0 inline-flex items-center justify-center text-center gap-2
+                       text-sm font-bold text-white bg-primary hover:bg-primary-hover
                        px-5 py-2.5 rounded-xl
-                        hover:bg-[#06b6d4]
-                       shadow-md shadow-[#0F766E]/20
+                       shadow-md shadow-primary/20
                        transition-all duration-300 active:scale-[0.98]"
           >
-            View all categories
+            {t("btn_view_all_categories", "View all categories")}
             <svg viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4">
               <path fillRule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
             </svg>

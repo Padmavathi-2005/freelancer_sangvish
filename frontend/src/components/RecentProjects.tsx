@@ -144,7 +144,7 @@ export default function RecentProjects() {
         <div className="flex items-center justify-between border-b border-slate-200/60 pb-4">
           <div>
             <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase block mb-1">
-              Active Marketplace Needs
+              {t("active_marketplace_needs", "Active Marketplace Needs")}
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
               {t("recent_projects_title", "Latest Projects")}
@@ -155,7 +155,7 @@ export default function RecentProjects() {
             className="flex items-center gap-1.5 text-xs font-black text-teal-700 hover:text-teal-800 transition-colors bg-teal-50 border border-teal-150 px-4 py-2.5 rounded-xl shadow-sm cursor-pointer group"
           >
             <FiGrid className="w-3.5 h-3.5 shrink-0" />
-            <span>Browse All</span>
+            <span>{t("browse_all", "Browse All")}</span>
             <FiArrowRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5" />
           </button>
         </div>

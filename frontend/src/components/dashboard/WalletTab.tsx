@@ -82,28 +82,28 @@ export default function WalletTab() {
 
             <div className="flex justify-between items-start z-10">
               <div>
-                <p className="text-[10px] uppercase font-bold tracking-widest text-teal-200">
+                <p className="text-[10px] uppercase font-black tracking-widest text-white/95">
                   LancerFlow Wallet
                 </p>
-                <h3 className="text-lg font-bold tracking-tight text-white/95 mt-0.5">
+                <h3 className="text-lg font-black tracking-tight text-white mt-1">
                   {userRole === "client" ? "Client Ledger" : "Freelancer Earnings"}
                 </h3>
               </div>
-              <span className="text-xl font-bold tracking-tight opacity-75">VISA</span>
+              <span className="text-xl font-black tracking-tight text-white/90">VISA</span>
             </div>
 
             <div className="z-10 mt-6">
-              <p className="text-2xl font-black tracking-tight select-all">
+              <p className="text-2xl font-black tracking-tight text-white select-all">
                 ${balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
-              <p className="text-[10px] text-teal-100 font-semibold uppercase tracking-wider mt-1">
+              <p className="text-[10px] text-white/85 font-black uppercase tracking-wider mt-1">
                 Active Virtual Balance (USD)
               </p>
             </div>
 
-            <div className="flex justify-between items-center text-[10px] text-teal-200/90 font-bold z-10 mt-2">
+            <div className="flex justify-between items-center text-[10px] text-white/90 font-black z-10 mt-3.5">
               <span>ACC #### #### {wallet?.wallet_id || "0"}</span>
-              <span className="uppercase">STATUS: ACTIVE</span>
+              <span className="uppercase bg-emerald-500/25 text-emerald-200 px-2 py-0.5 rounded-md border border-emerald-400/25 text-[9px] tracking-wider">STATUS: ACTIVE</span>
             </div>
           </div>
 

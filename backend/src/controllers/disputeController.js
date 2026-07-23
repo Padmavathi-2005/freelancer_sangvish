@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 import MessageModel from "../models/messageModel.js";
 import Notification from "../models/notificationModel.js";
+import { sendEmail } from "../utils/emailHelper.js";
 
 /**
  * Re-evaluates a job's Open/Closed status based on how many non-cancelled
@@ -572,6 +573,114 @@ export const escalateDispute = async (req, res) => {
   }
 };
 
+const dispatchDisputeResolutionNotifications = async (io, dispute, contract, verdict, clientRefund, freelancerPayout, splitPercent, budget) => {
+  try {
+    // 1. Fetch site settings
+    const siteSettingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'site_settings'");
+    const siteSettings = siteSettingsRes.rows[0]?.setting_value || {};
+    const siteName = siteSettings.site_name || "Buy2Lancer";
+
+    // 2. Fetch Client and Freelancer emails
+    const usersInfoRes = await pool.query(
+      "SELECT user_id, email, first_name || ' ' || COALESCE(last_name, '') as name FROM users WHERE user_id IN ($1, $2)",
+      [dispute.client_id, dispute.freelancer_id]
+    );
+    const clientUser = usersInfoRes.rows.find(u => u.user_id === dispute.client_id);
+    const freelancerUser = usersInfoRes.rows.find(u => u.user_id === dispute.freelancer_id);
+
+    let clientTitle = "";
+    let clientMsg = "";
+    let clientEmailSubject = "";
+    let clientEmailText = "";
+
+    let freelancerTitle = "";
+    let freelancerMsg = "";
+    let freelancerEmailSubject = "";
+    let freelancerEmailText = "";
+
+    if (verdict === "Buyer Wins") {
+      clientTitle = "Dispute Resolved: Refunded";
+      clientMsg = `The dispute for the contract "${contract.title}" has been resolved by the administrator in your favor. A full refund of $${budget.toFixed(2)} has been returned to your wallet.`;
+      clientEmailSubject = `Dispute Resolved: Refund Processed - ${contract.title}`;
+      clientEmailText = `Dear ${clientUser?.name || "Client"},\n\nThe dispute regarding the contract "${contract.title}" has been reviewed and resolved by an administrator mediator in your favor.\n\nA full refund of $${budget.toFixed(2)} has been credited back to your wallet. You can view this transaction in your dashboard wallet tab.\n\nBest regards,\nThe ${siteName} Team`;
+
+      freelancerTitle = "Dispute Resolved: Client Refunded";
+      freelancerMsg = `The dispute for the contract "${contract.title}" has been resolved by the administrator. The escrow balance has been refunded to the client.`;
+      freelancerEmailSubject = `Dispute Resolved: Escrow Refunded - ${contract.title}`;
+      freelancerEmailText = `Dear ${freelancerUser?.name || "Freelancer"},\n\nThe dispute regarding the contract "${contract.title}" has been reviewed and resolved by an administrator mediator.\n\nThe arbitrator has decided to refund the escrow balance of $${budget.toFixed(2)} back to the client.\n\nBest regards,\nThe ${siteName} Team`;
+    } else if (verdict === "Freelancer Wins") {
+      clientTitle = "Dispute Resolved: Escrow Released";
+      clientMsg = `The dispute for the contract "${contract.title}" has been resolved by the administrator. Escrow funds of $${budget.toFixed(2)} have been released to the freelancer.`;
+      clientEmailSubject = `Dispute Resolved: Escrow Released - ${contract.title}`;
+      clientEmailText = `Dear ${clientUser?.name || "Client"},\n\nThe dispute regarding the contract "${contract.title}" has been reviewed and resolved by an administrator mediator.\n\nThe arbitrator has decided to release the escrow balance of $${budget.toFixed(2)} to the freelancer.\n\nBest regards,\nThe ${siteName} Team`;
+
+      freelancerTitle = "Dispute Resolved: Payout Released";
+      freelancerMsg = `The dispute for the contract "${contract.title}" has been resolved by the administrator in your favor. Escrow funds of $${budget.toFixed(2)} have been released to your wallet.`;
+      freelancerEmailSubject = `Dispute Resolved: Payout Released - ${contract.title}`;
+      freelancerEmailText = `Dear ${freelancerUser?.name || "Freelancer"},\n\nThe dispute regarding the contract "${contract.title}" has been reviewed and resolved by an administrator mediator in your favor.\n\nEscrow funds of $${budget.toFixed(2)} have been credited to your wallet. You can view this transaction in your dashboard wallet tab.\n\nBest regards,\nThe ${siteName} Team`;
+    } else if (verdict === "Partial Split") {
+      clientTitle = "Dispute Resolved: Split Payout";
+      clientMsg = `The dispute for the contract "${contract.title}" has been resolved via split. You received a refund of ${splitPercent}% ($${clientRefund.toFixed(2)}).`;
+      clientEmailSubject = `Dispute Resolved: Split Payout - ${contract.title}`;
+      clientEmailText = `Dear ${clientUser?.name || "Client"},\n\nThe dispute regarding the contract "${contract.title}" has been reviewed and resolved by an administrator mediator via split payout.\n\n• Client Refund: ${splitPercent}% ($${clientRefund.toFixed(2)})\n• Freelancer Payout: ${(100 - splitPercent)}% ($${freelancerPayout.toFixed(2)})\n\nThe split refund has been credited back to your wallet.\n\nBest regards,\nThe ${siteName} Team`;
+
+      freelancerTitle = "Dispute Resolved: Split Payout";
+      freelancerMsg = `The dispute for the contract "${contract.title}" has been resolved via split. You received a payout of ${100 - splitPercent}% ($${freelancerPayout.toFixed(2)}).`;
+      freelancerEmailSubject = `Dispute Resolved: Split Payout - ${contract.title}`;
+      freelancerEmailText = `Dear ${freelancerUser?.name || "Freelancer"},\n\nThe dispute regarding the contract "${contract.title}" has been reviewed and resolved by an administrator mediator via split payout.\n\n• Client Refund: ${splitPercent}% ($${clientRefund.toFixed(2)})\n• Freelancer Payout: ${(100 - splitPercent)}% ($${freelancerPayout.toFixed(2)})\n\nYour split payout has been credited to your wallet.\n\nBest regards,\nThe ${siteName} Team`;
+    } else {
+      // Revision Required
+      clientTitle = "Dispute Update: Revision Requested";
+      clientMsg = `The dispute for the contract "${contract.title}" has been placed in pending revision. The administrator requested the freelancer to submit revised work.`;
+      clientEmailSubject = `Dispute Update: Revision Requested - ${contract.title}`;
+      clientEmailText = `Dear ${clientUser?.name || "Client"},\n\nThe dispute regarding the contract "${contract.title}" has been reviewed. The administrator mediator has requested the freelancer to make revisions.\n\nThe contract is placed in pending revision mode. We will notify you once revised work is submitted.\n\nBest regards,\nThe ${siteName} Team`;
+
+      freelancerTitle = "Dispute Update: Revision Required";
+      freelancerMsg = `The dispute for the contract "${contract.title}" requires revisions. Please review comments and submit revised work.`;
+      freelancerEmailSubject = `Dispute Update: Revision Required - ${contract.title}`;
+      freelancerEmailText = `Dear ${freelancerUser?.name || "Freelancer"},\n\nThe dispute regarding the contract "${contract.title}" has been reviewed. The administrator mediator has requested that you submit revised work.\n\nPlease coordinate the requested adjustments and submit the revised work to resume contract processing.\n\nBest regards,\nThe ${siteName} Team`;
+    }
+
+    // Create in-app notifications
+    const notifClient = await Notification.create({
+      userId: dispute.client_id,
+      title: clientTitle,
+      message: clientMsg,
+      type: "dispute",
+      referenceId: dispute.dispute_id.toString()
+    });
+
+    const notifFreelancer = await Notification.create({
+      userId: dispute.freelancer_id,
+      title: freelancerTitle,
+      message: freelancerMsg,
+      type: "dispute",
+      referenceId: dispute.dispute_id.toString()
+    });
+
+    // Realtime emits
+    if (io) {
+      io.to(`user_${dispute.client_id}`).emit("new_notification", notifClient);
+      io.to(`user_${dispute.freelancer_id}`).emit("new_notification", notifFreelancer);
+    }
+
+    // Send emails
+    if (clientUser?.email) {
+      sendEmail({ to: clientUser.email, subject: clientEmailSubject, text: clientEmailText }).catch(err => {
+        console.error("Failed to send dispute email to client:", err);
+      });
+    }
+    if (freelancerUser?.email) {
+      sendEmail({ to: freelancerUser.email, subject: freelancerEmailSubject, text: freelancerEmailText }).catch(err => {
+        console.error("Failed to send dispute email to freelancer:", err);
+      });
+    }
+
+  } catch (err) {
+    console.error("Failed to dispatch dispute resolution notifications/emails:", err);
+  }
+};
+
 // 6. ADMIN RESOLVE
 export const adminResolve = async (req, res) => {
   try {
@@ -662,6 +771,9 @@ export const adminResolve = async (req, res) => {
         };
         await postSystemChatMessage(req.io, dispute.conversation_id, adminUserId, payload);
 
+        // Send notifications and emails
+        dispatchDisputeResolutionNotifications(req.io, dispute, contract, "Buyer Wins", budget, 0, 100, budget);
+
         return res.json({ message: "Resolved successfully: Buyer Wins." });
       } catch (txErr) {
         await pool.query("ROLLBACK");
@@ -713,6 +825,9 @@ export const adminResolve = async (req, res) => {
           details: `Admin Mediator resolved dispute in favor of the Freelancer. Escrow funds of $${budget.toFixed(2)} have been released. Freelancer paid $${budget.toFixed(2)} and received a net amount of $${freelancerNet.toFixed(2)}.`
         };
         await postSystemChatMessage(req.io, dispute.conversation_id, adminUserId, payload);
+
+        // Send notifications and emails
+        dispatchDisputeResolutionNotifications(req.io, dispute, contract, "Freelancer Wins", 0, budget, 0, budget);
 
         return res.json({ message: "Resolved successfully: Freelancer Wins." });
       } catch (txErr) {
@@ -789,6 +904,9 @@ export const adminResolve = async (req, res) => {
         };
         await postSystemChatMessage(req.io, dispute.conversation_id, adminUserId, payload);
 
+        // Send notifications and emails
+        dispatchDisputeResolutionNotifications(req.io, dispute, contract, "Partial Split", clientRefund, freelancerPayout, splitPercent, budget);
+
         return res.json({ message: "Resolved successfully: Partial Split." });
       } catch (txErr) {
         await pool.query("ROLLBACK");
@@ -809,6 +927,9 @@ export const adminResolve = async (req, res) => {
         details: "Admin Mediator has requested the Freelancer to revise and update deliverables. Dispute placed in pending revision mode."
       };
       await postSystemChatMessage(req.io, dispute.conversation_id, adminUserId, payload);
+
+      // Send notifications and emails
+      dispatchDisputeResolutionNotifications(req.io, dispute, contract, "Revision Required", 0, 0, 0, budget);
 
       return res.json({ message: "Resolved successfully: Revision Required." });
     }

@@ -297,11 +297,11 @@ export default function PlanDetailsPage() {
 
   if (error || !plan) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="bg-white border border-slate-200 shadow-xl rounded-xl p-8 max-w-md text-center flex flex-col items-center gap-5">
-          <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 text-2xl">⚠️</div>
-          <h2 className="text-xl font-black text-slate-900">Plan Error</h2>
-          <p className="text-xs text-slate-500 font-semibold leading-relaxed">{error || "Subscription tier details are unavailable."}</p>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#09090b] flex items-center justify-center p-6 transition-colors duration-300">
+        <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-xl rounded-xl p-8 max-w-md text-center flex flex-col items-center gap-5">
+          <div className="w-16 h-16 bg-rose-50 dark:bg-rose-950/20 rounded-full flex items-center justify-center text-rose-600 dark:text-rose-450 text-2xl">⚠️</div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white">Plan Error</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">{error || "Subscription tier details are unavailable."}</p>
           <Link href="/" className="px-6 py-2.5 bg-teal-700 text-white font-bold text-xs rounded-xl shadow hover:bg-teal-800 transition">
             Return Home
           </Link>
@@ -312,20 +312,21 @@ export default function PlanDetailsPage() {
 
   const priceVal = parseFloat((plan.price || 0).toString().replace(/[^0-9.]/g, "") || "0");
   const isCurrentActive = activePlanId === plan.plan_id;
+  const displayPlans = plans.filter(p => (p.plan_role || "seller") === (plan?.plan_role || "seller"));
 
   return (
-    <div className="min-h-screen bg-[#fafbfc] text-slate-900 pb-20">
+    <div className="min-h-screen bg-[#fafbfc] dark:bg-[#09090b] text-slate-900 dark:text-slate-100 pb-20 transition-colors duration-300">
       {/* Main Website Header */}
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
         {success ? (
-          <div className="bg-white border border-emerald-100 shadow-2xl rounded-xl p-12 max-w-2xl mx-auto text-center flex flex-col items-center gap-6 py-20 animate-fadeIn">
-            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 text-4xl animate-bounce">
+          <div className="bg-white dark:bg-slate-900 border border-emerald-100 dark:border-emerald-950/30 shadow-2xl rounded-xl p-12 max-w-2xl mx-auto text-center flex flex-col items-center gap-6 py-20 animate-fadeIn">
+            <div className="w-20 h-20 bg-emerald-50 dark:bg-emerald-950/30 rounded-full flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-4xl animate-bounce">
               🎉
             </div>
-            <h2 className="text-2xl font-black text-slate-900">Subscription Active!</h2>
-            <p className="text-sm text-slate-500 font-semibold max-w-md mx-auto leading-relaxed">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white">Subscription Active!</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-semibold max-w-md mx-auto leading-relaxed">
               Congratulations! Your account has successfully upgraded to the <strong>{plan.name} Plan</strong>. Redirecting you to your settings console...
             </p>
             <div className="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mt-4"></div>
@@ -337,7 +338,7 @@ export default function PlanDetailsPage() {
             <div className="flex items-center gap-1.5 mb-1">
               <button 
                 onClick={() => router.back()} 
-                className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer"
               >
                 <FiArrowLeft className="w-3.5 h-3.5" />
                 <span>Back to Pricing</span>
@@ -355,38 +356,38 @@ export default function PlanDetailsPage() {
                       <img 
                         src={plan.badge_image} 
                         alt={plan.name} 
-                        className="w-16 h-16 rounded-xl object-cover border border-slate-200 shadow-sm shrink-0 mt-1" 
+                        className="w-16 h-16 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm shrink-0 mt-1" 
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = "none";
                         }}
                       />
                     )}
                     <div>
-                      <span className="text-[10px] font-black text-teal-850 uppercase tracking-widest bg-teal-50 py-1.5 px-4 rounded-full border border-teal-100/80 shadow-sm inline-block">
+                      <span className="text-[10px] font-black text-teal-850 dark:text-teal-400 uppercase tracking-widest bg-teal-50 dark:bg-teal-950/40 py-1.5 px-4 rounded-full border border-teal-100/80 dark:border-teal-900/40 shadow-sm inline-block">
                         {plan.name} Membership
                       </span>
-                      <h1 className="text-4xl font-black tracking-tight text-slate-900 mt-3">{plan.name} Plan Upgrade</h1>
-                      <p className="text-xs text-slate-500 font-semibold mt-1.5 max-w-xl leading-relaxed">
+                      <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white mt-3">{plan.name} Plan Upgrade</h1>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1.5 max-w-xl leading-relaxed">
                         {plan.description || "Unlock elevated permissions, lower commission fees, and dynamic benefits."}
                       </p>
                     </div>
                   </div>
                   
-                  <div className="text-right flex flex-col items-end shrink-0 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                    <span className="text-3xl font-black text-slate-900 tracking-tight">
+                  <div className="text-right flex flex-col items-end shrink-0 bg-slate-50 dark:bg-slate-900/60 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <span className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                       {parseFloat((plan.price || 0).toString()) === 0 
                         ? "Free" 
                         : `$${parseFloat((plan.price || 0).toString())}`
                       }
                     </span>
-                    <span className={`text-[9px] font-black text-slate-400 uppercase tracking-wider mt-0.5`}>
+                    <span className={`text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-0.5`}>
                       {plan.plan_duration ? `/${plan.plan_duration} DAYS` : ""}
                     </span>
                   </div>
                 </div>
 
                 {isCurrentActive && (
-                  <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-xl p-4 text-xs font-bold flex items-center gap-2 animate-fadeIn mt-2 shadow-sm">
+                  <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 text-emerald-800 dark:text-emerald-400 rounded-xl p-4 text-xs font-bold flex items-center gap-2 animate-fadeIn mt-2 shadow-sm">
                     <span>🌟 This is your current active subscription plan</span>
                   </div>
                 )}
@@ -394,18 +395,18 @@ export default function PlanDetailsPage() {
 
               {/* Dynamic Benefits breakdown list (Borderless divide list) */}
               <div className="flex flex-col gap-6">
-                <h2 className="text-md font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
+                <h2 className="text-md font-black text-slate-900 dark:text-white uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-3">
                   Included Plan Privileges & Features
                 </h2>
                 
-                <div className="flex flex-col divide-y divide-slate-100">
+                <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800">
                   <div className="flex items-start gap-4 py-5 first:pt-0">
-                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-700 dark:text-teal-400 text-lg shrink-0 shadow-sm">
                       <FiTag />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Gig Purchase Savings</h4>
-                      <p className="text-xs text-slate-500 font-semibold mt-1 leading-relaxed">
+                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">Gig Purchase Savings</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-relaxed">
                         {plan.gig_discount_percent > 0 
                           ? `Enjoy a guaranteed ${plan.gig_discount_percent}% membership discount applied automatically on every freelance service checkout.` 
                           : "Subject to standard baseline catalog prices on all freelance gig orders without membership savings."}
@@ -414,12 +415,12 @@ export default function PlanDetailsPage() {
                   </div>
 
                   <div className="flex items-start gap-4 py-5">
-                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-700 dark:text-teal-400 text-lg shrink-0 shadow-sm">
                       <FiFolderPlus />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Monthly Bid Proposals</h4>
-                      <p className="text-xs text-slate-500 font-semibold mt-1 leading-relaxed">
+                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">Monthly Bid Proposals</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-relaxed">
                         {(plan.credits ?? 0) >= 9999 
                           ? "Submit unlimited project bid applications to pitch your services to clients without monthly caps." 
                           : `Submit up to ${plan.credits ?? 0} project bid proposal applications monthly to find suitable remote contracts.`}
@@ -428,12 +429,12 @@ export default function PlanDetailsPage() {
                   </div>
 
                   <div className="flex items-start gap-4 py-5">
-                    <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 text-lg shrink-0 shadow-sm">
+                    <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-teal-950/40 flex items-center justify-center text-teal-700 dark:text-teal-400 text-lg shrink-0 shadow-sm">
                       <FiMessageSquare />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Active Job Listings</h4>
-                      <p className="text-xs text-slate-500 font-semibold mt-1 leading-relaxed">
+                      <h4 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider">Active Job Listings</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-relaxed">
                         {plan.job_posting_limit >= 9999 
                           ? "Publish unlimited client job openings per month to request custom bids from the freelancer community." 
                           : `Publish up to ${plan.job_posting_limit} client job listings per month to hire top-tier freelance experts.`}
@@ -446,51 +447,73 @@ export default function PlanDetailsPage() {
               </div>
 
               {/* Side by side Matrix Table (Soft Container) */}
-              <div className="bg-white border border-slate-200/80 shadow-md rounded-xl p-8 overflow-hidden">
-                <h2 className="text-lg font-black text-slate-900 mb-4">Subscription Tiers Comparison</h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md rounded-xl p-8 overflow-hidden">
+                <h2 className="text-lg font-black text-slate-900 dark:text-white mb-4">Subscription Tiers Comparison</h2>
+                <div 
+                  className="overflow-x-auto cursor-grab active:cursor-grabbing select-none"
+                  onMouseDown={(e) => {
+                    const el = e.currentTarget;
+                    const startX = e.pageX - el.offsetLeft;
+                    const scrollLeft = el.scrollLeft;
+                    
+                    const onMouseMove = (ev: MouseEvent) => {
+                      ev.preventDefault();
+                      const x = ev.pageX - el.offsetLeft;
+                      const walk = (x - startX) * 1.5;
+                      el.scrollLeft = scrollLeft - walk;
+                    };
+                    
+                    const onMouseUp = () => {
+                      window.removeEventListener("mousemove", onMouseMove);
+                      window.removeEventListener("mouseup", onMouseUp);
+                    };
+                    
+                    window.addEventListener("mousemove", onMouseMove);
+                    window.addEventListener("mouseup", onMouseUp);
+                  }}
+                >
+                  <table className="w-full text-left text-xs border-collapse min-w-[500px]">
                     <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 font-bold uppercase tracking-wider">
+                      <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider">
                         <th className="py-3 pr-4">Benefit Field</th>
-                        {plans.map(p => (
-                          <th key={p.plan_id} className={`py-3 px-3 text-center ${p.plan_id === plan.plan_id ? "text-teal-700 font-black bg-teal-50/30 rounded-t-xl" : ""}`}>
+                        {displayPlans.map(p => (
+                          <th key={p.plan_id} className={`py-3 px-3 text-center ${p.plan_id === plan.plan_id ? "text-teal-700 dark:text-teal-400 font-black bg-teal-50/30 dark:bg-teal-950/40 rounded-t-xl" : ""}`}>
                             {p.name}
                           </th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-semibold text-slate-700 dark:text-slate-300">
                       <tr>
-                        <td className="py-3 pr-4 font-bold text-slate-800">Gig Order Discount</td>
-                        {plans.map(p => (
-                          <td key={p.plan_id} className={`py-3 px-3 text-center ${p.plan_id === plan.plan_id ? "bg-teal-50/30 font-extrabold text-teal-700" : ""}`}>
+                        <td className="py-3 pr-4 font-bold text-slate-800 dark:text-slate-200">Gig Order Discount</td>
+                        {displayPlans.map(p => (
+                          <td key={p.plan_id} className={`py-3 px-3 text-center ${p.plan_id === plan.plan_id ? "bg-teal-50/30 dark:bg-teal-950/40 font-extrabold text-teal-700 dark:text-teal-400" : ""}`}>
                             {p.gig_discount_percent > 0 ? `${p.gig_discount_percent}% off` : "-"}
                           </td>
                         ))}
                       </tr>
                       <tr>
-                        <td className="py-3 pr-4 font-bold text-slate-800">Monthly Bid Limits</td>
-                        {plans.map(p => (
-                          <td key={p.plan_id} className={`py-3 px-3 text-center ${p.plan_id === plan.plan_id ? "bg-teal-50/30 font-extrabold text-teal-700" : ""}`}>
+                        <td className="py-3 pr-4 font-bold text-slate-800 dark:text-slate-200">Monthly Bid Limits</td>
+                        {displayPlans.map(p => (
+                          <td key={p.plan_id} className={`py-3 px-3 text-center ${p.plan_id === plan.plan_id ? "bg-teal-50/30 dark:bg-teal-950/40 font-extrabold text-teal-700 dark:text-teal-400" : ""}`}>
                             {(p.credits ?? 0) >= 9999 ? "Unlimited" : `${p.credits ?? 0} Bids`}
                           </td>
                         ))}
                       </tr>
                       <tr>
-                        <td className="py-3 pr-4 font-bold text-slate-800">Monthly Job Posts</td>
-                        {plans.map(p => (
-                          <td key={p.plan_id} className={`py-3 px-3 text-center ${p.plan_id === plan.plan_id ? "bg-teal-50/30 font-extrabold text-teal-700" : ""}`}>
+                        <td className="py-3 pr-4 font-bold text-slate-800 dark:text-slate-200">Monthly Job Posts</td>
+                        {displayPlans.map(p => (
+                          <td key={p.plan_id} className={`py-3 px-3 text-center ${p.plan_id === plan.plan_id ? "bg-teal-50/30 dark:bg-teal-950/40 font-extrabold text-teal-700 dark:text-teal-400" : ""}`}>
                             {p.job_posting_limit >= 9999 ? "Unlimited" : `${p.job_posting_limit} Posts`}
                           </td>
                         ))}
                       </tr>
 
                       <tr className="border-b-0">
-                        <td className="py-3 pr-4 font-bold text-slate-800">Featured Job Badge</td>
-                        {plans.map(p => (
-                          <td key={p.plan_id} className={`py-3 px-3 text-center rounded-b-xl ${p.plan_id === plan.plan_id ? "bg-teal-50/30 font-extrabold text-teal-700" : ""}`}>
-                            {p.featured_job_allowance ? <FiCheck className="w-4 h-4 text-emerald-600 mx-auto" /> : "-"}
+                        <td className="py-3 pr-4 font-bold text-slate-800 dark:text-slate-200">Featured Job Badge</td>
+                        {displayPlans.map(p => (
+                          <td key={p.plan_id} className={`py-3 px-3 text-center rounded-b-xl ${p.plan_id === plan.plan_id ? "bg-teal-50/30 dark:bg-teal-950/40 font-extrabold text-teal-700 dark:text-teal-400" : ""}`}>
+                            {p.featured_job_allowance ? <FiCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mx-auto" /> : "-"}
                           </td>
                         ))}
                       </tr>
@@ -649,7 +672,7 @@ export default function PlanDetailsPage() {
       {/* PayPal Sandbox Pop-up Modal Simulation */}
       {showPaypalModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 shadow-2xl rounded-xl overflow-hidden w-full max-w-md animate-scaleUp">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-xl overflow-hidden w-full max-w-md animate-scaleUp">
             
             {/* Paypal Modal Header */}
             <div className="bg-[#003087] text-white px-6 py-4 flex justify-between items-center shadow-sm">
@@ -669,36 +692,36 @@ export default function PlanDetailsPage() {
             {/* Paypal Modal Content */}
             <form onSubmit={handlePaypalSubmit} className="p-6 flex flex-col gap-5">
               <div className="flex flex-col gap-1.5">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Purchase Details</span>
-                <span className="text-xs font-black text-slate-800">LancerFlow {plan.name} Plan Membership Upgrade</span>
+                <span className="text-[9px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-wider">Purchase Details</span>
+                <span className="text-xs font-black text-slate-800 dark:text-slate-100">LancerFlow {plan.name} Plan Membership Upgrade</span>
               </div>
 
-              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-150">
-                <span className="text-xs font-bold text-slate-650">Checkout Price</span>
-                <span className="text-xl font-black text-slate-900 font-mono">{currencySymbol}{priceVal.toFixed(2)}</span>
+              <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-150 dark:border-slate-700/60">
+                <span className="text-xs font-bold text-slate-650 dark:text-slate-300">Checkout Price</span>
+                <span className="text-xl font-black text-slate-900 dark:text-white font-mono">{currencySymbol}{priceVal.toFixed(2)}</span>
               </div>
 
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Sandbox Email Address</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-wider">Sandbox Email Address</label>
                   <input
                     type="email"
                     required
                     value={paypalEmail}
                     onChange={(e) => setPaypalEmail(e.target.value)}
                     placeholder="sandbox-buyer@lancerflow.com"
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition w-full"
+                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-teal-700 transition w-full"
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">PayPal Password</label>
+                  <label className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-wider">PayPal Password</label>
                   <input
                     type="password"
                     required
                     value={paypalPassword}
                     onChange={(e) => setPaypalPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition w-full"
+                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-teal-700 transition w-full"
                   />
                 </div>
               </div>

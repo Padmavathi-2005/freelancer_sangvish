@@ -1,6 +1,6 @@
 "use client";
 import { API_URL, API_BASE_URL } from "@/config/api";
-
+import { useLanguage } from "@/context/LanguageContext";
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -37,6 +37,7 @@ interface GigDetailsClientProps {
 }
 
 export default function GigDetailsClient({ initialGig, initialSimilarGigs }: GigDetailsClientProps) {
+  const { t, formatPrice } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const { openLoginModal } = useAuthModal();
@@ -71,13 +72,50 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
   const [isSaved, setIsSaved] = useState(false);
   const [isOwnGig, setIsOwnGig] = useState(false);
 
+  // Affiliate states
+  const [isAffiliate, setIsAffiliate] = useState(false);
+  const [userReferralCode, setUserReferralCode] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_URL}/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const profile = await res.json();
+          setIsAffiliate(profile.is_affiliate === true || profile.is_affiliate === 1);
+          setUserReferralCode(profile.referral_code || "");
+        }
+      } catch (err) {
+        console.error("Error fetching user profile for affiliate check:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
+
   // Share link copy state & handler
   const [copiedShare, setCopiedShare] = useState(false);
+  const [currentUrl, setCurrentUrl] = useState("");
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentUrl(window.location.href);
+      setOrigin(window.location.origin);
+    }
+  }, []);
+
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
-      navigator.clipboard.writeText(window.location.href);
+      const link = isAffiliate
+        ? `${origin || window.location.origin}/gigs/${gig?.gig_id}?ref=${userReferralCode}`
+        : (currentUrl || window.location.href);
+      navigator.clipboard.writeText(link);
       setCopiedShare(true);
-      setToast({ type: "success", message: "Share link copied to clipboard!" });
+      setToast({ type: "success", message: isAffiliate ? "Affiliate referral link copied!" : "Share link copied to clipboard!" });
       setTimeout(() => setCopiedShare(false), 2000);
     }
   };
@@ -597,8 +635,11 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
     const fetchSimilarGigs = async () => {
       try {
+        if (!id) return;
         const token = localStorage.getItem("token");
-        const headers: any = {};
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json"
+        };
         if (token) {
           headers["Authorization"] = `Bearer ${token}`;
         }
@@ -607,7 +648,9 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
         if (res.ok) {
           const data = await res.json();
-          setSimilarGigs(data);
+          if (Array.isArray(data)) {
+            setSimilarGigs(data);
+          }
         } else {
           if (MOCK_GIGS_DATA[id]) {
             const otherIds = Object.keys(MOCK_GIGS_DATA).filter(x => x !== id);
@@ -615,7 +658,6 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
           }
         }
       } catch (err) {
-        console.error("Failed to load similar gigs:", err);
         if (MOCK_GIGS_DATA[id]) {
           const otherIds = Object.keys(MOCK_GIGS_DATA).filter(x => x !== id);
           setSimilarGigs(otherIds.map(x => MOCK_GIGS_DATA[x]).slice(0, 4));
@@ -813,11 +855,11 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
     if (!gig) return "0";
     if (hasCustomPlans && activePlan) {
       const revs = activePlan.revisions;
-      return revs === 0 || revs === "0" ? "Unlimited Revisions" : `${revs} Revisions`;
+      return revs === 0 || revs === "0" ? t("unlimited_revisions", "Unlimited Revisions") : `${revs} ${t("revisions", "Revisions")}`;
     }
-    if (activePackageTab === "popular") return "5 Revisions";
-    if (activePackageTab === "premium") return "Unlimited Revisions";
-    return gig.revisions ? `${gig.revisions} Revisions` : "No Revisions";
+    if (activePackageTab === "popular") return `5 ${t("revisions", "Revisions")}`;
+    if (activePackageTab === "premium") return t("unlimited_revisions", "Unlimited Revisions");
+    return gig.revisions ? `${gig.revisions} ${t("revisions", "Revisions")}` : t("no_revisions", "No Revisions");
   };
 
   if (loading) {
@@ -907,8 +949,185 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
     ];
   };
 
+  const renderPackagePricingCard = () => (
+    <div className="bg-white border border-slate-200 shadow-lg rounded-xl overflow-hidden flex flex-col text-left">
+      {/* Package Tabs */}
+      {hasCustomPlans && (
+        <div className="flex border-b border-slate-155 bg-slate-50/80">
+          {parsedPlans.map((p: any) => (
+            <button
+              key={p.name}
+              onClick={() => setActivePackageTab(p.name)}
+              className={`flex-1 text-center py-3.5 text-xs font-black capitalize border-b-2 transition-all cursor-pointer ${
+                activePackageTab.toLowerCase() === p.name.toLowerCase()
+                  ? "border-teal-700 text-teal-700 bg-white"
+                  : "border-transparent text-slate-400 hover:text-slate-700"
+              }`}
+            >
+              {p.title?.trim() ? p.title : `${p.name} Package`}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Package Content */}
+      <div className="p-6 flex flex-col gap-5">
+        <div className="flex justify-between items-baseline">
+          <span className="text-slate-400 block font-bold uppercase tracking-widest text-[9px]">
+            {hasCustomPlans && activePlan ? (activePlan.title?.trim() ? activePlan.title : `${activePlan.name} Package`) : (activePackageTab === "popular" ? "🚀 Recommended TIER" : t("pricing_package", "Pricing Package"))}
+          </span>
+          <div className="text-right flex flex-col items-end">
+            {hasPlanDiscount ? (
+              <>
+                <span className="text-slate-450 text-xs font-bold line-through">
+                  {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
+                </span>
+                <span className="text-2xl font-black text-slate-900">
+                  {gig.currency_symbol || "$"}{parseFloat(getDiscountedPackagePrice(getPackagePrice()).toFixed(2)).toLocaleString()}
+                </span>
+              </>
+            ) : (
+              <span className="text-2xl font-black text-slate-900">
+                {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
+              </span>
+            )}
+            <span className="text-slate-400 text-xxs font-bold uppercase tracking-wider block">
+              {gig.currency_code} 
+              {hasPlanDiscount 
+                ? ` (${planDiscountPercent}% off with ${gig.plan_name})` 
+                : (gig.discount_percent && parseFloat(gig.discount_percent) > 0 ? ` (${parseFloat(gig.discount_percent)}% off)` : "")
+              }
+            </span>
+          </div>
+        </div>
+
+        <div className="text-xs font-semibold text-slate-550 leading-relaxed">
+          {hasCustomPlans && activePlan ? (
+            <p className="font-bold text-slate-700">{activePlan.description || `${activePlan.name} package deliverables.`}</p>
+          ) : (
+            <>
+              {activePackageTab === "basic" && (
+                <p>{stripHtml(gig.description) || "Standard delivery package of the service, containing basic setup, core deliverables, and initial configuration."}</p>
+              )}
+              {activePackageTab === "popular" && (
+                <p>Recommended complete service package, including intermediate features, custom revisions, and priority support.</p>
+              )}
+              {activePackageTab === "premium" && (
+                <p>Elite full-scale service delivery package, including comprehensive source deliverables, maximum revisions, and post-delivery assistance.</p>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2.5 border-t border-slate-100 pt-4 text-xs font-bold text-slate-700">
+          <div className="flex items-center gap-2">
+            <FiClock className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>{t("delivery_in", "Delivery in")} {getPackageDeliveryDays()} {t("days", "Days")}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FiCheckCircle className="w-4 h-4 text-slate-400 shrink-0" />
+            <span>{getPackageRevisions()}</span>
+          </div>
+        </div>
+
+        {/* Custom Features Checklist */}
+        {hasCustomPlans && activePlan && activePlan.features && (
+          <div className="border-t border-slate-100 pt-4 flex flex-col gap-2.5">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t("whats_included", "What's Included")}</span>
+            <div className="flex flex-col gap-2">
+              {(() => {
+                const allFeatures = Array.from(new Set(parsedPlans.flatMap((p: any) => Object.keys(p.features || {}))));
+                return allFeatures.map((featName: any) => {
+                  const val = activePlan.features[featName];
+                  const isIncluded = val === true || (typeof val === "string" && val.trim() !== "" && val !== "0" && val.toLowerCase() !== "no" && val.toLowerCase() !== "false");
+                  
+                  if (isIncluded) {
+                    return (
+                      <div key={featName} className="flex items-center gap-2 text-slate-800 text-xs font-bold">
+                        <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <span>
+                          {featName}
+                          {typeof val === "string" && val.toLowerCase() !== "yes" && val.toLowerCase() !== "true" && ` (${val})`}
+                        </span>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div key={featName} className="flex items-center gap-2 text-slate-350 select-none text-xs font-semibold">
+                        <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-slate-200 shrink-0">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <span className="line-through">{featName}</span>
+                      </div>
+                    );
+                  }
+                });
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* Available Add-ons List */}
+        {gig.addons && (() => {
+          let parsedAddons = [];
+          try {
+            parsedAddons = typeof gig.addons === 'string' ? JSON.parse(gig.addons) : gig.addons;
+          } catch (e) {}
+          
+          if (!Array.isArray(parsedAddons) || parsedAddons.length === 0) return null;
+          
+          return (
+            <div className="border-t border-slate-100 pt-4 mt-2 text-left animate-fadeIn">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2.5">{t("available_addons", "Available Add-ons")}</span>
+              <div className="flex flex-col gap-2 max-h-[140px] overflow-y-auto pr-1">
+                {parsedAddons.map((addon: any, idx: number) => (
+                  <div key={addon.id || idx} className="flex justify-between items-center bg-slate-50 border border-slate-200/50 rounded-xl px-2.5 py-1.5 text-[10px] font-bold text-slate-700">
+                    <span className="truncate pr-2">{addon.title}</span>
+                    <span className="text-teal-700 shrink-0 font-extrabold">+{gig.currency_symbol || "$"}{parseFloat(addon.price).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {hasPlanDiscount && (
+          <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 text-xxs font-bold text-emerald-800 flex items-center gap-2 animate-fadeIn">
+            <span>🎉 <strong>{gig.plan_name} Plan Discount</strong> automatically applied to this service!</span>
+          </div>
+        )}
+
+        {/* Instant Order CTA */}
+        {isOwnGig ? (
+          <div className="bg-slate-50 border border-slate-200 text-slate-500 rounded-xl p-3.5 text-center text-xs font-bold leading-relaxed flex items-center justify-center gap-1.5 w-full select-none">
+            <FiInfo className="w-4 h-4 shrink-0 text-slate-400" />
+            <span>This is your own service gig.</span>
+          </div>
+        ) : (
+          <button
+            onClick={handleOrderClick}
+            disabled={onboardingCheckLoading}
+            className="w-full bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.01] active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <FiShoppingBag className="w-4 h-4 shrink-0" />
+            <span>{onboardingCheckLoading ? t("checking_profile", "Checking Profile...") : t("btn_order_service", "Order Service Now")}</span>
+          </button>
+        )}
+
+        {gig.negotiation && (
+          <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-150 p-2.5 rounded-xl font-bold flex items-center gap-1.5 leading-relaxed">
+            <FiInfo className="w-3.5 h-3.5 shrink-0" />
+            <span>Flexible pricing! Custom budget proposals allowed.</span>
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative">
+    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative" suppressHydrationWarning>
       <Header />
 
       {/* Floating Toast Notification */}
@@ -924,17 +1143,17 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
       )}
 
       {/* Breadcrumbs & Navigation */}
-      <div className="bg-white border-b border-slate-200/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+      <div className="bg-slate-50 border-b border-slate-200/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
           <button
             onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-xs font-extrabold text-slate-500 hover:text-teal-750 transition-colors"
+            className="hidden sm:flex items-center gap-1.5 text-xs font-extrabold text-slate-600 hover:text-teal-750 transition-colors"
           >
             <FiArrowLeft className="w-4 h-4" />
-            <span>Back</span>
+            <span>{t("btn_back", "Back")}</span>
           </button>
-          <div className="flex items-center gap-2 text-xs font-extrabold text-slate-400">
-            <span>Gigs</span>
+          <div className="flex items-center gap-2 text-xs font-extrabold text-slate-400 overflow-x-auto whitespace-nowrap py-0.5">
+            <a href="/gigs" className="text-slate-500 hover:text-teal-750 transition-colors">{t("nav_gigs", "Gigs")}</a>
             <span className="text-slate-300 font-medium">/</span>
             <span className="text-slate-600">{gig.category_name || "Category"}</span>
             {gig.sub_category_name && (
@@ -958,7 +1177,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             </span>
             {gig.discount_percent && parseFloat(gig.discount_percent) > 0 && (
               <span className="text-[10px] font-black bg-rose-50 text-rose-600 border border-rose-150 px-2 py-0.5 rounded uppercase tracking-wider">
-                {parseFloat(gig.discount_percent)}% OFF SPECIAL
+                {parseFloat(gig.discount_percent)}% {t("off_special", "OFF SPECIAL")}
               </span>
             )}
           </div>
@@ -975,11 +1194,11 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                   ? parseFloat(gig.reviews_avg_rating).toFixed(1) 
                   : "0.0"}
               </span>
-              <span className="text-slate-400 font-medium">({gig.reviews_count || 0} reviews)</span>
+              <span className="text-slate-400 font-medium">({gig.reviews_count || 0} {t("reviews", "reviews")})</span>
             </div>
             <div className="h-4 w-px bg-slate-200 hidden sm:block" />
             <div>
-              <span>{gig.views || 0} views</span>
+              <span>{gig.views || 0} {t("views", "views")}</span>
             </div>
             {!isOwnGig && (
               <>
@@ -997,7 +1216,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
-                  <span>{isSaved ? "Saved" : "Save to Wishlist"}</span>
+                  <span>{isSaved ? t("saved", "Saved") : t("save_to_wishlist", "Save to Wishlist")}</span>
                 </button>
               </>
             )}
@@ -1006,9 +1225,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
         {/* Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
-          {/* LEFT COLUMN: Media, Description, FAQs */}
-           {/* LEFT COLUMN: Media, Description, FAQs */}
+                {/* LEFT COLUMN: Media, Description, FAQs */}
            <div className="lg:col-span-2 flex flex-col gap-8">
              
              {/* Image Showcase */}
@@ -1058,13 +1275,13 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                  </div>
                )}
              </div>
- 
+
              <hr className="border-t border-slate-200/60" />
- 
-             {/* Description */}
+
+             {/* Service Description */}
              <div className="flex flex-col gap-4 text-left">
                <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3">
-                 Service Description
+                 {t("service_description", "Service Description")}
                </h2>
                <div 
                  className="text-sm leading-relaxed text-slate-600 font-medium prose prose-slate max-w-full text-left"
@@ -1074,7 +1291,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                {/* Core Skills & Expertise */}
                {gig.skills && gig.skills.length > 0 && (
                  <div className="mt-4 bg-slate-50 rounded-xl p-5 border border-slate-200/40">
-                   <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">Core Expertise & Skills:</h4>
+                   <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-3">{t("core_expertise", "Core Expertise & Skills")}:</h4>
                    <div className="flex flex-wrap gap-2">
                      {gig.skills.map((skill: any, idx: number) => (
                        <span 
@@ -1088,6 +1305,11 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                  </div>
                )}
              </div>
+
+             {/* MOBILE ONLY: Package Pricing Card right below Description */}
+             <div className="block lg:hidden w-full">
+               {renderPackagePricingCard()}
+             </div>
  
              {/* Video & Documents showcase */}
              {(gig.video_url || gigDocuments.length > 0) && (
@@ -1096,7 +1318,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                    {gig.video_url && (
                      <div className="text-left">
-                       <h3 className="text-sm font-black text-slate-900 mb-3 uppercase tracking-wider">Showcase Video</h3>
+                       <h3 className="text-sm font-black text-slate-900 mb-3 uppercase tracking-wider">{t("showcase_video", "Showcase Video")}</h3>
                        <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-200 shadow-inner">
                          <video src={resolveMediaUrl(gig.video_url)} controls className="w-full h-full object-cover" />
                        </div>
@@ -1104,7 +1326,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                    )}
                    {gigDocuments.length > 0 && (
                      <div className="text-left">
-                       <h3 className="text-sm font-black text-slate-900 mb-3 uppercase tracking-wider">Showcase Documents</h3>
+                       <h3 className="text-sm font-black text-slate-900 mb-3 uppercase tracking-wider">{t("showcase_documents", "Showcase Documents")}</h3>
                        <div className="flex flex-col gap-2.5">
                          {gigDocuments.map((doc: string, idx: number) => {
                            const name = doc.split("/").pop() || `document_${idx + 1}`;
@@ -1128,7 +1350,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{fileType}</span>
                                </div>
                                <div className="text-teal-700 hover:text-teal-800 text-[10px] font-black bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1 shrink-0 group-hover/doc:bg-teal-700 group-hover/doc:text-white group-hover/doc:border-teal-750 transition-all">
-                                 <span>Download</span>
+                                 <span>{t("download", "Download")}</span>
                                </div>
                              </a>
                            );
@@ -1145,7 +1367,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
              {/* FAQ Accordion Section */}
              <div className="flex flex-col gap-4 text-left">
                <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3">
-                 Frequently Asked Questions
+                 {t("faq_title", "Frequently Asked Questions")}
                </h2>
                <div className="flex flex-col gap-3.5">
                  {getGigFaqs().map((faq: any, idx: number) => (
@@ -1176,9 +1398,9 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
              {/* Customer Reviews Section */}
              <div className="flex flex-col gap-4 text-left">
                <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
-                 <span>Customer Reviews</span>
+                 <span>{t("customer_reviews", "Customer Reviews")}</span>
                  <span className="text-xs font-bold text-slate-400">
-                   {gig.reviews_count || 0} reviews
+                   {gig.reviews_count || 0} {t("reviews", "reviews")}
                  </span>
                </h2>
                {gig.reviews && gig.reviews.length > 0 ? (
@@ -1219,7 +1441,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                  </div>
                ) : (
                  <div className="text-center py-6 border border-dashed border-slate-150 rounded-xl bg-slate-50/20">
-                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">No Reviews Yet</p>
+                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t("no_reviews_yet", "No Reviews Yet")}</p>
                  </div>
                )}
              </div>
@@ -1229,181 +1451,41 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
           {/* RIGHT COLUMN: Pricing Tabs Card & About Seller Card */}
           <div className="flex flex-col gap-6 sticky top-6">
             
-            {/* PACKAGE PRICING CARD */}
-            <div className="bg-white border border-slate-200 shadow-lg rounded-xl overflow-hidden flex flex-col text-left">
-              {/* Package Tabs */}
-              {hasCustomPlans && (
-                <div className="flex border-b border-slate-155 bg-slate-50/80">
-                  {parsedPlans.map((p: any) => (
-                    <button
-                      key={p.name}
-                      onClick={() => setActivePackageTab(p.name)}
-                      className={`flex-1 text-center py-3.5 text-xs font-black capitalize border-b-2 transition-all cursor-pointer ${
-                        activePackageTab.toLowerCase() === p.name.toLowerCase()
-                          ? "border-teal-700 text-teal-700 bg-white"
-                          : "border-transparent text-slate-400 hover:text-slate-700"
-                      }`}
-                    >
-                      {p.title?.trim() ? p.title : `${p.name} Package`}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Package Content */}
-              <div className="p-6 flex flex-col gap-5">
-                <div className="flex justify-between items-baseline">
-                  <span className="text-slate-400 block font-bold uppercase tracking-widest text-[9px]">
-                    {hasCustomPlans && activePlan ? (activePlan.title?.trim() ? activePlan.title : `${activePlan.name} Package`) : (activePackageTab === "popular" ? "🚀 Recommended TIER" : "Pricing Package")}
-                  </span>
-                  <div className="text-right flex flex-col items-end">
-                    {hasPlanDiscount ? (
-                      <>
-                        <span className="text-slate-450 text-xs font-bold line-through">
-                          {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
-                        </span>
-                        <span className="text-2xl font-black text-slate-900">
-                          {gig.currency_symbol || "$"}{parseFloat(getDiscountedPackagePrice(getPackagePrice()).toFixed(2)).toLocaleString()}
-                        </span>
-                      </>
-                    ) : (
-                      <span className="text-2xl font-black text-slate-900">
-                        {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
-                      </span>
-                    )}
-                    <span className="text-slate-400 text-xxs font-bold uppercase tracking-wider block">
-                      {gig.currency_code} 
-                      {hasPlanDiscount 
-                        ? ` (${planDiscountPercent}% off with ${gig.plan_name})` 
-                        : (gig.discount_percent && parseFloat(gig.discount_percent) > 0 ? ` (${parseFloat(gig.discount_percent)}% off)` : "")
-                      }
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-xs font-semibold text-slate-550 leading-relaxed">
-                  {hasCustomPlans && activePlan ? (
-                    <p className="font-bold text-slate-700">{activePlan.description || `${activePlan.name} package deliverables.`}</p>
-                  ) : (
-                    <>
-                      {activePackageTab === "basic" && (
-                        <p>{stripHtml(gig.description) || "Standard delivery package of the service, containing basic setup, core deliverables, and initial configuration."}</p>
-                      )}
-                      {activePackageTab === "popular" && (
-                        <p>Recommended complete service package, including intermediate features, custom revisions, and priority support.</p>
-                      )}
-                      {activePackageTab === "premium" && (
-                        <p>Elite full-scale service delivery package, including comprehensive source deliverables, maximum revisions, and post-delivery assistance.</p>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-2.5 border-t border-slate-100 pt-4 text-xs font-bold text-slate-700">
-                  <div className="flex items-center gap-2">
-                    <FiClock className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span>Delivery in {getPackageDeliveryDays()} Days</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <FiCheckCircle className="w-4 h-4 text-slate-400 shrink-0" />
-                    <span>{getPackageRevisions()}</span>
-                  </div>
-                </div>
-
-                {/* Custom Features Checklist */}
-                {hasCustomPlans && activePlan && activePlan.features && (
-                  <div className="border-t border-slate-100 pt-4 flex flex-col gap-2.5">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">What's Included</span>
-                    <div className="flex flex-col gap-2">
-                      {(() => {
-                        const allFeatures = Array.from(new Set(parsedPlans.flatMap((p: any) => Object.keys(p.features || {}))));
-                        return allFeatures.map((featName: any) => {
-                          const val = activePlan.features[featName];
-                          const isIncluded = val === true || (typeof val === "string" && val.trim() !== "" && val !== "0" && val.toLowerCase() !== "no" && val.toLowerCase() !== "false");
-                          
-                          if (isIncluded) {
-                            return (
-                              <div key={featName} className="flex items-center gap-2 text-slate-800 text-xs font-bold">
-                                <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-emerald-600 shrink-0">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                <span>
-                                  {featName}
-                                  {typeof val === "string" && val.toLowerCase() !== "yes" && val.toLowerCase() !== "true" && ` (${val})`}
-                                </span>
-                              </div>
-                            );
-                          } else {
-                            return (
-                              <div key={featName} className="flex items-center gap-2 text-slate-350 select-none text-xs font-semibold">
-                                <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-slate-200 shrink-0">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                                <span className="line-through">{featName}</span>
-                              </div>
-                            );
-                          }
-                        });
-                      })()}
-                    </div>
-                  </div>
-                )}
-
-
-                {/* Available Add-ons List on Gig details page sidebar */}
-                {gig.addons && (() => {
-                  let parsedAddons = [];
-                  try {
-                    parsedAddons = typeof gig.addons === 'string' ? JSON.parse(gig.addons) : gig.addons;
-                  } catch (e) {}
-                  
-                  if (!Array.isArray(parsedAddons) || parsedAddons.length === 0) return null;
-                  
-                  return (
-                    <div className="border-t border-slate-100 pt-4 mt-2 text-left animate-fadeIn">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2.5">Available Add-ons</span>
-                      <div className="flex flex-col gap-2 max-h-[140px] overflow-y-auto pr-1">
-                        {parsedAddons.map((addon: any, idx: number) => (
-                          <div key={addon.id || idx} className="flex justify-between items-center bg-slate-50 border border-slate-200/50 rounded-xl px-2.5 py-1.5 text-[10px] font-bold text-slate-700">
-                            <span className="truncate pr-2">{addon.title}</span>
-                            <span className="text-teal-700 shrink-0 font-extrabold">+{gig.currency_symbol || "$"}{parseFloat(addon.price).toLocaleString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {hasPlanDiscount && (
-                  <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 text-xxs font-bold text-emerald-800 flex items-center gap-2 animate-fadeIn">
-                    <span>🎉 <strong>{gig.plan_name} Plan Discount</strong> automatically applied to this service!</span>
-                  </div>
-                )}
-
-                {/* Instant Order CTA */}
-                {isOwnGig ? (
-                  <div className="bg-slate-50 border border-slate-200 text-slate-500 rounded-xl p-3.5 text-center text-xs font-bold leading-relaxed flex items-center justify-center gap-1.5 w-full select-none">
-                    <FiInfo className="w-4 h-4 shrink-0 text-slate-400" />
-                    <span>This is your own service gig.</span>
-                  </div>
-                ) : (
+            {/* Affiliate Share card */}
+            {isAffiliate && (
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-1.5">
+                  <span className="text-emerald-600">★</span> Affiliate Share
+                </h3>
+                <p className="text-[11px] font-semibold text-slate-500 leading-normal">
+                  Share this gig service link. If a client registers and buys this gig service, you will earn a recurring 10% commission on the platform service fee!
+                </p>
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5 mt-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${origin}/gigs/${gig?.gig_id}?ref=${userReferralCode}`}
+                    className="flex-1 bg-transparent text-xs font-bold text-slate-805 outline-none select-all"
+                  />
                   <button
-                    onClick={handleOrderClick}
-                    disabled={onboardingCheckLoading}
-                    className="w-full bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.01] active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+                    onClick={() => {
+                      const link = `${origin || (typeof window !== "undefined" ? window.location.origin : "")}/gigs/${gig?.gig_id}?ref=${userReferralCode}`;
+                      navigator.clipboard.writeText(link);
+                      setToast({ type: "success", message: "Affiliate link copied!" });
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white p-2 rounded-lg cursor-pointer flex items-center justify-center shrink-0 border-none"
+                    title="Copy affiliate link"
                   >
-                    <FiShoppingBag className="w-4 h-4 shrink-0" />
-                    <span>{onboardingCheckLoading ? "Checking Profile..." : "Order Service Now"}</span>
+                    Copy
                   </button>
-                )}
-
-                {gig.negotiation && (
-                  <p className="text-[10px] text-amber-600 bg-amber-50 border border-amber-150 p-2.5 rounded-xl font-bold flex items-center gap-1.5 leading-relaxed">
-                    <FiInfo className="w-3.5 h-3.5 shrink-0" />
-                    <span>Flexible pricing! Custom budget proposals allowed.</span>
-                  </p>
-                )}
+                </div>
               </div>
+            )}
+
+            {/* PACKAGE PRICING CARD */}
+            <div className="hidden lg:block">
+              {renderPackagePricingCard()}
             </div>
 
             {premiumUpgradeGig && (
@@ -1444,7 +1526,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             {/* ABOUT THE SELLER CARD */}
             <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
-                About the Seller
+                {t("about_the_seller", "About the Seller")}
               </h3>
               
               <div className="flex gap-4 items-center">
@@ -1477,20 +1559,20 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                           ? parseFloat(gig.reviews_avg_rating).toFixed(1) 
                           : "0.0"}
                     </span>
-                    <span className="text-slate-400 font-semibold">({gig.reviews_count || 0} reviews)</span>
+                    <span className="text-slate-400 font-semibold">({gig.reviews_count || 0} {t("reviews", "reviews")})</span>
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-slate-100 pt-3.5 flex flex-col gap-3">
                 <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
-                  <span>Starting Rate</span>
+                  <span>{t("starting_rate", "Starting Rate")}</span>
                   <span className="font-extrabold text-slate-950">
                     {gig.freelancer_hourly_rate ? `$${parseFloat(gig.freelancer_hourly_rate).toFixed(2)}/hr` : "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
-                  <span>Views</span>
+                  <span>{t("views", "Views")}</span>
                   <span className="font-extrabold text-slate-950">{gig.views || 0}</span>
                 </div>
               </div>
@@ -1501,7 +1583,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-bold text-xs py-3 rounded-xl transition-all shadow-sm cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <FiUser className="w-4 h-4 shrink-0" />
-                <span>View Full Profile</span>
+                <span>{t("view_full_profile", "View Full Profile")}</span>
               </button>
             </div>
 
@@ -1509,13 +1591,13 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col gap-3 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 flex items-center gap-1.5 select-none">
                 <i className="fa-solid fa-share-nodes text-teal-700"></i>
-                <span>Share this Service</span>
+                <span>{t("share_this_service", "Share this Service")}</span>
               </h3>
               
               <div className="flex items-center gap-2">
                 {/* WhatsApp */}
                 <a
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent("Check out this awesome service on LancerFlow: " + (gig?.title || "") + " " + (typeof window !== "undefined" ? window.location.href : ""))}`}
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent("Check out this awesome service on LancerFlow: " + (gig?.title || "") + " " + currentUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-9 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white flex items-center justify-center transition-all duration-300 border border-emerald-100/50 hover:border-emerald-500 shadow-sm hover:shadow-emerald-100 hover:-translate-y-0.5"
@@ -1526,7 +1608,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
                 {/* LinkedIn */}
                 <a
-                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-9 h-9 rounded-xl bg-[#0077b5]/10 hover:bg-[#0077b5] text-[#0077b5] hover:text-white flex items-center justify-center transition-all duration-300 border border-[#0077b5]/10 hover:border-[#0077b5] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5"
@@ -1537,7 +1619,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
                 {/* X / Twitter */}
                 <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Check out this awesome service on LancerFlow: " + (gig?.title || ""))}&url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Check out this awesome service on LancerFlow: " + (gig?.title || ""))}&url=${encodeURIComponent(currentUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-9 h-9 rounded-xl bg-slate-900/10 hover:bg-slate-900 text-slate-900 hover:text-white flex items-center justify-center transition-all duration-300 border border-slate-900/10 hover:border-slate-900 shadow-sm hover:shadow-slate-100 hover:-translate-y-0.5"
@@ -1548,7 +1630,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
                 {/* Facebook */}
                 <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-9 h-9 rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white flex items-center justify-center transition-all duration-300 border border-[#1877F2]/10 hover:border-[#1877F2] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5"
@@ -1577,10 +1659,10 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
           <div className="flex justify-between items-end mb-8">
             <div>
               <h2 className="text-xl sm:text-2.5xl font-black text-slate-900 leading-tight">
-                Similar Gigs You May Like
+                {t("similar_gigs_title", "Similar Gigs You May Like")}
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                Explore services from other elite professionals within the same category.
+                {t("similar_gigs_subtitle", "Explore services from other elite professionals within the same category.")}
               </p>
             </div>
           </div>
@@ -1588,7 +1670,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
           {displaySimilarGigs.length === 0 ? (
             <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center bg-white">
               <FiShoppingBag className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">No Similar Gigs Found</p>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t("no_similar_gigs_found", "No Similar Gigs Found")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1878,9 +1960,9 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                           >
                             ×
                           </button>
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="col-span-2">
-                              <label className="text-[9px] font-black text-slate-400 uppercase">Feature / Milestone Title *</label>
+                          <div className="grid grid-cols-3 gap-2 items-end">
+                            <div className="col-span-2 flex flex-col justify-end">
+                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1" title="Feature / Milestone Title *">Feature / Milestone Title *</label>
                               <input
                                 type="text"
                                 required
@@ -1894,8 +1976,8 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                                 className="w-full bg-slate-50 border border-slate-205 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:bg-white"
                               />
                             </div>
-                            <div>
-                              <label className="text-[9px] font-black text-slate-400 uppercase">Extra Cost ({gig.currency_symbol || "$"})</label>
+                            <div className="flex flex-col justify-end">
+                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1" title={`Extra Cost (${gig.currency_symbol || "$"})`}>Extra Cost ({gig.currency_symbol || "$"})</label>
                               <input
                                 type="number"
                                 min="0"
@@ -1911,9 +1993,9 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 mt-1">
-                            <div>
-                              <label className="text-[9px] font-black text-slate-400 uppercase">Start Date</label>
+                          <div className="grid grid-cols-2 gap-2 mt-1 items-end">
+                            <div className="flex flex-col justify-end">
+                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1">Start Date</label>
                               <input
                                 type="date"
                                 value={m.start_date || ""}
@@ -1925,8 +2007,8 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                                 className="w-full bg-slate-50 border border-slate-205 rounded-lg px-2.5 py-1.5 text-xs text-slate-850 focus:outline-none focus:bg-white"
                               />
                             </div>
-                            <div>
-                              <label className="text-[9px] font-black text-slate-400 uppercase">End Date</label>
+                            <div className="flex flex-col justify-end">
+                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1">End Date</label>
                               <input
                                 type="date"
                                 value={m.end_date || ""}

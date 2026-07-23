@@ -94,7 +94,7 @@ export default function HowItWorks() {
                       className="flex lg:flex-col items-start lg:items-center text-left lg:text-center gap-4 lg:gap-5 lg:flex-1 group animate-fadeIn"
                     >
                       {/* Step Number Circle */}
-                      <div className="w-11 h-11 rounded-full bg-[#0a5a54] text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-[#0a5a54]/10 shrink-0 transition-transform duration-300 group-hover:scale-110">
+                      <div className="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center font-extrabold text-sm shadow-md shadow-primary/10 shrink-0 transition-transform duration-300 group-hover:scale-110">
                         {index + 1}
                       </div>
 
@@ -117,15 +117,15 @@ export default function HowItWorks() {
       )}
 
       {/* Dark Green Stats Bar Section */}
-      <section className="w-full bg-[#063c38] text-white py-14 px-4 sm:px-6 lg:px-8 border-t border-emerald-950/20">
+      <section className="w-full bg-primary text-white py-14 px-4 sm:px-6 lg:px-8 border-t border-white/10">
         <div className="max-w-[1600px] mx-auto">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8 items-center text-center">
             {stats.map((stat, index) => (
               <div key={index} className="flex flex-col gap-2.5">
-                <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#22c55e] tracking-tight">
+                <span className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight">
                   {stat.value}
                 </span>
-                <span className="text-[10px] sm:text-xs font-bold tracking-[0.18em] uppercase text-emerald-100/60 leading-none">
+                <span className="text-[10px] sm:text-xs font-bold tracking-[0.18em] uppercase text-white/80 leading-none">
                   {stat.label}
                 </span>
               </div>

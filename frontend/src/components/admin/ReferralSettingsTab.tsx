@@ -3,6 +3,7 @@ import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { FiPlus, FiTrash2, FiSave, FiAlertCircle, FiImage, FiSettings, FiPenTool, FiUpload } from "react-icons/fi";
+import { useAdmin } from "@/app/admin/AdminContext";
 import CanvasEditor from "@/components/CanvasEditor";
 
 interface ReferralTier {
@@ -15,6 +16,9 @@ interface ReferralSettingsTabProps {
 }
 
 export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSettingsTabProps) {
+  const { adminTheme } = useAdmin();
+  const isDark = adminTheme === "dark";
+
   const [signupBonus, setSignupBonus] = useState<number>(5.00);
   const [enableSignupBonus, setEnableSignupBonus] = useState<boolean>(true);
   const [tiers, setTiers] = useState<ReferralTier[]>([]);
@@ -215,7 +219,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
 
   return (
     <>
-    <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 lg:p-8 flex flex-col gap-6 text-left relative">
+    <form onSubmit={handleSave} className={`rounded-2xl shadow-sm p-6 lg:p-8 flex flex-col gap-6 text-left relative border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
       
       {/* Toast Notification */}
       {showToast && (
@@ -225,9 +229,9 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
         </div>
       )}
 
-      <div>
-        <h3 className="text-base font-extrabold text-slate-800">Refer & Earn Configuration</h3>
-        <p className="text-[11px] text-slate-400 font-bold mt-0.5">Configure sign-up rewards and tiered promoter bonuses based on referral volumes</p>
+      <div className={`border-b pb-4 ${isDark ? "border-slate-800" : "border-slate-100"}`}>
+        <h3 className={`text-base font-black ${isDark ? "text-slate-100" : "text-slate-800"}`}>Refer & Earn Configuration</h3>
+        <p className={`text-[11px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Configure sign-up rewards and tiered promoter bonuses based on referral volumes</p>
       </div>
 
       {error && (
@@ -237,8 +241,11 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
         </div>
       )}
 
-      {/* Row 1: Referred Sign-up reward configuration */}
-      <div className="flex flex-col gap-4 max-w-xs">
+      {/* Row 1: Referred Sign-up reward configuration (Boxed) */}
+      <div className={`p-5 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/50 border-slate-200/80"} flex flex-col gap-4 max-w-2xl`}>
+        <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+          Sign-up Bonus settings
+        </h4>
         <div className="flex items-center gap-3">
           <input
             type="checkbox"
@@ -247,38 +254,40 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             onChange={(e) => setEnableSignupBonus(e.target.checked)}
             className="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500 cursor-pointer"
           />
-          <label htmlFor="enableSignupBonus" className="text-xs font-extrabold text-slate-800 cursor-pointer">
+          <label htmlFor="enableSignupBonus" className={`text-xs font-extrabold cursor-pointer ${isDark ? "text-slate-200" : "text-slate-800"}`}>
             Enable Referred Sign-up Bonus
           </label>
         </div>
 
         {enableSignupBonus && (
-          <div className="flex flex-col gap-1.5 animate-fadeIn">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Referred User Sign-up Bonus ($)</label>
+          <div className="flex flex-col gap-1.5 animate-fadeIn mt-2">
+            <label className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Referred User Sign-up Bonus ($)</label>
             <input
               type="number"
               step="0.01"
               required
               value={signupBonus}
               onChange={(e) => setSignupBonus(parseFloat(e.target.value) || 0)}
-              className="border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-700 transition"
+              className={`border rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-teal-700 transition max-w-xs ${
+                isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+              }`}
             />
-            <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Amount credited to referred user's wallet after admin review and approval</span>
+            <span className={`text-[9px] font-semibold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Amount credited to referred user's wallet after admin review and approval</span>
           </div>
         )}
       </div>
 
-      {/* Row 2: Referrer Tiers Grid */}
-      <div className="flex flex-col gap-4 border-t border-slate-100 pt-6">
-        <div className="flex justify-between items-center">
+      {/* Row 2: Referrer Tiers Grid (Boxed) */}
+      <div className={`p-5 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/50 border-slate-200/80"} flex flex-col gap-4`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-150/20 pb-3.5">
           <div>
-            <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">Promoter Payout Tiers</h4>
-            <p className="text-[10px] text-slate-400 font-bold mt-0.5">Determine how much referrers earn based on successful referral counts</p>
+            <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Promoter Payout Tiers</h4>
+            <p className={`text-[10px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Determine how much referrers earn based on successful referral counts</p>
           </div>
           <button
             type="button"
             onClick={handleAddTier}
-            className="flex items-center gap-1.5 px-3 py-2 border border-teal-200 bg-teal-50 text-teal-750 text-[10px] font-black uppercase rounded-lg hover:bg-teal-100 hover:border-teal-300 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 border border-teal-200 bg-teal-50 text-teal-750 text-[10px] font-black uppercase rounded-lg hover:bg-teal-100 hover:border-teal-300 transition-all cursor-pointer border-none"
           >
             <FiPlus className="w-3.5 h-3.5" />
             Add Payout Rule
@@ -286,10 +295,10 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
         </div>
 
         {tiers.length > 0 ? (
-          <div className="border border-slate-150/80 rounded-xl overflow-hidden">
+          <div className={`border rounded-xl overflow-hidden ${isDark ? "border-slate-800" : "border-slate-150/80"}`}>
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-150/70 text-[9px] font-black text-slate-400 uppercase tracking-widest select-none">
+                <tr className={`border-b text-[9px] font-black uppercase tracking-widest select-none ${isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-50 border-slate-150/70 text-slate-400"}`}>
                   <th className="px-5 py-3">Min Successful Referrals</th>
                   <th className="px-5 py-3">Referrer Payout Amount ($)</th>
                   <th className="px-5 py-3 text-right">Actions</th>
@@ -297,7 +306,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
               </thead>
               <tbody>
                 {tiers.map((tier, idx) => (
-                  <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition">
+                  <tr key={idx} className={`border-b last:border-0 transition ${isDark ? "border-slate-800 hover:bg-slate-950/40 text-slate-300" : "border-slate-100 hover:bg-slate-50/50 text-slate-750"}`}>
                     <td className="px-5 py-3.5">
                       <input
                         type="number"
@@ -305,7 +314,9 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                         required
                         value={tier.min_referrals}
                         onChange={(e) => handleUpdateTierField(idx, "min_referrals", parseInt(e.target.value) || 0)}
-                        className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-700 w-32"
+                        className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-32 ${
+                          isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+                        }`}
                         placeholder="e.g. 1"
                       />
                     </td>
@@ -317,7 +328,9 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                         required
                         value={tier.reward}
                         onChange={(e) => handleUpdateTierField(idx, "reward", parseFloat(e.target.value) || 0)}
-                        className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-teal-700 w-32"
+                        className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-32 ${
+                          isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+                        }`}
                         placeholder="e.g. 10.00"
                       />
                     </td>
@@ -325,7 +338,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                       <button
                         type="button"
                         onClick={() => handleRemoveTier(idx)}
-                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                        className={`p-2 rounded-lg transition-colors cursor-pointer border-none bg-transparent ${isDark ? "text-rose-400 hover:bg-rose-950/20" : "text-rose-500 hover:bg-rose-50"}`}
                         title="Delete tier"
                       >
                         <FiTrash2 className="w-4 h-4" />
@@ -337,21 +350,23 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             </table>
           </div>
         ) : (
-          <div className="border border-dashed border-slate-200 rounded-xl p-8 text-center text-slate-400 text-xs font-semibold">
+          <div className={`border border-dashed rounded-xl p-8 text-center text-xs font-semibold ${isDark ? "border-slate-800 text-slate-500" : "border-slate-200 text-slate-400"}`}>
             No referral payout tiers configured. Promoters will fall back to a default payout of $10.00.
           </div>
         )}
       </div>
 
       {/* Row 3: Promo Banner Customizer Mode Selector */}
-      <div className="flex flex-col gap-4 border-t border-slate-100 pt-6">
+      <div className={`flex flex-col gap-4 border-t pt-6 ${isDark ? "border-slate-800" : "border-slate-100"}`}>
         <div>
           <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider font-extrabold">Promo Banner Customizer</h4>
           <p className="text-[10px] text-slate-400 font-bold mt-0.5">Use the Dynamic SVG Template below for quick edits, or open the Canvas Designer to create a fully custom banner image.</p>
         </div>
 
         {/* Form Section: SVG Template settings */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50/30 border border-slate-150 p-6 rounded-2xl">
+        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl border ${
+          isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/30 border-slate-150"
+        }`}>
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Banner Headline</label>
@@ -360,7 +375,9 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                 required
                 value={bannerHeadline}
                 onChange={(e) => setBannerHeadline(e.target.value)}
-                className="border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:border-teal-700 transition"
+                className={`border rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-teal-700 transition ${
+                  isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+                }`}
               />
             </div>
             
@@ -371,7 +388,9 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                 required
                 value={bannerSubline}
                 onChange={(e) => setBannerSubline(e.target.value)}
-                className="border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 bg-white focus:outline-none focus:border-teal-700 transition resize-none"
+                className={`border rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-teal-700 transition resize-none ${
+                  isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+                }`}
               />
             </div>
 
@@ -389,7 +408,9 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                     type="text"
                     value={bannerBgColor}
                     onChange={(e) => setBannerBgColor(e.target.value)}
-                    className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-650 bg-white focus:outline-none w-full"
+                    className={`border rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none w-full ${
+                      isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+                    }`}
                   />
                 </div>
               </div>
@@ -406,7 +427,9 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                     type="text"
                     value={bannerAccentColor}
                     onChange={(e) => setBannerAccentColor(e.target.value)}
-                    className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-650 bg-white focus:outline-none w-full"
+                    className={`border rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none w-full ${
+                      isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+                    }`}
                   />
                 </div>
               </div>
@@ -415,7 +438,9 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
 
           <div className="flex flex-col gap-2.5">
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Real-time Banner Preview</span>
-            <div className="border border-slate-200 rounded-xl overflow-hidden shadow-inner bg-slate-100 p-2 flex items-center justify-center min-h-[220px]">
+            <div className={`border rounded-xl overflow-hidden shadow-inner p-2 flex items-center justify-center min-h-[220px] ${
+              isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-slate-100"
+            }`}>
               <img
                 src={`${API_URL.replace("/api", "")}/api/users/referral/banner.svg?t=${previewToken}`}
                 alt="Referral Dynamic Banner Preview"
@@ -428,7 +453,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
       </div>
 
       {/* ── Canvas Designer Section ──────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 border-t border-slate-100 pt-6">
+      <div className={`flex flex-col gap-4 border-t pt-6 ${isDark ? "border-slate-800" : "border-slate-100"}`}>
         <div>
           <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
             <FiPenTool className="w-3.5 h-3.5" /> Custom Banner Designer
@@ -450,7 +475,11 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
           </button>
 
           {/* Direct image upload button */}
-          <label className="flex items-center gap-2 px-5 py-3 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-black rounded-xl border border-slate-200 transition-all cursor-pointer select-none">
+          <label className={`flex items-center gap-2 px-5 py-3 text-xs font-black rounded-xl border transition-all cursor-pointer select-none ${
+            isDark
+              ? "bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-600"
+              : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200/80"
+          }`}>
             {uploadingDirect ? (
               <div className="w-3.5 h-3.5 border-2 border-t-transparent border-teal-750 rounded-full animate-spin" />
             ) : (
@@ -475,7 +504,9 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                 <img
                   src={bannerImageUrl}
                   alt="Custom Banner"
-                  className="h-16 w-auto rounded-lg border border-slate-200 shadow-sm object-cover"
+                  className={`h-16 w-auto rounded-lg border shadow-sm object-cover ${
+                    isDark ? "border-slate-800" : "border-slate-200"
+                  }`}
                 />
                 <button
                   type="button"
@@ -491,11 +522,11 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
       </div>
 
       {/* Form Action row */}
-      <div className="border-t border-slate-100 pt-6 flex justify-end gap-3">
+      <div className={`border-t pt-6 flex justify-end gap-3 ${isDark ? "border-slate-800" : "border-slate-100"}`}>
         <button
           type="submit"
           disabled={saving}
-          className="flex items-center gap-2 px-5 py-2.5 bg-teal-700 text-white text-xs font-black uppercase rounded-xl hover:bg-teal-650 hover:shadow-lg hover:shadow-teal-700/15 disabled:opacity-50 transition-all cursor-pointer"
+          className="flex items-center gap-2 px-5 py-2.5 bg-teal-700 text-white text-xs font-black uppercase rounded-xl hover:bg-teal-650 hover:shadow-lg hover:shadow-teal-700/15 disabled:opacity-50 transition-all cursor-pointer border-none"
         >
           <FiSave className="w-4 h-4" />
           {saving ? "Saving Changes..." : "Save Referral Configurations"}

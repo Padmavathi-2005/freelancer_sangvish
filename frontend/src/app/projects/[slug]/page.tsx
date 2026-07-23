@@ -132,6 +132,30 @@ export default function ProjectDetailsPage() {
   // Share link and toast states
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [copiedShare, setCopiedShare] = useState(false);
+
+  // Affiliate states
+  const [isAffiliate, setIsAffiliate] = useState(false);
+  const [userReferralCode, setUserReferralCode] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_URL}/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const profile = await res.json();
+          setIsAffiliate(profile.is_affiliate === true || profile.is_affiliate === 1);
+          setUserReferralCode(profile.referral_code || "");
+        }
+      } catch (err) {
+        console.error("Error fetching user profile for affiliate check:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
     setTimeout(() => setToast(null), 3000);
@@ -526,6 +550,38 @@ export default function ProjectDetailsPage() {
           {/* Right Column: Client details & Proposal form */}
           <div className="lg:col-span-4 flex flex-col gap-6">
             
+            {/* Affiliate Share card */}
+            {isAffiliate && (
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-1.5">
+                  <span className="text-emerald-600">★</span> Affiliate Share
+                </h3>
+                <p className="text-[11px] font-semibold text-slate-500 leading-normal">
+                  Share this project link. If a user registers and books/completes this project, you will earn a recurring 10% commission on the platform service fee!
+                </p>
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5 mt-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`${window.location.origin}/projects/${job.slug || job.job_id}?ref=${userReferralCode}`}
+                    className="flex-1 bg-transparent text-xs font-bold text-slate-805 outline-none select-all"
+                  />
+                  <button
+                    onClick={() => {
+                      const link = `${window.location.origin}/projects/${job.slug || job.job_id}?ref=${userReferralCode}`;
+                      navigator.clipboard.writeText(link);
+                      showToast("success", "Affiliate link copied to clipboard!");
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white p-2 rounded-lg cursor-pointer flex items-center justify-center shrink-0 border-none"
+                    title="Copy affiliate link"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Budget / Hiring card */}
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-center">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Project Budget</span>

@@ -4,6 +4,7 @@ import { API_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 import CustomSelect from "@/components/CustomSelect";
 import { FiSettings } from "react-icons/fi";
+import { useAdmin } from "@/app/admin/AdminContext";
 
 interface GeneralSettingsTabProps {
   platformFee: number;
@@ -60,6 +61,8 @@ export default function GeneralSettingsTab({
   setEnableProjectVetting,
   handleSaveSetting
 }: GeneralSettingsTabProps) {
+  const { adminTheme } = useAdmin();
+  const isDark = adminTheme === "dark";
 
   // Local state copies to hold modifications before manual saving
   const [fee, setLocalFee] = useState(platformFee);
@@ -213,12 +216,12 @@ export default function GeneralSettingsTab({
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
+    <div className={`rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
       
       {/* HEADER SECTION with Save Action */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
         <div>
-          <h3 className="text-lg font-bold text-slate-805 flex items-center gap-2">
+          <h3 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-805"}`}>
             <FiSettings className="w-5 h-5 text-slate-500" />
             <span>General Visual & System Settings</span>
           </h3>
@@ -227,7 +230,7 @@ export default function GeneralSettingsTab({
         <button
           onClick={handleBulkSave}
           disabled={saving}
-          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-6 py-3 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer border-none"
+          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-6 py-3 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer border border-teal-600 dark:border-teal-500"
         >
           {saving ? "Saving..." : "Save Settings"}
         </button>
@@ -264,7 +267,7 @@ export default function GeneralSettingsTab({
               step="1"
               value={fee}
               onChange={(e) => setLocalFee(Number(e.target.value))}
-              className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-700"
+              className="w-full h-5 bg-transparent appearance-none cursor-pointer"
             />
           </div>
         </div>

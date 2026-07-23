@@ -30,7 +30,7 @@ async function migrate() {
         VALUES 
         ('Starter', 'For individuals and small teams.', 'Free', '', '["Basic talent search", "Standard support", "5% transaction fee"]', 'Current Plan', FALSE, TRUE),
         ('Professional', 'For growing businesses needing top talent.', '₹999', '/month', '["Advanced AI matching", "Priority 24/7 support", "2% transaction fee", "Dedicated account manager"]', 'Upgrade Now', TRUE, FALSE),
-        ('Enterprise', 'Custom solutions for large organizations.', 'Custom', '', '["Unlimited talent search", "Dedicated success team", "0% transaction fee", "Custom API integration"]', 'Contact Sales', FALSE, FALSE)
+        ('Enterprise', 'Custom solutions for large organizations.', 'Custom', '', '["Unlimited talent search", "Dedicated success team", "0% transaction fee", "Custom API integration"]', 'Buy Plan', FALSE, FALSE)
       `);
       console.log("🌱 Seeded default subscription plans (Starter, Professional, Enterprise).");
     }

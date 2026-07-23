@@ -18,7 +18,7 @@ interface InboxTabProps {
 }
 
 const getAvatarSrc = (imagePath: string | null) => {
-  if (!imagePath) return "";
+  if (!imagePath || imagePath === "null" || imagePath === "undefined") return "";
   if (imagePath.startsWith("http")) return imagePath;
   if (imagePath.startsWith("/")) {
     if (imagePath.startsWith("/public")) return imagePath;
@@ -78,6 +78,7 @@ export default function InboxTab({
   const [disputeResponseRefundPercent, setDisputeResponseRefundPercent] = useState<number>(0);
   const [disputeResponseEscalate, setDisputeResponseEscalate] = useState(false);
   const [disputeResponseExplanation, setDisputeResponseExplanation] = useState("");
+  const [disputeActionLoading, setDisputeActionLoading] = useState(false);
 
   const [currentUser] = useState<any>(() => {
     if (typeof window !== "undefined") {
@@ -89,11 +90,12 @@ export default function InboxTab({
 
   const isAdminSession = typeof window !== "undefined" && !!localStorage.getItem("adminToken");
   const activeConv = conversations.find(c => c.conversation_id === selectedConvId);
-  const isMediationActive = isAdminSession && activeConv && activeConv.admin_id !== null;
+  const isMediationActive = isAdminSession && userRole !== "client" && userRole !== "freelancer" && activeConv && activeConv.admin_id !== null;
 
   // 1. Respond to dispute (Freelancer)
   const handleRespondToDispute = async (disputeId: number, action: 'Accept' | 'Contest', explanation?: string) => {
     try {
+      setDisputeActionLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/payments/dispute/${disputeId}/respond`, {
         method: "POST",
@@ -113,12 +115,15 @@ export default function InboxTab({
     } catch (err) {
       console.error(err);
       triggerToast("error", "Network error.");
+    } finally {
+      setDisputeActionLoading(false);
     }
   };
 
   // 2. Propose split settlement
   const handleProposeSettlement = async (disputeId: number, clientRefundPercent: number) => {
     try {
+      setDisputeActionLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/payments/dispute/${disputeId}/settle/propose`, {
         method: "POST",
@@ -138,12 +143,15 @@ export default function InboxTab({
     } catch (err) {
       console.error(err);
       triggerToast("error", "Network error.");
+    } finally {
+      setDisputeActionLoading(false);
     }
   };
 
   // 3. Accept split settlement
   const handleAcceptSettlement = async (disputeId: number, clientRefundPercent: number) => {
     try {
+      setDisputeActionLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/payments/dispute/${disputeId}/settle/accept`, {
         method: "POST",
@@ -163,12 +171,15 @@ export default function InboxTab({
     } catch (err) {
       console.error(err);
       triggerToast("error", "Network error.");
+    } finally {
+      setDisputeActionLoading(false);
     }
   };
 
   // 4. Escalate dispute to admin mediator
   const handleEscalateDispute = async (disputeId: number) => {
     try {
+      setDisputeActionLoading(true);
       const token = localStorage.getItem("token");
       const res = await fetch(`${API_URL}/payments/dispute/${disputeId}/escalate`, {
         method: "POST",
@@ -186,7 +197,50 @@ export default function InboxTab({
     } catch (err) {
       console.error(err);
       triggerToast("error", "Network error.");
+    } finally {
+      setDisputeActionLoading(false);
     }
+  };
+
+  const hasActionAfterOpened = (disputeId: number) => {
+    return chatMessages.some(m => {
+      try {
+        if (m.message_text.trim().startsWith("{") && m.message_text.includes('"isDispute":true')) {
+          const parsed = JSON.parse(m.message_text);
+          return parsed.dispute_id === disputeId && parsed.type !== "dispute_opened";
+        }
+      } catch (e) {}
+      return false;
+    });
+  };
+
+  const hasActionAfterContested = (disputeId: number) => {
+    return chatMessages.some(m => {
+      try {
+        if (m.message_text.trim().startsWith("{") && m.message_text.includes('"isDispute":true')) {
+          const parsed = JSON.parse(m.message_text);
+          return parsed.dispute_id === disputeId && 
+            parsed.type !== "dispute_opened" && 
+            parsed.type !== "dispute_contested";
+        }
+      } catch (e) {}
+      return false;
+    });
+  };
+
+  const hasActionAfterSettlement = (disputeId: number) => {
+    return chatMessages.some(m => {
+      try {
+        if (m.message_text.trim().startsWith("{") && m.message_text.includes('"isDispute":true')) {
+          const parsed = JSON.parse(m.message_text);
+          return parsed.dispute_id === disputeId && 
+            parsed.type !== "dispute_opened" && 
+            parsed.type !== "dispute_contested" &&
+            parsed.type !== "settlement_proposed";
+        }
+      } catch (e) {}
+      return false;
+    });
   };
 
   const handleSubmitDisputeResponse = async (e: React.FormEvent) => {
@@ -307,12 +361,18 @@ export default function InboxTab({
                             <div
                               key={p.user_id}
                               style={{ zIndex: 10 - idx }}
-                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-[8px] uppercase overflow-hidden shrink-0"
+                              className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-[8px] uppercase overflow-hidden shrink-0 relative"
                             >
-                              {pAvatar ? (
-                                <img src={pAvatar} alt={p.name} className="w-full h-full object-cover" />
-                              ) : (
-                                getInitials(p.name)
+                              <span>{getInitials(p.name)}</span>
+                              {pAvatar && (
+                                <img
+                                  src={pAvatar}
+                                  alt={p.name}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                  onError={(e: any) => {
+                                    e.target.style.display = "none";
+                                  }}
+                                />
                               )}
                             </div>
                           );
@@ -329,8 +389,8 @@ export default function InboxTab({
                       </div>
                     ) : (
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-100 to-slate-200 border border-slate-200/50 flex items-center justify-center font-black text-slate-700 uppercase shadow-sm relative overflow-hidden shrink-0">
-                        <span>{conv.recipient_name ? conv.recipient_name.substring(0, 2) : "UN"}</span>
-                        {conv.recipient_image && (
+                        <span>{conv.recipient_name ? getInitials(conv.recipient_name) : "UN"}</span>
+                        {conv.recipient_image && conv.recipient_image !== "null" && conv.recipient_image !== "undefined" && (
                           <img
                             src={getAvatarSrc(conv.recipient_image)}
                             alt={conv.recipient_name}
@@ -345,16 +405,16 @@ export default function InboxTab({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline">
-                      <h4 className="text-xs font-black text-slate-800 truncate capitalize">{conv.recipient_name || "Unknown Candidate"}</h4>
+                      <h4 className="text-[11.5px] font-black text-slate-800 truncate capitalize">{conv.recipient_name || "Unknown Candidate"}</h4>
                     </div>
                     {conv.is_group && conv.group_participants ? (
                       <p className="text-[9px] text-slate-450 font-extrabold truncate mt-0.5 leading-none">
                         {conv.group_participants.map((p: any) => p.user_id === currentUser?.user_id ? "You" : p.name.split(" ")[0]).join(", ")}
                       </p>
                     ) : (
-                      <p className="text-[10px] text-slate-400 font-bold capitalize mt-0.5">{conv.recipient_role || "User"}</p>
+                      <p className="text-[9.5px] text-slate-400 font-semibold capitalize mt-0.5">{conv.recipient_role || "User"}</p>
                     )}
-                    <p className="text-xxs text-slate-500 font-semibold truncate mt-1 leading-normal">
+                    <p className="text-[10px] text-slate-400 font-semibold truncate mt-1 leading-normal">
                       {conv.last_message_text && conv.last_message_text.startsWith("{") && conv.last_message_text.includes('"isDispute":true')
                         ? "⚠️ Dispute System Update"
                         : conv.last_message_text && conv.last_message_text.startsWith("{") && conv.last_message_text.includes("isCustomOffer")
@@ -387,7 +447,7 @@ export default function InboxTab({
                   ) : (
                     <>
                       <span>{getInitials(activeConv?.recipient_name || "UN")}</span>
-                      {activeConv?.recipient_profile_image && (
+                      {activeConv?.recipient_profile_image && activeConv.recipient_profile_image !== "null" && activeConv.recipient_profile_image !== "undefined" && (
                         <img
                           src={getAvatarSrc(activeConv.recipient_profile_image)}
                           alt={activeConv.recipient_name}
@@ -437,19 +497,21 @@ export default function InboxTab({
                 </div>
               ) : (
                 chatMessages.map((msg, idx) => {
-                  const isPlatformMsg = msg.message_text.startsWith("[") && msg.message_text.includes("Platform Message]");
+                  const isPlatformMsg = msg.message_text.trim().startsWith("[") && msg.message_text.includes("Platform Message]");
                   const isOwn = !isPlatformMsg && msg.sender_id === currentUser?.user_id;
                   let offerData: any = null;
                   try {
-                    if (msg.message_text.trim().startsWith("{") && msg.message_text.includes('"isCustomOffer":true')) {
-                      offerData = JSON.parse(msg.message_text);
+                    const txt = msg.message_text.trim();
+                    if (txt.startsWith("{") && txt.includes("isCustomOffer")) {
+                      offerData = JSON.parse(txt);
                     }
                   } catch (e) {}
 
                   let disputeData: any = null;
                   try {
-                    if (msg.message_text.trim().startsWith("{") && msg.message_text.includes('"isDispute":true')) {
-                      disputeData = JSON.parse(msg.message_text);
+                    const txt = msg.message_text.trim();
+                    if (txt.startsWith("{") && txt.includes("isDispute")) {
+                      disputeData = JSON.parse(txt);
                     }
                   } catch (e) {}
 
@@ -473,7 +535,7 @@ export default function InboxTab({
                             : "bg-amber-50 border-amber-250"
                         }`}>
                           <div className="flex items-center justify-between border-b pb-2 mb-2 border-slate-200/60">
-                            <span className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
+                            <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
                               disputeData.type === "dispute_resolved"
                                 ? "bg-emerald-100 text-emerald-700"
                                 : disputeData.type === "dispute_escalated"
@@ -492,13 +554,14 @@ export default function InboxTab({
 
                           {disputeData.type === "dispute_opened" && (
                             <div>
-                              <p className="text-xs font-black text-slate-800">Reason: {disputeData.reason}</p>
-                              <p className="text-xxs font-medium text-slate-600 mt-1 leading-relaxed whitespace-pre-wrap">{disputeData.description}</p>
+                              <p className="text-[11px] font-black text-slate-800">Reason: {disputeData.reason}</p>
+                              <p className="text-[9.5px] font-medium text-slate-650 mt-1 leading-relaxed whitespace-pre-wrap">{disputeData.description}</p>
                               
                               {/* Freelancer actions */}
-                              {userRole === "freelancer" && !isOwn && (
+                              {userRole === "freelancer" && !isOwn && !hasActionAfterOpened(disputeData.dispute_id) && (
                                 <div className="mt-3 flex gap-2">
                                   <button
+                                    disabled={disputeActionLoading}
                                     onClick={() => {
                                       setDisputeResponseTargetId(disputeData.dispute_id);
                                       setDisputeResponseRefundType("Full");
@@ -507,11 +570,12 @@ export default function InboxTab({
                                       setDisputeResponseEscalate(false);
                                       setShowDisputeResponseModal(true);
                                     }}
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] py-1.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider animate-pulse"
+                                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] py-1.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider animate-pulse disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     Accept Refund Request
                                   </button>
                                   <button
+                                    disabled={disputeActionLoading}
                                     onClick={() => {
                                       setDisputeResponseTargetId(disputeData.dispute_id);
                                       setDisputeResponseRefundType("None");
@@ -520,7 +584,7 @@ export default function InboxTab({
                                       setDisputeResponseEscalate(false);
                                       setShowDisputeResponseModal(true);
                                     }}
-                                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] py-1.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider"
+                                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] py-1.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     Contest Dispute
                                   </button>
@@ -531,15 +595,16 @@ export default function InboxTab({
 
                           {disputeData.type === "dispute_contested" && (
                             <div>
-                              <p className="text-[10px] font-bold text-slate-700">Freelancer has contested the dispute.</p>
-                              <p className="text-xxs font-medium text-slate-600 bg-slate-50 p-2 border border-slate-100 rounded-lg mt-1 whitespace-pre-wrap">
+                              <p className="text-[9px] font-bold text-slate-700">Freelancer has contested the dispute.</p>
+                              <p className="text-[9.5px] font-medium text-slate-650 bg-slate-50 p-2 border border-slate-100 rounded-lg mt-1 whitespace-pre-wrap">
                                 {disputeData.explanation}
                               </p>
 
                               {/* Client actions */}
-                              {userRole === "client" && (
+                              {userRole === "client" && !hasActionAfterContested(disputeData.dispute_id) && (
                                 <div className="mt-3 flex gap-2">
                                   <button
+                                    disabled={disputeActionLoading}
                                     onClick={() => {
                                       setDisputeResponseTargetId(disputeData.dispute_id);
                                       setDisputeResponseRefundType("Partial");
@@ -548,11 +613,12 @@ export default function InboxTab({
                                       setDisputeResponseEscalate(false);
                                       setShowDisputeResponseModal(true);
                                     }}
-                                    className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[9px] py-1.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider animate-pulse"
+                                    className="bg-amber-600 hover:bg-amber-700 text-white font-black text-[9px] py-1.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider animate-pulse disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     Propose Split Settlement
                                   </button>
                                   <button
+                                    disabled={disputeActionLoading}
                                     onClick={() => {
                                       setDisputeResponseTargetId(disputeData.dispute_id);
                                       setDisputeResponseRefundType("None");
@@ -561,7 +627,7 @@ export default function InboxTab({
                                       setDisputeResponseEscalate(true);
                                       setShowDisputeResponseModal(true);
                                     }}
-                                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] py-1.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider"
+                                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] py-1.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     Escalate to Admin
                                   </button>
@@ -606,11 +672,12 @@ export default function InboxTab({
                                 </div>
                               </div>
 
-                              {disputeData.proposer_id !== currentUser?.user_id && (
+                              {disputeData.proposer_id !== currentUser?.user_id && !hasActionAfterSettlement(disputeData.dispute_id) && (
                                 <div className="mt-3 flex gap-2">
                                   <button
+                                    disabled={disputeActionLoading}
                                     onClick={() => handleAcceptSettlement(disputeData.dispute_id, disputeData.client_refund_percent)}
-                                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] py-2 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider animate-pulse"
+                                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] py-2 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider animate-pulse disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     {disputeData.client_refund_percent === 0
                                       ? "Accept — No Refund"
@@ -619,8 +686,9 @@ export default function InboxTab({
                                         : `Accept — ${disputeData.client_refund_percent}% / ${disputeData.freelancer_pay_percent}% Split`}
                                   </button>
                                   <button
+                                    disabled={disputeActionLoading}
                                     onClick={() => handleEscalateDispute(disputeData.dispute_id)}
-                                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] py-2 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider"
+                                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] py-2 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
                                     Let Admin Decide
                                   </button>
@@ -631,7 +699,7 @@ export default function InboxTab({
 
                           {disputeData.type === "dispute_escalated" && (
                             <div>
-                              <p className="text-xxs font-bold text-rose-750 leading-relaxed">
+                              <p className="text-[9.5px] font-bold text-rose-750 leading-relaxed">
                                 ⚖ This dispute has been escalated. A LancerFlow administrator has joined this thread as a mediator to review terms, requirements, and logs.
                               </p>
                             </div>
@@ -639,7 +707,7 @@ export default function InboxTab({
 
                           {disputeData.type === "dispute_revision_required" && (
                             <div>
-                              <p className="text-xxs font-bold text-slate-700 leading-relaxed">
+                              <p className="text-[9.5px] font-bold text-slate-750 leading-relaxed">
                                 🛠 Admin Review Complete: Revision Required. Freelancer has been requested to submit revised deliverables in accordance with original contract specifications.
                               </p>
                             </div>
@@ -647,8 +715,8 @@ export default function InboxTab({
 
                           {disputeData.type === "dispute_resolved" && (
                             <div>
-                              <p className="text-xs font-black text-emerald-800">Verdict: {disputeData.verdict}</p>
-                              <p className="text-xxs font-semibold text-slate-650 mt-1">{cleanDetails}</p>
+                              <p className="text-[11px] font-black text-emerald-800">Verdict: {disputeData.verdict}</p>
+                              <p className="text-[9.5px] font-semibold text-slate-650 mt-1">{cleanDetails}</p>
                             </div>
                           )}
                         </div>
@@ -669,15 +737,15 @@ export default function InboxTab({
                       >
                         <div className="bg-gradient-to-br from-amber-50 to-orange-50/30 border border-amber-200/80 rounded-xl p-4 shadow-sm text-left max-w-md">
                           <div className="flex items-center justify-between border-b border-amber-200 pb-2 mb-2">
-                            <span className="text-[10px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                            <span className="text-[9px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded uppercase tracking-wider">
                               Custom Payment Offer
                             </span>
-                            <span className="text-sm font-black text-slate-800">
+                            <span className="text-xs font-black text-slate-800">
                               ${parseFloat(offerData.price).toLocaleString()}
                             </span>
                           </div>
-                          <h4 className="text-xs font-black text-slate-800 mb-1">{offerData.title}</h4>
-                          <p className="text-slate-600 text-xxs font-medium leading-relaxed whitespace-pre-wrap">{offerData.description}</p>
+                          <h4 className="text-[11px] font-black text-slate-800 mb-1">{offerData.title}</h4>
+                          <p className="text-slate-600 text-[9.5px] font-medium leading-relaxed whitespace-pre-wrap">{offerData.description}</p>
                           
                           {/* Action Buttons for Client */}
                           {offerData.status === "Pending" ? (
@@ -733,21 +801,21 @@ export default function InboxTab({
                     );
                   }
 
-                  const isSystemMsg = msg.message_text.startsWith("System:") || isPlatformMsg;
+                  const isSystemMsg = msg.message_text.trim().startsWith("System:") || isPlatformMsg;
 
                   if (isSystemMsg) {
                     let cleanText = msg.message_text;
-                    if (cleanText.startsWith("System:")) {
-                      cleanText = cleanText.substring(7).trim();
+                    if (cleanText.trim().startsWith("System:")) {
+                      cleanText = cleanText.trim().substring(7).trim();
                     } else if (isPlatformMsg) {
-                      cleanText = cleanText.replace(/(?:Site Logo|Logo):\s*[^\s\r\n]+/gi, "");
+                      cleanText = cleanText.replace(/(?:Site Logo|Logo):\s*(?:https?:\/\/\S+|\/\S+)/gi, "");
                       cleanText = cleanText.replace(/^\[[^\]]+Platform Message\]\s*/i, "").trim();
                     }
 
                     return (
                       <div key={idx} className="flex justify-center my-3.5 w-full select-none">
-                        <div className="bg-gradient-to-r from-teal-50/70 to-emerald-50/70 border border-emerald-200 rounded-xl px-5 py-3 text-xxs font-bold text-teal-950 max-w-[85%] text-left shadow-sm leading-relaxed whitespace-pre-wrap">
-                          <span className="font-black text-teal-800 uppercase tracking-widest text-[9px] block mb-1.5 flex items-center gap-1.5">
+                        <div className="bg-gradient-to-r from-teal-50/70 to-emerald-50/70 border border-emerald-200 rounded-xl px-5 py-3 text-[10.5px] font-semibold text-teal-950 max-w-[85%] text-left shadow-sm leading-relaxed whitespace-pre-wrap">
+                          <span className="font-black text-teal-800 uppercase tracking-widest text-[8.5px] block mb-1.5 flex items-center gap-1.5">
                             <i className="fa-solid fa-circle-info text-teal-700"></i> {isPlatformMsg ? "Platform Notification" : "System Notification"}
                           </span>
                           {cleanText}
@@ -763,10 +831,10 @@ export default function InboxTab({
                   let parsedLogoUrl = "";
 
                   if (isPlatformMsg) {
-                    const match = displayMsgText.match(/(?:Site Logo|Logo):\s*([^\s\r\n]+)/i);
+                    const match = displayMsgText.match(/(?:Site Logo|Logo):\s*(https?:\/\/\S+|\/\S+)/i);
                     if (match) {
                       parsedLogoUrl = match[1];
-                      displayMsgText = displayMsgText.replace(/(?:Site Logo|Logo):\s*[^\s\r\n]+/gi, "");
+                      displayMsgText = displayMsgText.replace(/(?:Site Logo|Logo):\s*(?:https?:\/\/\S+|\/\S+)/gi, "");
                     }
                     displayMsgText = displayMsgText.replace(/^\[[^\]]+Platform Message\]\s*/i, "").trim();
                   }
@@ -1258,7 +1326,7 @@ export default function InboxTab({
                   onChange={(e) => setDisputeResponseEscalate(e.target.checked)}
                   className="w-4 h-4 rounded text-rose-600 accent-rose-600 cursor-pointer"
                 />
-                <label htmlFor="escalateToAdmin" className="text-xxs font-black uppercase cursor-pointer select-none leading-none mt-0.5">
+                <label htmlFor="escalateToAdmin" className="text-[9px] font-black uppercase cursor-pointer select-none leading-none mt-0.5">
                   Escalate directly to admin mediator
                 </label>
               </div>

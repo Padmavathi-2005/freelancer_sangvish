@@ -1,35 +1,73 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useLanguage } from "@/context/LanguageContext";
+import { API_URL, API_BASE_URL } from "@/config/api";
+
+const resolveLogoUrl = (url: string) => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+};
 
 interface FooterProps {
   transparent?: boolean;
 }
 
 export default function Footer({ transparent = false }: FooterProps) {
+  const { t } = useLanguage();
   const currentYear = new Date().getFullYear();
+  const [siteLogo, setSiteLogo] = useState<string>("");
+  const [siteName, setSiteName] = useState<string>("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          data.forEach((setting: any) => {
+            let val = setting.setting_value;
+            if (typeof val === "string") {
+              try {
+                const parsed = JSON.parse(val);
+                if (typeof parsed === "string") val = parsed;
+              } catch (e) {}
+            }
+            if (setting.setting_key === "site_logo" && val) setSiteLogo(val);
+            if (setting.setting_key === "site_name" && val) setSiteName(val);
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch settings in Footer:", err);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const footerLinks = {
     company: {
-      title: "Company",
+      title: t("footer_company", "Company"),
       links: [
-        { label: "About Us", href: "/about-us" },
-        { label: "Careers", href: "/careers" },
-        { label: "Contact", href: "/contact" },
-        { label: "FAQ", href: "/faq" },
-        { label: "Terms & Conditions", href: "/terms-conditions" },
+        { label: t("footer_about", "About Us"), href: "/about-us" },
+        { label: t("footer_careers", "Careers"), href: "/careers" },
+        { label: t("footer_contact", "Contact"), href: "/contact" },
+        { label: t("footer_faq", "FAQ"), href: "/faq" },
+        { label: t("footer_terms", "Terms & Conditions"), href: "/terms-conditions" },
       ],
     },
     connect: {
-      title: "Connect",
+      title: t("footer_connect", "Connect"),
       links: [
-        { label: "Newsletter", href: "/newsletter" },
+        { label: t("footer_newsletter", "Newsletter"), href: "/newsletter" },
         { label: "Instagram", href: "/download" },
         { label: "LinkedIn", href: "/download" },
       ],
     },
     mobileApp: {
-      title: "Mobile App",
+      title: t("footer_mobile_app", "Mobile App"),
       links: [
         { label: "App Store", href: "/download" },
         { label: "Google Play", href: "/download" },
@@ -50,15 +88,32 @@ export default function Footer({ transparent = false }: FooterProps) {
           
           {/* Logo & Brand Copy Column */}
           <div className="md:col-span-5 flex flex-col gap-4 text-left">
-            <span className="font-extrabold text-2xl text-slate-900 tracking-tight font-display flex items-baseline gap-0.5 select-none">
-              <span>Freelancer</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-teal-600 mb-0.5" />
-            </span>
+            <a href="/" className="inline-flex items-center gap-2 select-none w-fit">
+              {mounted && siteLogo ? (
+                <img
+                  src={resolveLogoUrl(siteLogo)}
+                  alt={siteName || "Freelancer"}
+                  className="h-9 w-auto max-w-[200px] object-contain shrink-0"
+                />
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-750 font-extrabold shadow-sm shrink-0">
+                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </div>
+                  <span className="font-extrabold text-2xl text-slate-900 tracking-tight font-display flex items-baseline gap-0.5 select-none">
+                    <span>{siteName || "Freelancer"}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-600 mb-0.5" />
+                  </span>
+                </div>
+              )}
+            </a>
             <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed max-w-sm font-sans">
-              Precision in Professionalism. Join a curated marketplace where verified talent builds modern client solutions.
+              {t("footer_brand_desc", "Precision in Professionalism. Join a curated marketplace where verified talent builds modern client solutions.")}
             </p>
             <p className="text-[11px] text-slate-400 font-semibold tracking-wider uppercase mt-2">
-              &copy; {currentYear} Freelancer Marketplace. All rights reserved.
+              {t("footer_copyright", `© ${currentYear} Freelancer Marketplace. All rights reserved.`)}
             </p>
           </div>
 

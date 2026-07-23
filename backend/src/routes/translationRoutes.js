@@ -12,10 +12,14 @@ router.get("/translations/:code", async (req, res) => {
       [code.toUpperCase()]
     );
 
-    // Format as a simple key-value object
+    // Format as a simple key-value object (mapping both exact and lowercase keys for 100% match)
     const mapping = {};
     for (const row of result.rows) {
-      mapping[row.key] = row.value;
+      if (row.key) {
+        mapping[row.key] = row.value;
+        mapping[row.key.toLowerCase()] = row.value;
+        mapping[row.key.trim().toLowerCase()] = row.value;
+      }
     }
 
     res.status(200).json(mapping);

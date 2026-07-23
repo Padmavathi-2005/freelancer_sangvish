@@ -145,7 +145,7 @@ function CategoriesContent() {
         {/* Page Header */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 border-b border-slate-200/60 pb-8 mb-10 select-none">
           <div className="text-left">
-            <span className="text-[10px] font-black text-[#0F766E] tracking-widest uppercase block mb-1">
+            <span className="text-[10px] font-black text-primary tracking-widest uppercase block mb-1">
               LancerFlow Directory
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 leading-tight">
@@ -166,7 +166,7 @@ function CategoriesContent() {
               placeholder="Search categories..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-slate-200 hover:border-slate-350 focus:border-[#0F766E] focus:ring-1 focus:ring-[#0F766E]/20 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-400 outline-none transition-all shadow-xxs"
+              className="w-full bg-white border border-slate-200 hover:border-slate-350 focus:border-primary focus:ring-1 focus:ring-primary/20 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-400 outline-none transition-all shadow-xxs"
             />
           </div>
         </div>
@@ -195,7 +195,7 @@ function CategoriesContent() {
             </p>
             <button
               onClick={() => setSearchQuery("")}
-              className="mt-6 bg-[#0F766E] hover:bg-[#0c5a54] text-white text-xs font-black py-2.5 px-6 rounded-xl shadow-sm transition cursor-pointer border-none"
+              className="mt-6 bg-primary hover:bg-primary-hover text-white text-xs font-black py-2.5 px-6 rounded-xl shadow-sm transition cursor-pointer border-none"
             >
               Clear Search
             </button>
@@ -216,7 +216,7 @@ function CategoriesContent() {
                   onClick={() => router.push(`/talent?category=${encodeURIComponent(cat.category_name)}`)}
                   className="group rounded-xl border border-slate-200 bg-white overflow-hidden cursor-pointer
                              transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-slate-200/70
-                             hover:border-[#0F766E]/30 flex flex-col text-left"
+                             hover:border-primary/30 flex flex-col text-left"
                 >
                   {/* Image / icon area */}
                   <div className="relative h-44 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
@@ -227,14 +227,14 @@ function CategoriesContent() {
                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center gap-2 text-[#0F766E]/40">
+                      <div className="flex flex-col items-center justify-center gap-2 text-primary/40">
                         <CategoryIcon name={cat.category_name} />
                       </div>
                     )}
                     {/* Freelancer count badge */}
                     {count > 0 && (
                       <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full
-                                       bg-[#0F766E] text-white shadow-sm">
+                                       bg-primary text-white shadow-sm">
                         {count.toLocaleString()} active
                       </span>
                     )}
@@ -258,7 +258,7 @@ function CategoriesContent() {
                         router.push(`/talent?category=${encodeURIComponent(cat.category_name)}`);
                       }}
                       className="mt-auto w-full flex items-center justify-center gap-1.5 text-xs font-bold py-2 px-3 rounded-xl
-                                 bg-[#0F766E] hover:bg-[#0c5a54] text-white transition-all duration-300 group-hover:shadow-md group-hover:shadow-[#0F766E]/20 border-none"
+                                 bg-primary hover:bg-primary-hover text-white transition-all duration-300 group-hover:shadow-md group-hover:shadow-primary/20 border-none"
                     >
                       Browse
                       <svg viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5">

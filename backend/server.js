@@ -408,6 +408,10 @@ try {
     // Make io accessible globally in app
     app.set('io', io);
 
+    // Start Subscription Expiry Checker Daemon
+    const { runSubscriptionDaemon } = await import('./src/utils/subscriptionChecker.js');
+    runSubscriptionDaemon(io);
+
     httpServer.listen(PORT, () => {
         console.log(`🚀 Server running with Socket.io on port ${PORT}`);
     });

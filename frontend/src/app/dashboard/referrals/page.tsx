@@ -125,45 +125,38 @@ export default function ReferralsPage() {
         </div>
 
         {/* Copy Box & Download card */}
-        <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-md border border-slate-850 flex flex-col justify-between gap-5 text-left relative overflow-hidden">
+        <div className="bg-white text-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between gap-5 text-left relative overflow-hidden">
           <div className="absolute top-[-20%] right-[-10%] w-[12rem] h-[12rem] bg-teal-500/5 rounded-full filter blur-[50px] pointer-events-none" />
           
           <div className="relative z-10 flex flex-col gap-2">
-            <span className="text-[10px] font-black uppercase text-teal-400 tracking-wider">Start Inviting</span>
-            <h3 className="text-lg font-black tracking-tight leading-tight">Your Referral Link</h3>
-            <p className="text-[11px] font-semibold text-slate-400 leading-normal">
+            <span className="text-[10px] font-black uppercase text-teal-700 tracking-wider">Start Inviting</span>
+            <h3 className="text-lg font-black tracking-tight leading-tight text-slate-855">Your Referral Link</h3>
+            <p className="text-[11px] font-semibold text-slate-450 leading-normal">
               Copy this link and send it to your friends. You can also download the custom banner below to share on social media.
             </p>
           </div>
 
           <div className="relative z-10 flex flex-col gap-3">
-            <div className="flex items-center gap-2 bg-slate-950/45 border border-white/10 rounded-xl p-2.5">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
               <input
                 type="text"
                 readOnly
                 value={referralLink}
-                className="flex-1 bg-transparent text-[11px] font-bold text-slate-100 outline-none select-all"
+                className="flex-1 bg-transparent text-[11px] font-bold text-slate-800 outline-none select-all"
               />
               <button
                 onClick={handleCopyLink}
-                className="bg-teal-650 hover:bg-teal-600 active:scale-95 transition-all text-white p-2 rounded-lg cursor-pointer flex items-center justify-center shrink-0"
+                className="bg-teal-700 hover:bg-teal-800 active:scale-95 transition-all text-white p-2 rounded-lg cursor-pointer flex items-center justify-center shrink-0"
                 title="Copy link"
               >
-                {copied ? <FiCheck className="w-4 h-4 text-emerald-400" /> : <FiCopy className="w-4 h-4" />}
+                {copied ? <FiCheck className="w-4 h-4 text-emerald-500" /> : <FiCopy className="w-4 h-4" />}
               </button>
             </div>
             {copied && (
-              <span className="text-[9px] font-bold text-emerald-400 text-right animate-fade-in select-none">
+              <span className="text-[9px] font-bold text-emerald-600 text-right animate-fade-in select-none">
                 Link copied to clipboard!
               </span>
             )}
-            
-            <button
-              onClick={handleDownloadBanner}
-              className="w-full py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-black uppercase rounded-xl transition cursor-pointer text-center block"
-            >
-              Download Promo Banner
-            </button>
           </div>
         </div>
       </div>
@@ -220,7 +213,7 @@ export default function ReferralsPage() {
             <li>Copy your referral link above and share it with your professional network.</li>
             <li>Your friends use the link to register a new account on our platform.</li>
             {data?.enable_signup_bonus !== false && (
-              <li>Upon registering, they receive a **${(data?.signup_bonus ?? 5.00).toFixed(2)} signup bonus** (pending admin verification & approval) directly into their wallet.</li>
+              <li>Upon registering, they receive a <strong>${(data?.signup_bonus ?? 5.00).toFixed(2)} signup bonus</strong> (pending admin verification & approval) directly into their wallet.</li>
             )}
             <li>When they fund their first job milestone, pay for a gig, or clear a contract, you instantly receive a promoter payout reward in your wallet.</li>
           </ol>

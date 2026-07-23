@@ -426,6 +426,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [submittingDirectHire, setSubmittingDirectHire] = useState(false);
   const [directHireError, setDirectHireError] = useState("");
   const [siteLogo, setSiteLogo] = useState("");
+  const [siteLogoDark, setSiteLogoDark] = useState("");
   const [siteName, setSiteName] = useState("");
 
   const clientScrollRef = React.useRef<HTMLDivElement>(null);
@@ -458,6 +459,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 } catch (e) {}
               }
               if (val?.site_logo) setSiteLogo(val.site_logo);
+              if (val?.site_logo_dark) setSiteLogoDark(val.site_logo_dark);
               if (val?.site_name) setSiteName(val.site_name);
             }
           });
@@ -643,9 +645,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             href="/"
             className="flex items-center gap-2 select-none hover:opacity-80 transition-opacity cursor-pointer"
           >
-            {siteLogo ? (
+            {((siteTheme === "dark" && siteLogoDark) ? siteLogoDark : siteLogo) ? (
               <img
-                src={resolveLogoUrl(siteLogo)}
+                src={resolveLogoUrl((siteTheme === "dark" && siteLogoDark) ? siteLogoDark : siteLogo)}
                 alt={siteName || "Buy2Lancer"}
                 className="h-8 w-auto max-w-[150px] object-contain shrink-0"
               />
@@ -1553,18 +1555,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0"></div>
 
           {!onboardingCompleted && (
-            <div className="flex items-center justify-between gap-4 bg-rose-50 border border-rose-250 rounded-xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
+            <div className="flex items-center justify-between gap-4 bg-rose-50 dark:bg-rose-950/20 border border-rose-250 dark:border-rose-900/50 rounded-xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
               <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/[0.03] rounded-full filter blur-xl"></div>
               
               <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-600 shrink-0 shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-600 dark:text-rose-400 shrink-0 shadow-sm">
                   <FiAlertTriangle className="w-4 h-4 animate-bounce" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-xs font-black text-rose-800 uppercase tracking-wide">
+                  <h4 className="text-xs font-black text-rose-800 dark:text-rose-450 uppercase tracking-wide">
                     {t("profile_onboarding_pending_title", "Profile Onboarding Pending")}
                   </h4>
-                  <p className="text-[10px] text-rose-650 font-extrabold mt-0.5 leading-relaxed">
+                  <p className="text-[10px] text-rose-700 dark:text-rose-300 font-extrabold mt-0.5 leading-relaxed">
                     {t("profile_onboarding_pending_desc", "Please complete your profile configuration to unlock full platform features and navigate pages.")}
                   </p>
                 </div>
@@ -1580,17 +1582,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           )}
 
           {onboardingCompleted && vettingStatus === "Pending" && (
-            <div className="flex items-center gap-3.5 bg-amber-50 border border-amber-250 rounded-xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
+            <div className="flex items-center gap-3.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-250 dark:border-amber-900/50 rounded-xl px-5 py-4 shadow-sm animate-fadeIn relative overflow-hidden shrink-0 select-none">
               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/[0.03] rounded-full filter blur-xl"></div>
               
-              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 shrink-0 shadow-sm">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-sm">
                 <FiClock className="w-4 h-4 animate-pulse" />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-black text-amber-800 flex items-center gap-1.5 uppercase tracking-wide">
+                <h4 className="text-xs font-black text-amber-800 dark:text-amber-450 flex items-center gap-1.5 uppercase tracking-wide">
                   {t("onboarding_profile_under_review_title", "Onboarding Profile Under Review")}
                 </h4>
-                <p className="text-[10px] text-amber-600 font-extrabold mt-0.5 leading-relaxed">
+                <p className="text-[10px] text-amber-700 dark:text-amber-300 font-extrabold mt-0.5 leading-relaxed">
                   {t("onboarding_profile_under_review_desc", "Your credentials have been submitted successfully and are currently in the queue for manual admin vetting. Some workspace actions will remain locked until approval.")}
                 </p>
               </div>
@@ -3734,7 +3736,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         setHireDeliveryDays(14);
                         // Pre-populate open job list
                         if (clientJobs.length > 0) {
-                          const openJobs = clientJobs.filter(j => j.status === "Open");
+                          const openJobs = clientJobs.filter(j => j.status === "Open" && !j.contract_id);
                           if (openJobs.length > 0) {
                             setSelectedExistingJobId(openJobs[0].job_id.toString());
                           } else {
@@ -3776,7 +3778,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         type="button"
                         onClick={() => {
                           setHireJobMode("existing");
-                          const openJobs = clientJobs.filter(j => j.status === "Open");
+                          const openJobs = clientJobs.filter(j => j.status === "Open" && !j.contract_id);
                           if (openJobs.length > 0) setSelectedExistingJobId(openJobs[0].job_id.toString());
                         }}
                         className={`flex-1 py-3 px-4 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
@@ -3807,14 +3809,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   {hireJobMode === "existing" ? (
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Select Open Project *</label>
-                      {clientJobs.filter((j) => j.status === "Open").length > 0 ? (
+                      {clientJobs.filter((j) => j.status === "Open" && !j.contract_id).length > 0 ? (
                         <select
                           value={selectedExistingJobId}
                           onChange={(e) => setSelectedExistingJobId(e.target.value)}
                           className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-700/50 focus:outline-none"
                         >
                           {clientJobs
-                            .filter((j) => j.status === "Open")
+                            .filter((j) => j.status === "Open" && !j.contract_id)
                             .map((job) => (
                               <option key={job.job_id} value={job.job_id}>
                                 {job.title} (${parseFloat(job.budget).toLocaleString()})

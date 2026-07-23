@@ -16,21 +16,21 @@ const renderIcon = (name: string) => {
   switch (name) {
     case 'Shield':
       return (
-        <svg className="w-6 h-6 text-[#0a5a54]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 11 2 2 4-4" />
         </svg>
       );
     case 'Cpu':
       return (
-        <svg className="w-6 h-6 text-[#0a5a54]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-3.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2Z" />
           <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-3.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2Z" />
         </svg>
       );
     case 'Lock':
       return (
-        <svg className="w-6 h-6 text-[#0a5a54]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="5" width="20" height="14" rx="2" />
           <line x1="2" y1="10" x2="22" y2="10" />
           <circle cx="12" cy="14" r="2.5" />
@@ -38,7 +38,7 @@ const renderIcon = (name: string) => {
       );
     case 'Headphones':
       return (
-        <svg className="w-6 h-6 text-[#0a5a54]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           <path d="M8 10h8" />
           <path d="M8 14h6" />
@@ -46,7 +46,7 @@ const renderIcon = (name: string) => {
       );
     case 'Clock':
       return (
-        <svg className="w-6 h-6 text-[#0a5a54]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
           <polyline points="12 6 12 12 16 14" />
         </svg>
@@ -54,7 +54,7 @@ const renderIcon = (name: string) => {
     case 'MessageSquare':
     default:
       return (
-        <svg className="w-6 h-6 text-[#0a5a54]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className="w-6 h-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
           <circle cx="9" cy="7" r="4" />
           <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -120,10 +120,10 @@ export default function WhyChoose() {
             return (
               <div 
                 key={feat.feature_id} 
-                className="bg-slate-100/70 border border-slate-200/60 rounded-xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:border-[#0a5a54]/30 hover:shadow-xl hover:shadow-slate-200/50 flex flex-col items-start gap-4 animate-fadeIn"
+                className="bg-slate-100/70 border border-slate-200/60 rounded-xl p-6 sm:p-8 transition-all duration-300 hover:scale-[1.03] hover:bg-white hover:border-primary/30 hover:shadow-xl hover:shadow-slate-200/50 flex flex-col items-start gap-4 animate-fadeIn"
               >
                 {/* Icon badge */}
-                <div className="w-11 h-11 rounded-xl bg-[#e6f0ef] flex items-center justify-center shrink-0 shadow-inner">
+                <div className="w-11 h-11 rounded-xl bg-primary-light flex items-center justify-center shrink-0 shadow-inner">
                   {renderIcon(feat.icon_name)}
                 </div>
                 

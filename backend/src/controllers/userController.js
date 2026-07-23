@@ -382,8 +382,13 @@ export const getMySubscription = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const { default: pool } = await import('../config/db.js');
+        const { checkUserSubscription } = await import('../utils/subscriptionChecker.js');
+        
+        // Check for subscription expiry on the fly
+        await checkUserSubscription(userId, req.app?.get('io'));
+
         const result = await pool.query(
-            `SELECT u.active_plan_id, u.created_at as user_created_at, sp.name as plan_name, sp.description, sp.price, sp.period, sp.gig_discount_percent, sp.features, sp.credits, sp.plan_duration, sp.plan_role
+            `SELECT u.active_plan_id, u.active_plan_expires_at, u.created_at as user_created_at, sp.name as plan_name, sp.description, sp.price, sp.period, sp.gig_discount_percent, sp.features, sp.credits, sp.plan_duration, sp.plan_role
              FROM users u
              LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
              WHERE u.user_id = $1`,
@@ -500,11 +505,63 @@ export const subscribeToPlan = async (req, res) => {
                 );
             }
 
-            // Update user active plan
-            await pool.query(
-                "UPDATE users SET active_plan_id = $1, active_plan_subscribed_at = CURRENT_TIMESTAMP WHERE user_id = $2",
-                [parseInt(plan_id), userId]
+            // Fetch the user's current subscription details
+            const userSubCheck = await pool.query(
+                "SELECT active_plan_id, active_plan_expires_at, active_plan_subscribed_at FROM users WHERE user_id = $1",
+                [userId]
             );
+            const currentUser = userSubCheck.rows[0] || {};
+            const currentPlanId = currentUser.active_plan_id;
+            const currentExpiresAt = currentUser.active_plan_expires_at;
+
+            const durationDays = plan.plan_duration || 30;
+            let newSubscribedAt = new Date();
+            let newExpiresAt = new Date();
+            newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
+
+            if (parseInt(plan_id) === currentPlanId && currentExpiresAt && new Date(currentExpiresAt) >= new Date()) {
+                // Same Plan: Queue Renewal by extending the expiration date
+                newSubscribedAt = currentUser.active_plan_subscribed_at;
+                newExpiresAt = new Date(currentExpiresAt);
+                newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
+            }
+
+            // Update user active plan, expiration, and reset notification flags
+            await pool.query(
+                `UPDATE users SET 
+                    active_plan_id = $1, 
+                    active_plan_subscribed_at = $2, 
+                    active_plan_expires_at = $3,
+                    sub_notified_7d = FALSE,
+                    sub_notified_3d = FALSE,
+                    sub_notified_1d = FALSE
+                 WHERE user_id = $4`,
+                [parseInt(plan_id), newSubscribedAt, newExpiresAt, userId]
+            );
+
+            // Record invoice if paid subscription (price > 0)
+            if (price > 0) {
+                const invoiceNumber = `INV-SUB-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+                const userBillingRes = await pool.query(
+                    "SELECT email, first_name || ' ' || COALESCE(last_name, '') as name FROM users WHERE user_id = $1",
+                    [userId]
+                );
+                const billingUser = userBillingRes.rows[0];
+
+                await pool.query(
+                    `INSERT INTO subscription_invoices (user_id, plan_id, invoice_number, amount, payment_method, status, billing_name, billing_email)
+                     VALUES ($1, $2, $3, $4, $5, 'Paid', $6, $7)`,
+                    [
+                        userId,
+                        parseInt(plan_id),
+                        invoiceNumber,
+                        price,
+                        method,
+                        billingUser?.name || "LancerFlow Member",
+                        billingUser?.email || ""
+                    ]
+                );
+            }
 
             await pool.query("COMMIT");
 
@@ -512,7 +569,8 @@ export const subscribeToPlan = async (req, res) => {
                 message: `Successfully subscribed to plan "${plan.name}"`,
                 active_plan_id: plan.plan_id,
                 plan_name: plan.name,
-                gig_discount_percent: plan.gig_discount_percent
+                gig_discount_percent: plan.gig_discount_percent,
+                active_plan_expires_at: newExpiresAt
             });
         } catch (txnError) {
             await pool.query("ROLLBACK");
@@ -761,12 +819,13 @@ export const getAffiliateStats = async (req, res) => {
     try {
         const userId = req.user.user_id;
 
-        // 1. Get referral code
-        const userRes = await pool.query("SELECT referral_code FROM users WHERE user_id = $1", [userId]);
+        // 1. Get referral code and affiliate status
+        const userRes = await pool.query("SELECT referral_code, is_affiliate FROM users WHERE user_id = $1", [userId]);
         if (userRes.rows.length === 0) {
             return res.status(404).json({ message: "User not found" });
         }
         const referralCode = userRes.rows[0].referral_code;
+        const isAffiliate = userRes.rows[0].is_affiliate === true || userRes.rows[0].is_affiliate === 1;
 
         // 2. Count total referred users
         const referredCountRes = await pool.query("SELECT COUNT(*) as count FROM users WHERE referred_by = $1", [userId]);
@@ -800,11 +859,22 @@ export const getAffiliateStats = async (req, res) => {
 
         res.status(200).json({
             referral_code: referralCode,
+            is_affiliate: isAffiliate,
             total_referred: referredCount,
             pending_commissions: parseFloat(earnings.pending_commissions),
             approved_commissions: parseFloat(earnings.approved_commissions),
             ledger: ledgerRes.rows
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const joinAffiliateProgram = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        await pool.query("UPDATE users SET is_affiliate = TRUE WHERE user_id = $1", [userId]);
+        res.status(200).json({ message: "Successfully joined the affiliate program!" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -817,7 +887,7 @@ export const getReferralBanner = async (req, res) => {
         let maxReferrerReward = 10.00;
         let headline = "Invite Friends & Earn";
         let subline = "Share your referral link with friends. They get a bonus on sign-up, and you get paid when they complete transactions!";
-        let bgColor = "#0f172a";
+        let bgColor = "#ffffff";
         let accentColor = "#0d9488";
 
         const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
@@ -894,49 +964,49 @@ export const getReferralBanner = async (req, res) => {
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="${bgColor}" />
-      <stop offset="100%" stop-color="#030712" />
+      <stop offset="100%" stop-color="#f8fafc" />
     </linearGradient>
     <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="${accentColor}" />
-      <stop offset="100%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#059669" />
     </linearGradient>
     <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#000" flood-opacity="0.3" />
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.06" />
     </filter>
   </defs>
 
-  <rect width="800" height="400" rx="20" fill="url(#bgGrad)" />
+  <rect width="800" height="400" rx="20" fill="url(#bgGrad)" stroke="#e2e8f0" stroke-width="2" />
 
-  <circle cx="750" cy="50" r="180" fill="white" fill-opacity="0.03" />
-  <circle cx="100" cy="350" r="150" fill="${accentColor}" fill-opacity="0.07" />
-  <path d="M 600,400 L 800,200 L 800,400 Z" fill="white" fill-opacity="0.02" />
+  <circle cx="750" cy="50" r="180" fill="#f1f5f9" fill-opacity="0.5" />
+  <circle cx="100" cy="350" r="150" fill="${accentColor}" fill-opacity="0.04" />
+  <path d="M 600,400 L 800,200 L 800,400 Z" fill="#f1f5f9" fill-opacity="0.3" />
 
   <g transform="translate(560, 110)" filter="url(#shadow)">
-    <rect width="180" height="180" rx="24" fill="white" fill-opacity="0.08" stroke="white" stroke-opacity="0.15" stroke-width="1.5" />
+    <rect width="180" height="180" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" />
     <circle cx="70" cy="80" r="30" fill="url(#accentGrad)" />
     <text x="70" y="88" font-family="'Inter', sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">$</text>
     <circle cx="120" cy="110" r="25" fill="#f59e0b" />
     <text x="120" y="117" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="white" text-anchor="middle">$</text>
   </g>
 
-  <text x="60" y="90" font-family="'Inter', -apple-system, sans-serif" font-weight="900" font-size="36" fill="white">${escapedHeadline}</text>
+  <text x="60" y="90" font-family="'Inter', -apple-system, sans-serif" font-weight="900" font-size="36" fill="#0f172a">${escapedHeadline}</text>
 
-  <text x="60" y="130" font-family="'Inter', -apple-system, sans-serif" font-weight="600" font-size="14" fill="#94a3b8">
+  <text x="60" y="130" font-family="'Inter', -apple-system, sans-serif" font-weight="600" font-size="14" fill="#475569">
     <tspan x="60" dy="0">${escapedSublinePart1}</tspan>
     <tspan x="60" dy="20">${escapedSublinePart2}</tspan>
   </text>
 
   <g transform="translate(60, 210)">
-    <rect x="0" y="0" width="220" height="100" rx="16" fill="white" fill-opacity="0.05" stroke="white" stroke-opacity="0.1" stroke-width="1" />
-    <text x="25" y="35" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#94a3b8" letter-spacing="1">SIGN-UP BONUS</text>
-    <text x="25" y="75" font-family="'Inter', sans-serif" font-weight="900" font-size="32" fill="white">$${signupBonus.toFixed(2)}</text>
+    <rect x="0" y="0" width="220" height="100" rx="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" />
+    <text x="25" y="35" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#475569" letter-spacing="1">SIGN-UP BONUS</text>
+    <text x="25" y="75" font-family="'Inter', sans-serif" font-weight="900" font-size="32" fill="#0f172a">$${signupBonus.toFixed(2)}</text>
 
-    <rect x="250" y="0" width="220" height="100" rx="16" fill="white" fill-opacity="0.05" stroke="white" stroke-opacity="0.1" stroke-width="1" />
-    <text x="275" y="35" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#94a3b8" letter-spacing="1">REFERRAL REWARD</text>
+    <rect x="250" y="0" width="220" height="100" rx="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" />
+    <text x="275" y="35" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#475569" letter-spacing="1">REFERRAL REWARD</text>
     <text x="275" y="75" font-family="'Inter', sans-serif" font-weight="900" font-size="32" fill="url(#accentGrad)">Up to $${maxReferrerReward.toFixed(2)}</text>
   </g>
 
-  <text x="60" y="355" font-family="'Inter', sans-serif" font-weight="800" font-size="12" fill="#64748b" letter-spacing="2">POWERED BY LANCERFLOW</text>
+  <text x="60" y="355" font-family="'Inter', sans-serif" font-weight="800" font-size="12" fill="#94a3b8" letter-spacing="2">POWERED BY LANCERFLOW</text>
 </svg>
         `;
 
@@ -955,7 +1025,7 @@ export const getUserProfile = async (req, res) => {
 
         // Fetch user profile joining with subscription plans
         const userRes = await pool.query(
-            `SELECT u.user_id, u.first_name, u.last_name, u.email, u.profile_image, u.active_plan_id, 
+            `SELECT u.user_id, u.first_name, u.last_name, u.email, u.profile_image, u.active_plan_id, u.is_affiliate, u.referral_code,
                     sp.name AS membership_name, sp.credits
              FROM users u
              LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
@@ -980,6 +1050,51 @@ export const getUserProfile = async (req, res) => {
             project_credits: userData.credits ?? 0,
             proposal_credits: userData.credits ?? 0
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getMySubscriptionInvoices = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { default: pool } = await import('../config/db.js');
+        
+        const result = await pool.query(
+            `SELECT si.invoice_id, si.invoice_number, si.amount, si.payment_method, si.status, si.created_at,
+                    sp.name as plan_name
+             FROM subscription_invoices si
+             JOIN subscription_plans sp ON si.plan_id = sp.plan_id
+             WHERE si.user_id = $1
+             ORDER BY si.created_at DESC`,
+            [userId]
+        );
+        
+        res.status(200).json(result.rows);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getSubscriptionInvoiceById = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { id } = req.params;
+        const { default: pool } = await import('../config/db.js');
+        
+        const result = await pool.query(
+            `SELECT si.*, sp.name as plan_name, sp.description as plan_description, sp.plan_duration
+             FROM subscription_invoices si
+             JOIN subscription_plans sp ON si.plan_id = sp.plan_id
+             WHERE si.invoice_id = $1 AND si.user_id = $2`,
+            [parseInt(id), userId]
+        );
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Invoice not found." });
+        }
+        
+        res.status(200).json(result.rows[0]);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -1,7 +1,7 @@
 import { API_URL } from "@/config/api";
 import React, { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { FiBriefcase, FiCreditCard, FiCheckCircle, FiAlertTriangle, FiExternalLink, FiRefreshCw, FiStar, FiMessageSquare, FiX, FiUser, FiUnlock, FiClock } from "react-icons/fi";
+import { FiBriefcase, FiCreditCard, FiCheckCircle, FiAlertTriangle, FiExternalLink, FiRefreshCw, FiStar, FiMessageSquare, FiX, FiUser, FiUnlock, FiClock, FiChevronDown } from "react-icons/fi";
 import { FaWallet, FaStripe, FaPaypal } from "react-icons/fa";
 import GigMilestoneTracker from "./GigMilestoneTracker";
 import { useDashboard } from "../../app/dashboard/DashboardContext";
@@ -140,6 +140,88 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
     } finally {
       setDisputeLoading(false);
     }
+  };
+
+  const renderDisputeModal = () => {
+    if (!showDisputeModal || typeof document === "undefined") return null;
+
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-fadeIn"
+        style={{ background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2.5px)" }}
+      >
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative flex flex-col gap-4 text-left">
+          <button
+            onClick={() => setShowDisputeModal(false)}
+            className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer border-0 bg-transparent"
+          >
+            <FiX className="w-5 h-5" />
+          </button>
+
+          <div>
+            <h3 className="text-base font-black text-slate-800">Raise a Contract Dispute</h3>
+            <p className="text-xs text-slate-400 mt-1">Provide the details of your claim. An administrator will review the case for mediation.</p>
+          </div>
+
+          <form onSubmit={handleRaiseDispute} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Reason for Dispute</label>
+              <div className="relative">
+                <select
+                  value={disputeReason}
+                  onChange={(e) => setDisputeReason(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3 pr-10 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-teal-700 transition appearance-none cursor-pointer"
+                >
+                  {disputeReasons.map((r, i) => (
+                    <option key={i} value={r}>{r}</option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+                  <FiChevronDown className="w-4 h-4" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Detailed Explanation</label>
+              <textarea
+                required
+                rows={4}
+                value={disputeDescription}
+                onChange={(e) => setDisputeDescription(e.target.value)}
+                placeholder="Explain the reason for the dispute, including what was not delivered or what expectations were missed..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition resize-none leading-relaxed"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => setShowDisputeModal(false)}
+                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-extrabold text-slate-600 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={disputeLoading}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 border-0"
+              >
+                {disputeLoading ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  <span>Submit Dispute</span>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>,
+      document.body
+    );
   };
 
   const renderContractActions = (app: any) => {
@@ -831,7 +913,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
           </div>
         </div>
 
-        {selectedGigOrderDetails.status === "Accepted" && selectedGigOrderDetails.payment_status === "Paid" && (
+        {selectedGigOrderDetails.status === "Accepted" && selectedGigOrderDetails.payment_status === "Paid" && selectedGigOrderDetails.contract_status === "Under Review" && (
           <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-left">
               <p className="text-xs font-black text-slate-800">Is the service work completed?</p>
@@ -889,6 +971,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
             setSelectedFreelancerProfile={setSelectedFreelancerProfile}
           />
         </div>
+        {renderDisputeModal()}
       </div>
     );
   }
@@ -1014,7 +1097,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-fadeIn"
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedGigOrderDetails(null); }}
-          style={{ background: "rgba(15,23,42,0.55)", backdropFilter: "blur(4px)" }}
+          style={{ background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2.5px)" }}
         >
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
             {/* Header */}
@@ -1100,7 +1183,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
               </div>
 
               {/* Complete Order Button Action */}
-              {selectedGigOrderDetails.status === "Accepted" && selectedGigOrderDetails.payment_status === "Paid" && (
+              {selectedGigOrderDetails.status === "Accepted" && selectedGigOrderDetails.payment_status === "Paid" && selectedGigOrderDetails.contract_status === "Under Review" && (
                 <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-left">
                     <p className="text-xs font-black text-slate-850">Is the service work completed?</p>
@@ -1162,79 +1245,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         </div>,
         document.body
       )}
-      {/* Raise Dispute Modal */}
-      {showDisputeModal && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-fadeIn"
-          style={{ background: "rgba(15,23,42,0.6)", backdropFilter: "blur(4px)" }}
-        >
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative flex flex-col gap-4 text-left">
-            <button
-              onClick={() => setShowDisputeModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer"
-            >
-              <FiX className="w-5 h-5" />
-            </button>
-
-            <div>
-              <h3 className="text-base font-black text-slate-800">Raise a Contract Dispute</h3>
-              <p className="text-xs text-slate-450 mt-1">Provide the details of your claim. An administrator will review the case for mediation.</p>
-            </div>
-
-            <form onSubmit={handleRaiseDispute} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Reason for Dispute</label>
-                <select
-                  value={disputeReason}
-                  onChange={(e) => setDisputeReason(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-teal-700 transition"
-                >
-                  {disputeReasons.map((r, i) => (
-                    <option key={i} value={r}>{r}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Detailed Explanation</label>
-                <textarea
-                  required
-                  rows={4}
-                  value={disputeDescription}
-                  onChange={(e) => setDisputeDescription(e.target.value)}
-                  placeholder="Explain the reason for the dispute, including what was not delivered or what expectations were missed..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-850 focus:outline-none focus:border-teal-700 transition resize-none leading-relaxed"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowDisputeModal(false)}
-                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-extrabold text-slate-600 transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={disputeLoading}
-                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 border-0"
-                >
-                  {disputeLoading ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-                      <span>Submitting...</span>
-                    </>
-                  ) : (
-                    <span>Submit Dispute</span>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>,
-        document.body
-      )}
+      {renderDisputeModal()}
     </div>
   );
 };

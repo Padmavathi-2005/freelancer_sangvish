@@ -98,7 +98,7 @@ function SettingsPortalContent() {
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Sub-Sidebar Navigation */}
-        <div className="w-full lg:w-64 shrink-0 flex flex-col gap-1.5 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm text-left backdrop-blur-md">
+        <div className="w-full lg:w-64 shrink-0 flex flex-col gap-1.5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm text-left backdrop-blur-md">
           <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2.5 px-2 select-none">
             Settings Categories
           </div>

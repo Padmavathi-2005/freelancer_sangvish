@@ -6,9 +6,12 @@ import React, { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CustomSelect from "@/components/CustomSelect";
+import { useLanguage } from "@/context/LanguageContext";
 import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiStar, FiCheckCircle, FiUser, FiHeart } from "react-icons/fi";
 
 function TalentSearchContent() {
+  const { t, formatPrice } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -33,6 +36,18 @@ function TalentSearchContent() {
   // Wishlist and Toast states
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
+
+  useEffect(() => {
+    try {
+      const uStr = localStorage.getItem("user");
+      if (uStr) {
+        const u = JSON.parse(uStr);
+        if (u && (u.user_id || u.id)) setCurrentUserId(Number(u.user_id || u.id));
+      }
+    } catch (e) {}
+  }, []);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -150,17 +165,23 @@ function TalentSearchContent() {
 
   // Filter Logic
   const filteredFreelancers = freelancers.filter((f) => {
-    // 1. Text search (name, title, bio, skills)
+    // 1. Text search across ALL details (name, username, title, bio, category, subcategory, hourly rate, experience level, country/location, skills)
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      const matchName = f.name?.toLowerCase().includes(query);
+      const query = searchQuery.toLowerCase().trim();
+      const matchName = (f.name || f.username || f.full_name || "")?.toLowerCase().includes(query);
       const matchTitle = f.professional_title?.toLowerCase().includes(query);
       const matchBio = f.bio?.toLowerCase().includes(query);
+      const matchCategory = f.category_name?.toLowerCase().includes(query);
+      const matchSubCat = f.sub_category_name?.toLowerCase().includes(query);
+      const matchRate = f.hourly_rate ? `${f.hourly_rate}`.includes(query) || `$${f.hourly_rate}`.includes(query) || `${f.hourly_rate}/hr`.toLowerCase().includes(query) : false;
+      const matchLevel = f.experience_level?.toLowerCase().includes(query);
+      const matchCountry = (f.country || f.location || "")?.toLowerCase().includes(query);
       const matchSkills = Array.isArray(f.skills) && f.skills.some((s: any) => {
-        const skillStr = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : s;
-        return typeof skillStr === "string" && skillStr.toLowerCase().includes(query);
+        const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
+        return str.toLowerCase().includes(query);
       });
-      if (!matchName && !matchTitle && !matchBio && !matchSkills) {
+
+      if (!matchName && !matchTitle && !matchBio && !matchCategory && !matchSubCat && !matchRate && !matchLevel && !matchCountry && !matchSkills) {
         return false;
       }
     }
@@ -302,8 +323,8 @@ function TalentSearchContent() {
       <Header />
 
       {/* Search Type Switcher */}
-      <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6">
+      <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none overflow-x-auto max-w-full no-scrollbar">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 sm:gap-6 shrink-0 w-max sm:w-full">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Category</span>
           <div className="flex gap-2">
             <button
@@ -315,7 +336,7 @@ function TalentSearchContent() {
               }}
               className="px-4 py-2 rounded-xl text-xs font-black bg-slate-50 hover:bg-slate-100 text-slate-655 transition-all cursor-pointer border-none"
             >
-              Explore Gigs
+              {t("nav_gigs", "Explore Gigs")}
             </button>
             <button
               onClick={() => {
@@ -326,7 +347,7 @@ function TalentSearchContent() {
               }}
               className="px-4 py-2 rounded-xl text-xs font-black bg-slate-50 hover:bg-slate-100 text-slate-655 transition-all cursor-pointer border-none"
             >
-              Find Projects
+              {t("nav_projects", "Find Projects")}
             </button>
             <button
               onClick={() => {
@@ -337,68 +358,73 @@ function TalentSearchContent() {
               }}
               className="px-4 py-2 rounded-xl text-xs font-black bg-primary text-white shadow-sm transition-all cursor-pointer border-none"
             >
-              Hire Freelancers
+              {t("nav_talent", "Hire Freelancers")}
             </button>
           </div>
         </div>
       </div>
 
       {/* Main Grid Workspace */}
-      <main className="max-w-[1600px] mx-auto w-full py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+      <main className="max-w-[1600px] mx-auto w-full py-6 sm:py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
         
+        {/* Mobile Filter Toggle Button */}
+        <div className="lg:hidden col-span-1">
+          <button
+            type="button"
+            onClick={() => setShowMobileFilter(!showMobileFilter)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-xl shadow-xs text-xs font-black text-slate-800 hover:bg-slate-50 transition cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <FiSliders className="w-4 h-4 text-teal-700" />
+              <span>{t("refine_search", "Refine Search & Filters")}</span>
+            </span>
+            <span className="text-xxs font-extrabold bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+              {t("filters", "Filters")}
+            </span>
+          </button>
+        </div>
+
         {/* Left Side: Filtering Sidebar */}
-        <aside className="lg:col-span-3 space-y-6">
+        <aside className={`lg:col-span-3 space-y-6 ${showMobileFilter ? "block animate-fadeIn" : "hidden lg:block"}`}>
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6 sticky top-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
                 <FiSliders className="w-4 h-4 text-teal-700" />
-                <span>Refine Search</span>
+                <span>{t("refine_search", "Refine Search")}</span>
               </h2>
               <button
                 onClick={handleResetFilters}
                 className="text-[10px] font-bold text-slate-400 hover:text-teal-700 transition flex items-center gap-1 cursor-pointer border-0 bg-transparent"
               >
                 <FiRefreshCw className="w-3 h-3" />
-                <span>Reset</span>
+                <span>{t("reset", "Reset")}</span>
               </button>
             </div>
 
             {/* Category Filter */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Specialty Category</label>
-              <select
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("category", "Specialty Category")}</label>
+              <CustomSelect
+                placeholder={t("all_categories", "All Categories")}
                 value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
+                options={categories.map((c) => ({ value: c.category_id.toString(), label: c.category_name }))}
+                onChange={(val) => {
+                  setSelectedCategory(val);
                   setSelectedSubcategory("");
                 }}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c.category_id} value={c.category_id.toString()}>
-                    {c.category_name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             {/* Subcategory Filter */}
             {selectedCategory && activeSubcategories.length > 0 && (
               <div className="space-y-2">
                 <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Subcategory</label>
-                <select
+                <CustomSelect
+                  placeholder="All Subcategories"
                   value={selectedSubcategory}
-                  onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-                >
-                  <option value="">All Subcategories</option>
-                  {activeSubcategories.map((s) => (
-                    <option key={s.sub_category_id} value={s.sub_category_id.toString()}>
-                      {s.sub_category_name}
-                    </option>
-                  ))}
-                </select>
+                  options={activeSubcategories.map((s) => ({ value: s.sub_category_id.toString(), label: s.sub_category_name }))}
+                  onChange={(val) => setSelectedSubcategory(val)}
+                />
               </div>
             )}
 
@@ -623,16 +649,18 @@ function TalentSearchContent() {
                       </div>
 
                       <div className="flex items-center gap-2 w-full mt-auto">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleWishlist(f);
-                          }}
-                          className="w-9 h-9 rounded-xl bg-slate-50/90 hover:bg-slate-100 flex items-center justify-center border border-slate-200 transition-all cursor-pointer shrink-0"
-                          title="Save to wishlist"
-                        >
-                          <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(f.user_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
-                        </button>
+                        {!Boolean(currentUserId && Number(f.user_id) === currentUserId) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleWishlist(f);
+                            }}
+                            className="w-9 h-9 rounded-xl bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0"
+                            title="Save to wishlist"
+                          >
+                            <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(f.user_id) ? "text-rose-500 fill-rose-500" : "text-slate-500 dark:text-slate-300"}`} />
+                          </button>
+                        )}
                         <button
                           onClick={() => router.push(`/freelancer/${f.slug || f.user_id}`)}
                           className="flex-1 text-white text-[11px] font-extrabold py-2.5 rounded-xl shadow-md transition-all duration-300 cursor-pointer text-center border-none hover:shadow-lg hover:brightness-110 active:scale-95"

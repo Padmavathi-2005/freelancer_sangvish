@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiAlertCircle, FiFileText, FiSearch } from "react-icons/fi";
 import { API_URL } from "@/config/api";
+import { useAdmin } from "@/app/admin/AdminContext";
 
 interface DocumentField {
   field_id: number;
@@ -20,6 +21,9 @@ interface DocumentField {
 }
 
 export default function DocumentVettingTab() {
+  const { adminTheme } = useAdmin();
+  const isDark = adminTheme === "dark";
+
   const [fields, setFields] = useState<DocumentField[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -299,19 +303,19 @@ export default function DocumentVettingTab() {
   return (
     <div className="flex flex-col gap-6 animate-fadeIn text-left text-slate-800">
       {/* Title Header */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
+          <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
             <FiFileText className="w-5 h-5 text-teal-700" />
             Document Verification Requirements
           </h2>
-          <p className="text-slate-500 text-xs mt-1 font-semibold">
+          <p className="text-slate-500 dark:text-slate-350 text-xs mt-1 font-semibold">
             Manage the list of documents freelancers are required or prompted to upload during onboarding verification.
           </p>
         </div>
         <button
           onClick={handleOpenAddModal}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-sm shadow-teal-700/10"
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-black tracking-wider rounded-xl transition cursor-pointer shadow-sm shadow-teal-700/10 border border-teal-650 dark:border-teal-500"
         >
           <FiPlus className="w-4 h-4" />
           <span>Add Requirement</span>
@@ -333,9 +337,9 @@ export default function DocumentVettingTab() {
       )}
 
       {/* Main Content Table Card */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
         {/* Search & Filter Controls */}
-        <div className="p-4 bg-slate-50/75 border-b border-slate-200 flex flex-col sm:flex-row flex-wrap gap-3 items-center justify-between">
+        <div className="p-4 bg-slate-50/75 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row flex-wrap gap-3 items-center justify-between">
           <div className="relative w-full sm:w-72">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
               <FiSearch className="w-4 h-4" />
@@ -348,7 +352,7 @@ export default function DocumentVettingTab() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full bg-white border border-slate-250 hover:border-slate-350 focus:border-teal-700 rounded-xl pl-10 pr-8 py-2 text-xs focus:outline-none transition-all font-semibold text-slate-800"
+              className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-700 hover:border-slate-350 dark:hover:border-slate-600 focus:border-teal-700 rounded-xl pl-10 pr-8 py-2 text-xs focus:outline-none transition-all font-semibold text-slate-800 dark:text-slate-100"
             />
             {searchQuery && (
               <button
@@ -372,7 +376,7 @@ export default function DocumentVettingTab() {
                   setStepFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="bg-white border border-slate-250 hover:border-slate-355 rounded-xl pl-3 pr-8 py-2 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
+                className="bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-700 hover:border-slate-355 dark:hover:border-slate-600 rounded-xl pl-3 pr-8 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
               >
                 <option value="all">All Steps</option>
                 <option value="1">Step 1</option>
@@ -392,7 +396,7 @@ export default function DocumentVettingTab() {
                   setRoleFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="bg-white border border-slate-250 hover:border-slate-355 rounded-xl pl-3 pr-8 py-2 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
+                className="bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-700 hover:border-slate-355 dark:hover:border-slate-600 rounded-xl pl-3 pr-8 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
               >
                 <option value="all">All Roles</option>
                 <option value="freelancer">Freelancer only</option>
@@ -427,7 +431,7 @@ export default function DocumentVettingTab() {
             >
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50/75 border-b border-slate-100 text-slate-400 font-black uppercase tracking-wider select-none">
+                  <tr className="bg-slate-50/75 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-400 font-black uppercase tracking-wider select-none">
                     <th className="px-6 py-4">Field Name</th>
                     <th className="px-6 py-4">Description</th>
                     <th className="px-6 py-4 text-center">Applies To</th>
@@ -439,34 +443,34 @@ export default function DocumentVettingTab() {
                     <th className="px-6 py-4 text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                <tbody className="font-semibold text-slate-700 dark:text-slate-200">
                   {paginatedFields.map((field) => (
-                    <tr key={field.field_id} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={field.field_id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-black text-slate-800">{field.field_name}</span>
+                          <span className="font-black text-slate-800 dark:text-slate-100">{field.field_name}</span>
                           <span className="text-[10px] text-slate-400 font-mono">Key: {field.field_key}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 max-w-xs text-slate-505 leading-relaxed">
+                      <td className="px-6 py-4 max-w-xs text-slate-550 leading-relaxed">
                         {field.field_description || <span className="text-slate-300 italic">No description</span>}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
                           field.applicable_to === "both"
-                            ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                            ? "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800"
                             : field.applicable_to === "client"
-                            ? "bg-blue-50 text-blue-705 border-blue-200"
-                            : "bg-purple-50 text-purple-700 border-purple-200"
+                            ? "bg-blue-50 text-blue-705 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
+                            : "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
                         }`}>
                           {field.applicable_to || "freelancer"}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center capitalize text-[10px] font-bold text-slate-500">
+                      <td className="px-6 py-4 text-center capitalize text-[10px] font-bold text-slate-500 dark:text-slate-350">
                         {field.field_type ? field.field_type.replace("file_", "File: ") : "Any File"}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className="font-extrabold text-slate-808 bg-slate-100 border border-slate-200/50 px-2 py-0.5 rounded text-[10px] whitespace-nowrap">
+                        <span className="font-extrabold text-slate-808 dark:text-slate-100 bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-2 py-0.5 rounded text-[10px] whitespace-nowrap">
                           Step {field.step_number || (field.applicable_to === 'client' ? 4 : 5)}
                           {field.is_system && <span className="text-[7.5px] text-teal-650 ml-1 uppercase font-black tracking-wide">System</span>}
                         </span>
@@ -474,8 +478,8 @@ export default function DocumentVettingTab() {
                       <td className="px-6 py-4 text-center">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
                           field.is_required
-                            ? "bg-rose-50 text-rose-700 border-rose-200"
-                            : "bg-slate-50 text-slate-500 border-slate-200"
+                            ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-350 dark:border-rose-800"
+                            : "bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900/60 dark:text-slate-400 dark:border-slate-800"
                         }`}>
                           {field.is_required ? "Required" : "Optional"}
                         </span>
@@ -483,8 +487,8 @@ export default function DocumentVettingTab() {
                       <td className="px-6 py-4 text-center">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
                           field.has_expiry
-                            ? "bg-purple-50 text-purple-700 border-purple-200"
-                            : "bg-slate-50 text-slate-500 border-slate-200"
+                            ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
+                            : "bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900/60 dark:text-slate-400 dark:border-slate-800"
                         }`}>
                           {field.has_expiry ? "Yes" : "No"}
                         </span>
@@ -494,8 +498,8 @@ export default function DocumentVettingTab() {
                           onClick={() => handleToggleStatus(field)}
                           className={`inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all cursor-pointer ${
                             field.is_enabled
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                              : "bg-rose-50 text-rose-700 border-rose-250 hover:bg-rose-100"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
+                              : "bg-rose-50 text-rose-700 border-rose-250 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
                           }`}
                         >
                           {field.is_enabled ? "Active" : "Disabled"}
@@ -505,7 +509,7 @@ export default function DocumentVettingTab() {
                         <div className="flex items-center justify-center gap-2">
                           <button
                             onClick={() => handleOpenEditModal(field)}
-                            className="bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 p-2 rounded-lg cursor-pointer transition-all flex items-center justify-center"
+                            className="bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-355 border border-slate-200 dark:border-slate-800 p-2 rounded-lg cursor-pointer transition-all flex items-center justify-center"
                             title="Edit Settings"
                           >
                             <FiEdit2 className="w-3.5 h-3.5" />
@@ -513,7 +517,7 @@ export default function DocumentVettingTab() {
                           {!field.is_system ? (
                             <button
                               onClick={() => handleDelete(field.field_id)}
-                              className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-150 p-2 rounded-lg cursor-pointer transition-all flex items-center justify-center"
+                              className="bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-150 dark:border-rose-900/60 p-2 rounded-lg cursor-pointer transition-all flex items-center justify-center"
                               title="Delete Requirement"
                             >
                               <FiTrash2 className="w-3.5 h-3.5" />

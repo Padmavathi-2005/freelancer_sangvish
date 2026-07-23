@@ -775,6 +775,12 @@ export const getPublicFreelancerProfile = async (req, res) => {
             [userId]
         );
 
+        const completedJobsRes = await pool.query(
+            "SELECT COUNT(*) FROM contracts WHERE freelancer_id = $1 AND status = 'Completed'",
+            [userId]
+        );
+        const completedJobs = parseInt(completedJobsRes.rows[0].count) || 0;
+
         res.status(200).json({
             user,
             profile: profile ? {
@@ -789,7 +795,8 @@ export const getPublicFreelancerProfile = async (req, res) => {
             certifications: certificationRes.rows,
             projects: projectsRes.rows,
             reviews: reviewsRes.rows,
-            gigs: gigsRes.rows
+            gigs: gigsRes.rows,
+            completedJobs
         });
     } catch (error) {
         console.error("Error fetching public freelancer profile:", error);
@@ -1543,7 +1550,18 @@ export const getPublicFreelancers = async (req, res) => {
                 FROM user_skills us
                 JOIN skills s ON us.skill_id = s.skill_id
                 WHERE us.user_id = u.user_id
-              ) as skills
+              ) as skills,
+              COALESCE((
+                SELECT ROUND(AVG(all_reviews.rating)::numeric, 1)::float
+                FROM (
+                  SELECT cr.rating::numeric FROM contract_reviews cr WHERE cr.reviewee_id = u.user_id AND cr.reviewer_role = 'client'
+                  UNION ALL
+                  SELECT gr.rating::numeric FROM gig_reviews gr JOIN gigs g ON gr.gig_id = g.gig_id WHERE g.freelancer_id = u.user_id
+                ) all_reviews
+              ), 0.0) AS rating,
+              COALESCE((
+                SELECT COUNT(*)::int FROM contracts WHERE freelancer_id = u.user_id AND status = 'Completed'
+              ), 0) AS completed_jobs
             FROM users u
             JOIN freelancer_profiles fp ON u.user_id = fp.user_id
             LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id

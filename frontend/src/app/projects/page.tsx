@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuthModal } from "@/context/AuthModalContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import CustomSelect from "@/components/CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
 import { convertPrice } from "@/utils/currencyHelper";
 import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiClock, FiActivity, FiUser, FiBriefcase, FiHeart, FiStar, FiCpu } from "react-icons/fi";
@@ -81,6 +82,42 @@ function ProjectsSearchContent() {
   const [wishlist, setWishlist] = useState<any[]>([]);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set());
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
+
+  useEffect(() => {
+    try {
+      const uStr = localStorage.getItem("user");
+      if (uStr) {
+        const u = JSON.parse(uStr);
+        if (u && (u.user_id || u.id)) setCurrentUserId(Number(u.user_id || u.id));
+      }
+    } catch (e) {}
+  }, []);
+
+  // Affiliate states
+  const [isAffiliate, setIsAffiliate] = useState(false);
+  const [userReferralCode, setUserReferralCode] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_URL}/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const profile = await res.json();
+          setIsAffiliate(profile.is_affiliate === true || profile.is_affiliate === 1);
+          setUserReferralCode(profile.referral_code || "");
+        }
+      } catch (err) {
+        console.error("Error fetching user profile for affiliate check:", err);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // AI Project Matching state
   const [activeTab, setActiveTab] = useState<"all" | "ai">("all");
@@ -338,16 +375,24 @@ function ProjectsSearchContent() {
 
   // Filter Logic
   const filteredJobs = jobs.filter((job) => {
-    // 1. Text search (title, description, client name)
+    // 1. Text search across ALL details (title, description, category, subcategory, client name/username, budget, project type, duration/days, experience level, skills)
     if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+      const query = searchQuery.toLowerCase().trim();
       const matchTitle = job.title?.toLowerCase().includes(query);
       const matchDesc = job.description?.toLowerCase().includes(query);
+      const matchCategory = job.category_name?.toLowerCase().includes(query);
+      const matchSubCat = job.sub_category_name?.toLowerCase().includes(query);
+      const matchClient = (job.client_name || job.username || job.posted_by || "")?.toLowerCase().includes(query);
+      const matchBudget = (job.budget || job.max_budget) ? `${job.budget || job.max_budget}`.includes(query) || `$${job.budget || job.max_budget}`.includes(query) : false;
+      const matchType = job.project_type?.toLowerCase().includes(query);
+      const matchDuration = job.duration?.toLowerCase().includes(query) || (job.delivery_days ? `${job.delivery_days}`.includes(query) || `${job.delivery_days} days`.toLowerCase().includes(query) : false);
+      const matchLevel = job.experience_level?.toLowerCase().includes(query);
       const matchSkills = Array.isArray(job.skills) && job.skills.some((s: any) => {
-        const skillStr = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : s;
-        return typeof skillStr === "string" && skillStr.toLowerCase().includes(query);
+        const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
+        return str.toLowerCase().includes(query);
       });
-      if (!matchTitle && !matchDesc && !matchSkills) {
+
+      if (!matchTitle && !matchDesc && !matchCategory && !matchSubCat && !matchClient && !matchBudget && !matchType && !matchDuration && !matchLevel && !matchSkills) {
         return false;
       }
     }
@@ -490,8 +535,8 @@ function ProjectsSearchContent() {
       <Header />
 
       {/* Search Type Switcher */}
-      <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-6">
+      <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none overflow-x-auto max-w-full no-scrollbar">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 sm:gap-6 shrink-0 w-max sm:w-full">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("search_category_label", "Search Category")}</span>
           <div className="flex gap-2">
             <button
@@ -532,10 +577,27 @@ function ProjectsSearchContent() {
       </div>
 
       {/* Main Grid Workspace */}
-      <main className="max-w-[1600px] mx-auto w-full py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+      <main className="max-w-[1600px] mx-auto w-full py-6 sm:py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+
+        {/* Mobile Filter Toggle Button */}
+        <div className="lg:hidden col-span-1">
+          <button
+            type="button"
+            onClick={() => setShowMobileFilter(!showMobileFilter)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-white border border-slate-200 rounded-xl shadow-xs text-xs font-black text-slate-800 hover:bg-slate-50 transition cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <FiSliders className="w-4 h-4 text-teal-700" />
+              <span>{t("refine_search_title", "Refine Search")} & Filters</span>
+            </span>
+            <span className="text-xxs font-extrabold bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+              Filters
+            </span>
+          </button>
+        </div>
 
         {/* Left Side: Filtering Sidebar */}
-        <aside className="lg:col-span-3 space-y-6">
+        <aside className={`lg:col-span-3 space-y-6 ${showMobileFilter ? "block animate-fadeIn" : "hidden lg:block"}`}>
           <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xxs space-y-5 sticky top-20">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
@@ -554,39 +616,27 @@ function ProjectsSearchContent() {
             {/* Category Filter */}
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("category_label", "Category")}</label>
-              <select
+              <CustomSelect
+                placeholder={t("all_categories_opt", "All Categories")}
                 value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
+                options={categories.map((c) => ({ value: c.category_id.toString(), label: c.category_name }))}
+                onChange={(val) => {
+                  setSelectedCategory(val);
                   setSelectedSubcategory("");
                 }}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">{t("all_categories_opt", "All Categories")}</option>
-                {categories.map((c) => (
-                  <option key={c.category_id} value={c.category_id.toString()}>
-                    {c.category_name}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             {/* Subcategory Filter */}
             {activeSubcategories.length > 0 && (
               <div className="space-y-2">
                 <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("subcategory_label", "Subcategory")}</label>
-                <select
+                <CustomSelect
+                  placeholder={t("all_subcategories_opt", "All Subcategories")}
                   value={selectedSubcategory}
-                  onChange={(e) => setSelectedSubcategory(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-                >
-                  <option value="">{t("all_subcategories_opt", "All Subcategories")}</option>
-                  {activeSubcategories.map((s) => (
-                    <option key={s.sub_category_id} value={s.sub_category_id.toString()}>
-                      {s.sub_category_name}
-                    </option>
-                  ))}
-                </select>
+                  options={activeSubcategories.map((s) => ({ value: s.sub_category_id.toString(), label: s.sub_category_name }))}
+                  onChange={(val) => setSelectedSubcategory(val)}
+                />
               </div>
             )}
 
@@ -909,7 +959,24 @@ function ProjectsSearchContent() {
                               </span>
                             )}
                           </div>
-                          <span className="text-[10px] font-black text-violet-600 uppercase tracking-wider group-hover:underline">View Project →</span>
+                          <div className="flex items-center gap-3">
+                            {isAffiliate && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const link = `${window.location.origin}/projects/${match.slug || match.job_id}?ref=${userReferralCode}`;
+                                  navigator.clipboard.writeText(link);
+                                  setToast({ type: "success", message: "Affiliate referral link copied to clipboard!" });
+                                  setTimeout(() => setToast(null), 3000);
+                                }}
+                                className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-700 text-[10px] font-black py-1.5 px-3 rounded-lg shadow-sm transition cursor-pointer border-none"
+                                title="Copy Affiliate Link"
+                              >
+                                Share & Earn
+                              </button>
+                            )}
+                            <span className="text-[10px] font-black text-violet-600 uppercase tracking-wider group-hover:underline">View Project →</span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -953,16 +1020,18 @@ function ProjectsSearchContent() {
                       className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-5 relative group cursor-pointer hover:border-primary/30"
                     >
                       {/* Wishlist Heart Toggle Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleWishlist(job);
-                        }}
-                        className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-50/90 hover:bg-white shadow-md flex items-center justify-center border border-slate-200/50 transition-all z-20 cursor-pointer"
-                        title="Save to wishlist"
-                      >
-                        <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(job.job_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
-                      </button>
+                      {!(currentUserId && (Number(job.client_id) === currentUserId || Number(job.user_id) === currentUserId)) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleWishlist(job);
+                          }}
+                          className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 shadow-md flex items-center justify-center border border-slate-200/50 dark:border-slate-700 transition-all z-20 cursor-pointer"
+                          title="Save to wishlist"
+                        >
+                          <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(job.job_id) ? "text-rose-500 fill-rose-500" : "text-slate-500 dark:text-slate-300"}`} />
+                        </button>
+                      )}
 
                       <div>
                         {/* Header row */}
@@ -1057,24 +1126,41 @@ function ProjectsSearchContent() {
                           )}
                         </div>
 
-                        {appliedJobIds.has(job.job_id) ? (
-                          <button
-                            disabled
-                            className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 px-4 rounded-xl shadow-sm cursor-not-allowed select-none"
-                          >
-                            {t("proposal_submitted_btn", "Proposal Submitted")}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              router.push(`/projects/${job.slug || job.job_id}`);
-                            }}
-                            className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
-                          >
-                            {t("submit_proposal_btn", "Submit Proposal")}
-                          </button>
-                        )}
+                        <div className="flex gap-2">
+                          {isAffiliate && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const link = `${window.location.origin}/projects/${job.slug || job.job_id}?ref=${userReferralCode}`;
+                                navigator.clipboard.writeText(link);
+                                setToast({ type: "success", message: "Affiliate referral link copied to clipboard!" });
+                                setTimeout(() => setToast(null), 3000);
+                              }}
+                              className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-700 text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
+                              title="Copy Affiliate Link"
+                            >
+                              Share & Earn
+                            </button>
+                          )}
+                          {appliedJobIds.has(job.job_id) ? (
+                            <button
+                              disabled
+                              className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 px-4 rounded-xl shadow-sm cursor-not-allowed select-none"
+                            >
+                              {t("proposal_submitted_btn", "Proposal Submitted")}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/projects/${job.slug || job.job_id}`);
+                              }}
+                              className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
+                            >
+                              {t("submit_proposal_btn", "Submit Proposal")}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );

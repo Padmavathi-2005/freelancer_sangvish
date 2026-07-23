@@ -28,6 +28,17 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
   // Wishlist state and handlers
   const [wishlist, setWishlist] = useState<any[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const uStr = localStorage.getItem("user");
+      if (uStr) {
+        const u = JSON.parse(uStr);
+        if (u && (u.user_id || u.id)) setCurrentUserId(Number(u.user_id || u.id));
+      }
+    } catch (e) {}
+  }, []);
 
   useEffect(() => {
     const stored = localStorage.getItem("lancerflow_wishlist");
@@ -288,13 +299,38 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
   }, []);
 
   const filteredGigs = clientGigs.filter((g) => {
-    const matchesSearch =
-      g.title.toLowerCase().includes(gigSearchQuery.toLowerCase()) ||
-      g.description.toLowerCase().includes(gigSearchQuery.toLowerCase()) ||
-      (g.category_name && g.category_name.toLowerCase().includes(gigSearchQuery.toLowerCase())) ||
-      (g.sub_category_name && g.sub_category_name.toLowerCase().includes(gigSearchQuery.toLowerCase())) ||
-      (g.freelancer_name && g.freelancer_name.toLowerCase().includes(gigSearchQuery.toLowerCase()));
-    return matchesSearch;
+    if (!gigSearchQuery.trim()) return true;
+    const q = gigSearchQuery.toLowerCase().trim();
+
+    // Check if query is a day pattern like "3d", "3 days", "7d"
+    const dayMatch = q.match(/^(\d+)\s*d(ays?)?$/i);
+    if (dayMatch) {
+      const targetDays = parseInt(dayMatch[1]);
+      const gigDays = parseInt(g.delivery_days || 0);
+      if (gigDays > 0 && gigDays <= targetDays) {
+        return true;
+      }
+      const hasTitleMatch = g.title && new RegExp(`\\b${q}\\b`, "i").test(g.title);
+      const hasSkillMatch = Array.isArray(g.skills) && g.skills.some((s: any) => {
+        const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
+        return new RegExp(`\\b${q}\\b`, "i").test(str);
+      });
+      return hasTitleMatch || hasSkillMatch;
+    }
+
+    const matchTitle = g.title?.toLowerCase().includes(q);
+    const matchDesc = g.description ? (q.length <= 3 ? new RegExp(`\\b${q}\\b`, "i").test(g.description) : g.description.toLowerCase().includes(q)) : false;
+    const matchCategory = g.category_name?.toLowerCase().includes(q);
+    const matchSubCat = g.sub_category_name?.toLowerCase().includes(q);
+    const matchFreelancer = (g.freelancer_name || g.seller_name || g.username || "")?.toLowerCase().includes(q);
+    const matchPrice = g.price ? `${g.price}` === q || `$${g.price}` === q : false;
+    const matchLevel = g.experience_level?.toLowerCase().includes(q);
+    const matchSkills = Array.isArray(g.skills) && g.skills.some((s: any) => {
+      const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
+      return str.toLowerCase().includes(q);
+    });
+
+    return matchTitle || matchDesc || matchCategory || matchSubCat || matchFreelancer || matchPrice || matchLevel || matchSkills;
   });
 
   const ITEMS_PER_PAGE = 9;
@@ -358,16 +394,18 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
               
               {/* Wishlist Heart Toggle Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleToggleWishlist(g);
-                }}
-                className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-50/90 hover:bg-white shadow-md flex items-center justify-center border border-slate-200/50 transition-all z-20 cursor-pointer"
-                title="Save to wishlist"
-              >
-                <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(g.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
-              </button>
+              {!(currentUserId && (Number(g.user_id) === currentUserId || Number(g.freelancer_id) === currentUserId || Number(g.user?.user_id) === currentUserId)) && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleToggleWishlist(g);
+                  }}
+                  className="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-50/90 hover:bg-white shadow-md flex items-center justify-center border border-slate-200/50 transition-all z-20 cursor-pointer"
+                  title="Save to wishlist"
+                >
+                  <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(g.gig_id) ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
+                </button>
+              )}
 
               <div>
                 <div className="flex justify-between items-start gap-2 pr-10">
@@ -621,9 +659,9 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                         >
                           ×
                         </button>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="col-span-2">
-                            <label className="text-[9px] font-black text-slate-400 uppercase">Feature / Milestone Title *</label>
+                        <div className="grid grid-cols-3 gap-2 items-end">
+                          <div className="col-span-2 flex flex-col justify-end">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1" title="Feature / Milestone Title *">Feature / Milestone Title *</label>
                             <input
                               type="text"
                               required
@@ -637,8 +675,8 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:bg-white"
                             />
                           </div>
-                          <div>
-                            <label className="text-[9px] font-black text-slate-400 uppercase">Extra Cost ({applyingGig.currency_symbol || "$"})</label>
+                          <div className="flex flex-col justify-end">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1" title={`Extra Cost (${applyingGig.currency_symbol || "$"})`}>Extra Cost ({applyingGig.currency_symbol || "$"})</label>
                             <input
                               type="number"
                               min="0"
@@ -654,9 +692,9 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                             />
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="text-[9px] font-black text-slate-400 uppercase">Start Date</label>
+                        <div className="grid grid-cols-2 gap-2 items-end">
+                          <div className="flex flex-col justify-end">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1">Start Date</label>
                             <input
                               type="date"
                               value={m.start_date || ""}
@@ -668,8 +706,8 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                               className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:outline-none focus:bg-white"
                             />
                           </div>
-                          <div>
-                            <label className="text-[9px] font-black text-slate-400 uppercase">End Date (Deadline)</label>
+                          <div className="flex flex-col justify-end">
+                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1">End Date (Deadline)</label>
                             <input
                               type="date"
                               value={m.end_date || ""}

@@ -88,6 +88,17 @@ export default function Header() {
 
 
   useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("siteTheme") || "light";
@@ -225,30 +236,24 @@ export default function Header() {
                 localStorage.setItem("cached_site_name", val.site_name);
               }
             } else if (setting.setting_key === "primary_color") {
-              const localPrimary = localStorage.getItem("primaryColor");
-              if (localPrimary) {
-                loadedPrimary = localPrimary;
-              } else {
-                loadedPrimary = formatHex(val?.color, "#10b981");
+              const rawColor = typeof val === "string" ? val : (val?.color || val?.primary_color);
+              if (rawColor) {
+                loadedPrimary = formatHex(rawColor, "#0f766e");
                 localStorage.setItem("primaryColor", loadedPrimary);
               }
             } else if (setting.setting_key === "secondary_color") {
-              const localSecondary = localStorage.getItem("secondaryColor");
-              if (localSecondary) {
-                loadedSecondary = localSecondary;
-              } else {
-                loadedSecondary = formatHex(val?.color, "#06b6d4");
+              const rawColor = typeof val === "string" ? val : (val?.color || val?.secondary_color);
+              if (rawColor) {
+                loadedSecondary = formatHex(rawColor, "#06b6d4");
                 localStorage.setItem("secondaryColor", loadedSecondary);
               }
             } else if (setting.setting_key === "theme") {
-              const localTheme = localStorage.getItem("siteTheme");
-              if (localTheme) {
-                loadedTheme = localTheme;
-              } else {
-                loadedTheme = val?.theme || "light";
+              const themeVal = typeof val === "string" ? val : val?.theme;
+              if (themeVal) {
+                loadedTheme = themeVal;
                 localStorage.setItem("siteTheme", loadedTheme);
+                setSiteTheme(loadedTheme);
               }
-              setSiteTheme(loadedTheme);
             }
           });
 
@@ -350,16 +355,16 @@ export default function Header() {
               {/* Categories Dropdown (Triggers mega dropdown on hover) */}
               <div className="group/mega py-2">
                 <button className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer">
-                  Categories
+                  {t("nav_categories", "Categories")}
                   <FiChevronDown className="w-3.5 h-3.5 text-slate-450 transition-transform duration-250 group-hover/mega:rotate-180" />
                 </button>
 
-                {/* MEGA MENU DROPDOWN PANEL (Viewport Edge-to-Edge Screen Width - Matches Header bg-slate-100/95) */}
-                <div className="absolute left-0 right-0 w-screen mt-3 bg-slate-100/95 backdrop-blur-md border-t border-b border-slate-200 shadow-2xl opacity-0 invisible group-hover/mega:opacity-100 group-hover/mega:visible transition-all duration-200 z-50 animate-fadeIn overflow-hidden">
+                {/* MEGA MENU DROPDOWN PANEL (Matches Header bg-slate-100/95) */}
+                <div className="absolute left-0 right-0 w-full mt-3 bg-slate-100/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-b border-slate-200 dark:border-zinc-800 shadow-2xl opacity-0 invisible group-hover/mega:opacity-100 group-hover/mega:visible transition-all duration-200 z-50 animate-fadeIn overflow-hidden">
                   <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-7 flex flex-col gap-6 relative z-10">
                     
                     {/* Horizontal row of Categories */}
-                    <div className="flex flex-row flex-wrap gap-x-5 gap-y-3 border-b border-slate-200 pb-4">
+                    <div className="flex flex-row flex-wrap gap-x-5 gap-y-3 border-b border-slate-200 dark:border-zinc-800 pb-4">
                       {categories.map((cat) => {
                         const isHovered = hoveredCategoryId === cat.category_id;
                         return (
@@ -370,7 +375,7 @@ export default function Header() {
                             className={`px-4 py-2 rounded-xl text-[12px] font-black transition-all duration-150 cursor-pointer ${
                               isHovered
                                 ? "bg-primary text-white border border-primary/20 shadow-sm shadow-primary/5"
-                                : "text-slate-655 hover:bg-white hover:text-primary border border-transparent"
+                                : "text-slate-655 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 hover:text-primary border border-transparent"
                             }`}
                           >
                             {cat.category_name}
@@ -394,13 +399,13 @@ export default function Header() {
                                 className="flex items-center gap-1.5 hover:opacity-80 transition-opacity w-fit"
                               >
                                 <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                                <h4 className="text-[13px] font-black text-slate-855 uppercase tracking-widest">
+                                <h4 className="text-[13px] font-black text-slate-855 dark:text-zinc-100 uppercase tracking-widest">
                                   {activeCat?.category_name} Subcategories &rarr;
                                 </h4>
                               </a>
 
                               {catSubs.length === 0 ? (
-                                <p className="text-slate-400 text-xs font-bold italic py-4 pl-3">
+                                <p className="text-slate-400 dark:text-zinc-500 text-xs font-bold italic py-4 pl-3">
                                   No sub-categories available in this category.
                                 </p>
                               ) : (
@@ -410,21 +415,21 @@ export default function Header() {
                                       <a
                                         key={sub.sub_category_id}
                                         href={getCategoryLink(activeCat?.category_name || "", sub.sub_category_name)}
-                                        className="px-4 py-2.5 rounded-xl text-slate-605 hover:text-primary hover:bg-white text-xs font-black transition-all flex items-center gap-2 border border-transparent hover:border-slate-200"
+                                        className="px-4 py-2.5 rounded-xl text-slate-605 dark:text-zinc-300 hover:text-primary hover:bg-white dark:hover:bg-zinc-800 text-xs font-black transition-all flex items-center gap-2 border border-transparent hover:border-slate-200 dark:hover:border-zinc-700"
                                       >
                                         <div className="w-1.5 h-1.5 rounded-full bg-primary/80 shrink-0" />
                                         <span>{sub.sub_category_name}</span>
                                       </a>
                                     ))}
                                   </div>
-                                  <div className="col-span-1 bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl p-4.5 flex flex-col justify-between min-h-[140px] text-left shadow-sm">
+                                  <div className="col-span-1 bg-gradient-to-br from-white to-slate-50 dark:from-zinc-850 dark:to-zinc-800 border border-slate-200 dark:border-zinc-700/80 rounded-xl p-4.5 flex flex-col justify-between min-h-[140px] text-left shadow-sm">
                                     <div>
-                                      <span className="text-[9px] font-black text-primary uppercase tracking-widest block mb-1">PROMOTED</span>
-                                      <h5 className="text-xs font-black text-slate-800 leading-snug">Hire Expert Freelancers</h5>
-                                      <p className="text-[10px] text-slate-500 font-bold mt-1">Get custom solutions tailored precisely to your budget and deadlines.</p>
+                                      <span className="text-[9px] font-black text-primary uppercase tracking-widest block mb-1">{t("promoted", "PROMOTED")}</span>
+                                      <h5 className="text-xs font-black text-slate-800 dark:text-white leading-snug">{t("hire_expert_freelancers", "Hire Expert Freelancers")}</h5>
+                                      <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-bold mt-1">{t("promoted_desc", "Get custom solutions tailored precisely to your budget and deadlines.")}</p>
                                     </div>
                                     <a href="/gigs" className="mt-3 bg-primary hover:bg-primary-hover text-white text-[10px] font-black text-center py-2.5 px-3 rounded-lg shadow-sm transition-all block w-full">
-                                      Explore Gigs
+                                      {t("nav_gigs", "Explore Gigs")}
                                     </a>
                                   </div>
                                 </div>
@@ -433,9 +438,9 @@ export default function Header() {
                           );
                         })()
                       ) : (
-                        <div className="flex flex-col items-center justify-center py-6 text-slate-400 gap-1.5 select-none">
+                        <div className="flex flex-col items-center justify-center py-6 text-slate-400 dark:text-zinc-500 gap-1.5 select-none">
                           <span>👆</span>
-                          <p className="text-xs font-bold">Hover over any category above to explore subcategories.</p>
+                          <p className="text-xs font-bold">{t("hover_category_prompt", "Hover over any category above to explore subcategories.")}</p>
                         </div>
                       )}
                     </div>
@@ -446,16 +451,16 @@ export default function Header() {
 
               {/* Navigation Links */}
               <a href="/talent" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
-                Hire Freelancers
+                {t("nav_talent", "Hire Freelancers")}
               </a>
               <a href="/projects" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
-                Find Projects
+                {t("nav_projects", "Find Projects")}
               </a>
               <a href="/gigs" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
-                Explore Gigs
+                {t("nav_gigs", "Explore Gigs")}
               </a>
               <a href="/blogs" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
-                Blogs
+                {t("nav_blogs", "Blogs")}
               </a>
 
             </nav>
@@ -527,7 +532,7 @@ export default function Header() {
             {isLoggedIn ? (
               <div className="relative group">
                 <button className="flex items-center gap-2 px-1 py-1 focus:outline-none cursor-pointer border-none bg-transparent">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0 text-[11px]">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-primary flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0 text-[11px]">
                     {userProfileImage ? (
                       <img src={resolveLogoUrl(userProfileImage)} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
@@ -540,41 +545,8 @@ export default function Header() {
                 </button>
 
                 {/* Dropdown Menu (visible on hover) */}
-                <div className="absolute right-0 mt-3 w-72 bg-white/95 backdrop-blur-md border border-slate-100 rounded-3xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.12)] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
-                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100/50 flex items-center gap-3 relative overflow-hidden">
-                    <div className="absolute right-[-10%] top-[-10%] w-20 h-20 bg-primary/5 rounded-full blur-lg pointer-events-none" />
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center font-extrabold text-white shadow-md border-2 border-white shrink-0">
-                      {userProfileImage ? (
-                        <img src={resolveLogoUrl(userProfileImage)} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        userFirstName ? userFirstName.substring(0, 2).toUpperCase() : "US"
-                      )}
-                    </div>
-                    <div className="min-w-0 z-10">
-                      <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-black text-slate-800 truncate leading-tight">
-                          {userFirstName} {userLastName}
-                        </p>
-                        {userRole && (
-                          <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border shrink-0 ${
-                            userRole === "client" 
-                              ? "text-cyan-600 bg-cyan-50 border-cyan-100" 
-                              : "text-primary bg-primary-light border-primary/20"
-                          }`}>
-                            {userRole}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] font-semibold text-slate-400 truncate mt-1 leading-none">
-                        {userEmail}
-                      </p>
-                      <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-100/30 mt-2 shrink-0">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        Online
-                      </span>
-                    </div>
-                  </div>
-                  <div className="pt-2 flex flex-col gap-0.5">
+                <div className="absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.12)] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
+                  <div className="flex flex-col gap-0.5">
                     <a href="/dashboard" className="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-650 hover:bg-primary-light hover:text-primary font-bold rounded-xl transition-all duration-200 group/item hover:translate-x-0.5">
                       <div className="flex items-center gap-2.5">
                         <FiGrid className="w-4 h-4 text-slate-400 group-hover:text-primary" />
@@ -646,37 +618,29 @@ export default function Header() {
 
       {/* Mobile Drawer menu */}
       <div
-        className={`lg:hidden border-t border-slate-200 bg-slate-100 absolute w-full left-0 top-full shadow-lg transition-all duration-300 origin-top ${
+        className={`lg:hidden border-t border-slate-200 bg-slate-50 dark:bg-slate-900 absolute w-full left-0 top-full shadow-2xl transition-all duration-300 origin-top h-[calc(100vh-4rem)] overflow-y-auto z-50 ${
           isOpen ? "opacity-100 scale-y-100 pointer-events-auto" : "opacity-0 scale-y-95 pointer-events-none"
         }`}
       >
-        <div className="px-4 pt-4 pb-6 space-y-3 flex flex-col">
+        <div className="px-4 pt-4 pb-28 space-y-2 flex flex-col min-h-full">
           <a href="/" className="bg-primary-light text-primary font-bold px-4 py-2.5 rounded-lg text-base">
             {t("home", "Home")}
           </a>
-          <a href="/about-us" className="text-slate-600 hover:text-primary font-medium px-4 py-2.5 rounded-lg text-base hover:bg-slate-200/50 transition-colors">
-            {t("about_us", "About us")}
+          <a href="/gigs" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            Categories
           </a>
-          <a href="/faq" className="text-slate-600 hover:text-primary font-medium px-4 py-2.5 rounded-lg text-base hover:bg-slate-200/50 transition-colors">
-            {t("faq", "FAQ")}
+          <a href="/talent" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            Hire Freelancers
           </a>
-          <a href="/terms-conditions" className="text-slate-600 hover:text-primary font-medium px-4 py-2.5 rounded-lg text-base hover:bg-slate-200/50 transition-colors">
-            {t("terms_conditions", "Terms & condition")}
+          <a href="/projects" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            Find Projects
           </a>
-          <a href="/blogs" className="text-slate-600 hover:text-primary font-medium px-4 py-2.5 rounded-lg text-base hover:bg-slate-200/50 transition-colors">
+          <a href="/gigs" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            Explore Gigs
+          </a>
+          <a href="/blogs" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             Blogs
           </a>
-
-          {/* Dynamic Custom CMS Pages list (excluding already mapped static ones to keep drawer clean) */}
-          {cmsPages.filter(p => !["about-us", "faq", "terms-conditions"].includes(p.slug)).map((page, pIdx) => (
-            <a
-              key={pIdx}
-              href={`/${page.slug}`}
-              className="text-slate-600 hover:text-primary font-medium px-4 py-2.5 rounded-lg text-base hover:bg-slate-200/50 transition-colors"
-            >
-              {page.title}
-            </a>
-          ))}
 
           <hr className="border-slate-200 my-2" />
 
@@ -733,7 +697,7 @@ export default function Header() {
           {isLoggedIn ? (
             <>
               <div className="px-4 py-2 bg-slate-50 border border-slate-200/55 rounded-lg flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center font-bold text-white shadow-sm shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center font-bold text-white shadow-sm shrink-0">
                   {userFirstName ? userFirstName.substring(0, 2).toUpperCase() : "US"}
                 </div>
                 <div>

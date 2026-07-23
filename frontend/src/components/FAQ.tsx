@@ -74,7 +74,7 @@ export default function FAQ() {
                 key={item.faq_id}
                 className={`border rounded-xl transition-all duration-300 ${
                   isOpen
-                    ? "border-[#0a5a54]/40 bg-white shadow-md shadow-slate-100"
+                    ? "border-primary/40 bg-white shadow-md shadow-slate-100"
                     : "border-slate-200 bg-slate-50/30 hover:border-slate-300 hover:bg-slate-50/70"
                 }`}
               >
@@ -89,7 +89,7 @@ export default function FAQ() {
                   <span className="pr-4 leading-tight">{question}</span>
                   <svg
                     className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-300 ${
-                      isOpen ? "rotate-180 text-[#0a5a54]" : ""
+                      isOpen ? "rotate-180 text-primary" : ""
                     }`}
                     fill="none"
                     viewBox="0 0 24 24"

@@ -134,7 +134,7 @@ export default function SuccessStories() {
               key={index}
               onClick={() => handleDotClick(index)}
               className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                activeIndex === index ? "w-6 bg-[#0a5a54]" : "w-2.5 bg-slate-300 hover:bg-slate-400"
+                activeIndex === index ? "w-6 bg-primary" : "w-2.5 bg-slate-300 hover:bg-slate-400"
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />

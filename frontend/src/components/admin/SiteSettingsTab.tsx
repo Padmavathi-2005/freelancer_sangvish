@@ -15,6 +15,7 @@ export default function SiteSettingsTab({
   // Site name/logo/favicon/OG details states
   const [siteName, setSiteName] = useState("Buy2Lancer");
   const [siteLogo, setSiteLogo] = useState("/public/logo.png");
+  const [siteLogoDark, setSiteLogoDark] = useState("/public/logo.png");
   const [siteFavicon, setSiteFavicon] = useState("/public/favicon.ico");
   const [siteOgImage, setSiteOgImage] = useState("/public/og-image.png");
   const [siteDescription, setSiteDescription] = useState("LancerFlow Freelance Marketplace");
@@ -33,9 +34,9 @@ export default function SiteSettingsTab({
   const [toastTitle, setToastTitle] = useState("Settings Saved");
   const [toastText, setToastText] = useState("Platform configuration updated successfully.");
 
-  const [uploadingField, setUploadingField] = useState<"logo" | "favicon" | "og_image" | null>(null);
+  const [uploadingField, setUploadingField] = useState<"logo" | "logo_dark" | "favicon" | "og_image" | null>(null);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "logo" | "favicon" | "og_image") => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "logo" | "logo_dark" | "favicon" | "og_image") => {
     if (!e.target.files || e.target.files.length === 0) return;
     try {
       setUploadingField(target);
@@ -59,10 +60,11 @@ export default function SiteSettingsTab({
       
       const data = await res.json();
       if (target === "logo") setSiteLogo(data.url);
+      else if (target === "logo_dark") setSiteLogoDark(data.url);
       else if (target === "favicon") setSiteFavicon(data.url);
       else if (target === "og_image") setSiteOgImage(data.url);
       
-      triggerToast("Upload Success", `${target.toUpperCase()} uploaded successfully!`);
+      triggerToast("Upload Success", `${target.replace("_", " ").toUpperCase()} uploaded successfully!`);
     } catch (err: any) {
       console.error(err);
       triggerToast("Upload Failed", err.message || `Could not upload image.`);
@@ -102,6 +104,7 @@ export default function SiteSettingsTab({
 
             if (site.site_name) setSiteName(site.site_name);
             if (site.site_logo) setSiteLogo(site.site_logo);
+            if (site.site_logo_dark) setSiteLogoDark(site.site_logo_dark);
             if (site.site_favicon) setSiteFavicon(site.site_favicon);
             if (site.site_og_image) setSiteOgImage(site.site_og_image);
             if (site.site_description) setSiteDescription(site.site_description);
@@ -145,6 +148,7 @@ export default function SiteSettingsTab({
       await handleSaveSetting("site_settings", { 
         site_name: siteName, 
         site_logo: cleanToRelative(siteLogo),
+        site_logo_dark: cleanToRelative(siteLogoDark),
         site_favicon: cleanToRelative(siteFavicon),
         site_og_image: cleanToRelative(siteOgImage),
         site_description: siteDescription,
@@ -224,13 +228,13 @@ export default function SiteSettingsTab({
       {/* BRANDING ASSETS SECTION */}
       <div className="border-b border-slate-100 pb-8">
         <h4 className="text-sm font-extrabold text-slate-855 mb-1">Branding Assets</h4>
-        <p className="text-xs text-slate-505 mb-6 font-semibold">Upload your corporate identity logo, browser favicon, and default sharing thumbnail.</p>
+        <p className="text-xs text-slate-505 mb-6 font-semibold">Upload your light theme logo, dark theme logo, browser favicon, and default sharing thumbnail.</p>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           
-          {/* SITE LOGO UPLOADER */}
+          {/* SITE LOGO UPLOADER (LIGHT THEME) */}
           <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Logo</span>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Logo (Light Theme)</span>
             
             <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-36 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
               {siteLogo ? (
@@ -238,7 +242,7 @@ export default function SiteSettingsTab({
                   <img 
                     src={formatImgSrc(siteLogo)} 
                     className="max-h-full max-w-full object-contain transition group-hover:scale-105"
-                    alt="Logo Preview" 
+                    alt="Light Logo Preview" 
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = "/public/logo.png";
                     }}
@@ -252,7 +256,7 @@ export default function SiteSettingsTab({
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400">
                   <FiUploadCloud className="w-8 h-8 text-slate-350" />
-                  <span className="text-[10px] font-bold">Upload site logo</span>
+                  <span className="text-[10px] font-bold">Upload light logo</span>
                 </div>
               )}
               <input
@@ -270,6 +274,51 @@ export default function SiteSettingsTab({
               onChange={(e) => setSiteLogo(e.target.value)}
               placeholder="/public/logo.png"
               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-500 focus:outline-none focus:border-teal-700 transition"
+            />
+          </div>
+
+          {/* SITE LOGO UPLOADER (DARK THEME) */}
+          <div className="flex flex-col gap-3 bg-slate-900/90 border border-slate-800 p-5 rounded-xl">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Logo (Dark Theme)</span>
+            
+            <div className="relative group border border-dashed border-slate-700 hover:border-teal-500 rounded-xl h-36 flex flex-col items-center justify-center bg-slate-950 overflow-hidden transition-all duration-200 shadow-sm">
+              {siteLogoDark ? (
+                <div className="w-full h-full p-4 flex items-center justify-center relative">
+                  <img 
+                    src={formatImgSrc(siteLogoDark)} 
+                    className="max-h-full max-w-full object-contain transition group-hover:scale-105"
+                    alt="Dark Logo Preview" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/public/logo.png";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-slate-900/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
+                      {uploadingField === "logo_dark" ? "Uploading..." : "Change Dark Logo"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-slate-500">
+                  <FiUploadCloud className="w-8 h-8 text-slate-500" />
+                  <span className="text-[10px] font-bold">Upload dark logo</span>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploadingField !== null}
+                onChange={(e) => handleImageUpload(e, "logo_dark")}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+
+            <input
+              type="text"
+              value={siteLogoDark}
+              onChange={(e) => setSiteLogoDark(e.target.value)}
+              placeholder="/public/logo.png"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-300 focus:outline-none focus:border-teal-500 transition"
             />
           </div>
 

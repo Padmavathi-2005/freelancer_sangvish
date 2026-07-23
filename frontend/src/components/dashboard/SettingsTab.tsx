@@ -771,7 +771,7 @@ export default function SettingsTab({
                 </div>
 
                 {/* Next Upgrade Tier */}
-                {(!userSubscription || userSubscription.active_plan_id !== 3) && (
+                {(!userSubscription || (userSubscription.active_plan_id !== 3 && userSubscription.active_plan_id !== 7)) && (
                   <div className="bg-[#063c38]/5 border border-teal-700/10 p-5 rounded-xl text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 mt-2 text-left">
                     <div className="flex items-start gap-3.5">
                       <div className="w-10 h-10 rounded-xl bg-[#063c38] text-white flex items-center justify-center font-black shrink-0 shadow-sm text-sm">
@@ -779,10 +779,10 @@ export default function SettingsTab({
                       </div>
                       <div>
                         <h5 className="font-black text-slate-850 text-xs">
-                          Next Level Upgrade: {userSubscription?.active_plan_id === 2 ? "Enterprise Plan" : "Professional Plan"}
+                          Next Level Upgrade: {(userSubscription?.active_plan_id === 2 || userSubscription?.active_plan_id === 6) ? "Enterprise Plan" : "Professional Plan"}
                         </h5>
                         <p className="text-slate-500 font-semibold mt-1 max-w-sm leading-normal">
-                          {userSubscription?.active_plan_id === 2 
+                          {(userSubscription?.active_plan_id === 2 || userSubscription?.active_plan_id === 6) 
                             ? "Gain unlimited active job posts, unlimited bid proposals, and custom enterprise support options."
                             : "Unlock advanced matching algorithms, priority support channels, and reduced transaction fees."}
                         </p>
@@ -791,7 +791,12 @@ export default function SettingsTab({
 
                     <button
                       onClick={() => {
-                        const nextPlanId = (userSubscription?.active_plan_id || 1) + 1;
+                        const currentId = userSubscription?.active_plan_id;
+                        const nextPlanId = (currentId === 1 || currentId === 5)
+                          ? currentId + 1
+                          : (currentId === 2 || currentId === 6)
+                            ? currentId + 1
+                            : 2;
                         window.location.href = `/pricing/${nextPlanId}`;
                       }}
                       className="w-full sm:w-auto bg-[#063c38] hover:bg-[#084843] text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer text-center shrink-0"
@@ -1960,7 +1965,7 @@ export default function SettingsTab({
               </div>
 
               {/* Next Upgrade Tier */}
-              {(!userSubscription || userSubscription.active_plan_id !== 3) && (
+              {(!userSubscription || (userSubscription.active_plan_id !== 3 && userSubscription.active_plan_id !== 7)) && (
                 <div className="bg-[#063c38]/5 border border-teal-700/10 p-5 rounded-xl text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 mt-2">
                   <div className="flex items-start gap-3.5">
                     <div className="w-10 h-10 rounded-xl bg-[#063c38] text-white flex items-center justify-center font-black shrink-0 shadow-sm text-sm">
@@ -1968,10 +1973,10 @@ export default function SettingsTab({
                     </div>
                     <div>
                       <h5 className="font-black text-slate-850 text-xs">
-                        Next Level Upgrade: {userSubscription?.active_plan_id === 2 ? "Enterprise Plan" : "Professional Plan"}
+                        Next Level Upgrade: {(userSubscription?.active_plan_id === 2 || userSubscription?.active_plan_id === 6) ? "Enterprise Plan" : "Professional Plan"}
                       </h5>
                       <p className="text-slate-500 font-semibold mt-1 max-w-sm leading-normal">
-                        {userSubscription?.active_plan_id === 2 
+                        {(userSubscription?.active_plan_id === 2 || userSubscription?.active_plan_id === 6) 
                           ? "Gain unlimited active job posts, unlimited bid proposals, and custom enterprise support options."
                           : "Unlock advanced matching algorithms, priority support channels, and reduced transaction fees."}
                       </p>
@@ -1980,7 +1985,12 @@ export default function SettingsTab({
 
                   <button
                     onClick={() => {
-                      const nextPlanId = (userSubscription?.active_plan_id || 1) + 1;
+                      const currentId = userSubscription?.active_plan_id;
+                      const nextPlanId = (currentId === 1 || currentId === 5)
+                        ? currentId + 1
+                        : (currentId === 2 || currentId === 6)
+                          ? currentId + 1
+                          : 2;
                       window.location.href = `/pricing/${nextPlanId}`;
                     }}
                     className="w-full sm:w-auto bg-[#063c38] hover:bg-[#084843] text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer text-center shrink-0"

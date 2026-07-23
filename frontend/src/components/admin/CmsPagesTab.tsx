@@ -336,7 +336,7 @@ export default function CmsPagesTab() {
   }`;
 
   const tableRowClass = `transition-colors duration-150 ${
-    isDark ? "hover:bg-slate-900/40 border-b border-slate-850" : "hover:bg-slate-50 border-b border-slate-100"
+    isDark ? "hover:bg-slate-900/40 border-b border-slate-800" : "hover:bg-slate-50 border-b border-slate-100"
   }`;
 
   const textInputClass = `w-full rounded-xl px-4 py-2.5 text-sm transition-all focus:outline-none border ${
@@ -410,7 +410,7 @@ export default function CmsPagesTab() {
                           href={`/${page.slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-teal-600 hover:underline flex items-center gap-1.5"
+                          className="text-teal-600 dark:text-teal-400 hover:underline flex items-center gap-1.5"
                         >
                           <FiGlobe className="w-3.5 h-3.5" /> /{page.slug}
                         </a>
@@ -418,8 +418,8 @@ export default function CmsPagesTab() {
                       <td className="px-6 py-4 text-xs font-bold">
                         <span className={`px-2 py-0.5 rounded-full ${
                           page.status === "Published"
-                            ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/25"
-                            : "bg-slate-400/10 text-slate-500 border border-slate-400/20"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25"
+                            : "bg-slate-400/10 text-slate-500 dark:text-slate-350 border border-slate-400/20"
                         }`}>
                           {page.status}
                         </span>
