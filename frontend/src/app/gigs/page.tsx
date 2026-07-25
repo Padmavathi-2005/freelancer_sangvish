@@ -131,6 +131,10 @@ function GigsSearchContent() {
   };
 
   const handleToggleWishlist = async (gig: any) => {
+    if (currentUserId && (Number(gig.user_id) === currentUserId || Number(gig.freelancer_id) === currentUserId)) {
+      showToast("error", "You cannot wishlist your own service gig.");
+      return;
+    }
     const isSaved = isInWishlist(gig.gig_id);
     let updated;
     const token = localStorage.getItem("token");
@@ -222,15 +226,54 @@ function GigsSearchContent() {
     fetchGigs();
   }, []);
 
+  // Active subcategories based on selected category
+  const activeSubcategories = useMemo(() => {
+    if (!selectedCategory) return subcategories;
+    const catObj = categories.find(
+      (c) =>
+        c.category_id?.toString() === selectedCategory ||
+        c.category_name?.toLowerCase() === selectedCategory.toLowerCase()
+    );
+    if (!catObj) return subcategories;
+    const catIdStr = String(catObj.category_id || catObj.id);
+    return subcategories.filter(
+      (s) => String(s.category_id || s.categoryId) === catIdStr
+    );
+  }, [selectedCategory, categories, subcategories]);
+
   // Sync state if query params change
   useEffect(() => {
     const query = searchParams.get("query");
     const category = searchParams.get("category");
     const subcat = searchParams.get("subcategory");
     if (query !== null) setSearchQuery(query);
-    if (category !== null) setSelectedCategory(category);
-    if (subcat !== null) setSelectedSubcategory(subcat);
-  }, [searchParams]);
+    if (category !== null) {
+      if (categories.length > 0) {
+        const found = categories.find(
+          (c) =>
+            c.category_id?.toString() === category ||
+            c.category_name?.toLowerCase() === category.toLowerCase() ||
+            c.slug?.toLowerCase() === category.toLowerCase()
+        );
+        setSelectedCategory(found ? found.category_name : category);
+      } else {
+        setSelectedCategory(category);
+      }
+    }
+    if (subcat !== null) {
+      if (subcategories.length > 0) {
+        const found = subcategories.find(
+          (s) =>
+            s.sub_category_id?.toString() === subcat ||
+            s.sub_category_name?.toLowerCase() === subcat.toLowerCase() ||
+            s.slug?.toLowerCase() === subcat.toLowerCase()
+        );
+        setSelectedSubcategory(found ? found.sub_category_name : subcat);
+      } else {
+        setSelectedSubcategory(subcat);
+      }
+    }
+  }, [searchParams, categories, subcategories]);
 
   // Filter & Sort Logic
   const filteredGigs = gigs.filter((gig) => {
@@ -404,22 +447,7 @@ function GigsSearchContent() {
     setFilterRating("");
     setExperienceLevel("");
     setSortBy("popular");
-    router.replace("/gigs");
   };
-
-  // Get dynamic subcategories list based on selected category
-  const activeSubcategories = subcategories.filter((s: any) => {
-    if (!selectedCategory) return true;
-    
-    // Find category detail
-    const cat = categories.find(
-      (c) =>
-        c.category_id?.toString() === selectedCategory ||
-        c.category_name?.toLowerCase() === selectedCategory.toLowerCase()
-    );
-    
-    return cat ? s.category_id === cat.category_id : false;
-  });
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative">
@@ -620,7 +648,7 @@ function GigsSearchContent() {
                 type="text"
                 placeholder={t("search_gigs_placeholder", "Search for service gigs...")}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value.replace(/\d{3,}/g, ""))}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
               />
             </div>

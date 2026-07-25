@@ -14,7 +14,8 @@ import {
   FiSearch,
   FiSettings,
   FiUsers,
-  FiFileText
+  FiFileText,
+  FiZap
 } from "react-icons/fi";
 
 import GeneralSettingsTab from "@/components/admin/GeneralSettingsTab";
@@ -28,6 +29,7 @@ import DisputeReasonsTab from "@/components/admin/DisputeReasonsTab";
 import SEOPreviewTab from "@/components/admin/SEOPreviewTab";
 import ReferralSettingsTab from "@/components/admin/ReferralSettingsTab";
 import DocumentVettingTab from "@/components/admin/DocumentVettingTab";
+import ApiIntegrationsTab from "@/components/admin/ApiIntegrationsTab";
 
 function SettingsPortalContent() {
   const router = useRouter();
@@ -80,6 +82,7 @@ function SettingsPortalContent() {
     { key: "seo", label: "SEO & Meta Preview", icon: FiSearch },
     { key: "referral", label: "Referral & Earn", icon: FiUsers },
     { key: "documents", label: "Document Verification", icon: FiFileText },
+    { key: "api_integrations", label: "API Integrations", icon: FiZap },
   ];
 
   const handleTabChange = (key: string) => {
@@ -227,6 +230,12 @@ function SettingsPortalContent() {
 
           {activeTabQuery === "documents" && (
             <DocumentVettingTab />
+          )}
+
+          {activeTabQuery === "api_integrations" && (
+            <ApiIntegrationsTab
+              handleSaveSetting={handleSaveSetting}
+            />
           )}
         </div>
       </div>

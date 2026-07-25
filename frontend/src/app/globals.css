@@ -52,6 +52,10 @@
 .text-primary {
   color: var(--color-primary, #0F766E);
 }
+.dark .text-primary,
+body.dark .text-primary {
+  color: #ffffff !important;
+}
 .hover\:text-primary:hover {
   color: var(--color-primary, #0F766E) !important;
 }
@@ -385,8 +389,8 @@ select, select option {
 }
 
 .dark .custom-select:focus {
-  border-color: var(--color-primary, #10b981);
-  box-shadow: 0 0 0 3px var(--color-primary-light, rgba(16, 185, 129, 0.15));
+  border-color: var(--color-primary, #0f766e);
+  box-shadow: 0 0 0 3px var(--color-primary-light, rgba(15, 118, 110, 0.15));
 }
 
 /* Disabled styling */
@@ -957,6 +961,21 @@ body.dark .hero-floating-card .text-slate-500 {
   color: #a1a1aa !important; /* Zinc-400 */
 }
 
+body.dark .group\/user-menu .absolute,
+body.dark header .absolute.right-0.mt-3,
+.dark header .absolute.right-0.mt-3 {
+  background-color: #18181b !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8) !important;
+}
+
+body.dark header .absolute.right-0.mt-3 a,
+.dark header .absolute.right-0.mt-3 a,
+body.dark header .absolute.right-0.mt-3 span,
+.dark header .absolute.right-0.mt-3 span {
+  color: #e4e4e7 !important;
+}
+
 body.dark .hero-floating-card .border-t {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
@@ -1128,9 +1147,19 @@ form.rounded-xl {
 
 /* Remove duplicate input border and force transparent background in the landing page hero search form */
 form.hero-search-form input[type="text"],
-.hero-search-form input[type="text"] {
+.hero-search-form input[type="text"],
+.hero-search-form input {
   border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
   background-color: transparent !important;
+}
+
+.hero-search-form input:focus,
+.hero-search-form input:focus-visible {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Custom Range Slider Track and Thumb Styling */
@@ -1221,6 +1250,107 @@ body.dark ::-webkit-scrollbar-thumb:hover {
 .dark *,
 body.dark * {
   scrollbar-color: rgba(255, 255, 255, 0.15) #020617 !important;
+}
+
+/* GLOBAL PRINT & PDF GENERATION STYLES */
+@media print {
+  @page {
+    margin: 10mm 12mm;
+    size: auto;
+  }
+
+  /* Hide app headers, sidebars, buttons, theme toggles & navigation */
+  header,
+  aside,
+  nav,
+  .print\:hidden,
+  button:not(.print\:show),
+  .no-print {
+    display: none !important;
+  }
+
+  /* Unclip containers & scrollbars for clean document printing */
+  html, body, #__next, main, section, article {
+    background-color: #ffffff !important;
+    background-image: none !important;
+    color: #0f172a !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Force clean white background on printable containers except dark metric cards */
+  div:not(.print\:bg-slate-900) {
+    background-color: transparent !important;
+  }
+
+  /* Remove max-height, flex overflow, and scrolling wrappers */
+  div, main, section, article {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Force full width printable areas */
+  .flex-1,
+  .w-full,
+  main,
+  section {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Prevent awkward page breaks inside summary cards, rows, and boxes */
+  .print\:break-inside-avoid,
+  .grid > div:not(.print\:allow-break),
+  tr,
+  td,
+  th {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print\:allow-break,
+  .print\:break-inside-auto {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Table styling for PDF */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .print\:text-white {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+  .print\:text-teal-200 {
+    color: #99f6e4 !important;
+    opacity: 1 !important;
+  }
+
+  /* Force dark high-contrast crisp text for printed report labels, titles and subtext */
+  .print\:text-slate-900,
+  .print\:text-black {
+    color: #0f172a !important;
+    opacity: 1 !important;
+  }
+  .print\:text-slate-700 {
+    color: #334155 !important;
+    opacity: 1 !important;
+  }
+  .print\:text-teal-900 {
+    color: #134e4a !important;
+    opacity: 1 !important;
+  }
+
+  /* Preserve colors and background graphics in PDF */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+  }
 }
 
 

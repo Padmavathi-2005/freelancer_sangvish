@@ -4,6 +4,18 @@ async function setupTables() {
   try {
     console.log("⏳ Initializing database tables...");
 
+    // Ensure phone_otp columns exist in users table
+    try {
+      await pool.query(`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS phone_otp VARCHAR(20), 
+        ADD COLUMN IF NOT EXISTS phone_otp_expires_at TIMESTAMP;
+      `);
+      console.log("✅ 'users' phone_otp columns ready.");
+    } catch (e) {
+      console.log("Note on users phone_otp columns:", e.message);
+    }
+
     // Create currencies table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS currencies (

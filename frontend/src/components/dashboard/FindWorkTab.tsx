@@ -304,7 +304,7 @@ export default function FindWorkTab({
               type="text"
               placeholder="Search skills, names, roles..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value.replace(/\d{3,}/g, ""))}
               className="w-full bg-slate-50 border border-slate-250 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all font-medium"
             />
           </div>
@@ -452,7 +452,7 @@ export default function FindWorkTab({
               placeholder="Search jobs, categories..."
               value={jobSearchQuery}
               onChange={(e) => {
-                setJobSearchQuery(e.target.value);
+                setJobSearchQuery(e.target.value.replace(/\d{3,}/g, ""));
                 if (showAiMatches) setShowAiMatches(false); // turn off AI matches when search is used
               }}
               className="w-full bg-slate-50 border border-slate-250 rounded-xl py-2.5 pl-10 pr-4 text-slate-850 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all font-semibold"

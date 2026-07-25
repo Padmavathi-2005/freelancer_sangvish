@@ -193,6 +193,7 @@ interface DashboardContextType {
   clientWizardStep: number; setClientWizardStep: React.Dispatch<React.SetStateAction<number>>;
   clientError: string; setClientError: (v: string) => void;
   clientSuccess: boolean; setClientSuccess: (v: boolean) => void;
+  clientFieldErrors: Record<string, string>; setClientFieldErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 
   wizardStep: number; setWizardStep: React.Dispatch<React.SetStateAction<number>>;
   onboardingStepsStatus: { profile: boolean; career: boolean; verification: boolean; portfolio: boolean };
@@ -227,6 +228,7 @@ interface DashboardContextType {
   handleUpdateLanguageProficiency: (langId: number, proficiency: string) => void;
   step1Error: string; setStep1Error: (v: string) => void;
   step1Success: boolean; setStep1Success: (v: boolean) => void;
+  step1FieldErrors: Record<string, string>; setStep1FieldErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
 
   // Step 2 Form States
   experiences: ExperienceItem[]; setExperiences: React.Dispatch<React.SetStateAction<ExperienceItem[]>>;
@@ -260,6 +262,10 @@ interface DashboardContextType {
   phoneOtp: string; setPhoneOtp: (v: string) => void;
   emailOtpSent: boolean; setEmailOtpSent: (v: boolean) => void;
   phoneOtpSent: boolean; setPhoneOtpSent: (v: boolean) => void;
+  sendingEmailOtp: boolean; setSendingEmailOtp: (v: boolean) => void;
+  sendingPhoneOtp: boolean; setSendingPhoneOtp: (v: boolean) => void;
+  verifyingEmailOtp: boolean; setVerifyingEmailOtp: (v: boolean) => void;
+  verifyingPhoneOtp: boolean; setVerifyingPhoneOtp: (v: boolean) => void;
   otpError: string; setOtpError: (v: string) => void;
   otpSuccess: string; setOtpSuccess: (v: string) => void;
 
@@ -570,6 +576,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [clientWizardStep, setClientWizardStep] = useState<number>(1);
   const [clientError, setClientError] = useState("");
   const [clientSuccess, setClientSuccess] = useState(false);
+  const [clientFieldErrors, setClientFieldErrors] = useState<Record<string, string>>({});
 
   // Freelancer Wizard steps
   const [wizardStep, setWizardStep] = useState<number>(1);
@@ -624,6 +631,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   };
   const [step1Error, setStep1Error] = useState<string>("");
   const [step1Success, setStep1Success] = useState<boolean>(false);
+  const [step1FieldErrors, setStep1FieldErrors] = useState<Record<string, string>>({});
 
   // Step 2 Form States
   const [experiences, setExperiences] = useState<ExperienceItem[]>([]);
@@ -659,6 +667,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [phoneOtp, setPhoneOtp] = useState("");
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [sendingEmailOtp, setSendingEmailOtp] = useState(false);
+  const [sendingPhoneOtp, setSendingPhoneOtp] = useState(false);
+  const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
+  const [verifyingPhoneOtp, setVerifyingPhoneOtp] = useState(false);
   const [otpError, setOtpError] = useState("");
   const [otpSuccess, setOtpSuccess] = useState("");
 
@@ -670,8 +682,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [projectDocs, setProjectDocs] = useState("");
   const [portfolioSuccess, setPortfolioSuccess] = useState(false);
 
-  const [primaryColor, setPrimaryColor] = useState("#10b981");
-  const [secondaryColor, setSecondaryColor] = useState("#06b6d4");
+  const [primaryColor, setPrimaryColor] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("primaryColor") || "#0f766e";
+    }
+    return "#0f766e";
+  });
+  const [secondaryColor, setSecondaryColor] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("secondaryColor") || "#06b6d4";
+    }
+    return "#06b6d4";
+  });
   const [siteTheme, setSiteThemeState] = useState("light");
   const [siteName, setSiteName] = useState("Buy2Lancer");
   const [siteLogo, setSiteLogo] = useState("/public/logo.png");
@@ -1254,9 +1276,19 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             };
 
             if (setting.setting_key === "primary_color") {
-               setPrimaryColor(formatHex(val?.color, "#10b981"));
+              const rawColor = typeof val === "string" ? val : (val?.color || val?.primary_color);
+              if (rawColor) {
+                const formatted = formatHex(rawColor, "#0f766e");
+                setPrimaryColor(formatted);
+                if (typeof window !== "undefined") localStorage.setItem("primaryColor", formatted);
+              }
             } else if (setting.setting_key === "secondary_color") {
-               setSecondaryColor(formatHex(val?.color, "#06b6d4"));
+              const rawColor = typeof val === "string" ? val : (val?.color || val?.secondary_color);
+              if (rawColor) {
+                const formatted = formatHex(rawColor, "#06b6d4");
+                setSecondaryColor(formatted);
+                if (typeof window !== "undefined") localStorage.setItem("secondaryColor", formatted);
+              }
             } else if (setting.setting_key === "theme") {
               const localChoice = typeof window !== "undefined" ? localStorage.getItem("siteTheme") : null;
               setSiteThemeState(localChoice || val?.theme || "light");
@@ -1295,6 +1327,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       fetchLanguagesOnboard();
       fetchOnboardingStatus();
       fetchOnboardingDetails();
+      fetchAllSkillsOnboard();
     }
   }, [onboardingStep, isAuthenticated]);
 
@@ -1302,7 +1335,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     if (subCategoryId) {
       fetchSkillsBySubcategoryOnboard(subCategoryId);
     } else {
-      setAvailableSkills([]);
+      fetchAllSkillsOnboard();
     }
   }, [subCategoryId]);
 
@@ -1327,12 +1360,34 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchAllSkillsOnboard = async () => {
+    try {
+      const res = await fetch(`${API_URL}/admin/skills`);
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableSkills(Array.isArray(data) ? data : []);
+      }
+    } catch (e) {
+      console.error("All skills fetch failed", e);
+    }
+  };
+
   const fetchSkillsBySubcategoryOnboard = async (subCatId: string) => {
     try {
       const res = await fetch(`${API_URL}/admin/skills/subcategory/${subCatId}`);
-      if (res.ok) setAvailableSkills(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableSkills(data);
+        } else {
+          fetchAllSkillsOnboard();
+        }
+      } else {
+        fetchAllSkillsOnboard();
+      }
     } catch (e) {
       console.error("Skills fetch failed", e);
+      fetchAllSkillsOnboard();
     }
   };
 
@@ -1376,10 +1431,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setVettingStatus(fallbackVetting);
         localStorage.setItem("vetting_status", fallbackVetting);
 
-        const isCompleted = activeRole === "client" ? !!data.hasClientProfile : !!data.hasFreelancerProfile;
-        setOnboardingCompleted(isCompleted);
-        setShowOnboardingModal(!isCompleted);
-        localStorage.setItem("onboarding_completed", isCompleted ? "true" : "false");
+        const profileExists = activeRole === "client" ? !!data.hasClientProfile : !!data.hasFreelancerProfile;
+        const isApproved = profileExists && fallbackVetting === "Approved";
+
+        setOnboardingCompleted(isApproved);
+        setShowOnboardingModal(!isApproved);
+        localStorage.setItem("onboarding_completed", isApproved ? "true" : "false");
 
         if (!data.hasFreelancerProfile && !data.hasClientProfile) {
           setOnboardingStep("role_selection");
@@ -1519,9 +1576,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleCategoryChange = (catId: string) => {
     setCategoryId(catId);
     setSubCategoryId("");
-    setAvailableSkills([]);
     setSelectedSkillIds([]);
     fetchSubcategoriesForCategory(catId);
+    fetchAllSkillsOnboard();
   };
 
   const handleSaveStep1 = async (e: React.FormEvent) => {
@@ -1529,21 +1586,65 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setStep1Error("");
     setStep1Success(false);
 
+    const errors: Record<string, string> = {};
     const requiredFields = [];
-    if (isFieldRequired("category")) {
-      if (!categoryId) requiredFields.push("Category");
-      if (!subCategoryId) requiredFields.push("Subcategory");
-    }
-    if (isFieldRequired("title") && !professionalTitle) requiredFields.push("Professional Title");
-    if (isFieldRequired("experience_level")) {
-      if (!experienceLevel) requiredFields.push("Experience Level");
-      if (!totalExperienceYears) requiredFields.push("Years of Experience");
-    }
-    if (isFieldRequired("hourly_rate") && !hourlyRate) requiredFields.push("Hourly Rate");
-    if (isFieldRequired("skills") && selectedSkillIds.length === 0) requiredFields.push("Skills");
-    if (isFieldRequired("languages") && selectedLanguageIds.length === 0) requiredFields.push("Languages");
 
-    if (requiredFields.length > 0) {
+    if (isFieldRequired("category")) {
+      if (!categoryId) {
+        errors.category = "Category is required.";
+        requiredFields.push("Category");
+      }
+      if (!subCategoryId) {
+        errors.subcategory = "Subcategory is required.";
+        requiredFields.push("Subcategory");
+      }
+    }
+    if (isFieldRequired("title") && !professionalTitle.trim()) {
+      errors.title = "Professional Title is required.";
+      requiredFields.push("Professional Title");
+    }
+    if (isFieldRequired("experience_level")) {
+      if (!experienceLevel) {
+        errors.experience_level = "Experience Level is required.";
+        requiredFields.push("Experience Level");
+      }
+      if (!totalExperienceYears || totalExperienceYears.trim() === "" || parseInt(totalExperienceYears) < 0) {
+        errors.total_experience_years = "Years of Experience is required.";
+        requiredFields.push("Years of Experience");
+      }
+    }
+    if (isFieldRequired("hourly_rate") && (!hourlyRate || hourlyRate.trim() === "")) {
+      errors.hourly_rate = "Hourly Rate is required.";
+      requiredFields.push("Hourly Rate");
+    }
+    if (isFieldRequired("availability_status") && !availabilityStatus) {
+      errors.availability_status = "Availability Status is required.";
+      requiredFields.push("Availability Status");
+    }
+    if (isFieldRequired("linkedin") && !linkedinUrl.trim()) {
+      errors.linkedin = "LinkedIn Profile Link is required.";
+      requiredFields.push("LinkedIn Link");
+    }
+    if (isFieldRequired("website") && !portfolioWebsite.trim()) {
+      errors.website = "Portfolio Website URL is required.";
+      requiredFields.push("Website URL");
+    }
+    if (isFieldRequired("github") && !resumeUrl.trim()) {
+      errors.github = "Resume Document URL is required.";
+      requiredFields.push("Resume URL");
+    }
+    if (isFieldRequired("skills") && selectedSkillIds.length === 0) {
+      errors.skills = "At least 1 skill must be selected.";
+      requiredFields.push("Skills");
+    }
+    if (isFieldRequired("languages") && selectedLanguageIds.length === 0) {
+      errors.languages = "At least 1 language must be selected.";
+      requiredFields.push("Languages");
+    }
+
+    setStep1FieldErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
       setStep1Error(`Please fill out all required fields: ${requiredFields.join(", ")}`);
       return;
     }
@@ -1759,7 +1860,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleSendEmailOtp = async () => {
+    if (sendingEmailOtp) return;
     try {
+      setSendingEmailOtp(true);
       setOtpError("");
       setOtpSuccess("");
       const token = localStorage.getItem("token");
@@ -1769,19 +1872,25 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         setEmailOtpSent(true);
-        setOtpSuccess("OTP sent to your email address.");
+        setOtpSuccess("Verification OTP sent to your email address. Please check your inbox.");
+        triggerToast("success", "OTP sent to your email address.");
       } else {
         const d = await res.json();
-        setOtpError(d.message || "Failed to send email OTP.");
+        const msg = d.message || "Failed to send email OTP.";
+        setOtpError(msg);
+        triggerToast("error", msg);
       }
     } catch (e) {
       setOtpError("Network error.");
+    } finally {
+      setSendingEmailOtp(false);
     }
   };
 
   const handleVerifyEmailOtp = async () => {
-    if (!emailOtp.trim()) return;
+    if (!emailOtp.trim() || verifyingEmailOtp) return;
     try {
+      setVerifyingEmailOtp(true);
       setOtpError("");
       setOtpSuccess("");
       const token = localStorage.getItem("token");
@@ -1795,53 +1904,73 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         setEmailVerified(true);
-        setOtpSuccess("Email verified successfully!");
+        setOtpSuccess("Email address verified successfully!");
+        triggerToast("success", "Email address verified!");
       } else {
         const d = await res.json();
-        setOtpError(d.message || "Invalid OTP code.");
+        const msg = d.message || "Invalid OTP code.";
+        setOtpError(msg);
+        triggerToast("error", msg);
       }
     } catch (e) {
       setOtpError("Network error.");
+    } finally {
+      setVerifyingEmailOtp(false);
     }
   };
 
   const handleSendPhoneOtp = async () => {
-    if (!userPhone.trim()) {
-      setOtpError("Please provide a phone number first.");
+    if (sendingPhoneOtp) return;
+    const rawPhone = userPhone.trim();
+    const cleanedPhone = rawPhone.replace(/[\s\-\(\)]/g, "");
+    
+    if (!cleanedPhone || cleanedPhone.length < 7 || !/^\+?[1-9]\d{6,14}$/.test(cleanedPhone)) {
+      const errMsg = "Mobile number does not exist or is invalid. Please enter a valid phone number with country code.";
+      setOtpError(errMsg);
+      triggerToast("error", errMsg);
       return;
     }
+
     try {
+      setSendingPhoneOtp(true);
       setOtpError("");
       setOtpSuccess("");
       const token = localStorage.getItem("token");
-      await fetch(`${API_URL}/users/profile-details`, {
-        method: "PUT",
+
+      const res = await fetch(`${API_URL}/users/send-phone-otp`, {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ phone: userPhone.trim() })
+        body: JSON.stringify({ phone: rawPhone })
       });
+      
+      const d = await res.json();
 
-      const res = await fetch(`${API_URL}/users/send-phone-otp`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` }
-      });
       if (res.ok) {
         setPhoneOtpSent(true);
-        setOtpSuccess("SMS verification code sent.");
+        setPhoneOtp(""); // Empty field so user enters their real SMS code
+        setOtpSuccess(`Verification code sent via SMS to ${rawPhone}. Please enter the 6-digit code below.`);
+        triggerToast("success", `Verification code sent to ${rawPhone}`);
       } else {
-        const d = await res.json();
-        setOtpError(d.message || "Failed to send SMS OTP.");
+        const errMsg = d.message || "Mobile number does not exist or is invalid.";
+        setOtpError(errMsg);
+        triggerToast("error", errMsg);
       }
     } catch (e) {
-      setOtpError("Network error.");
+      const errMsg = "Network error. Failed to send SMS OTP.";
+      setOtpError(errMsg);
+      triggerToast("error", errMsg);
+    } finally {
+      setSendingPhoneOtp(false);
     }
   };
 
   const handleVerifyPhoneOtp = async () => {
-    if (!phoneOtp.trim()) return;
+    if (!phoneOtp.trim() || verifyingPhoneOtp) return;
     try {
+      setVerifyingPhoneOtp(true);
       setOtpError("");
       setOtpSuccess("");
       const token = localStorage.getItem("token");
@@ -1856,12 +1985,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         setPhoneVerified(true);
         setOtpSuccess("Phone verified successfully!");
+        triggerToast("success", "Mobile phone verified!");
       } else {
         const d = await res.json();
-        setOtpError(d.message || "Invalid SMS OTP code.");
+        const msg = d.message || "Invalid SMS OTP code.";
+        setOtpError(msg);
+        triggerToast("error", msg);
       }
     } catch (e) {
       setOtpError("Network error.");
+    } finally {
+      setVerifyingPhoneOtp(false);
     }
   };
 
@@ -2044,31 +2178,115 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
       setIsNotificationsOpen(false);
 
-      if (notifType === "message" && refId) {
+      const notif = notifications.find((n) => n.notification_id === notifId);
+      const title = (notif?.title || "").toLowerCase();
+      const message = (notif?.message || "").toLowerCase();
+      const type = (notifType || notif?.type || "").toLowerCase();
+      const ref = refId || notif?.reference_id;
+
+      // 1. Direct Chat / Message notifications
+      if (type === "message" || title.includes("message") || title.includes("chat") || title.includes("new message")) {
         setActiveTab("inbox");
-        setSelectedConvId(parseInt(refId));
-      } else if (notifType === "proposal") {
-        const notif = notifications.find((n) => n.notification_id === notifId);
-        const title = notif?.title || "";
-        const message = notif?.message || "";
-        const isAccepted = title.toLowerCase().includes("accepted") || message.toLowerCase().includes("accepted");
-        if (isAccepted) {
-          setActiveTab("my_projects");
-        } else {
-          setActiveTab("proposals");
-        }
-      } else if (notifType === "gig") {
-        setActiveTab(userRole === "client" ? "client_orders" : "gig_applications");
-      } else if (notifType === "contract" && refId) {
+        if (ref) setSelectedConvId(parseInt(ref));
+        router.push("/dashboard/inbox");
+      } 
+      // 2. Proposal & Bid notifications
+      else if (type === "proposal" || title.includes("proposal") || title.includes("bid")) {
+        const isAccepted = title.includes("accepted") || message.includes("accepted");
         if (userRole === "client") {
-          const foundJob = clientJobs.find((j: any) => j.contract_id === parseInt(refId));
-          if (foundJob) {
-            router.push(`/dashboard/proposals?project_id=${foundJob.job_id}`);
+          setActiveTab("proposals");
+          if (ref) {
+            const foundJob = clientJobs.find((j: any) => j.contract_id === parseInt(ref) || j.job_id === parseInt(ref));
+            const jobId = foundJob ? foundJob.job_id : ref;
+            router.push(`/dashboard/proposals?project_id=${jobId}`);
           } else {
             router.push("/dashboard/proposals");
           }
-        } else if (userRole === "freelancer") {
-          router.push(`/dashboard/my-projects?contract_id=${refId}`);
+        } else {
+          if (isAccepted) {
+            setActiveTab("my_projects");
+            if (ref) {
+              router.push(`/dashboard/my-projects?contract_id=${ref}`);
+            } else {
+              router.push("/dashboard/my-projects");
+            }
+          } else {
+            setActiveTab("proposals");
+            router.push("/dashboard/proposals");
+          }
+        }
+      } 
+      // 3. Gig & Service Order notifications
+      else if (type === "gig" || title.includes("gig") || message.includes("gig order")) {
+        if (userRole === "client") {
+          setActiveTab("client_orders");
+          if (ref) {
+            router.push(`/dashboard/client-orders?application_id=${ref}`);
+          } else {
+            router.push("/dashboard/client-orders");
+          }
+        } else {
+          setActiveTab("gig_applications");
+          if (ref) {
+            router.push(`/dashboard/gig-applications?application_id=${ref}`);
+          } else {
+            router.push("/dashboard/gig-applications");
+          }
+        }
+      } 
+      // 4. Wallet & Payout notifications
+      else if (type === "wallet" || title.includes("wallet") || title.includes("payout") || title.includes("withdrawal")) {
+        setActiveTab("wallet");
+        router.push("/dashboard/wallet");
+      }
+      // 5. Contract, Milestone, Dispute, Payment Released, Work Started, Review notifications
+      else if (
+        type === "contract" ||
+        type === "dispute" ||
+        type === "work_started" ||
+        type === "completion" ||
+        type === "milestone" ||
+        type === "payment" ||
+        title.includes("contract") ||
+        title.includes("milestone") ||
+        title.includes("payment") ||
+        title.includes("released") ||
+        title.includes("funded") ||
+        title.includes("dispute") ||
+        title.includes("work started") ||
+        title.includes("completion") ||
+        title.includes("review") ||
+        message.includes("contract") ||
+        message.includes("milestone") ||
+        message.includes("dispute") ||
+        message.includes("working")
+      ) {
+        if (userRole === "client") {
+          setActiveTab("proposals");
+          if (ref) {
+            const foundJob = clientJobs.find((j: any) => j.contract_id === parseInt(ref) || j.job_id === parseInt(ref));
+            const jobId = foundJob ? foundJob.job_id : ref;
+            router.push(`/dashboard/proposals?project_id=${jobId}`);
+          } else {
+            router.push("/dashboard/proposals");
+          }
+        } else {
+          setActiveTab("my_projects");
+          if (ref) {
+            router.push(`/dashboard/my-projects?contract_id=${ref}`);
+          } else {
+            router.push("/dashboard/my-projects");
+          }
+        }
+      } 
+      // 6. Fallback redirection
+      else {
+        if (userRole === "client") {
+          setActiveTab("proposals");
+          router.push("/dashboard/proposals");
+        } else {
+          setActiveTab("my_projects");
+          router.push("/dashboard/my-projects");
         }
       }
     } catch (e) {
@@ -3255,29 +3473,54 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setClientApplications(prev => prev.map(a => a.application_id === updatedApp.application_id ? { ...a, ...updatedApp } : a));
   };
 
-  const handleRoleSwitch = (role: string) => {
+  const handleRoleSwitch = async (role: string) => {
     setUserRole(role);
     localStorage.setItem("onboarding_role", role);
 
-    const isCompleted = role === "client" ? hasClientProfile : hasFreelancerProfile;
-    setOnboardingCompleted(isCompleted);
-    localStorage.setItem("onboarding_completed", isCompleted ? "true" : "false");
+    const isClient = role === "client";
+    const token = localStorage.getItem("token");
 
-    if (!isCompleted) {
-      setOnboardingStep(role === "client" ? "client_flow" : "freelancer_flow");
-      if (role === "client") {
-        setClientWizardStep(1);
-      } else {
-        setWizardStep(1);
+    if (token) {
+      try {
+        const checkRes = await fetch(`${API_URL}/users/onboarding-check`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (checkRes.ok) {
+          const data = await checkRes.json();
+          setHasFreelancerProfile(!!data.hasFreelancerProfile);
+          setHasClientProfile(!!data.hasClientProfile);
+
+          const currentProfileExists = isClient ? !!data.hasClientProfile : !!data.hasFreelancerProfile;
+          const currentVetting = isClient ? data.clientVettingStatus : data.freelancerVettingStatus;
+          const activeVettingStatus = currentVetting || "Approved";
+
+          setVettingStatus(activeVettingStatus);
+          localStorage.setItem("vetting_status", activeVettingStatus);
+
+          const isApproved = currentProfileExists && activeVettingStatus === "Approved";
+
+          setOnboardingCompleted(isApproved);
+          localStorage.setItem("onboarding_completed", isApproved ? "true" : "false");
+          setShowOnboardingModal(!isApproved);
+
+          if (!isApproved) {
+            setOnboardingStep(isClient ? "client_flow" : "freelancer_flow");
+            if (isClient) {
+              setClientWizardStep(1);
+            } else {
+              setWizardStep(1);
+            }
+          }
+        } else {
+          runOnboardingCheck(token);
+        }
+      } catch (err) {
+        console.error("Error during role switch check:", err);
+        runOnboardingCheck(token);
       }
     }
 
-    const token = localStorage.getItem("token");
-    if (token) {
-      runOnboardingCheck(token);
-    }
-
-    triggerToast("success", "Active workspace switched", `Switched to ${role === "client" ? "Client" : "Freelancer"} mode.`);
+    triggerToast("success", "Active workspace switched", `Switched to ${isClient ? "Client" : "Freelancer"} mode.`);
   };
 
   const handleToggleSkill = (skillId: number) => {
@@ -3475,41 +3718,38 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleSaveClientStep = async (stepNum: number) => {
+    setClientError("");
+    const errors: Record<string, string> = {};
+
     if (stepNum === 1) {
-      // Validate dynamic step 1 fields
-      const required1 = [];
-      if (isFieldRequired("company_name")) required1.push({ val: companyName, label: "Company Name" });
-      if (isFieldRequired("industry")) required1.push({ val: industry, label: "Industry" });
-      if (isFieldRequired("company_size")) required1.push({ val: companySize, label: "Company Size" });
-      if (isFieldRequired("established_year")) required1.push({ val: companyEstablishedYear, label: "Established Year" });
-      
-      const missing1 = required1.filter(f => !f.val || !f.val.toString().trim());
-      if (missing1.length > 0) {
-        triggerToast("error", `${missing1.map(f => f.label).join(", ")} ${missing1.length > 1 ? "are" : "is"} required.`);
+      if (isFieldRequired("company_name") && !companyName.trim()) errors.company_name = "Company Name is required.";
+      if (isFieldRequired("industry") && !industry.trim()) errors.industry = "Industry is required.";
+      if (isFieldRequired("company_size") && !companySize.trim()) errors.company_size = "Company Size is required.";
+      if (isFieldRequired("established_year") && (!companyEstablishedYear.trim() || parseInt(companyEstablishedYear) <= 1900)) errors.established_year = "Valid Established Year is required.";
+
+      setClientFieldErrors(errors);
+      if (Object.keys(errors).length > 0) {
+        triggerToast("error", "Please fill in all required company details.");
         return;
       }
       setClientWizardStep(2);
     } else if (stepNum === 2) {
-      // Validate dynamic step 2 fields
-      const required2 = [];
-      if (isFieldRequired("company_website")) required2.push({ val: companyWebsite, label: "Company Website" });
-      if (isFieldRequired("company_description")) required2.push({ val: companyDescription, label: "Company Description" });
-      
-      const missing2 = required2.filter(f => !f.val || !f.val.toString().trim());
-      if (missing2.length > 0) {
-        triggerToast("error", `${missing2.map(f => f.label).join(", ")} ${missing2.length > 1 ? "are" : "is"} required.`);
+      if (isFieldRequired("company_website") && !companyWebsite.trim()) errors.company_website = "Company Website URL is required.";
+      if (isFieldRequired("company_description") && !companyDescription.trim()) errors.company_description = "Company Description is required.";
+
+      setClientFieldErrors(errors);
+      if (Object.keys(errors).length > 0) {
+        triggerToast("error", "Please fill in all required website & description details.");
         return;
       }
       setClientWizardStep(3);
     } else if (stepNum === 3) {
-      // Validate dynamic step 3 fields
-      const required3 = [];
-      if (isFieldRequired("hiring_contact_name")) required3.push({ val: hiringContactName, label: "Hiring Contact Name" });
-      if (isFieldRequired("hiring_contact_designation")) required3.push({ val: hiringContactDesignation, label: "Hiring Designation" });
-      
-      const missing3 = required3.filter(f => !f.val || !f.val.toString().trim());
-      if (missing3.length > 0) {
-        triggerToast("error", `${missing3.map(f => f.label).join(", ")} ${missing3.length > 1 ? "are" : "is"} required.`);
+      if (isFieldRequired("hiring_contact_name") && !hiringContactName.trim()) errors.hiring_contact_name = "Hiring Contact Name is required.";
+      if (isFieldRequired("hiring_contact_designation") && !hiringContactDesignation.trim()) errors.hiring_contact_designation = "Hiring Contact Designation is required.";
+
+      setClientFieldErrors(errors);
+      if (Object.keys(errors).length > 0) {
+        triggerToast("error", "Please fill in all required contact representative details.");
         return;
       }
       
@@ -3676,7 +3916,20 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        setFreelancerContracts(await res.json());
+        const raw = await res.json();
+        const sorted = [...raw].sort((a: any, b: any) => {
+          const aStatus = (a.status || "").toLowerCase();
+          const bStatus = (b.status || "").toLowerCase();
+          const aIsCompleted = aStatus === "completed" || aStatus === "cancelled" || aStatus === "closed";
+          const bIsCompleted = bStatus === "completed" || bStatus === "cancelled" || bStatus === "closed";
+          if (!aIsCompleted && bIsCompleted) return -1;
+          if (aIsCompleted && !bIsCompleted) return 1;
+
+          const aTime = a.created_at ? new Date(a.created_at).getTime() : (Number(a.contract_id || a.id) || 0);
+          const bTime = b.created_at ? new Date(b.created_at).getTime() : (Number(b.contract_id || b.id) || 0);
+          return bTime - aTime;
+        });
+        setFreelancerContracts(sorted);
       }
     } catch (e) {
       console.error("Failed to fetch freelancer contracts:", e);
@@ -3846,6 +4099,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     clientWizardStep, setClientWizardStep,
     clientError, setClientError,
     clientSuccess, setClientSuccess,
+    clientFieldErrors, setClientFieldErrors,
     wizardStep, setWizardStep,
     onboardingStepsStatus, setOnboardingStepsStatus,
     categoryId, setCategoryId,
@@ -3864,6 +4118,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     handleUpdateLanguageProficiency,
     step1Error, setStep1Error,
     step1Success, setStep1Success,
+    step1FieldErrors, setStep1FieldErrors,
     experiences, setExperiences,
     educations, setEducations,
     certifications, setCertifications,
@@ -3891,6 +4146,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     phoneOtp, setPhoneOtp,
     emailOtpSent, setEmailOtpSent,
     phoneOtpSent, setPhoneOtpSent,
+    sendingEmailOtp, setSendingEmailOtp,
+    sendingPhoneOtp, setSendingPhoneOtp,
+    verifyingEmailOtp, setVerifyingEmailOtp,
+    verifyingPhoneOtp, setVerifyingPhoneOtp,
     otpError, setOtpError,
     otpSuccess, setOtpSuccess,
     projectTitle, setProjectTitle,
@@ -4065,10 +4324,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     clientNotice, isSidebarOpen, categories, subCategories, availableSkills, languages,
     companyName, companySize, industry, companyWebsite, companyDescription,
     companyEstablishedYear, hiringContactName, hiringContactDesignation, clientWizardStep,
-    clientError, clientSuccess, wizardStep, onboardingStepsStatus, categoryId,
+    clientError, clientSuccess, clientFieldErrors, wizardStep, onboardingStepsStatus, categoryId,
     subCategoryId, professionalTitle, experienceLevel, totalExperienceYears, hourlyRate,
     availabilityStatus, linkedinUrl, portfolioWebsite, resumeUrl, selectedSkillIds,
-    selectedLanguageIds, step1Error, step1Success, experiences, educations, certifications,
+    selectedLanguageIds, step1Error, step1Success, step1FieldErrors, experiences, educations, certifications,
     expCompany, expTitle, expEmpType, expStart, expEnd, expCurrent, expDesc, eduInst,
     eduDegree, eduField, eduStart, eduEnd, certName, certOrg, certDate, certCredUrl,
     userEmail, userPhone, emailVerified, phoneVerified, emailOtp, phoneOtp, emailOtpSent,

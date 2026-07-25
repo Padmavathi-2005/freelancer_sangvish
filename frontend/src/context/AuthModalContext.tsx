@@ -35,6 +35,18 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   });
 
   const openLoginModal = (url?: string, cb?: () => void) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+      if (token && user) {
+        if (cb) {
+          cb();
+        } else {
+          window.location.href = url || "/dashboard";
+        }
+        return;
+      }
+    }
     setRedirectUrl(url || null);
     setOnSuccess(() => cb || null);
     setError(null);

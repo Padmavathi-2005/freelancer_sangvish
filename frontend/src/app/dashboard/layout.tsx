@@ -122,6 +122,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     handleUpdateLanguageProficiency,
     step1Error,
     step1Success,
+    step1FieldErrors,
+    setStep1FieldErrors,
+    clientFieldErrors,
+    setClientFieldErrors,
     handleSaveStep1,
     experiences,
     educations,
@@ -627,7 +631,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="relative min-h-screen lg:h-screen lg:overflow-hidden w-full bg-slate-50 flex flex-row">
+    <div className="relative min-h-screen lg:h-screen lg:overflow-hidden w-full bg-slate-50 flex flex-row print:bg-white print:h-auto print:overflow-visible print:block">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
@@ -637,7 +641,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* LEFT SIDEBAR PANEL */}
-      <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col h-screen lg:h-screen z-40 transition-transform duration-300 transform lg:transform-none ${
+      <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col h-screen lg:h-screen z-40 transition-transform duration-300 transform lg:transform-none print:hidden ${
         isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       }`}>
         <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between shrink-0">
@@ -1480,8 +1484,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* MAIN CONTAINER */}
-      <div className="flex-1 flex flex-col max-w-full lg:h-screen lg:overflow-hidden relative z-10">
-        <header className="h-16 w-full bg-white border-b border-slate-200 px-6 flex flex-row items-center justify-between relative z-30 shrink-0 shadow-sm">
+      <div className="flex-1 flex flex-col max-w-full lg:h-screen lg:overflow-hidden relative z-10 print:h-auto print:overflow-visible print:block">
+        <header className="h-16 w-full bg-white border-b border-slate-200 px-6 flex flex-row items-center justify-between relative z-30 shrink-0 shadow-sm print:hidden">
           {/* Left: Mobile hamburger menu toggle & role switch */}
           <div className="flex items-center gap-3">
             <button
@@ -1550,7 +1554,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* SCROLLABLE MAIN CONTENT AREA */}
-        <div className="flex-1 py-8 px-6 overflow-y-auto relative w-full flex flex-col gap-8">
+        <div className="flex-1 py-8 px-6 overflow-y-auto relative w-full flex flex-col gap-8 print:p-0 print:overflow-visible print:block print:gap-4">
           {/* Background Decorative Pattern */}
           <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0"></div>
 
@@ -1753,9 +1757,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             type="text"
                             placeholder="e.g. Acme Corporation"
                             value={companyName}
-                            onChange={(e) => setCompanyName(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setCompanyName(e.target.value);
+                              if (clientFieldErrors.company_name) {
+                                setClientFieldErrors((prev) => ({ ...prev, company_name: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${clientFieldErrors.company_name ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {clientFieldErrors.company_name && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {clientFieldErrors.company_name}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -1764,20 +1778,32 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <label className="text-xs font-bold block mb-1 text-slate-600">
                             Industry {isFieldRequired("industry") ? "*" : ""}
                           </label>
-                          <CustomSelect
-                            options={[
-                              { value: "Technology", label: "Technology & Software" },
-                              { value: "Finance", label: "Finance & Banking" },
-                              { value: "Healthcare", label: "Healthcare & Medicine" },
-                              { value: "Education", label: "Education & EdTech" },
-                              { value: "Marketing", label: "Marketing & Advertising" },
-                              { value: "Retail", label: "Retail & E-commerce" },
-                              { value: "Other", label: "Other Industry" }
-                            ]}
-                            value={industry}
-                            onChange={(val) => setIndustry(val as string)}
-                            placeholder="Select Industry"
-                          />
+                          <div className={clientFieldErrors.industry ? "rounded-xl border border-rose-400 p-0.5" : ""}>
+                            <CustomSelect
+                              options={[
+                                { value: "Technology", label: "Technology & Software" },
+                                { value: "Finance", label: "Finance & Banking" },
+                                { value: "Healthcare", label: "Healthcare & Medicine" },
+                                { value: "Education", label: "Education & EdTech" },
+                                { value: "Marketing", label: "Marketing & Advertising" },
+                                { value: "Retail", label: "Retail & E-commerce" },
+                                { value: "Other", label: "Other Industry" }
+                              ]}
+                              value={industry}
+                              onChange={(val) => {
+                                setIndustry(val as string);
+                                if (clientFieldErrors.industry) {
+                                  setClientFieldErrors((prev) => ({ ...prev, industry: "" }));
+                                }
+                              }}
+                              placeholder="Select Industry"
+                            />
+                          </div>
+                          {clientFieldErrors.industry && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {clientFieldErrors.industry}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -1786,18 +1812,30 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <label className="text-xs font-bold block mb-1 text-slate-600">
                             Company Size {isFieldRequired("company_size") ? "*" : ""}
                           </label>
-                          <CustomSelect
-                            options={[
-                              { value: "1-10", label: "1-10 employees" },
-                              { value: "11-50", label: "11-50 employees" },
-                              { value: "51-200", label: "51-200 employees" },
-                              { value: "201-500", label: "201-500 employees" },
-                              { value: "500+", label: "500+ employees" }
-                            ]}
-                            value={companySize}
-                            onChange={(val) => setCompanySize(val as string)}
-                            placeholder="Select Company Size"
-                          />
+                          <div className={clientFieldErrors.company_size ? "rounded-xl border border-rose-400 p-0.5" : ""}>
+                            <CustomSelect
+                              options={[
+                                { value: "1-10", label: "1-10 employees" },
+                                { value: "11-50", label: "11-50 employees" },
+                                { value: "51-200", label: "51-200 employees" },
+                                { value: "201-500", label: "201-500 employees" },
+                                { value: "500+", label: "500+ employees" }
+                              ]}
+                              value={companySize}
+                              onChange={(val) => {
+                                setCompanySize(val as string);
+                                if (clientFieldErrors.company_size) {
+                                  setClientFieldErrors((prev) => ({ ...prev, company_size: "" }));
+                                }
+                              }}
+                              placeholder="Select Company Size"
+                            />
+                          </div>
+                          {clientFieldErrors.company_size && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {clientFieldErrors.company_size}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -1812,9 +1850,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             max={new Date().getFullYear()}
                             placeholder="e.g. 2020"
                             value={companyEstablishedYear}
-                            onChange={(e) => setCompanyEstablishedYear(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setCompanyEstablishedYear(e.target.value);
+                              if (clientFieldErrors.established_year) {
+                                setClientFieldErrors((prev) => ({ ...prev, established_year: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${clientFieldErrors.established_year ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {clientFieldErrors.established_year && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {clientFieldErrors.established_year}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1839,9 +1887,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             type="url"
                             placeholder="https://www.company.com"
                             value={companyWebsite}
-                            onChange={(e) => setCompanyWebsite(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setCompanyWebsite(e.target.value);
+                              if (clientFieldErrors.company_website) {
+                                setClientFieldErrors((prev) => ({ ...prev, company_website: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${clientFieldErrors.company_website ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {clientFieldErrors.company_website && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {clientFieldErrors.company_website}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -1853,9 +1911,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <textarea
                             placeholder="Tell us about what your business does, your mission, and your work culture..."
                             value={companyDescription}
-                            onChange={(e) => setCompanyDescription(e.target.value)}
-                            className={`${inputClass} h-32`}
+                            onChange={(e) => {
+                              setCompanyDescription(e.target.value);
+                              if (clientFieldErrors.company_description) {
+                                setClientFieldErrors((prev) => ({ ...prev, company_description: "" }));
+                              }
+                            }}
+                            className={`${inputClass} h-32 ${clientFieldErrors.company_description ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {clientFieldErrors.company_description && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {clientFieldErrors.company_description}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1880,9 +1948,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             type="text"
                             placeholder="e.g. John Doe"
                             value={hiringContactName}
-                            onChange={(e) => setHiringContactName(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setHiringContactName(e.target.value);
+                              if (clientFieldErrors.hiring_contact_name) {
+                                setClientFieldErrors((prev) => ({ ...prev, hiring_contact_name: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${clientFieldErrors.hiring_contact_name ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {clientFieldErrors.hiring_contact_name && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {clientFieldErrors.hiring_contact_name}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -1895,9 +1973,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             type="text"
                             placeholder="e.g. Head of Talent Acquisition"
                             value={hiringContactDesignation}
-                            onChange={(e) => setHiringContactDesignation(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setHiringContactDesignation(e.target.value);
+                              if (clientFieldErrors.hiring_contact_designation) {
+                                setClientFieldErrors((prev) => ({ ...prev, hiring_contact_designation: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${clientFieldErrors.hiring_contact_designation ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {clientFieldErrors.hiring_contact_designation && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {clientFieldErrors.hiring_contact_designation}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2164,39 +2252,6 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       Tell clients about your professional domain, level of expertise, availability, and active skills.
                     </p>
 
-                    {/* AI Resume Reader Upload Block */}
-                    <div className="bg-gradient-to-r from-violet-50/50 to-purple-50/50 border border-dashed border-violet-300 rounded-xl p-4 text-center space-y-2.5 relative overflow-hidden transition-all hover:bg-violet-50/80">
-                      <div className="flex flex-col items-center justify-center gap-1.5 select-none">
-                        <FiZap className="text-violet-600 text-xl animate-pulse shrink-0" />
-                        <h4 className="text-xs font-black text-violet-850">AI Resume Reader &amp; Auto-fill</h4>
-                        <p className="text-[10px] text-slate-500 font-semibold leading-relaxed max-w-xs">
-                          Upload your PDF or TXT resume to automatically fill your title, experience, rate, skills, and languages!
-                        </p>
-                      </div>
-
-                      {parsingResume ? (
-                        <div className="flex items-center justify-center gap-2 py-1.5 text-xs text-violet-700 font-bold">
-                          <div className="w-4 h-4 border-2 border-t-transparent border-violet-600 rounded-full animate-spin" />
-                          <span>AI is parsing and auto-filling your profile fields...</span>
-                        </div>
-                      ) : (
-                        <label className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-750 hover:to-purple-750 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-sm hover:shadow-violet-200">
-                          <FiFileText className="w-3.5 h-3.5" />
-                          <span>Upload Resume File</span>
-                          <input
-                            type="file"
-                            accept=".pdf,.txt"
-                            onChange={handleResumeUploadAndParse}
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-
-                      {parseError && (
-                        <p className="text-[10px] text-rose-500 font-bold select-none">⚠️ {parseError}</p>
-                      )}
-                    </div>
-
                     {step1Error && (
                       <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold rounded-xl">
                         ⚠️ {step1Error}
@@ -2214,12 +2269,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <label className="text-xs font-bold block mb-1 text-slate-600">
                             Category {isFieldRequired("category") ? "*" : ""}
                           </label>
-                          <CustomSelect
-                            options={categories.map((c) => ({ value: c.category_id, label: c.category_name }))}
-                            value={categoryId}
-                            onChange={(val) => handleCategoryChange(String(val))}
-                            placeholder="Select Category"
-                          />
+                          <div className={step1FieldErrors.category ? "rounded-xl border border-rose-400 p-0.5" : ""}>
+                            <CustomSelect
+                              options={categories.map((c) => ({ value: c.category_id, label: c.category_name }))}
+                              value={categoryId}
+                              onChange={(val) => {
+                                handleCategoryChange(String(val));
+                                if (step1FieldErrors.category) {
+                                  setStep1FieldErrors((prev) => ({ ...prev, category: "", subcategory: "" }));
+                                }
+                              }}
+                              placeholder="Select Category"
+                            />
+                          </div>
+                          {step1FieldErrors.category && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.category}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2228,13 +2295,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <label className="text-xs font-bold block mb-1 text-slate-600">
                             Subcategory {isFieldRequired("category") ? "*" : ""}
                           </label>
-                          <CustomSelect
-                            options={subCategories.map((sc) => ({ value: sc.sub_category_id, label: sc.sub_category_name }))}
-                            value={subCategoryId}
-                            disabled={!categoryId}
-                            onChange={(val) => setSubCategoryId(String(val))}
-                            placeholder="Select Subcategory"
-                          />
+                          <div className={step1FieldErrors.subcategory ? "rounded-xl border border-rose-400 p-0.5" : ""}>
+                            <CustomSelect
+                              options={subCategories.map((sc) => ({ value: sc.sub_category_id, label: sc.sub_category_name }))}
+                              value={subCategoryId}
+                              disabled={!categoryId}
+                              onChange={(val) => {
+                                setSubCategoryId(String(val));
+                                if (step1FieldErrors.subcategory) {
+                                  setStep1FieldErrors((prev) => ({ ...prev, subcategory: "" }));
+                                }
+                              }}
+                              placeholder="Select Subcategory"
+                            />
+                          </div>
+                          {step1FieldErrors.subcategory && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.subcategory}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2247,9 +2326,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             type="text"
                             placeholder="e.g. Senior Full Stack Engineer (React, Node)"
                             value={professionalTitle}
-                            onChange={(e) => setProfessionalTitle(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setProfessionalTitle(e.target.value);
+                              if (step1FieldErrors.title) {
+                                setStep1FieldErrors((prev) => ({ ...prev, title: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${step1FieldErrors.title ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {step1FieldErrors.title && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.title}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2258,16 +2347,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <label className="text-xs font-bold block mb-1 text-slate-600">
                             Experience Level {isFieldRequired("experience_level") ? "*" : ""}
                           </label>
-                          <CustomSelect
-                            options={[
-                              { value: "Beginner", label: "Beginner" },
-                              { value: "Intermediate", label: "Intermediate" },
-                              { value: "Expert", label: "Expert" }
-                            ]}
-                            value={experienceLevel}
-                            onChange={(val) => setExperienceLevel(val as string)}
-                            placeholder="Select Experience Level"
-                          />
+                          <div className={step1FieldErrors.experience_level ? "rounded-xl border border-rose-400 p-0.5" : ""}>
+                            <CustomSelect
+                              options={[
+                                { value: "Beginner", label: "Beginner" },
+                                { value: "Intermediate", label: "Intermediate" },
+                                { value: "Expert", label: "Expert" }
+                              ]}
+                              value={experienceLevel}
+                              onChange={(val) => {
+                                setExperienceLevel(val as string);
+                                if (step1FieldErrors.experience_level) {
+                                  setStep1FieldErrors((prev) => ({ ...prev, experience_level: "" }));
+                                }
+                              }}
+                              placeholder="Select Experience Level"
+                            />
+                          </div>
+                          {step1FieldErrors.experience_level && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.experience_level}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2281,9 +2382,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             min="0"
                             placeholder="e.g. 5"
                             value={totalExperienceYears}
-                            onChange={(e) => setTotalExperienceYears(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setTotalExperienceYears(e.target.value);
+                              if (step1FieldErrors.total_experience_years) {
+                                setStep1FieldErrors((prev) => ({ ...prev, total_experience_years: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${step1FieldErrors.total_experience_years ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {step1FieldErrors.total_experience_years && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.total_experience_years}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2297,9 +2408,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             min="0"
                             placeholder="e.g. 45"
                             value={hourlyRate}
-                            onChange={(e) => setHourlyRate(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setHourlyRate(e.target.value);
+                              if (step1FieldErrors.hourly_rate) {
+                                setStep1FieldErrors((prev) => ({ ...prev, hourly_rate: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${step1FieldErrors.hourly_rate ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {step1FieldErrors.hourly_rate && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.hourly_rate}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2308,16 +2429,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <label className="text-xs font-bold block mb-1 text-slate-600">
                             Availability Status {isFieldRequired("availability_status") ? "*" : ""}
                           </label>
-                          <CustomSelect
-                            options={[
-                              { value: "Available", label: "Available" },
-                              { value: "Busy", label: "Busy" },
-                              { value: "Not Available", label: "Not Available" }
-                            ]}
-                            value={availabilityStatus}
-                            onChange={(val) => setAvailabilityStatus(val as string)}
-                            placeholder="Select Availability"
-                          />
+                          <div className={step1FieldErrors.availability_status ? "rounded-xl border border-rose-400 p-0.5" : ""}>
+                            <CustomSelect
+                              options={[
+                                { value: "Available", label: "Available" },
+                                { value: "Busy", label: "Busy" },
+                                { value: "Not Available", label: "Not Available" }
+                              ]}
+                              value={availabilityStatus}
+                              onChange={(val) => {
+                                setAvailabilityStatus(val as string);
+                                if (step1FieldErrors.availability_status) {
+                                  setStep1FieldErrors((prev) => ({ ...prev, availability_status: "" }));
+                                }
+                              }}
+                              placeholder="Select Availability"
+                            />
+                          </div>
+                          {step1FieldErrors.availability_status && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.availability_status}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2330,9 +2463,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             type="url"
                             placeholder="https://linkedin.com/in/username"
                             value={linkedinUrl}
-                            onChange={(e) => setLinkedinUrl(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setLinkedinUrl(e.target.value);
+                              if (step1FieldErrors.linkedin) {
+                                setStep1FieldErrors((prev) => ({ ...prev, linkedin: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${step1FieldErrors.linkedin ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {step1FieldErrors.linkedin && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.linkedin}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2345,9 +2488,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             type="url"
                             placeholder="https://myportfolio.com"
                             value={portfolioWebsite}
-                            onChange={(e) => setPortfolioWebsite(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setPortfolioWebsite(e.target.value);
+                              if (step1FieldErrors.website) {
+                                setStep1FieldErrors((prev) => ({ ...prev, website: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${step1FieldErrors.website ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {step1FieldErrors.website && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.website}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2360,30 +2513,50 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             type="url"
                             placeholder="https://drive.google.com/.../resume.pdf"
                             value={resumeUrl}
-                            onChange={(e) => setResumeUrl(e.target.value)}
-                            className={inputClass}
+                            onChange={(e) => {
+                              setResumeUrl(e.target.value);
+                              if (step1FieldErrors.github) {
+                                setStep1FieldErrors((prev) => ({ ...prev, github: "" }));
+                              }
+                            }}
+                            className={`${inputClass} ${step1FieldErrors.github ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
                           />
+                          {step1FieldErrors.github && (
+                            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                              <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.github}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
 
                     {isFieldEnabled("skills") && (
                       <div className="mt-4">
-                        <label className="text-xs font-bold block mb-1.5 text-slate-600">
-                          Select Skills {isFieldRequired("skills") ? "*" : ""} (At least 1)
-                        </label>
-                        {!subCategoryId ? (
-                          <p className="text-xs text-slate-400 italic">Please select a subcategory first to load skills.</p>
-                        ) : availableSkills.length === 0 ? (
-                          <p className="text-xs text-slate-400 italic">No skills registered for this subcategory.</p>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-xs font-bold block text-slate-600">
+                            Select Skills {isFieldRequired("skills") ? "*" : ""} (At least 1)
+                          </label>
+                          {!subCategoryId && availableSkills.length > 0 && (
+                            <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              Showing all skills
+                            </span>
+                          )}
+                        </div>
+                        {availableSkills.length === 0 ? (
+                          <p className="text-xs text-slate-400 italic">Loading available skills...</p>
                         ) : (
-                          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 rounded-xl border bg-slate-100/50 border-slate-200">
+                          <div className={`flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 rounded-xl border bg-slate-100/50 ${step1FieldErrors.skills ? "border-rose-400 ring-1 ring-rose-400/30" : "border-slate-200"}`}>
                             {availableSkills.map((sk) => {
                               const isChecked = selectedSkillIds.includes(sk.skill_id);
                               return (
                                 <div
                                   key={sk.skill_id}
-                                  onClick={() => handleToggleSkill(sk.skill_id)}
+                                  onClick={() => {
+                                    handleToggleSkill(sk.skill_id);
+                                    if (step1FieldErrors.skills) {
+                                      setStep1FieldErrors((prev) => ({ ...prev, skills: "" }));
+                                    }
+                                  }}
                                   className={`px-3 py-1.5 rounded-lg border text-xxs font-bold cursor-pointer transition-all duration-150 ${
                                     isChecked
                                       ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500 font-extrabold"
@@ -2396,6 +2569,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             })}
                           </div>
                         )}
+                        {step1FieldErrors.skills && (
+                          <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                            <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.skills}
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -2404,13 +2582,25 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <label className="text-xs font-bold block mb-1.5 text-slate-600">
                           Select Languages {isFieldRequired("languages") ? "*" : ""} (At least 1)
                         </label>
-                        <CustomSelect
-                          multiple={true}
-                          options={languages.map((l) => ({ value: l.language_id, label: l.language_name }))}
-                          value={selectedLanguageIds}
-                          onChange={(val) => setSelectedLanguageIds(val as number[])}
-                          placeholder="Select Languages"
-                        />
+                        <div className={step1FieldErrors.languages ? "rounded-xl border border-rose-400 p-0.5" : ""}>
+                          <CustomSelect
+                            multiple={true}
+                            options={languages.map((l) => ({ value: l.language_id, label: l.language_name }))}
+                            value={selectedLanguageIds}
+                            onChange={(val) => {
+                              setSelectedLanguageIds(val as number[]);
+                              if (step1FieldErrors.languages) {
+                                setStep1FieldErrors((prev) => ({ ...prev, languages: "" }));
+                              }
+                            }}
+                            placeholder="Select Languages"
+                          />
+                        </div>
+                        {step1FieldErrors.languages && (
+                          <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+                            <FiAlertTriangle className="w-3 h-3 shrink-0" /> {step1FieldErrors.languages}
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -2793,17 +2983,20 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                       {!phoneVerified && (
                         <div className="space-y-3">
-                          {!userPhone && (
-                            <div className="flex gap-2">
-                              <input
-                                type="tel"
-                                placeholder="+1 (555) 123-4567"
-                                value={userPhone}
-                                onChange={(e) => setUserPhone(e.target.value)}
-                                className={inputClass}
-                              />
-                            </div>
-                          )}
+                          <div className="flex flex-col gap-1.5">
+                            <input
+                              type="tel"
+                              placeholder="+1 (555) 123-4567 or +91 9876543210"
+                              value={userPhone}
+                              onChange={(e) => setUserPhone(e.target.value)}
+                              className={`${inputClass} ${otpError ? "border-rose-500 ring-2 ring-rose-500/20" : ""}`}
+                            />
+                            {otpError && (
+                              <p className="text-xs font-extrabold text-rose-600 dark:text-rose-400 mt-0.5 select-none flex items-center gap-1">
+                                ⚠️ {otpError}
+                              </p>
+                            )}
+                          </div>
                           <div className="flex gap-2 flex-wrap items-center">
                             {!phoneOtpSent ? (
                               <button
@@ -3350,7 +3543,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       className="w-full bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl py-2.5 pl-7 pr-4 text-xs focus:outline-none focus:border-teal-750 focus:bg-white transition-all text-slate-850 font-bold"
                     />
                   </div>
-                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Project budget: ${parseFloat(applyingJob.budget).toLocaleString()}</span>
+                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Project budget: ${parseFloat(applyingJob.budget || applyingJob.max_budget || 0).toLocaleString()}</span>
+                  {proposalBidAmount > 0 && parseFloat(applyingJob.budget || applyingJob.max_budget || 0) > 0 && proposalBidAmount > parseFloat(applyingJob.budget || applyingJob.max_budget || 0) && (
+                    <span className="text-[10px] text-rose-600 font-extrabold mt-1 block animate-fadeIn">
+                      ⚠️ Your bid (${proposalBidAmount.toLocaleString()}) cannot exceed the project budget (${parseFloat(applyingJob.budget || applyingJob.max_budget || 0).toLocaleString()}).
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -3428,7 +3626,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       )}
 
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end border-t border-slate-100 pt-3 mt-1">
-                        <div className="sm:col-span-8 flex flex-col gap-1">
+                        <div className="sm:col-span-7 flex flex-col gap-1">
                           <label className="text-[9px] font-bold text-slate-400 uppercase">Milestone Description *</label>
                           <input
                             type="text"
@@ -3443,7 +3641,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             }`}
                           />
                         </div>
-                        <div className="sm:col-span-2 flex flex-col gap-1">
+                        <div className="sm:col-span-3 flex flex-col gap-1">
                           <label className="text-[9px] font-bold text-slate-400 uppercase">Amount (USD) *</label>
                           <input
                             type="number"
@@ -3451,7 +3649,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             value={newMilestoneAmount}
                             onChange={(e) => setNewMilestoneAmount(e.target.value !== "" ? Number(e.target.value) : "")}
                             disabled={isMilestoneLimitReached}
-                            className={`w-full border rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold ${
+                            className={`w-full border rounded-lg py-2 px-2.5 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold ${
                               isMilestoneLimitReached
                                 ? "bg-slate-100/80 border-slate-200 text-slate-450 cursor-not-allowed"
                                 : "bg-white border-slate-250 hover:border-slate-350"
@@ -3920,7 +4118,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end border-t border-slate-150/40 pt-3 mt-1">
-                      <div className="sm:col-span-8 flex flex-col gap-1">
+                      <div className="sm:col-span-7 flex flex-col gap-1">
                         <label className="text-[9px] font-bold text-slate-400 uppercase">Milestone Name *</label>
                         <input
                           type="text"
@@ -3930,14 +4128,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           className="w-full bg-white border border-slate-250 rounded-lg py-2 px-3 text-xs focus:border-teal-700/50 focus:outline-none text-slate-850 font-bold"
                         />
                       </div>
-                      <div className="sm:col-span-2 flex flex-col gap-1">
+                      <div className="sm:col-span-3 flex flex-col gap-1">
                         <label className="text-[9px] font-bold text-slate-400 uppercase">Amount (USD) *</label>
                         <input
                           type="number"
                           placeholder="Amount"
                           value={newHMAmount}
                           onChange={(e) => setNewHMAmount(e.target.value !== "" ? Number(e.target.value) : "")}
-                          className="w-full bg-white border border-slate-250 rounded-lg py-2 px-3 text-xs focus:border-teal-700/50 focus:outline-none text-slate-850 font-bold"
+                          className="w-full bg-white border border-slate-250 rounded-lg py-2 px-2.5 text-xs focus:border-teal-700/50 focus:outline-none text-slate-850 font-bold"
                         />
                       </div>
                       <div className="sm:col-span-2 flex justify-end">

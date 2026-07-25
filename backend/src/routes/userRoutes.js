@@ -18,7 +18,11 @@ import {
     getReferralBanner,
     getUserProfile,
     getMySubscriptionInvoices,
-    getSubscriptionInvoiceById
+    getSubscriptionInvoiceById,
+    sendPhoneOtp,
+    verifyPhoneOtp,
+    sendEmailOtp,
+    verifyEmailOtp
 } from '../controllers/userController.js';
 
 const router = express.Router();
@@ -37,6 +41,10 @@ router.post('/subscribe', auth, subscribeToPlan);
 router.get('/me', auth, getLoggedInUser);
 router.get('/profile', auth, getUserProfile);
 router.put('/profile', auth, updateUserProfile);
+router.post('/send-phone-otp', auth, sendPhoneOtp);
+router.post('/verify-phone-otp', auth, verifyPhoneOtp);
+router.post('/send-email-otp', auth, sendEmailOtp);
+router.post('/verify-email-otp', auth, verifyEmailOtp);
 router.get('/referrals', auth, getReferrals);
 router.get('/affiliate/stats', auth, getAffiliateStats);
 router.post('/affiliate/join', auth, joinAffiliateProgram);

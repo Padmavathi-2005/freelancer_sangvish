@@ -24,7 +24,8 @@ export default function FrontendContentTab({
   setFrontendHeroContent,
   handleSaveSetting
 }: FrontendContentTabProps) {
-  const [selectedSection, setSelectedSection] = useState("landing_copywriting");
+  // Default selected section is "hero" (Home 1 Hero)
+  const [selectedSection, setSelectedSection] = useState("hero");
 
   const [showToast, setShowToast] = useState(false);
   const [toastTitle, setToastTitle] = useState("");
@@ -47,29 +48,42 @@ export default function FrontendContentTab({
           <p className="text-slate-500 text-xs mt-0.5">Select a homepage section below to edit copywriting or FAQ content.</p>
         </div>
         
-        {/* Section switcher select dropdown */}
+        {/* Section switcher select dropdown with grouped sub-headings */}
         <CustomSelect
           options={[
-            { value: "landing_copywriting", label: "Landing Page Copywriting" },
+            { value: "hdr_h1", label: "── Home 1 Landing ──", isHeader: true },
+            { value: "hero", label: "Home 1 Hero" },
+
+            { value: "hdr_h2", label: "── Home 2 Landing ──", isHeader: true },
+            { value: "home2_hero", label: "Home 2 Hero" },
+            { value: "home2_chat_messages", label: "Home 2 Chat Conversation" },
+            { value: "home2_features", label: "Home 2 Features Pool" },
+            { value: "promo_cards", label: "Promo Banner Cards" },
+
+            { value: "hdr_gen", label: "── General & Site Content ──", isHeader: true },
+            { value: "general_sections", label: "General Headings" },
+            { value: "why_choose", label: "Why Choose Us Grid" },
+            { value: "how_it_works", label: "How It Works Steps" },
             { value: "faq", label: "Frequently Asked Questions (FAQ)" }
           ]}
           value={selectedSection}
           onChange={(val) => setSelectedSection(val as string)}
-          className="w-full sm:w-64"
+          className="w-full sm:w-72"
         />
       </div>
 
       {/* Editor Content Area */}
       <div className="mt-2">
-        {selectedSection === "landing_copywriting" ? (
+        {selectedSection === "faq" ? (
+          <FaqEditor triggerToast={triggerToast} />
+        ) : (
           <LandingSectionsEditor 
             triggerToast={triggerToast}
             frontendHeroContent={frontendHeroContent}
             setFrontendHeroContent={setFrontendHeroContent}
             handleSaveSetting={handleSaveSetting}
+            defaultSubTab={selectedSection}
           />
-        ) : (
-          <FaqEditor triggerToast={triggerToast} />
         )}
       </div>
 

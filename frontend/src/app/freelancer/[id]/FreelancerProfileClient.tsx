@@ -394,8 +394,14 @@ export default function FreelancerProfileClient() {
       <div className="hidden sm:block bg-slate-50 text-left border-b border-slate-200/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
           <button
-            onClick={() => router.back()}
-            className="flex items-center gap-1.5 text-xs font-extrabold text-slate-500 hover:text-teal-700 transition-colors"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/talent");
+              }
+            }}
+            className="flex items-center gap-1.5 text-xs font-extrabold text-slate-500 hover:text-teal-700 transition-colors cursor-pointer"
           >
             <FiArrowLeft className="w-4 h-4" />
             <span>{t("btn_back", "Back")}</span>
@@ -928,7 +934,7 @@ export default function FreelancerProfileClient() {
                       <div className="flex items-center gap-2.5">
                         {rev.reviewer_image ? (
                           <img
-                            src={`https://freelancer.sangvish.com${rev.reviewer_image}`}
+                            src={rev.reviewer_image.startsWith("http") ? rev.reviewer_image : `${API_URL.replace("/api", "")}${rev.reviewer_image.startsWith("/") ? "" : "/"}${rev.reviewer_image}`}
                             alt={rev.reviewer_name}
                             className="w-8 h-8 rounded-full object-cover border border-slate-100 shrink-0"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -940,8 +946,8 @@ export default function FreelancerProfileClient() {
                         )}
                         <div>
                           <h4 className="text-xs font-black text-slate-800">{rev.reviewer_name || "Client"}</h4>
-                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                            {rev.review_type === 'gig' ? 'Service Order' : 'Contract Project'}
+                          <p className="text-[9px] text-teal-600 font-extrabold uppercase tracking-wider mt-0.5">
+                            Client Review • {rev.review_type === 'gig' ? 'Gig Service' : 'Project Contract'}
                           </p>
                         </div>
                       </div>

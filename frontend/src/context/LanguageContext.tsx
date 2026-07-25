@@ -319,7 +319,6 @@ const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
     share_this_project: "Partager ce Projet",
     search_category: "Catégorie de Recherche",
     search_freelancers_placeholder: "Rechercher des freelances...",
-    showing: "Affichage de",
     professionals: "professionnels",
     sort_by: "Trier par",
     sort_recommended: "Recommandé",
@@ -464,19 +463,23 @@ const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
   );
 }
 
-export function useLanguage() {
+export function useLanguage(): LanguageContextProps {
   const context = useContext(LanguageContext);
   if (context === undefined) {
     return {
-      currentLanguage: "EN",
-      currentCurrency: "USD",
-      activeLanguages: [{ code: "EN", name: "English", is_default: true }],
-      currencies: [{ code: "USD", symbol: "$", rate: 1 }],
+      lang: "EN",
+      direction: "LTR",
+      currency: "USD",
+      currencySymbol: "$",
+      currencyRate: 1.0,
+      translations: {},
+      activeLanguages: [{ code: "EN", name: "English", direction: "LTR" }],
+      currencies: [{ code: "USD", name: "US Dollar", symbol: "$", rate: 1 }],
       t: (key: string, fallback?: string) => fallback || key,
       changeLanguage: () => {},
       changeCurrency: () => {},
-      convertPrice: (price: number | string) => (typeof price === "string" ? parseFloat(price) || 0 : price),
-      formatPrice: (price: number | string) => `$${(typeof price === "string" ? parseFloat(price) || 0 : price).toFixed(2)}`,
+      convertPrice: (price: number) => price,
+      formatPrice: (price: number) => `$${price.toFixed(2)}`,
       loading: false
     };
   }

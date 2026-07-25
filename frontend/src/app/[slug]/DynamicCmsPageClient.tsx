@@ -6,12 +6,250 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { FiSearch, FiChevronDown, FiHelpCircle, FiMail, FiMapPin, FiClock, FiBriefcase, FiActivity, FiSliders } from "react-icons/fi";
+import { FiSearch, FiChevronDown, FiHelpCircle, FiMail, FiMapPin, FiClock, FiBriefcase, FiActivity, FiSliders, FiX, FiUpload, FiCheckCircle, FiFileText } from "react-icons/fi";
 
 interface BuilderBlock {
   id: string;
   type: string;
   data: Record<string, any>;
+}
+
+function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState("Full Stack Developer");
+  const [coverLetter, setCoverLetter] = useState("");
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeUrl, setResumeUrl] = useState("");
+  const [uploadingResume, setUploadingResume] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submittedSuccess, setSubmittedSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  if (!isOpen) return null;
+
+  const handleFileUpload = async (file: File) => {
+    setResumeFile(file);
+    setUploadingResume(true);
+    setErrorMsg("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        body: formData
+      });
+      if (!res.ok) throw new Error("File upload failed.");
+      const data = await res.json();
+      setResumeUrl(data.url || "");
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || "Failed to upload resume file.");
+    } finally {
+      setUploadingResume(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) {
+      setErrorMsg("Please fill out your name and email address.");
+      return;
+    }
+    setSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      const res = await fetch(`${API_URL}/careers/apply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          phone,
+          role,
+          coverLetter,
+          resumeUrl
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to submit application");
+      
+      setSubmittedSuccess(true);
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred submitting your application.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 animate-fadeIn">
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-xl w-full p-6 sm:p-8 relative overflow-hidden text-left max-h-[90vh] overflow-y-auto">
+        <button
+          onClick={onClose}
+          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition cursor-pointer"
+        >
+          <FiX className="w-4 h-4" />
+        </button>
+
+        {submittedSuccess ? (
+          <div className="py-8 text-center flex flex-col items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center text-3xl">
+              <FiCheckCircle className="w-8 h-8" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Application Received!</h3>
+            <p className="text-slate-600 text-xs sm:text-sm max-w-md font-medium leading-relaxed">
+              Thank you, <strong className="text-slate-900">{name}</strong>! We have received your CV for the <strong className="text-slate-900">{role}</strong> role. Our recruitment team will review your application and contact you at <strong className="text-slate-900">{email}</strong>.
+            </p>
+            <button
+              onClick={onClose}
+              className="bg-teal-700 hover:bg-teal-650 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition mt-4 cursor-pointer"
+            >
+              Close Window
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+              <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 border border-teal-100 flex items-center justify-center">
+                <FiBriefcase className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-slate-850">Apply to Build With Us</h3>
+                <p className="text-slate-400 text-xs font-semibold">Submit your CV & profile to our recruitment division</p>
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-bold">
+                ⚠️ {errorMsg}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Full Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Sarah Jenkins"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="sarah@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Phone Number</label>
+                <input
+                  type="tel"
+                  placeholder="+1 (555) 019-2834"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Position / Role</label>
+                <div className="relative">
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500 appearance-none cursor-pointer"
+                  >
+                    <option value="Full Stack Developer">Full Stack Developer</option>
+                    <option value="Senior Frontend Engineer">Senior Frontend Engineer</option>
+                    <option value="Backend / Systems Architect">Backend / Systems Architect</option>
+                    <option value="UI/UX Product Designer">UI/UX Product Designer</option>
+                    <option value="Mobile App Developer">Mobile App Developer</option>
+                    <option value="DevOps / Cloud Engineer">DevOps / Cloud Engineer</option>
+                    <option value="General Candidate">General Candidate</option>
+                  </select>
+                  <FiChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Cover Letter / Message</label>
+              <textarea
+                rows={3}
+                placeholder="Briefly introduce your background, key projects, and expertise..."
+                value={coverLetter}
+                onChange={(e) => setCoverLetter(e.target.value)}
+                className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500 resize-none"
+              />
+            </div>
+
+            {/* CV Upload Drop Area */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Attach CV / Resume (PDF or DOC)</label>
+              <label className="border-2 border-dashed border-slate-200 hover:border-teal-500 bg-slate-50/70 hover:bg-teal-50/30 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer transition">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+                    <FiFileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-700 block">
+                      {resumeFile ? resumeFile.name : "Click to upload CV / Resume"}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-semibold block">
+                      {uploadingResume ? "Uploading file..." : resumeUrl ? "✓ Uploaded & Attached" : "Supports PDF, DOC, DOCX up to 10MB"}
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 shadow-sm shrink-0">
+                  {uploadingResume ? "Uploading..." : resumeFile ? "Change File" : "Browse File"}
+                </div>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) handleFileUpload(e.target.files[0]);
+                  }}
+                />
+              </label>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting || uploadingResume}
+                className="px-6 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-650 text-white font-bold text-xs shadow-md transition disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? "Submitting..." : "Submit CV Application"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function CarouselSection({ blockId, slides }: { blockId: string; slides: any[] }) {
@@ -310,6 +548,9 @@ export default function DynamicCmsPageClient() {
 
   // FAQ state
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
+
+  // CV Application modal state
+  const [isCvModalOpen, setIsCvModalOpen] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -871,10 +1112,16 @@ export default function DynamicCmsPageClient() {
                         {data.description}
                       </p>
                       <a
-                        href={data.buttonLink}
-                        className="bg-teal-600 hover:bg-teal-550 text-white font-bold text-sm px-8 py-3.5 rounded-xl shadow-lg hover:shadow-teal-500/25 hover:scale-[1.02] mt-2 transition-all transform active:scale-95 cursor-pointer duration-200"
+                        href={data.buttonLink || "#"}
+                        onClick={(e) => {
+                          if (!data.buttonLink || data.buttonLink.startsWith("mailto:") || data.buttonText?.toLowerCase().includes("cv") || data.buttonText?.toLowerCase().includes("email") || data.buttonText?.toLowerCase().includes("apply")) {
+                            e.preventDefault();
+                            setIsCvModalOpen(true);
+                          }
+                        }}
+                        className="bg-white hover:bg-slate-100 text-teal-900 font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-xl hover:shadow-2xl hover:scale-[1.03] mt-3 transition-all transform active:scale-95 cursor-pointer inline-flex items-center gap-2 border border-white/20"
                       >
-                        {data.buttonText}
+                        <span>{data.buttonText || "Email CV"}</span>
                       </a>
                     </div>
                   </section>
@@ -1087,6 +1334,11 @@ export default function DynamicCmsPageClient() {
       )}
 
       <Footer />
+
+      <CvApplicationModal
+        isOpen={isCvModalOpen}
+        onClose={() => setIsCvModalOpen(false)}
+      />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { FiChevronDown, FiCheck } from "react-icons/fi";
 interface Option {
   value: string | number;
   label: string;
+  isHeader?: boolean;
 }
 
 interface CustomSelectProps {
@@ -45,12 +46,12 @@ export default function CustomSelect({
   if (multiple && Array.isArray(value)) {
     if (value.length > 0) {
       const selectedLabels = options
-        .filter((o) => value.some((v) => String(v) === String(o.value)))
+        .filter((o) => !o.isHeader && value.some((v) => String(v) === String(o.value)))
         .map((o) => o.label);
       displayLabel = selectedLabels.length > 0 ? selectedLabels.join(", ") : `${value.length} selected`;
     }
   } else {
-    const selectedOption = options.find((o) => String(o.value) === String(value));
+    const selectedOption = options.find((o) => !o.isHeader && String(o.value) === String(value));
     if (selectedOption) {
       displayLabel = selectedOption.label;
     }
@@ -94,24 +95,30 @@ export default function CustomSelect({
       </button>
 
       {!disabled && isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1 w-full max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[100] max-h-60 overflow-y-auto p-1 space-y-0.5 animate-fadeIn">
-          {!multiple && placeholder && (
+        <div className="absolute left-0 right-0 top-full mt-1 w-full max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[100] max-h-64 overflow-y-auto p-1 space-y-0.5 animate-fadeIn">
+          {!multiple && placeholder && !options.some((o) => String(o.value) === String(value)) && (
             <button
               type="button"
               onClick={() => {
                 onChange("");
                 setIsOpen(false);
               }}
-              className={`w-full text-left truncate px-3 py-2 rounded-lg text-xs font-bold transition cursor-pointer border-none ${
-                value === "" || value === undefined || value === null
-                  ? "bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400"
-                  : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900"
-              }`}
+              className="w-full text-left truncate px-3 py-2 rounded-lg text-xs font-bold transition cursor-pointer border-none bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
             >
               {placeholder}
             </button>
           )}
           {options.map((opt) => {
+            if (opt.isHeader) {
+              return (
+                <div
+                  key={opt.value}
+                  className="px-3 pt-2.5 pb-1 text-[10px] font-black uppercase tracking-wider text-teal-700 dark:text-teal-400 bg-slate-50/80 dark:bg-slate-800/50 rounded-md my-0.5 select-none pointer-events-none"
+                >
+                  {opt.label}
+                </div>
+              );
+            }
             const selected = isOptionSelected(opt.value);
             return (
               <button
@@ -124,7 +131,7 @@ export default function CustomSelect({
                     : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900"
                 }`}
               >
-                <span className="truncate">{opt.label}</span>
+                <span className="truncate pl-1">{opt.label}</span>
                 {multiple && selected && <FiCheck className="w-3.5 h-3.5 text-teal-600 shrink-0 ml-2" />}
               </button>
             );

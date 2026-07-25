@@ -108,7 +108,13 @@ export default function ClientProfileClient() {
           <div className="max-w-6xl mx-auto w-full flex flex-col gap-6 relative z-10">
             <div className="flex items-center">
               <button
-                onClick={() => router.back()}
+                onClick={() => {
+                  if (typeof window !== "undefined" && window.history.length > 1) {
+                    router.back();
+                  } else {
+                    router.push("/projects");
+                  }
+                }}
                 className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xxs font-black tracking-wider uppercase px-3.5 py-2.5 rounded-xl transition cursor-pointer border border-slate-200/60 shadow-sm"
               >
                 <FiChevronLeft className="w-3.5 h-3.5 text-slate-500" />
@@ -357,15 +363,19 @@ export default function ClientProfileClient() {
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
                             {rev.reviewer_image ? (
-                              <img src={rev.reviewer_image} alt={rev.reviewer_name} className="w-full h-full object-cover" />
+                              <img
+                                src={rev.reviewer_image.startsWith("http") ? rev.reviewer_image : `${API_URL.replace("/api", "")}${rev.reviewer_image.startsWith("/") ? "" : "/"}${rev.reviewer_image}`}
+                                alt={rev.reviewer_name}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               <span className="text-xxs font-black text-slate-505">{(rev.reviewer_name || "F").substring(0, 1)}</span>
                             )}
                           </div>
                           <div>
                             <h5 className="text-xs font-bold text-slate-800">{rev.reviewer_name}</h5>
-                            <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                              on contract: <span className="font-bold text-slate-600">{rev.project_title || "Freelancer Assignment"}</span>
+                            <p className="text-[10px] text-teal-600 font-bold mt-0.5">
+                              Freelancer Review • on contract: <span className="font-bold text-slate-600">{rev.project_title || "Project Assignment"}</span>
                             </p>
                           </div>
                         </div>

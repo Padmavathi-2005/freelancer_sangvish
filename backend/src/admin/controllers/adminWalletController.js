@@ -101,27 +101,36 @@ export const approveWithdrawal = async (req, res) => {
 
     const amount = parseFloat(request.amount);
 
-    // Fetch system wallet to verify balance
-    const sysWalletRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
-    const sysWallet = sysWalletRes.rows[0];
-    if (!sysWallet) {
-      return res.status(500).json({ message: "System escrow wallet not found." });
+    // Fetch user wallet to verify active balance
+    const userWalletRes = await pool.query("SELECT * FROM wallets WHERE wallet_id = $1", [request.wallet_id]);
+    const userWallet = userWalletRes.rows[0];
+
+    if (!userWallet) {
+      return res.status(404).json({ message: "User wallet not found." });
     }
 
-    if (parseFloat(sysWallet.balance) < amount) {
-      return res.status(400).json({ message: `Insufficient system escrow balance. System balance is $${parseFloat(sysWallet.balance).toFixed(2)}.` });
+    if (parseFloat(userWallet.balance) < amount) {
+      return res.status(400).json({
+        message: `Insufficient user wallet balance. Current balance is $${parseFloat(userWallet.balance).toFixed(2)}, required $${amount.toFixed(2)}.`
+      });
     }
 
-    // Update withdrawal request status
+    // Deduct payout amount from user's wallet NOW upon Admin approval
     await pool.query(
-      "UPDATE withdrawal_requests SET status = 'Approved', updated_at = CURRENT_TIMESTAMP WHERE request_id = $1",
-      [requestId]
+      "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+      [amount, request.wallet_id]
     );
 
-    // Deduct payout amount from system/escrow wallet balance
+    // Update system escrow wallet if system wallet exists
     await pool.query(
       "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE is_system = TRUE",
       [amount]
+    ).catch(() => {});
+
+    // Update withdrawal request status to Approved
+    await pool.query(
+      "UPDATE withdrawal_requests SET status = 'Approved', updated_at = CURRENT_TIMESTAMP WHERE request_id = $1",
+      [requestId]
     );
 
     // Update wallet transaction log status from Pending to Completed
@@ -132,7 +141,7 @@ export const approveWithdrawal = async (req, res) => {
       [request.wallet_id, amount]
     );
 
-    return res.status(200).json({ message: "Withdrawal request approved and processed successfully." });
+    return res.status(200).json({ message: "Withdrawal request approved and funds debited successfully." });
   } catch (error) {
     console.error("Error in approveWithdrawal:", error);
     return res.status(500).json({ message: "Failed to approve withdrawal request." });
@@ -156,16 +165,10 @@ export const rejectWithdrawal = async (req, res) => {
 
     const amount = parseFloat(request.amount);
 
-    // Update withdrawal request status
+    // Update withdrawal request status to Rejected
     await pool.query(
       "UPDATE withdrawal_requests SET status = 'Rejected', updated_at = CURRENT_TIMESTAMP WHERE request_id = $1",
       [requestId]
-    );
-
-    // Restore the amount back to user's wallet
-    await pool.query(
-      "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
-      [amount, request.wallet_id]
     );
 
     // Update wallet transaction log status to Rejected
@@ -176,7 +179,7 @@ export const rejectWithdrawal = async (req, res) => {
       [request.wallet_id, amount]
     );
 
-    return res.status(200).json({ message: "Withdrawal request rejected. Funds returned to user's wallet." });
+    return res.status(200).json({ message: "Withdrawal request rejected." });
   } catch (error) {
     console.error("Error in rejectWithdrawal:", error);
     return res.status(500).json({ message: "Failed to reject withdrawal request." });

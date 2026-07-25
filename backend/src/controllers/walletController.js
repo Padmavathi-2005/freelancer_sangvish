@@ -80,20 +80,22 @@ export const requestWithdrawal = async (req, res) => {
     const withdrawAmt = parseFloat(amount);
     const wallet = await getOrCreateWallet(userId, req.user.role);
 
-    if (parseFloat(wallet.balance) < withdrawAmt) {
-      return res.status(400).json({ message: "Insufficient wallet balance." });
+    // Calculate total pending withdrawal requests for this user
+    const pendingRes = await pool.query(
+      "SELECT COALESCE(SUM(amount), 0) AS total_pending FROM withdrawal_requests WHERE user_id = $1 AND status = 'Pending'",
+      [userId]
+    );
+    const totalPending = parseFloat(pendingRes.rows[0].total_pending || "0");
+    const activeBalance = parseFloat(wallet.balance);
+    const availableBalance = activeBalance - totalPending;
+
+    if (availableBalance < withdrawAmt) {
+      return res.status(400).json({
+        message: `Insufficient available balance. Active balance is $${activeBalance.toFixed(2)}, Pending requests: $${totalPending.toFixed(2)}, Available: $${availableBalance.toFixed(2)}.`
+      });
     }
 
-    // Deduct balance from user wallet
-    const deductQuery = `
-      UPDATE wallets
-      SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP
-      WHERE wallet_id = $2
-      RETURNING *
-    `;
-    const deductRes = await pool.query(deductQuery, [withdrawAmt, wallet.wallet_id]);
-
-    // Create withdrawal request
+    // Create withdrawal request in Pending status (Balance is NOT deducted until Admin approves)
     const requestQuery = `
       INSERT INTO withdrawal_requests (user_id, wallet_id, amount, payment_method, account_details, status)
       VALUES ($1, $2, $3, $4, $5, 'Pending')
@@ -107,7 +109,7 @@ export const requestWithdrawal = async (req, res) => {
       accountDetails.trim()
     ]);
 
-    // Record wallet transaction
+    // Record pending wallet transaction
     const transactionQuery = `
       INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
       VALUES ($1, NULL, $2, 'Withdrawal_Request', 'Pending', $3)
@@ -116,8 +118,8 @@ export const requestWithdrawal = async (req, res) => {
     await pool.query(transactionQuery, [wallet.wallet_id, withdrawAmt, description]);
 
     return res.status(201).json({
-      message: "Withdrawal request submitted successfully.",
-      wallet: deductRes.rows[0],
+      message: "Withdrawal request submitted successfully. Awaiting Admin review.",
+      wallet,
       request: requestRes.rows[0]
     });
   } catch (error) {

@@ -103,9 +103,11 @@ export const createFreelancerGig = async (req, res) => {
     }
     await pool.query("UPDATE gigs SET slug = $1 WHERE gig_id = $2", [uniqueSlug, gig.gig_id]);
 
-    // Save plans if provided
-    if (plans && Array.isArray(plans)) {
+    // Save plans if provided, or clear if turned off
+    if (plans && Array.isArray(plans) && plans.length > 0) {
       await pool.query("UPDATE gigs SET plans = $1 WHERE gig_id = $2", [JSON.stringify(plans), gig.gig_id]);
+    } else {
+      await pool.query("UPDATE gigs SET plans = NULL WHERE gig_id = $1", [gig.gig_id]);
     }
 
     // Save faqs if provided
@@ -725,8 +727,10 @@ export const updateFreelancerGig = async (req, res) => {
       await pool.query("UPDATE gigs SET slug = $1 WHERE gig_id = $2", [uniqueSlug, parseInt(id)]);
     }
 
-    if (plans && Array.isArray(plans)) {
+    if (plans && Array.isArray(plans) && plans.length > 0) {
       await pool.query("UPDATE gigs SET plans = $1 WHERE gig_id = $2", [JSON.stringify(plans), parseInt(id)]);
+    } else {
+      await pool.query("UPDATE gigs SET plans = NULL WHERE gig_id = $1", [parseInt(id)]);
     }
 
     if (faqs) {

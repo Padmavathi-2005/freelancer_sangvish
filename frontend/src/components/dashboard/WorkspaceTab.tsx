@@ -86,7 +86,7 @@ export default function WorkspaceTab({
   fetchClientApplications,
   fetchHiredFreelancers,
 }: WorkspaceTabProps) {
-  const { freelancerContracts, approveContractPayment, vettingStatus, walletInfo } = useDashboard();
+  const { freelancerContracts, approveContractPayment, vettingStatus, walletInfo, siteName } = useDashboard();
   const balance = parseFloat(walletInfo?.wallet?.balance || "0.00");
 
   const clientSpentAmount = useMemo(() => {
@@ -107,8 +107,17 @@ export default function WorkspaceTab({
   }, [clientJobs]);
 
   const displayClientContracts = useMemo(() => {
-    const ongoing = (freelancerContracts || []).filter((c: any) => c.status !== "Completed" && c.client_id !== undefined);
-    return (ongoing.length > 0 ? ongoing : (freelancerContracts || []).filter((x: any) => x.client_id !== undefined)).slice(0, 2);
+    const list = [...(freelancerContracts || []).filter((x: any) => x.client_id !== undefined)];
+    return list.sort((a: any, b: any) => {
+      const aIsCompleted = a.status === "Completed" || a.status === "Cancelled" || a.status === "Closed";
+      const bIsCompleted = b.status === "Completed" || b.status === "Cancelled" || b.status === "Closed";
+      if (!aIsCompleted && bIsCompleted) return -1;
+      if (aIsCompleted && !bIsCompleted) return 1;
+
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : (Number(a.contract_id || a.id) || 0);
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : (Number(b.contract_id || b.id) || 0);
+      return bTime - aTime;
+    }).slice(0, 2);
   }, [freelancerContracts]);
 
   const displayClientGigOrders = useMemo(() => {
@@ -122,8 +131,17 @@ export default function WorkspaceTab({
   }, [freelancerProposals]);
 
   const displayFreelancerContracts = useMemo(() => {
-    const ongoing = (freelancerContracts || []).filter((c: any) => c.status !== "Completed");
-    return (ongoing.length > 0 ? ongoing : (freelancerContracts || [])).slice(0, 2);
+    const list = [...(freelancerContracts || [])];
+    return list.sort((a: any, b: any) => {
+      const aIsCompleted = a.status === "Completed" || a.status === "Cancelled" || a.status === "Closed";
+      const bIsCompleted = b.status === "Completed" || b.status === "Cancelled" || b.status === "Closed";
+      if (!aIsCompleted && bIsCompleted) return -1;
+      if (aIsCompleted && !bIsCompleted) return 1;
+
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : (Number(a.contract_id || a.id) || 0);
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : (Number(b.contract_id || b.id) || 0);
+      return bTime - aTime;
+    }).slice(0, 2);
   }, [freelancerContracts]);
 
   const displayFreelancerGigOrders = useMemo(() => {
@@ -397,7 +415,7 @@ export default function WorkspaceTab({
                           <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Ongoing service orders</p>
                         </div>
                         <button
-                          onClick={() => setActiveTab("orders")}
+                          onClick={() => setActiveTab("client_orders")}
                           className="text-[9px] text-teal-755 bg-teal-55 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
                         >
                           View All
@@ -417,8 +435,15 @@ export default function WorkspaceTab({
                                 <h4 className="text-xs font-bold text-slate-800 truncate mt-0.5">{app.gig_title || "Service Delivery"}</h4>
                               </div>
                               <div className="flex flex-col items-end shrink-0 gap-1">
-                                <span className="text-xs font-black text-slate-800">${parseFloat(app.budget || 0).toLocaleString()}</span>
-                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-cyan-50 text-cyan-700 border-cyan-100 uppercase">{app.status}</span>
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase ${
+                                  app.status === "Completed" || app.contract_status === "Completed" || app.status === "Accepted"
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                    : app.status === "Rejected" || app.contract_status === "Cancelled"
+                                      ? "bg-rose-50 text-rose-700 border-rose-100"
+                                      : "bg-cyan-50 text-cyan-700 border-cyan-100"
+                                }`}>
+                                  {app.contract_status === "Completed" ? "Completed" : app.status}
+                                </span>
                               </div>
                             </div>
                           ))
@@ -483,7 +508,7 @@ export default function WorkspaceTab({
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl -mr-6 -mt-6"></div>
                     <div className="flex justify-between items-start z-10">
                       <div>
-                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">LancerFlow Wallet</p>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">{siteName || "Buy2Lancer"} Wallet</p>
                         <h3 className="text-xs font-bold text-white/90 mt-0.5">Available Funds</h3>
                       </div>
                       <i className="fa-solid fa-wallet text-teal-500 text-sm"></i>
@@ -510,7 +535,7 @@ export default function WorkspaceTab({
                         <span className="text-xs font-black text-slate-800">${clientSpentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
 
-                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                      <div onClick={() => setActiveTab("proposals")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 text-xs shrink-0"><i className="fa-solid fa-briefcase"></i></div>
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Posted Projects</span>
@@ -518,7 +543,7 @@ export default function WorkspaceTab({
                         <span className="text-xs font-black text-slate-800">{clientJobs.length}</span>
                       </div>
 
-                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                      <div onClick={() => setActiveTab("client_orders")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 text-xs shrink-0"><i className="fa-solid fa-store"></i></div>
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Purchased Gigs</span>
@@ -526,7 +551,7 @@ export default function WorkspaceTab({
                         <span className="text-xs font-black text-slate-800">{clientApplications.length}</span>
                       </div>
 
-                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                      <div onClick={() => setActiveTab("client_hired_freelancers")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-xs shrink-0"><i className="fa-solid fa-user-check"></i></div>
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Hired Partners</span>
@@ -665,7 +690,7 @@ export default function WorkspaceTab({
                           <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Ongoing service deliveries</p>
                         </div>
                         <button
-                          onClick={() => setActiveTab("orders")}
+                          onClick={() => setActiveTab("gig_applications")}
                           className="text-[9px] text-teal-755 bg-teal-55 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
                         >
                           View All
@@ -685,8 +710,15 @@ export default function WorkspaceTab({
                                 <h4 className="text-xs font-bold text-slate-805 truncate mt-0.5">{app.gig_title || "Active Service Delivery"}</h4>
                               </div>
                               <div className="flex flex-col items-end shrink-0 gap-1">
-                                <span className="text-xs font-black text-slate-800">${parseFloat(app.budget || 0).toLocaleString()}</span>
-                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-emerald-50 text-emerald-700 border-emerald-100 uppercase">{app.status}</span>
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase ${
+                                  app.status === "Completed" || app.contract_status === "Completed" || app.status === "Accepted"
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                    : app.status === "Rejected" || app.contract_status === "Cancelled"
+                                      ? "bg-rose-50 text-rose-700 border-rose-100"
+                                      : "bg-amber-50 text-amber-700 border-amber-100"
+                                }`}>
+                                  {app.contract_status === "Completed" ? "Completed" : app.status}
+                                </span>
                               </div>
                             </div>
                           ))
@@ -706,7 +738,7 @@ export default function WorkspaceTab({
                           <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Current project contracts</p>
                         </div>
                         <button
-                          onClick={() => setActiveTab("proposals")}
+                          onClick={() => setActiveTab("my_projects")}
                           className="text-[9px] text-teal-755 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
                         >
                           View All
@@ -750,7 +782,7 @@ export default function WorkspaceTab({
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl -mr-6 -mt-6"></div>
                     <div className="flex justify-between items-start z-10">
                       <div>
-                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">LancerFlow Wallet</p>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">{siteName || "Buy2Lancer"} Wallet</p>
                         <h3 className="text-xs font-bold text-white/90 mt-0.5">Available Funds</h3>
                       </div>
                       <i className="fa-solid fa-wallet text-teal-500 text-sm"></i>
@@ -769,7 +801,7 @@ export default function WorkspaceTab({
                     </div>
                     
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                      <div onClick={() => setActiveTab("wallet")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-650 text-xs shrink-0"><i className="fa-solid fa-receipt"></i></div>
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Net Earnings</span>
@@ -777,7 +809,7 @@ export default function WorkspaceTab({
                         <span className="text-xs font-black text-slate-800">${freelancerEarnedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
 
-                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                      <div onClick={() => setActiveTab("proposals")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 text-xs shrink-0"><i className="fa-solid fa-paper-plane"></i></div>
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Active Bids</span>
@@ -785,7 +817,7 @@ export default function WorkspaceTab({
                         <span className="text-xs font-black text-slate-800">{freelancerProposals.length}</span>
                       </div>
 
-                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                      <div onClick={() => setActiveTab("gigs")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-650 text-xs shrink-0"><i className="fa-solid fa-store"></i></div>
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Active Gigs</span>
@@ -793,7 +825,7 @@ export default function WorkspaceTab({
                         <span className="text-xs font-black text-slate-800">{gigs.length}</span>
                       </div>
 
-                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                      <div onClick={() => setActiveTab("gig_applications")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600 text-xs shrink-0"><i className="fa-solid fa-truck-loading"></i></div>
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Gig Orders</span>
@@ -801,7 +833,7 @@ export default function WorkspaceTab({
                         <span className="text-xs font-black text-slate-800">{gigApplications.length}</span>
                       </div>
 
-                      <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
+                      <div onClick={() => setActiveTab("my_projects")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-xs shrink-0"><i className="fa-solid fa-file-contract"></i></div>
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Active Contracts</span>

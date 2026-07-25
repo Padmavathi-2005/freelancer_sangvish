@@ -97,7 +97,11 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create account. Please try again.");
+        let msg = data.message || "Failed to create account. Please try again.";
+        if (msg.includes("users_email_key") || msg.includes("unique constraint") || msg.includes("duplicate key")) {
+          msg = "An account with this email address already exists. Please sign in or use a different email.";
+        }
+        throw new Error(msg);
       }
 
       if (typeof window !== "undefined") {
@@ -107,7 +111,11 @@ export default function RegisterPage() {
         window.location.href = "/dashboard";
       }
     } catch (err: any) {
-      setError(err.message || "Failed to connect to backend user service.");
+      let rawMsg = err.message || "Failed to connect to backend user service.";
+      if (rawMsg.includes("users_email_key") || rawMsg.includes("unique constraint") || rawMsg.includes("duplicate key")) {
+        rawMsg = "An account with this email address already exists. Please sign in or use a different email.";
+      }
+      setError(rawMsg);
     } finally {
       setLoading(false);
     }

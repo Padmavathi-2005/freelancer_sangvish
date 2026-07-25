@@ -11,15 +11,46 @@ export default function AdminLoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
   useEffect(() => {
-    // If admin is already authenticated, redirect to admin dashboard
+    // If admin is already authenticated, validate token and redirect to admin dashboard
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("adminToken");
       if (token) {
-        window.location.href = "/admin";
+        fetch(`${API_URL}/admin/all`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then((res) => {
+            if (res.ok) {
+              window.location.href = "/admin";
+            } else {
+              localStorage.removeItem("adminToken");
+              localStorage.removeItem("adminUser");
+              setCheckingAuth(false);
+            }
+          })
+          .catch(() => {
+            setCheckingAuth(false);
+          });
+      } else {
+        setCheckingAuth(false);
       }
     }
   }, []);
+
+  if (checkingAuth) {
+    return (
+      <div className="w-full min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 text-slate-800">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-teal-700 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">
+            Verifying Admin Access...
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();

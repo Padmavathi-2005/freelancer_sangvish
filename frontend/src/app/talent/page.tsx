@@ -99,6 +99,10 @@ function TalentSearchContent() {
   };
 
   const handleToggleWishlist = (freelancer: any) => {
+    if (currentUserId && (Number(freelancer.user_id) === currentUserId || Number(freelancer.id) === currentUserId)) {
+      showToast("error", "You cannot wishlist your own profile.");
+      return;
+    }
     const isSaved = isInWishlist(freelancer.user_id);
     let updated;
 
@@ -153,15 +157,54 @@ function TalentSearchContent() {
     fetchFreelancers();
   }, []);
 
+  // Active subcategories based on selected category
+  const activeSubcategories = useMemo(() => {
+    if (!selectedCategory) return subcategories;
+    const catObj = categories.find(
+      (c) =>
+        c.category_id?.toString() === selectedCategory ||
+        c.category_name?.toLowerCase() === selectedCategory.toLowerCase()
+    );
+    if (!catObj) return subcategories;
+    const catIdStr = String(catObj.category_id || catObj.id);
+    return subcategories.filter(
+      (s) => String(s.category_id || s.categoryId) === catIdStr
+    );
+  }, [selectedCategory, categories, subcategories]);
+
   // Sync state if query params change
   useEffect(() => {
     const query = searchParams.get("query");
     const category = searchParams.get("category");
     const subcat = searchParams.get("subcategory");
     if (query !== null) setSearchQuery(query);
-    if (category !== null) setSelectedCategory(category);
-    if (subcat !== null) setSelectedSubcategory(subcat);
-  }, [searchParams]);
+    if (category !== null) {
+      if (categories.length > 0) {
+        const found = categories.find(
+          (c) =>
+            c.category_id?.toString() === category ||
+            c.category_name?.toLowerCase() === category.toLowerCase() ||
+            c.slug?.toLowerCase() === category.toLowerCase()
+        );
+        setSelectedCategory(found ? found.category_name : category);
+      } else {
+        setSelectedCategory(category);
+      }
+    }
+    if (subcat !== null) {
+      if (subcategories.length > 0) {
+        const found = subcategories.find(
+          (s) =>
+            s.sub_category_id?.toString() === subcat ||
+            s.sub_category_name?.toLowerCase() === subcat.toLowerCase() ||
+            s.slug?.toLowerCase() === subcat.toLowerCase()
+        );
+        setSelectedSubcategory(found ? found.sub_category_name : subcat);
+      } else {
+        setSelectedSubcategory(subcat);
+      }
+    }
+  }, [searchParams, categories, subcategories]);
 
   // Filter Logic
   const filteredFreelancers = freelancers.filter((f) => {
@@ -305,18 +348,7 @@ function TalentSearchContent() {
     setVettedOnly(false);
     setFilterSkill("");
     setSortBy("recommended");
-    router.replace("/talent");
   };
-
-  const activeSubcategories = subcategories.filter((s: any) => {
-    if (!selectedCategory) return true;
-    const cat = categories.find(
-      (c) =>
-        c.category_id?.toString() === selectedCategory ||
-        c.category_name?.toLowerCase() === selectedCategory.toLowerCase()
-    );
-    return cat ? s.category_id === cat.category_id : false;
-  });
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative">
@@ -407,7 +439,7 @@ function TalentSearchContent() {
               <CustomSelect
                 placeholder={t("all_categories", "All Categories")}
                 value={selectedCategory}
-                options={categories.map((c) => ({ value: c.category_id.toString(), label: c.category_name }))}
+                options={categories.map((c) => ({ value: c.category_name, label: c.category_name }))}
                 onChange={(val) => {
                   setSelectedCategory(val);
                   setSelectedSubcategory("");
@@ -422,7 +454,7 @@ function TalentSearchContent() {
                 <CustomSelect
                   placeholder={t("all_subcategories", "All Subcategories")}
                   value={selectedSubcategory}
-                  options={activeSubcategories.map((s) => ({ value: s.sub_category_id.toString(), label: s.sub_category_name }))}
+                  options={activeSubcategories.map((s) => ({ value: s.sub_category_name, label: s.sub_category_name }))}
                   onChange={(val) => setSelectedSubcategory(val)}
                 />
               </div>
@@ -471,7 +503,7 @@ function TalentSearchContent() {
                 type="text"
                 placeholder={t("filter_by_skill_placeholder", "e.g. React, Figma...")}
                 value={filterSkill}
-                onChange={(e) => setFilterSkill(e.target.value)}
+                onChange={(e) => setFilterSkill(e.target.value.replace(/\d{3,}/g, ""))}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-750 focus:outline-none"
               />
             </div>

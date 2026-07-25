@@ -851,13 +851,13 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 </span>
               </div>
               <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${
-                selectedGigOrderDetails.status === "Accepted"
+                selectedGigOrderDetails.status === "Accepted" || selectedGigOrderDetails.status === "Completed" || selectedGigOrderDetails.contract_status === "Completed"
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : selectedGigOrderDetails.status === "Rejected"
+                  : selectedGigOrderDetails.status === "Rejected" || selectedGigOrderDetails.contract_status === "Cancelled"
                     ? "bg-rose-50 text-rose-700 border-rose-200"
                     : "bg-amber-50 text-amber-700 border-amber-200"
               }`}>
-                {selectedGigOrderDetails.status}
+                {selectedGigOrderDetails.contract_status === "Completed" ? "Completed" : selectedGigOrderDetails.status}
               </span>
             </div>
           </div>
@@ -1051,13 +1051,13 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                       </div>
                     )}
                     <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${
-                      app.status === "Accepted"
+                      app.status === "Accepted" || app.status === "Completed" || app.contract_status === "Completed"
                         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : app.status === "Rejected"
+                        : app.status === "Rejected" || app.contract_status === "Cancelled"
                           ? "bg-rose-50 text-rose-700 border-rose-200"
                           : "bg-amber-50 text-amber-700 border-amber-200"
                     }`}>
-                      {app.status}
+                      {app.contract_status === "Completed" ? "Completed" : app.status}
                     </span>
                   </div>
                 </div>

@@ -8,8 +8,10 @@ import CTA from "@/components/CTA";
 import PopularServices from "@/components/PopularServices";
 import FeaturedFreelancers from "@/components/FeaturedFreelancers";
 import Home2Categories from "@/components/home/Home2Categories";
+import Home2PromoCards from "@/components/home/Home2PromoCards";
 import Home2FeaturesShowcase from "@/components/home/Home2FeaturesShowcase";
 import RecentProjects from "@/components/RecentProjects";
+import Home2ChatWidget from "@/components/home/Home2ChatWidget";
 import { useLanguage } from "@/context/LanguageContext";
 import { 
   FiSearch, 
@@ -58,10 +60,16 @@ export default function Home2() {
       <Header />
 
       {/* HERO SECTION 2 - SOFT PRIMARY COLOR LIGHT BACKGROUND */}
-      <section className="relative overflow-hidden bg-primary/[0.05] dark:bg-primary/[0.12] pt-16 pb-20 sm:pt-20 sm:pb-24 px-4 sm:px-6 lg:px-8 text-center select-none border-b border-primary/10">
-        
-        <div className="max-w-5xl mx-auto flex flex-col items-center gap-7 relative z-10">
-          
+      <section className="relative overflow-hidden bg-primary/[0.05] dark:bg-primary/[0.12] pt-16 pb-20 sm:pt-20 sm:pb-24 px-4 sm:px-6 lg:px-8 select-none border-b border-primary/10">
+
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-8 relative z-10">
+
+          {/* LEFT: Empty spacer (keeps layout balanced) */}
+          <div className="hidden lg:block w-60 shrink-0" />
+
+          {/* CENTER: Main hero content */}
+          <div className="flex-1 flex flex-col items-center text-center gap-7">
+
           {/* Main Headline with DB-driven Primary Color Highlight */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15] max-w-4xl font-display">
             <span>{t("home2_hero_title_prefix", "Transform")}</span>{" "}
@@ -77,8 +85,8 @@ export default function Home2() {
           </p>
 
           {/* Solid White Search Card Box with No Internal Borders & Custom Dropdown */}
-          <form 
-            onSubmit={handleSearch} 
+          <form
+            onSubmit={handleSearch}
             className="w-full max-w-3xl bg-white dark:bg-zinc-900 p-2 rounded-2xl border-none shadow-md flex flex-col sm:flex-row items-center gap-2 mt-2 relative z-20"
           >
             {/* Input with No Focus Outline */}
@@ -154,6 +162,13 @@ export default function Home2() {
             ))}
           </div>
 
+          </div>{/* end center col */}
+
+          {/* RIGHT: Animated Chat Widget */}
+          <div className="hidden lg:flex flex-col items-start justify-center w-60 shrink-0 self-stretch">
+            <Home2ChatWidget />
+          </div>
+
         </div>
       </section>
 
@@ -197,6 +212,9 @@ export default function Home2() {
 
       {/* POPULAR CATEGORIES (HOME 2 CUSTOM DESIGN) */}
       <Home2Categories />
+
+      {/* PROMO CARDS (POST PROJECT & WORK ON BEST PROJECT) */}
+      <Home2PromoCards />
 
       {/* DYNAMIC PLATFORM FEATURES SHOWCASE (PICKING 7 RANDOM ITEMS FROM ADMIN POOL) */}
       <Home2FeaturesShowcase />

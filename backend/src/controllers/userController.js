@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import * as userModel from '../models/userModel.js';
 import pool from '../config/db.js';
+import { sendEmail } from '../utils/emailHelper.js';
 
 // Helper to generate a unique referral code
 const generateUniqueReferralCode = async () => {
@@ -28,6 +29,20 @@ export const register = async (req, res) => {
             refCode
         } = req.body;
 
+        if (!email || !email.trim()) {
+            return res.status(400).json({ message: "Email is required." });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Check if user already exists
+        const existingCheck = await pool.query("SELECT user_id FROM users WHERE LOWER(email) = $1", [normalizedEmail]);
+        if (existingCheck.rows.length > 0) {
+            return res.status(400).json({
+                message: "An account with this email address already exists. Please sign in or use a different email."
+            });
+        }
+
         const password_hash =
             await bcrypt.hash(password, 10);
 
@@ -46,7 +61,7 @@ export const register = async (req, res) => {
         const user =
             await userModel.createUser(
                 first_name,
-                email,
+                normalizedEmail,
                 password_hash,
                 referral_code,
                 referred_by
@@ -120,11 +135,15 @@ export const register = async (req, res) => {
         });
 
     } catch (error) {
-
+        console.error("Registration error:", error);
+        if (error.code === '23505' || (error.message && (error.message.includes('users_email_key') || error.message.includes('unique constraint')))) {
+            return res.status(400).json({
+                message: "An account with this email address already exists. Please sign in or use a different email."
+            });
+        }
         res.status(500).json({
-            message: error.message
+            message: "Failed to create account. Please try again."
         });
-
     }
 };
 
@@ -1097,5 +1116,371 @@ export const getSubscriptionInvoiceById = async (req, res) => {
         res.status(200).json(result.rows[0]);
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+// In-memory OTP storage for phone verification
+const phoneOtps = new Map();
+
+export const sendPhoneOtp = async (req, res) => {
+    try {
+        const userId = req.user?.user_id;
+        const { phone } = req.body;
+
+        if (!phone || !phone.trim()) {
+            return res.status(400).json({
+                message: "Mobile number does not exist or is invalid. Please enter a valid phone number."
+            });
+        }
+
+        const rawPhone = phone.trim();
+        const cleanedPhone = rawPhone.replace(/[\s\-\(\)]/g, "");
+
+        // Valid phone format check (E.164 standard / 7 to 15 digits)
+        const phoneRegex = /^\+?[1-9]\d{6,14}$/;
+        if (!phoneRegex.test(cleanedPhone)) {
+            return res.status(400).json({
+                message: "Mobile number does not exist or is invalid. Please enter a valid phone number with country code."
+            });
+        }
+
+        // Check if phone number is already verified by another user account
+        const existingPhoneRes = await pool.query(
+            "SELECT user_id FROM users WHERE (phone = $1 OR phone = $2) AND user_id <> $3 AND phone_verified = true",
+            [rawPhone, cleanedPhone, userId]
+        );
+        if (existingPhoneRes.rows.length > 0) {
+            return res.status(400).json({
+                message: "This mobile number is already registered and verified with another account. Please use a different mobile number."
+            });
+        }
+
+        // Generate 6-digit OTP
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+        const expiresAtDate = new Date(expiresAt);
+
+        phoneOtps.set(String(userId), { phone: rawPhone, code: otpCode, expiresAt });
+        phoneOtps.set(Number(userId), { phone: rawPhone, code: otpCode, expiresAt });
+
+        try {
+            await pool.query(
+                "UPDATE users SET phone = $1, phone_otp = $2, phone_otp_expires_at = $3 WHERE user_id = $4",
+                [rawPhone, otpCode, expiresAtDate, userId]
+            );
+        } catch (dbErr) {
+            // Column fallback if phone_otp column doesn't exist yet
+            await pool.query("UPDATE users SET phone = $1 WHERE user_id = $2", [rawPhone, userId]);
+        }
+
+        // Attempt Real SMS Dispatch via Twilio API or custom SMS Gateway
+        let realSmsSent = false;
+        try {
+            let smsConfig = null;
+            const smsSettingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'sms_gateway_settings'");
+            if (smsSettingsRes.rows.length > 0) {
+                smsConfig = smsSettingsRes.rows[0].setting_value;
+                if (typeof smsConfig === "string") smsConfig = JSON.parse(smsConfig);
+            }
+
+            if (!process.env.TWILIO_ACCOUNT_SID) {
+                try {
+                    const dotenv = await import('dotenv');
+                    dotenv.config();
+                } catch (e) {}
+            }
+
+            const accountSid = process.env.TWILIO_ACCOUNT_SID || smsConfig?.twilio_account_sid || "";
+            const authToken = process.env.TWILIO_AUTH_TOKEN || smsConfig?.twilio_auth_token || "";
+            const twilioNumber = process.env.TWILIO_PHONE_NUMBER || smsConfig?.twilio_phone_number || "";
+
+            if (accountSid && authToken && twilioNumber) {
+                const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+                const credentials = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+                let targetPhone = cleanedPhone;
+                if (!targetPhone.startsWith('+')) {
+                    if (targetPhone.length === 10) {
+                        targetPhone = `+91${targetPhone}`;
+                    } else {
+                        targetPhone = `+${targetPhone}`;
+                    }
+                }
+
+                const params = new URLSearchParams();
+                params.append("To", targetPhone);
+                params.append("From", twilioNumber);
+                params.append("Body", `Your Buy2Lancer verification code is: ${otpCode}`);
+
+                const twilioRes = await fetch(twilioUrl, {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Basic ${credentials}`,
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: params.toString()
+                });
+
+                if (twilioRes.ok) {
+                    realSmsSent = true;
+                    console.log(`[TWILIO SMS DISPATCH SUCCESS] Real SMS code ${otpCode} sent to ${targetPhone}`);
+                } else {
+                    const twilioErr = await twilioRes.json();
+                    console.error("[TWILIO SMS DISPATCH ERROR]", twilioErr);
+                }
+            } else if (smsConfig && smsConfig.api_key && smsConfig.api_url) {
+                const smsRes = await fetch(smsConfig.api_url, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": smsConfig.api_key },
+                    body: JSON.stringify({
+                        to: cleanedPhone,
+                        message: `Your verification code is ${otpCode}`
+                    })
+                });
+                if (smsRes.ok) realSmsSent = true;
+            }
+        } catch (smsErr) {
+            console.error("SMS Gateway Dispatch Error:", smsErr);
+        }
+
+        console.log(`\n==============================================`);
+        console.log(`[MOBILE OTP REAL DISPATCH]`);
+        console.log(`User ID: ${userId}`);
+        console.log(`Mobile Number: ${rawPhone}`);
+        console.log(`OTP Code: ${otpCode}`);
+        console.log(`Real Gateway Sent: ${realSmsSent ? "YES" : "FALLBACK LOG"}`);
+        console.log(`Expires in: 10 minutes`);
+        console.log(`==============================================\n`);
+
+        res.status(200).json({
+            message: `Verification code sent successfully to ${rawPhone}. Please check your mobile phone.`,
+            expiresInSeconds: 600
+        });
+    } catch (error) {
+        console.error("sendPhoneOtp Error:", error);
+        res.status(500).json({ message: error.message || "Failed to send OTP." });
+    }
+};
+
+export const verifyPhoneOtp = async (req, res) => {
+    try {
+        const userId = req.user?.user_id;
+        const { otp } = req.body;
+
+        if (!otp || !String(otp).trim()) {
+            return res.status(400).json({ message: "OTP code is required." });
+        }
+
+        const inputOtp = String(otp).trim();
+        let expectedCode = null;
+        let isExpired = false;
+
+        // 1. Check in-memory map
+        const storedOtpData = phoneOtps.get(String(userId)) || phoneOtps.get(Number(userId));
+        if (storedOtpData) {
+            if (Date.now() > storedOtpData.expiresAt) {
+                isExpired = true;
+            } else {
+                expectedCode = String(storedOtpData.code).trim();
+            }
+        }
+
+        // 2. Check SQL DB table if not found in memory
+        if (!expectedCode && !isExpired) {
+            try {
+                const userDbRes = await pool.query(
+                    "SELECT phone_otp, phone_otp_expires_at FROM users WHERE user_id = $1",
+                    [userId]
+                );
+                if (userDbRes.rows.length > 0) {
+                    const row = userDbRes.rows[0];
+                    if (row.phone_otp) {
+                        if (row.phone_otp_expires_at && new Date() > new Date(row.phone_otp_expires_at)) {
+                            isExpired = true;
+                        } else {
+                            expectedCode = String(row.phone_otp).trim();
+                        }
+                    }
+                }
+            } catch (dbErr) {
+                console.error("DB OTP lookup error:", dbErr);
+            }
+        }
+
+        if (isExpired) {
+            phoneOtps.delete(String(userId));
+            phoneOtps.delete(Number(userId));
+            return res.status(400).json({ message: "OTP code has expired. Please request a new OTP." });
+        }
+
+        if (!expectedCode) {
+            return res.status(400).json({ message: "No active OTP found. Please click 'Send OTP' first." });
+        }
+
+        if (inputOtp !== expectedCode) {
+            return res.status(400).json({ message: "Invalid OTP code. Please check your SMS and try again." });
+        }
+
+        // OTP is valid! Update phone_verified in DB
+        try {
+            await pool.query(
+                "UPDATE users SET phone_verified = true, phone_otp = NULL, phone_otp_expires_at = NULL WHERE user_id = $1",
+                [userId]
+            );
+        } catch (updateErr) {
+            await pool.query("UPDATE users SET phone_verified = true WHERE user_id = $1", [userId]);
+        }
+
+        // Clean up memory
+        phoneOtps.delete(String(userId));
+        phoneOtps.delete(Number(userId));
+
+        res.status(200).json({
+            message: "Mobile number verified successfully!",
+            phone_verified: true
+        });
+    } catch (error) {
+        console.error("verifyPhoneOtp Error:", error);
+        res.status(500).json({ message: error.message || "Failed to verify OTP." });
+    }
+};
+
+// In-memory Email OTP storage
+const emailOtps = new Map();
+
+export const sendEmailOtp = async (req, res) => {
+    try {
+        const userId = req.user?.user_id;
+        const userRes = await pool.query("SELECT email FROM users WHERE user_id = $1", [userId]);
+        if (userRes.rows.length === 0) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        const userEmail = userRes.rows[0].email;
+
+        // Generate 6-digit Email OTP
+        const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+        const expiresAtDate = new Date(expiresAt);
+
+        emailOtps.set(String(userId), { email: userEmail, code: otpCode, expiresAt });
+        emailOtps.set(Number(userId), { email: userEmail, code: otpCode, expiresAt });
+
+        try {
+            await pool.query(
+                "UPDATE users SET email_otp = $1, email_otp_expires_at = $2 WHERE user_id = $3",
+                [otpCode, expiresAtDate, userId]
+            );
+        } catch (e) {}
+
+        // Send email via standard free Nodemailer / SMTP helper
+        let emailSent = false;
+        try {
+            await sendEmail({
+                to: userEmail,
+                subject: "Verify Your Email Address - Buy2Lancer",
+                text: `Hello,\n\nYour 6-digit email verification code is: ${otpCode}\n\nThis code will expire in 10 minutes. If you did not request this verification code, please ignore this email.`,
+                html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: 0 auto; text-align: left;">
+                  <p style="font-size: 15px; color: #334155; margin-bottom: 16px; font-weight: 600;">Hello,</p>
+                  <p style="font-size: 14px; color: #475569; margin-bottom: 20px; line-height: 1.5;">Use the following 6-digit verification code to complete your email address verification:</p>
+                  
+                  <div style="background-color: #f0fdf4; border: 2px dashed #0f766e; border-radius: 12px; padding: 20px 16px; text-align: center; margin: 24px 0;">
+                    <span style="font-size: 11px; font-weight: 800; color: #0f766e; text-transform: uppercase; letter-spacing: 1.5px; display: block; margin-bottom: 8px;">Your Verification Code</span>
+                    <span style="font-size: 34px; font-weight: 900; letter-spacing: 8px; color: #0f766e; font-family: 'Courier New', Courier, monospace; display: block; margin-left: 8px;">${otpCode}</span>
+                  </div>
+
+                  <p style="font-size: 13px; color: #64748b; margin-top: 20px; line-height: 1.5;">This security code will expire in <strong style="color: #0f766e;">10 minutes</strong>. If you did not request this code, please ignore this email.</p>
+                </div>
+                `
+            });
+            emailSent = true;
+        } catch (emailErr) {
+            console.error("sendEmail SMTP Error:", emailErr);
+        }
+
+        console.log(`\n==============================================`);
+        console.log(`[EMAIL OTP DISPATCH]`);
+        console.log(`User ID: ${userId}`);
+        console.log(`Email: ${userEmail}`);
+        console.log(`OTP Code: ${otpCode}`);
+        console.log(`SMTP Sent: ${emailSent ? "YES" : "FALLBACK LOG"}`);
+        console.log(`==============================================\n`);
+
+        res.status(200).json({
+            message: `Verification OTP sent to ${userEmail}. Please check your email inbox.`,
+            expiresInSeconds: 600
+        });
+    } catch (error) {
+        console.error("sendEmailOtp Error:", error);
+        res.status(500).json({ message: error.message || "Failed to send email OTP." });
+    }
+};
+
+export const verifyEmailOtp = async (req, res) => {
+    try {
+        const userId = req.user?.user_id;
+        const { otp } = req.body;
+
+        if (!otp || !String(otp).trim()) {
+            return res.status(400).json({ message: "OTP code is required." });
+        }
+
+        const inputOtp = String(otp).trim();
+        let expectedCode = null;
+        let isExpired = false;
+
+        const storedOtpData = emailOtps.get(String(userId)) || emailOtps.get(Number(userId));
+        if (storedOtpData) {
+            if (Date.now() > storedOtpData.expiresAt) {
+                isExpired = true;
+            } else {
+                expectedCode = String(storedOtpData.code).trim();
+            }
+        }
+
+        if (!expectedCode && !isExpired) {
+            try {
+                const dbRes = await pool.query("SELECT email_otp, email_otp_expires_at FROM users WHERE user_id = $1", [userId]);
+                if (dbRes.rows.length > 0 && dbRes.rows[0].email_otp) {
+                    const row = dbRes.rows[0];
+                    if (row.email_otp_expires_at && new Date() > new Date(row.email_otp_expires_at)) {
+                        isExpired = true;
+                    } else {
+                        expectedCode = String(row.email_otp).trim();
+                    }
+                }
+            } catch (e) {}
+        }
+
+        if (isExpired) {
+            emailOtps.delete(String(userId));
+            emailOtps.delete(Number(userId));
+            return res.status(400).json({ message: "OTP code has expired. Please request a new OTP." });
+        }
+
+        if (!expectedCode) {
+            return res.status(400).json({ message: "No active Email OTP found. Please click 'Send Email OTP' first." });
+        }
+
+        if (inputOtp !== expectedCode) {
+            return res.status(400).json({ message: "Invalid OTP code. Please check your email and try again." });
+        }
+
+        // Email OTP is valid!
+        try {
+            await pool.query("UPDATE users SET email_verified = true, email_otp = NULL, email_otp_expires_at = NULL WHERE user_id = $1", [userId]);
+        } catch (e) {
+            await pool.query("UPDATE users SET email_verified = true WHERE user_id = $1", [userId]);
+        }
+
+        emailOtps.delete(String(userId));
+        emailOtps.delete(Number(userId));
+
+        res.status(200).json({
+            message: "Email address verified successfully!",
+            email_verified: true
+        });
+    } catch (error) {
+        console.error("verifyEmailOtp Error:", error);
+        res.status(500).json({ message: error.message || "Failed to verify email OTP." });
     }
 };

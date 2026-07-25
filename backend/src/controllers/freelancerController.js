@@ -747,7 +747,7 @@ export const getPublicFreelancerProfile = async (req, res) => {
             [userId]
         );
 
-        // Fetch Unified Reviews
+        // Fetch Unified Reviews (Client reviews displayed on Freelancer profile)
         const reviewsRes = await pool.query(
             `(SELECT 
                 cr.rating,
@@ -755,10 +755,11 @@ export const getPublicFreelancerProfile = async (req, res) => {
                 cr.created_at,
                 CONCAT_WS(' ', u.first_name, u.last_name) as reviewer_name,
                 u.profile_image as reviewer_image,
-                'contract' as review_type
+                'contract' as review_type,
+                'Client Review' as reviewer_role_label
               FROM contract_reviews cr
               JOIN users u ON cr.reviewer_id = u.user_id
-              WHERE cr.reviewee_id = $1 AND cr.reviewer_role = 'client')
+              WHERE (cr.reviewee_id = $1 OR cr.contract_id IN (SELECT contract_id FROM contracts WHERE freelancer_id = $1)) AND cr.reviewer_role = 'client')
              UNION ALL
              (SELECT 
                 gr.rating,
@@ -766,7 +767,8 @@ export const getPublicFreelancerProfile = async (req, res) => {
                 gr.created_at,
                 CONCAT_WS(' ', u.first_name, u.last_name) as reviewer_name,
                 u.profile_image as reviewer_image,
-                'gig' as review_type
+                'gig' as review_type,
+                'Client Review' as reviewer_role_label
               FROM gig_reviews gr
               JOIN gigs g ON gr.gig_id = g.gig_id
               JOIN users u ON gr.client_id = u.user_id
@@ -1891,14 +1893,15 @@ export const getPublicClientProfile = async (req, res) => {
 
         const reviewsRes = await pool.query(
             `SELECT cr.*, 
-                    u.first_name || ' ' || COALESCE(u.last_name, '') as reviewer_name,
+                    CONCAT_WS(' ', u.first_name, u.last_name) as reviewer_name,
                     u.profile_image as reviewer_image,
-                    j.title as project_title
+                    j.title as project_title,
+                    'Freelancer Review' as reviewer_role_label
              FROM contract_reviews cr
              JOIN users u ON cr.reviewer_id = u.user_id
              JOIN contracts c ON cr.contract_id = c.contract_id
              LEFT JOIN jobs j ON c.job_id = j.job_id
-             WHERE cr.reviewee_id = $1 AND cr.reviewer_role = 'freelancer'
+             WHERE (cr.reviewee_id = $1 OR c.client_id = $1) AND cr.reviewer_role = 'freelancer'
              ORDER BY cr.created_at DESC`,
             [userId]
         );

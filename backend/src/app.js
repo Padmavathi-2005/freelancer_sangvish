@@ -104,6 +104,46 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
+// Careers / CV Submission Endpoint
+app.post('/api/careers/apply', async (req, res) => {
+  try {
+    const { name, email, phone, role, coverLetter, resumeUrl } = req.body;
+    
+    if (!name || !email) {
+      return res.status(400).json({ error: "Full Name and Email Address are required." });
+    }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS career_applications (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        phone VARCHAR(50),
+        role VARCHAR(255),
+        cover_letter TEXT,
+        resume_url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const result = await pool.query(
+      `INSERT INTO career_applications (name, email, phone, role, cover_letter, resume_url)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [name, email, phone || null, role || 'General Candidate', coverLetter || '', resumeUrl || null]
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Application submitted successfully! Our recruitment team will review your CV.",
+      application: result.rows[0]
+    });
+  } catch (error) {
+    console.error("Error submitting career application:", error);
+    return res.status(500).json({ error: "Internal server error. Failed to submit application." });
+  }
+});
+
 // Newsletter Subscription endpoint
 app.post('/api/newsletter/subscribe', async (req, res) => {
   try {

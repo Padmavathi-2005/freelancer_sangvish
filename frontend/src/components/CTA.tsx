@@ -1,8 +1,23 @@
 import React from "react";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 
 export default function CTA() {
   const { t } = useLanguage();
+  const { openLoginModal } = useAuthModal();
+
+  const handleGetStarted = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+      if (token && user) {
+        window.location.href = "/dashboard";
+        return;
+      }
+    }
+    openLoginModal("/dashboard");
+  };
 
   return (
     <section className="w-full pt-20 pb-16 px-4 sm:px-6 lg:px-8 text-center relative z-10">
@@ -17,17 +32,18 @@ export default function CTA() {
 
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 select-none">
           <a
-            href="/register"
+            href="/dashboard"
+            onClick={handleGetStarted}
             className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-bold text-sm sm:text-base px-8 py-4 rounded-xl transition-all duration-200 hover:shadow-lg active:scale-[0.98] cursor-pointer text-center no-underline"
           >
             {t("cta_btn_primary", "Get Started Now")}
           </a>
           
           <a
-            href="/#pricing"
+            href="/pricing"
             className="w-full sm:w-auto bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 hover:text-slate-900 font-bold text-sm sm:text-base px-8 py-4 rounded-xl transition-all duration-200 active:scale-[0.98] cursor-pointer shadow-sm text-center no-underline"
           >
-            {t("cta_btn_secondary", "Talk to Sales")}
+            {t("cta_btn_secondary", "View Plans")}
           </a>
         </div>
       </div>

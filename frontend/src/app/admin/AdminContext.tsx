@@ -737,8 +737,18 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [platformFee, setPlatformFee] = useState(5);
   const [autoVetting, setAutoVetting] = useState(false);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
-  const [primaryColor, setPrimaryColor] = useState("#10b981");
-  const [secondaryColor, setSecondaryColor] = useState("#06b6d4");
+  const [primaryColor, setPrimaryColor] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("primaryColor") || "#0f766e";
+    }
+    return "#0f766e";
+  });
+  const [secondaryColor, setSecondaryColor] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("secondaryColor") || "#06b6d4";
+    }
+    return "#06b6d4";
+  });
   const [siteTheme, setSiteTheme] = useState("light");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
   const [defaultLanguage, setDefaultLanguage] = useState("EN");
@@ -1910,6 +1920,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleDeleteCmsPage = async (id: number) => {
+    const confirmation = window.confirm("Are you sure you want to delete this custom CMS page? This action cannot be undone.");
+    if (!confirmation) return;
+
     try {
       const token = localStorage.getItem("adminToken");
       const res = await fetch(`${API_URL}/admin/cms/pages/${id}`, {
@@ -1994,6 +2007,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleDeleteBlog = async (id: number) => {
+    const confirmation = window.confirm("Are you sure you want to delete this blog post? This action cannot be undone.");
+    if (!confirmation) return;
+
     try {
       const token = localStorage.getItem("adminToken");
       const res = await fetch(`${API_URL}/admin/blogs/${id}`, {
@@ -2226,10 +2242,23 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const totalOnboardedPages = useMemo(() => Math.ceil(filteredOnboardedUsers.length / itemsPerPage), [filteredOnboardedUsers, itemsPerPage]);
 
   const filteredProjects = useMemo(() => {
-    return projectsList.filter(p => 
+    const list = projectsList.filter(p => 
       (p.title || "").toLowerCase().includes(projectsSearch.toLowerCase()) ||
       (p.client_name || "").toLowerCase().includes(projectsSearch.toLowerCase())
     );
+
+    return list.sort((a: any, b: any) => {
+      const aStatus = (a.status || "").toLowerCase();
+      const bStatus = (b.status || "").toLowerCase();
+      const aIsCompleted = aStatus === "completed" || aStatus === "cancelled" || aStatus === "closed" || aStatus === "rejected";
+      const bIsCompleted = bStatus === "completed" || bStatus === "cancelled" || bStatus === "closed" || bStatus === "rejected";
+      if (!aIsCompleted && bIsCompleted) return -1; // Ongoing projects first
+      if (aIsCompleted && !bIsCompleted) return 1;  // Completed projects at the end
+
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : (Number(a.project_id || a.id) || 0);
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : (Number(b.project_id || b.id) || 0);
+      return bTime - aTime;
+    });
   }, [projectsSearch, projectsList]);
 
   const paginatedProjects = useMemo(() => {

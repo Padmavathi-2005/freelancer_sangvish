@@ -337,15 +337,15 @@ export default function Header() {
               </a>
 
               {/* Home Dropdown Options on Hover */}
-              <div className="absolute left-0 mt-1 w-44 bg-white border border-slate-200/85 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/home:opacity-100 group-hover/home:visible transition-all duration-200 z-50">
-                <a href="/" className="block px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-primary font-bold transition-colors">
-                  Home Landing
+              <div className="absolute left-0 mt-1 w-44 bg-white dark:bg-zinc-900 border border-slate-200/85 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/home:opacity-100 group-hover/home:visible transition-all duration-200 z-50">
+                <a href="/" className="block px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary font-bold transition-colors">
+                  Home 1 (Default)
                 </a>
-                <a href="/dashboard" className="block px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-primary font-bold transition-colors">
-                  Dashboard
+                <a href="/home-2" className="block px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary font-bold transition-colors">
+                  Home 2
                 </a>
-                <a href="/admin/login" className="block px-4 py-2 text-xs text-slate-600 hover:bg-slate-50 hover:text-primary font-bold transition-colors">
-                  Admin Portal
+                <a href="/home-3" className="block px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary font-bold transition-colors">
+                  Home 3
                 </a>
               </div>
             </div>
@@ -545,30 +545,30 @@ export default function Header() {
                 </button>
 
                 {/* Dropdown Menu (visible on hover) */}
-                <div className="absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-md border border-slate-100 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.12)] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
+                <div className="absolute right-0 mt-3 w-64 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.12)] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
                   <div className="flex flex-col gap-0.5">
-                    <a href="/dashboard" className="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-650 hover:bg-primary-light hover:text-primary font-bold rounded-xl transition-all duration-200 group/item hover:translate-x-0.5">
+                    <a href="/dashboard" className="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-650 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item hover:translate-x-0.5">
                       <div className="flex items-center gap-2.5">
-                        <FiGrid className="w-4 h-4 text-slate-400 group-hover:text-primary" />
+                        <FiGrid className="w-4 h-4 text-slate-400 dark:text-zinc-400 group-hover:text-primary" />
                         <span>{t("dashboard", "Go to Dashboard")}</span>
                       </div>
                       <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
                     </a>
                     {userRole === "freelancer" && userSlug && (
-                      <a href={`/freelancer/${userSlug}`} className="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-650 hover:bg-primary-light hover:text-primary font-bold rounded-xl transition-all duration-200 group/item hover:translate-x-0.5">
+                      <a href={`/freelancer/${userSlug}`} className="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-650 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item hover:translate-x-0.5">
                         <div className="flex items-center gap-2.5">
-                          <FiUser className="w-4 h-4 text-slate-400 group-hover:text-primary" />
+                          <FiUser className="w-4 h-4 text-slate-400 dark:text-zinc-400 group-hover:text-primary" />
                           <span>View Profile</span>
                         </div>
                         <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
                       </a>
                     )}
-                    <div className="h-px bg-slate-100 my-1 mx-2" />
+                    <div className="h-px bg-slate-100 dark:bg-zinc-800 my-1 mx-2" />
                     <button
                       onClick={handleHeaderLogout}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-rose-600 hover:bg-rose-50 font-bold rounded-xl transition-all duration-200 hover:translate-x-0.5 cursor-pointer text-left border-none bg-transparent"
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold rounded-xl transition-all duration-200 hover:translate-x-0.5 cursor-pointer text-left border-none bg-transparent"
                     >
-                      <FiLogOut className="w-4 h-4 text-rose-500" />
+                      <FiLogOut className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                       <span>Logout</span>
                     </button>
                   </div>
@@ -623,9 +623,18 @@ export default function Header() {
         }`}
       >
         <div className="px-4 pt-4 pb-28 space-y-2 flex flex-col min-h-full">
-          <a href="/" className="bg-primary-light text-primary font-bold px-4 py-2.5 rounded-lg text-base">
-            {t("home", "Home")}
-          </a>
+          <div className="space-y-1 bg-slate-100 dark:bg-zinc-800 p-2 rounded-xl border border-slate-200 dark:border-zinc-700">
+            <span className="block px-3 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider">Home Variations</span>
+            <a href="/" className="block px-3 py-1.5 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors">
+              Home 1 (Default)
+            </a>
+            <a href="/home-2" className="block px-3 py-1.5 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors">
+              Home 2
+            </a>
+            <a href="/home-3" className="block px-3 py-1.5 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors">
+              Home 3
+            </a>
+          </div>
           <a href="/gigs" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             Categories
           </a>

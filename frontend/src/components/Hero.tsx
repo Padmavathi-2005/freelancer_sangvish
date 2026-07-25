@@ -244,8 +244,8 @@ export default function Hero() {
 
           {/* Left Column */}
           <div className="lg:col-span-7 flex flex-col gap-3.5 text-center lg:text-left">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-semibold bg-primary-light dark:bg-zinc-800 text-primary dark:text-zinc-200 self-center lg:self-start border border-primary/20 dark:border-zinc-700/50 uppercase tracking-wider">
-              <FiAward className="w-3.5 h-3.5 text-primary dark:text-zinc-400" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-semibold bg-primary-light dark:bg-zinc-800 text-primary dark:text-white self-center lg:self-start border border-primary/20 dark:border-zinc-700/50 uppercase tracking-wider">
+              <FiAward className="w-3.5 h-3.5 text-primary dark:text-white" />
               {t("hero_badge", heroContent.hero_badge)}
             </span>
 
@@ -286,7 +286,8 @@ export default function Hero() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
-                  className="w-full text-slate-800 dark:text-white text-sm sm:text-base focus:outline-none bg-transparent py-2.5 z-10"
+                  style={{ border: "none", outline: "none", boxShadow: "none" }}
+                  className="w-full text-slate-800 dark:text-white text-sm sm:text-base border-none outline-none focus:outline-none focus:ring-0 shadow-none bg-transparent py-2.5 z-10"
                 />
                 {!isFocused && !searchQuery && (
                   <div className="absolute left-[38px] text-slate-400 dark:text-slate-350 text-sm sm:text-base pointer-events-none select-none z-0 flex items-center">
@@ -318,7 +319,7 @@ export default function Hero() {
                 <button
                   key={skill}
                   onClick={() => handleQuickTagClick(skill)}
-                  className="hover:text-white hover:bg-primary hover:border-primary border border-primary/20 dark:border-zinc-700 bg-primary-light dark:bg-zinc-800/80 text-primary dark:text-zinc-200 px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer dark:hover:bg-white dark:hover:text-slate-900 text-xs font-semibold"
+                  className="hover:text-white hover:bg-primary hover:border-primary border border-primary/20 dark:border-zinc-700 bg-primary-light dark:bg-zinc-800/80 text-primary dark:text-white px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer dark:hover:bg-white dark:hover:text-slate-900 text-xs font-semibold"
                 >
                   {skill}
                 </button>

@@ -688,8 +688,29 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
       const token = localStorage.getItem("token");
 
       let finalPrice = getDiscountedPackagePrice(getPackagePrice()) + getAddonsPriceTotal();
-      if (gig.negotiation && customProposedPrice.trim()) {
-        finalPrice = parseFloat(customProposedPrice.trim()) + getAddonsPriceTotal();
+      const basePkgPrice = getDiscountedPackagePrice(getPackagePrice());
+
+      if (gig.negotiation && customProposedPrice.trim() !== "") {
+        const proposedNum = parseFloat(customProposedPrice.trim());
+        const minAllowed = basePkgPrice * 0.5; // Max 50% discount allowed
+        const maxAllowed = basePkgPrice;
+
+        if (isNaN(proposedNum) || proposedNum <= 0) {
+          setOrderError("Please enter a valid positive offer amount.");
+          setOrderSubmitting(false);
+          return;
+        }
+        if (proposedNum < minAllowed) {
+          setOrderError(`Offer cannot be lower than 50% of the package price (${gig.currency_symbol || "$"}${minAllowed.toFixed(2)}).`);
+          setOrderSubmitting(false);
+          return;
+        }
+        if (proposedNum > maxAllowed) {
+          setOrderError(`Offer cannot exceed the package price (${gig.currency_symbol || "$"}${maxAllowed.toFixed(2)}).`);
+          setOrderSubmitting(false);
+          return;
+        }
+        finalPrice = proposedNum + getAddonsPriceTotal();
       }
 
       if (isNaN(finalPrice) || finalPrice <= 0) {
@@ -982,12 +1003,12 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 <span className="text-slate-450 text-xs font-bold line-through">
                   {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
                 </span>
-                <span className="text-2xl font-black text-slate-900">
+                <span className="text-xl sm:text-2xl font-black text-slate-900 break-all max-w-full text-right">
                   {gig.currency_symbol || "$"}{parseFloat(getDiscountedPackagePrice(getPackagePrice()).toFixed(2)).toLocaleString()}
                 </span>
               </>
             ) : (
-              <span className="text-2xl font-black text-slate-900">
+              <span className="text-xl sm:text-2xl font-black text-slate-900 break-all max-w-full text-right">
                 {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
               </span>
             )}
@@ -1146,8 +1167,14 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
       <div className="bg-slate-50 border-b border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-3">
           <button
-            onClick={() => router.back()}
-            className="hidden sm:flex items-center gap-1.5 text-xs font-extrabold text-slate-600 hover:text-teal-750 transition-colors"
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push("/gigs");
+              }
+            }}
+            className="flex items-center gap-1.5 text-xs font-extrabold text-slate-600 hover:text-teal-750 transition-colors cursor-pointer"
           >
             <FiArrowLeft className="w-4 h-4" />
             <span>{t("btn_back", "Back")}</span>
@@ -1816,10 +1843,10 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 </div>
               )}
 
-              <div className="flex-grow overflow-y-auto my-4 flex flex-col gap-5 pr-1.5 min-h-0 text-left">
+              <div className="flex-grow overflow-y-auto my-3 flex flex-col gap-4 pr-1.5 min-h-0 text-left">
                 
-                {/* Price Details banner */}
-                <div className="bg-slate-50 border border-slate-150 rounded-xl p-4 flex justify-between items-center text-xs shrink-0 text-left">
+                {/* Price Details banner with clean single bottom divider line */}
+                <div className="border-b border-slate-200/80 pb-3.5 px-1 flex justify-between items-center text-xs shrink-0 text-left">
                   <div>
                     <span className="text-slate-400 block font-bold uppercase tracking-wider text-[9px]">
                       Selected Package Price
@@ -1834,22 +1861,75 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                   </div>
                 </div>
 
-                {/* Price Negotiation Section */}
+                {/* Price Negotiation Section with clean divider line & live 50% discount validation */}
                 {gig.negotiation && (
-                  <div className="bg-amber-50/50 border border-amber-200/80 rounded-xl p-4 flex flex-col gap-2 text-left">
-                    <label className="text-xs font-bold text-slate-700 block">Propose a Negotiated Price</label>
-                    <p className="text-[10px] text-slate-505 font-semibold mb-1">
-                      The freelancer allows budget proposals for this gig. Enter your offer below if you wish to negotiate:
+                  <div className="border-b border-slate-200/80 pb-4 pt-1 flex flex-col gap-2 text-left">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-black text-slate-800 block uppercase tracking-wider">Propose a Negotiated Price</label>
+                      <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                        Max 50% Discount
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      Enter your budget offer below (minimum allowed is 50% off original package price):
                     </p>
-                    <div className="relative flex items-center max-w-xs">
-                      <span className="absolute left-3 text-xs text-slate-450 font-bold">{gig.currency_symbol || "$"}</span>
-                      <input
-                        type="number"
-                        placeholder="e.g. 120"
-                        value={customProposedPrice}
-                        onChange={(e) => setCustomProposedPrice(e.target.value)}
-                        className="w-full bg-white border border-slate-205 rounded-xl pl-7 pr-3.5 py-2.5 text-xs text-slate-800 focus:border-amber-500 focus:outline-none font-bold"
-                      />
+                    <div className="flex flex-col gap-1.5 mt-0.5">
+                      <div className="relative flex items-center max-w-xs">
+                        <span className="absolute left-3 text-xs text-slate-500 font-bold">{gig.currency_symbol || "$"}</span>
+                        <input
+                          type="number"
+                          placeholder={`e.g. ${(getDiscountedPackagePrice(getPackagePrice()) * 0.8).toFixed(0)}`}
+                          value={customProposedPrice}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val.includes("-")) return; // Disallow negative typing
+                            setCustomProposedPrice(val);
+                          }}
+                          className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-teal-600 rounded-xl pl-7 pr-3 py-2 text-xs text-slate-800 focus:outline-none font-bold"
+                        />
+                      </div>
+                      
+                      {/* Live typing validation helper message */}
+                      {(() => {
+                        const basePkgPrice = getDiscountedPackagePrice(getPackagePrice());
+                        const rawVal = customProposedPrice.trim();
+                        const minAllowed = basePkgPrice * 0.5;
+                        const maxAllowed = basePkgPrice;
+
+                        if (!rawVal) {
+                          return (
+                            <span className="text-[10px] text-slate-400 font-semibold">
+                              Min offer: {gig.currency_symbol || "$"}{minAllowed.toFixed(2)} · Max offer: {gig.currency_symbol || "$"}{maxAllowed.toFixed(2)}
+                            </span>
+                          );
+                        }
+
+                        const num = parseFloat(rawVal);
+                        if (isNaN(num) || num <= 0) {
+                          return <span className="text-[10px] text-rose-500 font-bold">⚠️ Please enter a valid positive offer amount.</span>;
+                        }
+                        if (num < minAllowed) {
+                          return (
+                            <span className="text-[10px] text-rose-500 font-bold">
+                              ⚠️ Offer cannot be lower than 50% of original price ({gig.currency_symbol || "$"}{minAllowed.toFixed(2)} minimum).
+                            </span>
+                          );
+                        }
+                        if (num > maxAllowed) {
+                          return (
+                            <span className="text-[10px] text-rose-500 font-bold">
+                              ⚠️ Offer cannot exceed package price ({gig.currency_symbol || "$"}{maxAllowed.toFixed(2)} maximum).
+                            </span>
+                          );
+                        }
+
+                        const discountPct = Math.round(((basePkgPrice - num) / basePkgPrice) * 100);
+                        return (
+                          <span className="text-[10px] text-emerald-600 font-bold">
+                            ✓ Valid offer ({discountPct}% discount · saves {gig.currency_symbol || "$"}{(basePkgPrice - num).toFixed(2)})
+                          </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -1864,7 +1944,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                   if (!Array.isArray(parsedAddons) || parsedAddons.length === 0) return null;
                   
                   return (
-                    <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 text-left animate-fadeIn">
+                    <div className="flex flex-col gap-2.5 border-b border-slate-200/80 pb-4 pt-1 text-left animate-fadeIn">
                       <div>
                         <label className="text-xs font-black text-slate-800 uppercase tracking-wide">Customize Order with Extras</label>
                         <p className="text-[10px] text-slate-400 font-semibold mt-0.5 leading-relaxed">

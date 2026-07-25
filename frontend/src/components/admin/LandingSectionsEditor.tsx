@@ -4,6 +4,7 @@ import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
+import CustomSelect from "@/components/CustomSelect";
 
 function getAdminToken() {
   if (typeof window !== "undefined") {
@@ -17,15 +18,23 @@ interface LandingSectionsEditorProps {
   frontendHeroContent: any;
   setFrontendHeroContent: (v: any) => void;
   handleSaveSetting: (key: string, value: any, category?: string) => Promise<void>;
+  defaultSubTab?: string;
 }
 
 export default function LandingSectionsEditor({
   triggerToast,
   frontendHeroContent,
   setFrontendHeroContent,
-  handleSaveSetting
+  handleSaveSetting,
+  defaultSubTab
 }: LandingSectionsEditorProps) {
-  const [activeSubTab, setActiveSubTab] = useState("hero");
+  const [activeSubTab, setActiveSubTab] = useState(defaultSubTab || "hero");
+
+  useEffect(() => {
+    if (defaultSubTab) {
+      setActiveSubTab(defaultSubTab);
+    }
+  }, [defaultSubTab]);
   const [availLanguages, setAvailLanguages] = useState<{ name: string; code: string }[]>([]);
   const [translationsByLang, setTranslationsByLang] = useState<Record<string, Record<string, string>>>({});
   const [selectedContentLang, setSelectedContentLang] = useState("EN");
@@ -45,6 +54,132 @@ export default function LandingSectionsEditor({
   const [newFeatBadge, setNewFeatBadge] = useState("");
   const [newFeatIcon, setNewFeatIcon] = useState("zap");
   const [newFeatImg, setNewFeatImg] = useState("");
+
+  // Promo Cards Settings
+  const [promoCards, setPromoCards] = useState<any[]>([
+    {
+      id: "card_1",
+      card_theme: "slate",
+      eyebrow: "FOR CLIENTS",
+      title: "Post a project and hire top talent",
+      description: "Find ready-to-work professionals across software development, AI, design, and digital marketing within 24 hours.",
+      button_text: "Post a New Project",
+      link_url: "/projects",
+      image_url: "/promo_card_man_1784885756966.png"
+    },
+    {
+      id: "card_2",
+      card_theme: "amber",
+      eyebrow: "FOR FREELANCERS",
+      title: "Work on top projects and earn more",
+      description: "Discover high-paying client contracts, submit proposals with confidence, and build your long-term remote career.",
+      button_text: "Work on a Best Project",
+      link_url: "/gigs",
+      image_url: "/promo_card_woman_1784885770481.png"
+    }
+  ]);
+  const [uploadingPromoImg, setUploadingPromoImg] = useState<string | null>(null);
+
+  // Home 2 Chat Messages Settings
+  const [chatMessages, setChatMessages] = useState<any[]>([
+    { id: "1",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "Hi! I need a React developer for 3 months." },
+    { id: "2",  side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "Sure! I specialize in React & Next.js 🚀" },
+    { id: "3",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "E-commerce with real-time updates." },
+    { id: "4",  side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "Perfect, available immediately!" },
+    { id: "5",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "What's your hourly rate?" },
+    { id: "6",  side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "$85/hr. Starting this Monday." },
+    { id: "7",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "Sounds good, sending contract now." },
+    { id: "8",  side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "Got it! Signed & ready ✅" },
+    { id: "9",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "Milestone 1 approved. Payment released 💸" },
+    { id: "10", side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "Thank you! Onto Milestone 2 🎯" }
+  ]);
+
+  const fetchPromoCardsSettings = async () => {
+    try {
+      const res = await fetch(`${API_URL}/settings`);
+      if (res.ok) {
+        const data = await res.json();
+        const item = data.find((s: any) => s.setting_key === "home2_promo_cards");
+        if (item && item.setting_value) {
+          let val = item.setting_value;
+          if (typeof val === "string") {
+            try { val = JSON.parse(val); } catch (e) {}
+          }
+          if (Array.isArray(val) && val.length > 0) setPromoCards(val);
+        }
+      }
+    } catch (e) {
+      console.error("Error loading promo cards:", e);
+    }
+  };
+
+  const fetchChatMessages = async () => {
+    try {
+      const res = await fetch(`${API_URL}/settings`);
+      if (res.ok) {
+        const data = await res.json();
+        const item = data.find((s: any) => s.setting_key === "home2_chat_messages");
+        if (item && item.setting_value) {
+          let val = item.setting_value;
+          if (typeof val === "string") {
+            try { val = JSON.parse(val); } catch (e) {}
+          }
+          if (Array.isArray(val) && val.length > 0) setChatMessages(val);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveChatMessages = async () => {
+    setSaving(true);
+    try {
+      await handleSaveSetting("home2_chat_messages", chatMessages, "frontend");
+      triggerToast("Success", "Home 2 Chat Messages updated successfully!");
+    } catch (err: any) {
+      triggerToast("Error", err.message || "Failed to save chat messages.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePromoImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, cardId: string) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPromoImg(cardId);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Upload failed");
+      const imgUrl = data.url || data.fileUrl || data.path;
+      setPromoCards((prev) =>
+        prev.map((c) => (c.id === cardId ? { ...c, image_url: imgUrl } : c))
+      );
+      triggerToast("Upload Success", "Promo card image uploaded!");
+    } catch (err: any) {
+      triggerToast("Upload Failed", err.message || "Failed to upload image.");
+    } finally {
+      setUploadingPromoImg(null);
+    }
+  };
+
+  const handleSavePromoCards = async () => {
+    setSaving(true);
+    try {
+      await handleSaveSetting("home2_promo_cards", promoCards, "frontend");
+      triggerToast("Success", "Promo Cards updated successfully!");
+    } catch (err: any) {
+      triggerToast("Error", err.message || "Failed to save promo cards.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const fetchFeaturesPool = async () => {
     try {
@@ -157,7 +292,7 @@ export default function LandingSectionsEditor({
         cta_title: dbVals.cta_title || (code === "EN" ? "Ready to Hire the Right Freelancer?" : ""),
         cta_subtitle: dbVals.cta_subtitle || (code === "EN" ? "Join thousands of businesses who trust Freelancer to deliver exceptional results on time, every time." : ""),
         cta_btn_primary: dbVals.cta_btn_primary || (code === "EN" ? "Get Started Now" : ""),
-        cta_btn_secondary: dbVals.cta_btn_secondary || (code === "EN" ? "Talk to Sales" : ""),
+        cta_btn_secondary: dbVals.cta_btn_secondary || (code === "EN" ? "View Plans" : ""),
         success_stories_title: dbVals.success_stories_title || (code === "EN" ? "Success Stories" : ""),
         stats_val_1: dbVals.stats_val_1 || (code === "EN" ? "25K+" : ""),
         stats_label_1: dbVals.stats_label_1 || (code === "EN" ? "Freelancers" : ""),
@@ -184,6 +319,8 @@ export default function LandingSectionsEditor({
     fetchWhyChooseFeats();
     fetchHowItWorksSteps();
     fetchFeaturesPool();
+    fetchPromoCardsSettings();
+    fetchChatMessages();
   }, []);
 
   useEffect(() => {
@@ -367,58 +504,6 @@ export default function LandingSectionsEditor({
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Navigation Sub-Tabs */}
-      <div className="flex border-b border-slate-100 gap-6 text-xs font-bold text-slate-550">
-        <button 
-          onClick={() => setActiveSubTab("hero")}
-          className={`pb-3 transition-all relative ${
-            activeSubTab === "hero" ? "text-teal-750 font-black border-b-2 border-teal-750" : "hover:text-slate-800"
-          }`}
-        >
-          Home 1 Hero
-        </button>
-        <button 
-          onClick={() => setActiveSubTab("home2_hero")}
-          className={`pb-3 transition-all relative ${
-            activeSubTab === "home2_hero" ? "text-teal-750 font-black border-b-2 border-teal-750" : "hover:text-slate-800"
-          }`}
-        >
-          Home 2 Hero
-        </button>
-        <button 
-          onClick={() => setActiveSubTab("home2_features")}
-          className={`pb-3 transition-all relative ${
-            activeSubTab === "home2_features" ? "text-teal-750 font-black border-b-2 border-teal-750" : "hover:text-slate-800"
-          }`}
-        >
-          Home 2 Features Pool
-        </button>
-        <button 
-          onClick={() => setActiveSubTab("general_sections")}
-          className={`pb-3 transition-all relative ${
-            activeSubTab === "general_sections" ? "text-teal-750 font-black border-b-2 border-teal-750" : "hover:text-slate-800"
-          }`}
-        >
-          General Headings
-        </button>
-        <button 
-          onClick={() => setActiveSubTab("why_choose")}
-          className={`pb-3 transition-all relative ${
-            activeSubTab === "why_choose" ? "text-teal-750 font-black border-b-2 border-teal-750" : "hover:text-slate-800"
-          }`}
-        >
-          Why Choose Us Grid
-        </button>
-        <button 
-          onClick={() => setActiveSubTab("how_it_works")}
-          className={`pb-3 transition-all relative ${
-            activeSubTab === "how_it_works" ? "text-teal-750 font-black border-b-2 border-teal-750" : "hover:text-slate-800"
-          }`}
-        >
-          How It Works Steps
-        </button>
       </div>
 
       {/* Form Content */}
@@ -1172,6 +1257,248 @@ export default function LandingSectionsEditor({
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {activeSubTab === "promo_cards" && (
+          <div className="flex flex-col gap-6">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200/60">
+              <div>
+                <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider">Home Category Promo Banners</h5>
+                <p className="text-xs text-slate-500 mt-0.5">Customize the promotional banner cards displayed right after the categories section.</p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSavePromoCards}
+                disabled={saving}
+                className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition shadow-xs cursor-pointer"
+              >
+                {saving ? "Saving Promo Cards..." : "Save Promo Cards Settings"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {promoCards.map((card, idx) => (
+                <div key={card.id || idx} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    <span className="text-xs font-black text-teal-750 uppercase tracking-wider">Promo Card #{idx + 1}</span>
+                    <select
+                      value={card.card_theme || "slate"}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPromoCards((prev) => prev.map((c, i) => (i === idx ? { ...c, card_theme: val } : c)));
+                      }}
+                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-700 font-bold focus:outline-none"
+                    >
+                      <option value="slate">Cool Slate/Blue Theme</option>
+                      <option value="amber">Warm Amber/Beige Theme</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Eyebrow Badge Text</label>
+                    <input
+                      type="text"
+                      value={card.eyebrow}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPromoCards((prev) => prev.map((c, i) => (i === idx ? { ...c, eyebrow: val } : c)));
+                      }}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-bold focus:outline-none focus:border-teal-750"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Main Card Title</label>
+                    <input
+                      type="text"
+                      value={card.title}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPromoCards((prev) => prev.map((c, i) => (i === idx ? { ...c, title: val } : c)));
+                      }}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-black focus:outline-none focus:border-teal-750"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Subtitle / Description</label>
+                    <textarea
+                      rows={2}
+                      value={card.description}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPromoCards((prev) => prev.map((c, i) => (i === idx ? { ...c, description: val } : c)));
+                      }}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-700 font-medium focus:outline-none focus:border-teal-750 resize-y"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Button Redirect Link URL</label>
+                    <input
+                      type="text"
+                      value={card.link_url}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPromoCards((prev) => prev.map((c, i) => (i === idx ? { ...c, link_url: val } : c)));
+                      }}
+                      placeholder="/projects or /gigs"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-semibold focus:outline-none focus:border-teal-750"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Card Image</label>
+                    <div className="flex items-center gap-3">
+                      {card.image_url && (
+                        <div className="w-16 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+                          <img src={card.image_url} alt="Preview" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <input
+                        type="text"
+                        value={card.image_url}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setPromoCards((prev) => prev.map((c, i) => (i === idx ? { ...c, image_url: val } : c)));
+                        }}
+                        placeholder="Image URL or upload"
+                        className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 font-medium flex-1 focus:outline-none"
+                      />
+                      <label className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition cursor-pointer shrink-0">
+                        {uploadingPromoImg === card.id ? "Uploading..." : "Upload File"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={uploadingPromoImg !== null}
+                          onChange={(e) => handlePromoImageUpload(e, card.id)}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeSubTab === "home2_chat_messages" && (
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+              <div>
+                <h4 className="text-sm font-black text-slate-800">Home 2 Hero Chat Messages</h4>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Configure the simulated chat conversation displayed on the right side of the Home 2 Hero section.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newId = String(Date.now());
+                    setChatMessages((prev) => [
+                      ...prev,
+                      {
+                        id: newId,
+                        side: prev.length % 2 === 0 ? "left" : "right",
+                        avatar: prev.length % 2 === 0 ? "SJ" : "DM",
+                        avatarColor: prev.length % 2 === 0
+                          ? "bg-gradient-to-br from-violet-500 to-indigo-600"
+                          : "bg-gradient-to-br from-emerald-500 to-teal-600",
+                        text: "New conversation message..."
+                      }
+                    ]);
+                  }}
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer border border-slate-200 flex items-center gap-1.5"
+                >
+                  <FiPlus className="w-3.5 h-3.5" />
+                  <span>Add Message</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveChatMessages}
+                  disabled={saving}
+                  className="bg-teal-700 hover:bg-teal-800 text-white font-black text-xs px-6 py-2.5 rounded-xl transition cursor-pointer shadow-md disabled:opacity-50 border-none"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </div>
+
+            {/* List of Messages */}
+            <div className="grid grid-cols-1 gap-4">
+              {chatMessages.map((msg, idx) => (
+                <div
+                  key={msg.id || idx}
+                  className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center gap-4 shadow-xs"
+                >
+                  {/* Speaker badge & order number */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs font-black text-slate-400 w-6">#{idx + 1}</span>
+                    <select
+                      value={msg.side}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setChatMessages((prev) =>
+                          prev.map((m, i) => (i === idx ? { ...m, side: val } : m))
+                        );
+                      }}
+                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none"
+                    >
+                      <option value="left">Client (Left)</option>
+                      <option value="right">Freelancer (Right)</option>
+                    </select>
+                  </div>
+
+                  {/* Avatar Initials */}
+                  <div className="flex flex-col gap-1 w-24 shrink-0">
+                    <span className="text-[9px] font-black text-slate-400 uppercase">Initials</span>
+                    <input
+                      type="text"
+                      maxLength={3}
+                      value={msg.avatar}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setChatMessages((prev) =>
+                          prev.map((m, i) => (i === idx ? { ...m, avatar: val } : m))
+                        );
+                      }}
+                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 uppercase focus:outline-none text-center"
+                    />
+                  </div>
+
+                  {/* Message Text */}
+                  <div className="flex-1 flex flex-col gap-1 w-full min-w-0">
+                    <span className="text-[9px] font-black text-slate-400 uppercase">Message Text</span>
+                    <input
+                      type="text"
+                      value={msg.text}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setChatMessages((prev) =>
+                          prev.map((m, i) => (i === idx ? { ...m, text: val } : m))
+                        );
+                      }}
+                      className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-teal-750 w-full"
+                    />
+                  </div>
+
+                  {/* Delete button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setChatMessages((prev) => prev.filter((_, i) => i !== idx));
+                    }}
+                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition cursor-pointer shrink-0 self-end md:self-center"
+                    title="Delete Message"
+                  >
+                    <FiTrash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         )}

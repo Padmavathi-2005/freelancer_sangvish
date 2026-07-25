@@ -250,7 +250,7 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
           </div>
         )}
         {/* Category badge overlaid on image */}
-        <span className="absolute top-3 left-3 text-[9px] font-black text-primary bg-white/90 border border-primary/20 px-2.5 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm">
+        <span className="absolute top-3 left-3 text-[9px] font-black text-primary dark:text-white bg-white/90 dark:bg-zinc-950/85 border border-primary/20 dark:border-white/20 px-2.5 py-0.5 rounded-full uppercase tracking-wider backdrop-blur-sm shadow-sm">
           {gig.category_name || "Development"}
         </span>
         {/* Interactive wishlist button */}
@@ -268,10 +268,10 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
           return (
             <button
               onClick={toggleWishlist}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-md flex items-center justify-center border border-slate-100 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer"
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white dark:bg-zinc-950/80 dark:hover:bg-zinc-900 text-slate-400 dark:text-white shadow-md flex items-center justify-center border border-slate-100 dark:border-white/25 hover:scale-105 active:scale-95 transition-all z-20 cursor-pointer backdrop-blur-sm"
               title="Save to wishlist"
             >
-              <FiHeart className={`w-3.5 h-3.5 transition-colors ${isSaved ? "text-rose-500 fill-rose-500" : "text-slate-400"}`} />
+              <FiHeart className={`w-3.5 h-3.5 transition-colors ${isSaved ? "text-rose-500 fill-rose-500" : "text-slate-400 dark:text-white/90"}`} />
             </button>
           );
         })()}

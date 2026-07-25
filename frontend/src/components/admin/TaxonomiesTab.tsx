@@ -951,7 +951,7 @@ export default function TaxonomiesTab({
                     type="text"
                     required
                     value={skillFormName}
-                    onChange={(e) => setSkillFormName(e.target.value)}
+                    onChange={(e) => setSkillFormName(e.target.value.replace(/\d{3,}/g, ""))}
                     placeholder="e.g. Adobe Illustrator"
                     className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800"
                   />

@@ -6,7 +6,7 @@ import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { 
   FiAlertTriangle, FiCheckCircle, FiCheck, FiImage, FiVideo, FiFileText, 
   FiBold, FiItalic, FiList, FiType, FiEye, FiDollarSign, FiClock, FiPlus, 
-  FiArrowLeft, FiArrowRight, FiX, FiExternalLink, FiUpload, FiGlobe
+  FiArrowLeft, FiArrowRight, FiX, FiExternalLink, FiUpload, FiGlobe, FiDownload, FiTrash2
 } from "react-icons/fi";
 import { createPortal } from "react-dom";
 
@@ -22,6 +22,31 @@ export interface FeatureRow {
 const stripHtml = (html: string) => {
   if (!html) return "";
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+};
+
+const handleDownloadVideo = async (url: string, filename = "showcase-video.mp4") => {
+  if (!url) return;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Fetch failed");
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename || url.split("/").pop() || "showcase-video.mp4";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    const link = document.createElement("a");
+    link.href = url;
+    link.target = "_blank";
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
 };
 
 const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
@@ -431,14 +456,18 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
   // Form Field Change Handlers
   const handleGigCategoryChange = (catId: string) => {
+    if (catId === gigCategoryId) return;
     setGigCategoryId(catId);
     setGigSubCategoryId("");
     setGigSelectedSkills([]);
     setGigAvailableSkills([]);
-    fetchGigSubCategories(catId);
+    if (catId) {
+      fetchGigSubCategories(catId);
+    }
   };
 
   const handleGigSubCategoryChange = (subCatId: string) => {
+    if (subCatId === gigSubCategoryId) return;
     setGigSubCategoryId(subCatId);
     setGigSelectedSkills([]);
     if (subCatId) {
@@ -709,7 +738,6 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
       const data = await res.json();
       if (res.ok) {
         setGigSuccess(true);
-        setActiveFormStep(1);
         // Reset form
         setGigTitle("");
         setGigSlug("");
@@ -778,6 +806,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
         setTimeout(() => {
           setIsCreatingGig(false);
           setGigSuccess(false);
+          setActiveFormStep(1);
           fetchGigs();
         }, 1500);
       } else {
@@ -1132,7 +1161,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         <label className="relative inline-flex items-center cursor-pointer select-none">
                           <input
                             type="checkbox"
-                            checked={usePlans}
+                            checked={Boolean(usePlans)}
                             onChange={(e) => {
                               setUsePlans(e.target.checked);
                               if (e.target.checked) {
@@ -1896,15 +1925,26 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     <label className="text-xs font-bold block text-slate-655">Showcase Video</label>
                     <div className="flex flex-wrap gap-3 items-center min-h-[5rem]">
                       {gigVideoUrl ? (
-                        <div className="relative w-20 h-20 border border-slate-200 rounded-xl overflow-hidden group/vid bg-slate-950 flex items-center justify-center">
+                        <div className="relative w-28 h-20 border border-slate-200 rounded-xl overflow-hidden group/vid bg-slate-950 flex items-center justify-center shadow-xs">
                           <video src={gigVideoUrl} className="w-full h-full object-cover" />
-                          <button
-                            type="button"
-                            onClick={() => setGigVideoUrl("")}
-                            className="absolute inset-0 bg-slate-900/40 text-white flex items-center justify-center opacity-0 group-hover/vid:opacity-100 transition-opacity font-bold text-xs cursor-pointer"
-                          >
-                            Delete
-                          </button>
+                          <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/vid:opacity-100 transition-opacity flex items-center justify-center gap-2 p-1">
+                            <button
+                              type="button"
+                              title="Download Video"
+                              onClick={() => handleDownloadVideo(gigVideoUrl, "gig-showcase-video.mp4")}
+                              className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-xs transition cursor-pointer flex items-center gap-1 shadow-sm"
+                            >
+                              <FiDownload className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              title="Delete Video"
+                              onClick={() => setGigVideoUrl("")}
+                              className="p-1.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg text-xs transition cursor-pointer flex items-center gap-1 shadow-sm"
+                            >
+                              <FiTrash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <label className="w-20 h-20 border-2 border-dashed border-slate-250 hover:border-primary/50 hover:bg-slate-50/50 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all gap-1 select-none text-slate-400 group">
@@ -1926,13 +1966,25 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         </label>
                       )}
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Paste video URL here or click above to upload"
-                      value={gigVideoUrl}
-                      onChange={(e) => setGigVideoUrl(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="Paste video URL here or click above to upload"
+                        value={gigVideoUrl}
+                        onChange={(e) => setGigVideoUrl(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
+                      />
+                      {gigVideoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadVideo(gigVideoUrl, "gig-showcase-video.mp4")}
+                          className="px-3.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl text-xs transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs"
+                        >
+                          <FiDownload className="w-3.5 h-3.5 shrink-0" />
+                          <span>Download Video</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Documents / PDF Link & Upload */}
@@ -2266,17 +2318,17 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                   <button
                     type="submit"
                     disabled={gigPublishing}
-                    className="bg-emerald-500 hover:bg-emerald-650 text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50 border-none"
                   >
                     {gigPublishing ? (
                       <>
-                        <div className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-                        <span>Publishing Gig...</span>
+                        <div className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin shrink-0"></div>
+                        <span>{editingGig ? "Saving Changes..." : "Publishing Gig..."}</span>
                       </>
                     ) : (
                       <>
-                        <span>Publish Service Gig</span>
-                        <FiCheck className="w-3.5 h-3.5" />
+                        <span>{editingGig ? "Save Changes" : "Publish Service Gig"}</span>
+                        <FiCheck className="w-3.5 h-3.5 shrink-0" />
                       </>
                     )}
                   </button>
@@ -2342,12 +2394,12 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                   className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-350 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between relative group cursor-pointer"
                 >
                   
-                  <span className={`absolute top-3.5 right-3.5 z-10 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-sm border ${
-                    gig.status === "Active"
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                      : "bg-amber-50 text-amber-700 border-amber-100"
+                  <span className={`absolute top-3.5 right-3.5 z-10 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md border ${
+                    gig.status === "Active" || gig.status === "active"
+                      ? "bg-emerald-700 text-white border-emerald-600 shadow-emerald-900/20"
+                      : "bg-amber-600 text-white border-amber-500 shadow-amber-900/20"
                   }`}>
-                    {gig.status}
+                    {gig.status || "Active"}
                   </span>
 
                   <div className="relative w-full h-40 bg-slate-50 border-b border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
@@ -2585,7 +2637,7 @@ export function GigConsoleModal({
         <div className="border-b border-slate-100 pb-4 pr-16 shrink-0">
           <span className="text-[10px] font-bold text-primary tracking-widest uppercase mb-1">Gig Management Console</span>
           <h2 className="text-base font-black text-slate-855 line-clamp-1">{selectedGigForDetails.title}</h2>
-          <p className="text-slate-405 text-xs font-semibold mt-1">Status: <span className="text-emerald-600 font-bold">{selectedGigForDetails.status}</span></p>
+          <p className="text-slate-405 text-xs font-semibold mt-1">Status: <span className="text-white bg-emerald-700 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider uppercase ml-1 shadow-sm">{selectedGigForDetails.status || "Active"}</span></p>
         </div>
 
         <div className="flex-grow overflow-y-auto my-6 flex flex-col gap-6 pr-1">
@@ -2619,7 +2671,17 @@ export function GigConsoleModal({
           {/* Showcase Video */}
           {selectedGigForDetails.video_url && (
             <div>
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Showcase Video</h4>
+              <div className="flex items-center justify-between mb-2.5 max-w-md">
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Showcase Video</h4>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadVideo(selectedGigForDetails.video_url, "gig-showcase-video.mp4")}
+                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xxs font-bold transition flex items-center gap-1 cursor-pointer"
+                >
+                  <FiDownload className="w-3 h-3" />
+                  <span>Download Video</span>
+                </button>
+              </div>
               <div className="w-full max-w-md rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm relative aspect-video">
                 <video src={selectedGigForDetails.video_url} controls className="w-full h-full object-cover" />
               </div>
@@ -2776,7 +2838,24 @@ export function GigConsoleModal({
               setGigDocuments(g.documents ? g.documents.join(",") : "");
               setGigCategoryId(g.category_id ? g.category_id.toString() : "");
               setGigSubCategoryId(g.sub_category_id ? g.sub_category_id.toString() : "");
-              setGigSelectedSkills(g.skills ? g.skills.map((s: any) => s.skill_id) : []);
+
+              // Robust skill IDs extraction
+              let parsedSkills: number[] = [];
+              if (g.skills) {
+                let raw = g.skills;
+                if (typeof raw === "string") {
+                  try { raw = JSON.parse(raw); } catch {}
+                }
+                if (Array.isArray(raw)) {
+                  parsedSkills = raw.map((s: any) => {
+                    if (typeof s === "number") return s;
+                    if (typeof s === "string" && !isNaN(Number(s))) return Number(s);
+                    if (typeof s === "object" && s !== null) return Number(s.skill_id || s.id);
+                    return null;
+                  }).filter((id): id is number => typeof id === "number" && !isNaN(id));
+                }
+              }
+              setGigSelectedSkills(parsedSkills);
               setGigNegotiation(!!g.negotiation);
               setGigDiscountPercent((g.discount_percent || 0).toString());
               setGigPaymentType(g.payment_type || "fixed");

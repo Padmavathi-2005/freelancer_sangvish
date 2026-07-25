@@ -15,9 +15,27 @@ function wrapInHtmlTemplate({ bodyText, siteName, emailLogo, emailSignature, ema
     ? emailCopyright.replace(/{{site_name}}/g, siteName).replace(/{{year}}/g, year)
     : `&copy; ${year} ${siteName}. All rights reserved.`;
 
-  const logoHtml = emailLogo 
-    ? `<img src="${emailLogo}" alt="${siteName}" style="max-height: 48px; width: auto; display: block; margin: 0 auto 20px auto;" />`
-    : `<h1 style="margin: 0 0 20px 0; color: #0f766e; font-size: 24px; font-weight: 800; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">${siteName}</h1>`;
+  const isPublicUrl = emailLogo && (emailLogo.startsWith("https://") || (emailLogo.startsWith("http://") && !emailLogo.includes("localhost")));
+
+  const logoHtml = isPublicUrl 
+    ? `<div style="text-align: center; margin-bottom: 20px;">
+         <img src="${emailLogo}" alt="${siteName}" style="max-height: 48px; width: auto; display: inline-block; vertical-align: middle; margin-right: 10px;" />
+         <span style="color: #0f766e; font-size: 26px; font-weight: 900; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.5px; vertical-align: middle;">${siteName}</span>
+       </div>`
+    : `<div style="text-align: center; margin-bottom: 20px;">
+         <div style="display: inline-block; text-align: center;">
+           <table border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+             <tr>
+               <td style="background-color: #0f766e; color: #ffffff; width: 38px; height: 38px; border-radius: 10px; text-align: center; font-size: 20px; font-weight: 900; font-family: sans-serif; vertical-align: middle; line-height: 38px;">
+                 ${siteName ? siteName.charAt(0).toUpperCase() : 'B'}
+               </td>
+               <td style="padding-left: 10px; font-color: #0f766e; font-size: 26px; font-weight: 900; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.5px; vertical-align: middle;">
+                 <span style="color: #0f766e;">${siteName}</span>
+               </td>
+             </tr>
+           </table>
+         </div>
+       </div>`;
 
   const signatureHtml = formattedSignature 
     ? `<p style="margin: 24px 0 0 0; font-size: 14px; color: #475569; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6;">${formattedSignature}</p>`

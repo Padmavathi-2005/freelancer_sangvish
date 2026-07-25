@@ -797,13 +797,13 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                   </span>
                   
                   <span className={`text-[10px] font-black px-2.5 py-1 rounded uppercase tracking-wider border ${
-                    app.status === "Accepted"
+                    app.status === "Accepted" || app.status === "Completed" || app.contract_status === "Completed"
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : app.status === "Rejected"
+                      : app.status === "Rejected" || app.contract_status === "Cancelled"
                         ? "bg-rose-50 text-rose-700 border-rose-200"
                         : "bg-amber-50 text-amber-700 border-amber-200"
                   }`}>
-                    {app.status}
+                    {app.contract_status === "Completed" ? "Completed" : app.status}
                   </span>
                 </div>
               </div>

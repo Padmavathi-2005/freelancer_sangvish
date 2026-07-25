@@ -277,7 +277,17 @@ export default function PricingPage() {
                     <div className="flex-1 px-7 py-5 flex flex-col gap-3">
                       {features.length > 0
                         ? features.map((f, i) => (
-                            <div key={i} className="flex items-center gap-3" style={{ animation: `fadeUp 0.4s cubic-bezier(.22,1,.36,1) ${delay} both`, animationDelay: `${parseFloat(delay) + i * 0.06}s` }}>
+                            <div
+                              key={i}
+                              className="flex items-center gap-3"
+                              style={{
+                                animationName: "fadeUp",
+                                animationDuration: "0.4s",
+                                animationTimingFunction: "cubic-bezier(.22,1,.36,1)",
+                                animationFillMode: "both",
+                                animationDelay: `${parseFloat(delay) + i * 0.06}s`,
+                              }}
+                            >
                               <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isPopular ? "bg-primary-light" : isLight ? "bg-primary-light" : "bg-slate-700"}`}>
                                 <FiCheck className={`w-3 h-3 ${isPopular ? "text-primary" : isLight ? "text-primary" : "text-amber-400"}`} />
                               </span>

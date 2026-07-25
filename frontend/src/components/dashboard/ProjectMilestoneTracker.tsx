@@ -92,6 +92,165 @@ export default function ProjectMilestoneTracker({
   const [payTimecardMethod, setPayTimecardMethod] = useState<"stripe" | "paypal" | "wallet">("stripe");
   const [isSubmittingCompletion, setIsSubmittingCompletion] = useState(false);
   const [isApprovingCompletion, setIsApprovingCompletion] = useState(false);
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
+  const [siteName, setSiteName] = useState(() => localStorage.getItem("cached_site_name") || "Buy2Lancer");
+  const [siteLogo, setSiteLogo] = useState(() => localStorage.getItem("cached_site_logo") || "");
+
+  const [trackerTab, setTrackerTab] = useState<"milestones" | "proposals">("milestones");
+  const [selectedContractId, setSelectedContractId] = useState<number | null>(null);
+
+  const jobContracts = useMemo(() => {
+    if (!Array.isArray(contracts)) return [];
+    return contracts.filter((c: any) => c && (Number(c.job_id) === Number(job?.job_id)));
+  }, [contracts, job]);
+
+  const acceptedProposal = useMemo(() => {
+    if (!Array.isArray(projectProposals)) return null;
+    return projectProposals.find((p: any) => p && (p.status === "accepted" || p.status === "Accepted"));
+  }, [projectProposals]);
+
+  const activeContract = useMemo(() => {
+    if (selectedContractId && jobContracts.length > 0) {
+      const found = jobContracts.find((c: any) => c.contract_id === selectedContractId);
+      if (found) return found;
+    }
+    if (jobContracts.length > 0) return jobContracts[0];
+    if (Array.isArray(contracts)) {
+      return contracts.find((c: any) => c && Number(c.job_id) === Number(job?.job_id)) || null;
+    }
+    return null;
+  }, [selectedContractId, jobContracts, contracts, job]);
+
+  const partnerName = useMemo(() => {
+    if (userRole === "client") {
+      return activeContract?.freelancer_name || "Freelancer";
+    } else {
+      return activeContract?.client_name || job?.client_name || job?.posted_by_name || "Client";
+    }
+  }, [userRole, activeContract, job]);
+
+  const partnerEmail = useMemo(() => {
+    if (userRole === "client") {
+      return activeContract?.freelancer_email || "";
+    } else {
+      return activeContract?.client_email || job?.client_email || "";
+    }
+  }, [userRole, activeContract, job]);
+
+  const partnerId = useMemo(() => {
+    if (userRole === "client") {
+      return activeContract?.freelancer_id || activeContract?.freelancer_user_id || null;
+    } else {
+      return activeContract?.client_id || activeContract?.client_user_id || job?.user_id || job?.posted_by_id || null;
+    }
+  }, [userRole, activeContract, job]);
+
+  const partnerImage = useMemo(() => {
+    if (userRole === "client") {
+      return getAvatarSrc(activeContract?.freelancer_image || null);
+    } else {
+      return getAvatarSrc(activeContract?.client_image || job?.client_image || null);
+    }
+  }, [userRole, activeContract, job]);
+
+  const milestoneItems = useMemo(() => {
+    if (!activeContract) return [];
+    try {
+      if (Array.isArray(activeContract.milestones)) return activeContract.milestones;
+      if (typeof activeContract.milestones === "string") return JSON.parse(activeContract.milestones);
+    } catch (e) {}
+    return [];
+  }, [activeContract]);
+
+
+  const handleCancelContract = async () => {
+    if (!activeContract) return;
+    if (!confirm("Are you sure you want to cancel this contract? All unreleased funds will be refunded to your wallet.")) return;
+    setMilestoneActionLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/proposals/contracts/${activeContract.contract_id}/cancel`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Contract cancelled successfully.", "Funds have been refunded to your wallet.");
+        fetchContracts();
+        if (onUpdateJob) onUpdateJob({ ...job, status: "Cancelled" });
+      } else {
+        triggerToast("error", data.message || "Failed to cancel contract.");
+      }
+    } catch (e) {
+      console.error(e);
+      triggerToast("error", "Failed to cancel contract.");
+    } finally {
+      setMilestoneActionLoading(false);
+    }
+  };
+
+  const handleFreelancerCancelContract = async () => {
+    if (!activeContract) return;
+    if (!confirm("Are you sure you want to cancel this contract and refund the client?")) return;
+    setMilestoneActionLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/proposals/contracts/${activeContract.contract_id}/cancel-freelancer`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Contract cancelled.", "Unreleased funds refunded to client.");
+        fetchContracts();
+        if (onUpdateJob) onUpdateJob({ ...job, status: "Cancelled" });
+      } else {
+        triggerToast("error", data.message || "Failed to cancel contract.");
+      }
+    } catch (e) {
+      console.error(e);
+      triggerToast("error", "Failed to cancel contract.");
+    } finally {
+      setMilestoneActionLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const fetchSiteSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          let name = "";
+          let logo = "";
+          if (Array.isArray(data)) {
+            data.forEach((s: any) => {
+              if (s.setting_key === "site_name") name = s.setting_value;
+              if (s.setting_key === "site_logo") logo = s.setting_value;
+            });
+          } else if (data && typeof data === "object") {
+            name = data.site_name || "";
+            logo = data.site_logo || "";
+          }
+          if (name) {
+            setSiteName(name);
+            localStorage.setItem("cached_site_name", name);
+          }
+          if (logo) {
+            setSiteLogo(logo);
+            localStorage.setItem("cached_site_logo", logo);
+          }
+        }
+      } catch (e) {
+        // fallback
+      }
+    };
+    fetchSiteSettings();
+  }, []);
+
+  const logoUrl = siteLogo
+    ? (siteLogo.startsWith("http") ? siteLogo : `${API_URL}${siteLogo.startsWith("/") ? "" : "/"}${siteLogo}`)
+    : "";
 
   // Contract Chat States
   const [contractConvId, setContractConvId] = useState<number | null>(null);
@@ -279,7 +438,6 @@ export default function ProjectMilestoneTracker({
       if (job.project_type === "Hourly") {
         fetchTimecards(activeContract.contract_id);
       }
-      initContractChat();
     }
   }, [contracts, job.job_id, job.project_type]);
 
@@ -631,10 +789,6 @@ export default function ProjectMilestoneTracker({
     }
   };
 
-  const jobContracts = contracts.filter(c => c.job_id === job.job_id);
-  const [selectedContractId, setSelectedContractId] = useState<number | null>(null);
-  const [trackerTab, setTrackerTab] = useState<"milestones" | "proposals">("milestones");
-
   // Keep selected contract and tab in sync
   useEffect(() => {
     if (jobContracts.length > 0 && !selectedContractId) {
@@ -678,27 +832,6 @@ export default function ProjectMilestoneTracker({
   useEffect(() => {
     setCandidatePage(1);
   }, [candidateSearch]);
-
-  const activeContract = selectedContractId 
-    ? jobContracts.find(c => c.contract_id === selectedContractId) 
-    : jobContracts[0];
-  const acceptedProposal = projectProposals.find(p => p.status === 'Accepted');
-
-  const partnerName = userRole === "client" 
-    ? (activeContract?.freelancer_name || acceptedProposal?.freelancer_name || "Freelancer")
-    : (activeContract?.client_name || "Client Partner");
-
-  const partnerEmail = userRole === "client"
-    ? (activeContract?.freelancer_email || acceptedProposal?.freelancer_email || "")
-    : (activeContract?.client_email || "");
-
-  const partnerImage = userRole === "client"
-    ? (activeContract?.freelancer_image || acceptedProposal?.freelancer_profile_image || acceptedProposal?.freelancer_image || "")
-    : (activeContract?.client_image || "");
-
-  const partnerId = userRole === "client"
-    ? (activeContract?.freelancer_id || acceptedProposal?.freelancer_id)
-    : (activeContract?.client_id);
 
   if (loadingProposals) {
     return (
@@ -1476,60 +1609,6 @@ export default function ProjectMilestoneTracker({
     }
   };
 
-  const handleCancelContract = async () => {
-    if (!activeContract) return;
-    const confirmation = confirm(
-      `WARNING: Are you sure you want to cancel this contract and request a 100% refund of your escrowed funds ($${parseFloat(activeContract.budget).toLocaleString()})?\n\nThis action cannot be undone.`
-    );
-    if (!confirmation) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/payments/contract/${activeContract.contract_id}/cancel`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        triggerToast("success", "Contract cancelled & fully refunded!", "The escrow funds have been returned to your wallet.");
-        fetchContracts();
-        if (onUpdateJob) {
-          onUpdateJob({ ...job, status: "Open" });
-        }
-      } else {
-        triggerToast("error", data.message || "Failed to cancel contract.");
-      }
-    } catch (err) {
-      console.error(err);
-      triggerToast("error", "Network error. Please try again.");
-    }
-  };
-
-  const handleFreelancerCancelContract = async () => {
-    if (!activeContract) return;
-    const confirmation = confirm(
-      `WARNING: Are you sure you want to cancel this contract? This will forfeit all work and automatically refund 100% of the escrowed funds ($${parseFloat(activeContract.budget).toLocaleString()}) back to the client.\n\nThis action cannot be undone.`
-    );
-    if (!confirmation) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/payments/contract/${activeContract.contract_id}/freelancer-cancel`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        triggerToast("success", "Contract cancelled & client fully refunded!", "You have cancelled the project and funds have been returned to the client.");
-        fetchContracts();
-      } else {
-        triggerToast("error", data.message || "Failed to cancel contract.");
-      }
-    } catch (err) {
-      console.error(err);
-      triggerToast("error", "Network error. Please try again.");
-    }
-  };
 
   const handleRaiseDispute = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1740,7 +1819,9 @@ export default function ProjectMilestoneTracker({
 
   const handleDownloadPDF = async () => {
     const element = document.getElementById("printable-invoice-area");
-    if (!element) return;
+    if (!element || isDownloadingPDF) return;
+
+    setIsDownloadingPDF(true);
 
     // Helper to safely clean all unsupported CSS color functions (like oklch, oklab, lab, color-mix, color)
     // by balancing parentheses and resolving them using the browser's native canvas engine.
@@ -1816,7 +1897,7 @@ export default function ProjectMilestoneTracker({
     };
 
 
-    // Helper to temporarily clean stylesheets containing unsupported oklch/lab rules for html2canvas
+    // Helper to temporarily clean internal inline stylesheets containing unsupported oklch/lab rules for html2canvas
     const cleanStyles = () => {
       const styleRestorers: (() => void)[] = [];
 
@@ -1830,13 +1911,6 @@ export default function ProjectMilestoneTracker({
             el.textContent = cleanedText;
             styleRestorers.push(() => {
               el.textContent = originalText;
-            });
-          } else if (el instanceof HTMLLinkElement) {
-            // Temporarily disable link stylesheets so html2canvas is forced to fetch them via ajax (which is cleaned by our overrides)
-            const originalDisabled = el.disabled;
-            el.disabled = true;
-            styleRestorers.push(() => {
-              el.disabled = originalDisabled;
             });
           }
         } catch (e) {
@@ -1957,13 +2031,6 @@ export default function ProjectMilestoneTracker({
       };
     };
 
-    const originalWidth = element.style.width;
-    const originalFontFamily = element.style.fontFamily;
-    
-    // Set a standard width and font to ensure correct layout and font-metrics for html2canvas
-    element.style.width = "794px";
-    element.style.fontFamily = "Arial, Helvetica, sans-serif";
-
     const restoreStyles = cleanStyles();
     const restoreInlineStyles = cleanInlineStyles(element);
 
@@ -1971,8 +2038,6 @@ export default function ProjectMilestoneTracker({
     const restoreAll = () => {
       if (restored) return;
       restored = true;
-      element.style.width = originalWidth;
-      element.style.fontFamily = originalFontFamily;
       restoreStyles();
       restoreInlineStyles();
       window.fetch = originalFetch;
@@ -1982,26 +2047,223 @@ export default function ProjectMilestoneTracker({
     try {
       const html2pdf = (await import("html2pdf.js")).default;
       const opt = {
-        margin:       10,
+        margin:       [8, 8, 8, 8] as [number, number, number, number],
         filename:     selectedInvoiceItem 
           ? `Invoice-${selectedInvoiceItem.type === 'timecard' ? 'TC' : 'MS'}-${selectedInvoiceItem.id}.pdf`
           : `Invoice-CON-${activeContract.contract_id}.pdf`,
         image:        { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true, 
+          allowTaint: true, 
+          logging: false, 
+          scrollX: 0, 
+          scrollY: 0,
+          width: 580,
+          windowWidth: 580,
+          onclone: (clonedDoc: Document) => {
+            // Inject complete, explicit CSS styles for printable invoice area in clonedDoc
+            const style = clonedDoc.createElement("style");
+            style.textContent = `
+              #printable-invoice-area {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+                color: #1e293b !important;
+                background-color: #ffffff !important;
+                padding: 16px !important;
+                width: 580px !important;
+                max-width: 580px !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+              }
+              #printable-invoice-area * { box-sizing: border-box !important; }
+
+              /* Explicit compact centered badge classes for html2canvas */
+              #printable-invoice-area .invoice-badge-green,
+              #printable-invoice-area .invoice-badge-gray,
+              #printable-invoice-area .invoice-badge-teal,
+              #printable-invoice-area .invoice-badge-amber,
+              #printable-invoice-area .invoice-badge-rose {
+                display: inline-block !important;
+                text-align: center !important;
+                vertical-align: sub !important;
+                margin-top: 5px !important;
+                white-space: nowrap !important;
+                font-size: 8px !important;
+                font-weight: 700 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.05em !important;
+                height: 18px !important;
+                line-height: 18px !important;
+                padding: 0px 7px !important;
+                box-sizing: border-box !important;
+              }
+
+              #printable-invoice-area .invoice-badge-green {
+                background-color: #ecfdf5 !important;
+                color: #047857 !important;
+                border: 1px solid #a7f3d0 !important;
+                border-radius: 9999px !important;
+              }
+
+              #printable-invoice-area .invoice-badge-gray {
+                background-color: #f1f5f9 !important;
+                color: #475569 !important;
+                border: 1px solid #cbd5e1 !important;
+                border-radius: 4px !important;
+              }
+
+              #printable-invoice-area .invoice-badge-teal {
+                background-color: #f0fdfa !important;
+                color: #0f766e !important;
+                border: 1px solid #99f6e4 !important;
+                border-radius: 4px !important;
+              }
+
+              #printable-invoice-area .invoice-badge-amber {
+                background-color: #fffbeb !important;
+                color: #b45309 !important;
+                border: 1px solid #fde68a !important;
+                border-radius: 4px !important;
+              }
+
+              #printable-invoice-area .invoice-badge-rose {
+                background-color: #fff1f2 !important;
+                color: #be123c !important;
+                border: 1px solid #fecdd3 !important;
+                border-radius: 4px !important;
+              }
+
+              /* Prevent vertical text clipping & squashing */
+              #printable-invoice-area span,
+              #printable-invoice-area p,
+              #printable-invoice-area h1,
+              #printable-invoice-area h2,
+              #printable-invoice-area h3,
+              #printable-invoice-area h4,
+              #printable-invoice-area h5,
+              #printable-invoice-area h6,
+              #printable-invoice-area td,
+              #printable-invoice-area th,
+              #printable-invoice-area div {
+                overflow: visible !important;
+                line-height: 1.4 !important;
+                white-space: normal !important;
+                text-overflow: clip !important;
+              }
+
+              #printable-invoice-area .truncate {
+                overflow: visible !important;
+                white-space: normal !important;
+                text-overflow: clip !important;
+              }
+
+              #printable-invoice-area .flex { display: flex !important; }
+              #printable-invoice-area .flex-col { flex-direction: column !important; }
+              #printable-invoice-area .flex-row { flex-direction: row !important; }
+              #printable-invoice-area .items-center { align-items: center !important; }
+              #printable-invoice-area .items-start { align-items: flex-start !important; }
+              #printable-invoice-area .justify-between { justify-content: space-between !important; }
+              #printable-invoice-area .grid { display: grid !important; }
+              #printable-invoice-area .grid-cols-2 { display: grid !important; grid-template-columns: 1fr 1fr !important; }
+              #printable-invoice-area .gap-4 { gap: 16px !important; }
+              #printable-invoice-area .gap-3 { gap: 12px !important; }
+              #printable-invoice-area .gap-2 { gap: 8px !important; }
+              #printable-invoice-area .gap-1.5 { gap: 6px !important; }
+              #printable-invoice-area .gap-1 { gap: 4px !important; }
+
+              #printable-invoice-area .bg-white { background-color: #ffffff !important; }
+              #printable-invoice-area .bg-slate-50, #printable-invoice-area .bg-slate-50\\/50, #printable-invoice-area .bg-slate-50\\/20 { background-color: #f8fafc !important; }
+              #printable-invoice-area .bg-emerald-50 { background-color: #ecfdf5 !important; }
+              #printable-invoice-area .bg-teal-50 { background-color: #f0fdfa !important; }
+              #printable-invoice-area .bg-amber-50 { background-color: #fffbeb !important; }
+              #printable-invoice-area .bg-rose-50, #printable-invoice-area .bg-rose-50\\/30 { background-color: #fff1f2 !important; }
+              #printable-invoice-area .bg-slate-100 { background-color: #f1f5f9 !important; }
+              #printable-invoice-area .bg-primary, #printable-invoice-area .bg-gradient-to-r, #printable-invoice-area .bg-gradient-to-tr { background-color: #2563eb !important; }
+
+              #printable-invoice-area .text-slate-800, #printable-invoice-area .text-slate-805, #printable-invoice-area .text-slate-850, #printable-invoice-area .text-slate-900 { color: #0f172a !important; }
+              #printable-invoice-area .text-slate-700, #printable-invoice-area .text-slate-650 { color: #334155 !important; }
+              #printable-invoice-area .text-slate-500 { color: #64748b !important; }
+              #printable-invoice-area .text-slate-400, #printable-invoice-area .text-slate-450 { color: #94a3b8 !important; }
+              #printable-invoice-area .text-emerald-600, #printable-invoice-area .text-emerald-700 { color: #047857 !important; }
+              #printable-invoice-area .text-teal-700 { color: #0f766e !important; }
+              #printable-invoice-area .text-amber-700 { color: #b45309 !important; }
+              #printable-invoice-area .text-rose-600, #printable-invoice-area .text-rose-700, #printable-invoice-area .text-rose-800 { color: #be123c !important; }
+              #printable-invoice-area .text-primary { color: #2563eb !important; }
+              #printable-invoice-area .text-white { color: #ffffff !important; }
+
+              #printable-invoice-area .font-bold, #printable-invoice-area .font-extrabold, #printable-invoice-area .font-black { font-weight: 700 !important; }
+              #printable-invoice-area .font-semibold { font-weight: 600 !important; }
+              #printable-invoice-area .uppercase { text-transform: uppercase !important; }
+              #printable-invoice-area .tracking-wider, #printable-invoice-area .tracking-widest, #printable-invoice-area .tracking-wide { letter-spacing: 0.05em !important; }
+
+              #printable-invoice-area .border-b { border-bottom: 1px solid #e2e8f0 !important; }
+              #printable-invoice-area .border-t { border-top: 1px solid #e2e8f0 !important; }
+              #printable-invoice-area .border { border: 1px solid #e2e8f0 !important; }
+              #printable-invoice-area .border-slate-100 { border-color: #f1f5f9 !important; }
+              #printable-invoice-area .border-slate-150, #printable-invoice-area .border-slate-200, #printable-invoice-area .border-slate-200\\/80, #printable-invoice-area .border-slate-200\\/60 { border-color: #e2e8f0 !important; }
+              #printable-invoice-area .border-slate-250 { border-color: #cbd5e1 !important; }
+              #printable-invoice-area .border-emerald-100, #printable-invoice-area .border-emerald-150 { border-color: #a7f3d0 !important; }
+              #printable-invoice-area .border-teal-100 { border-color: #99f6e4 !important; }
+              #printable-invoice-area .border-rose-100 { border-color: #fecdd3 !important; }
+
+              #printable-invoice-area .rounded-xl { border-radius: 12px !important; }
+              #printable-invoice-area .rounded-lg { border-radius: 8px !important; }
+              #printable-invoice-area .rounded-full { border-radius: 9999px !important; }
+              #printable-invoice-area .rounded { border-radius: 4px !important; }
+
+              #printable-invoice-area .p-5 { padding: 16px !important; }
+              #printable-invoice-area .p-4 { padding: 12px !important; }
+              #printable-invoice-area .p-3.5, #printable-invoice-area .p-3 { padding: 10px !important; }
+              #printable-invoice-area .p-2.5 { padding: 8px 10px !important; }
+              #printable-invoice-area .px-5 { padding-left: 16px !important; padding-right: 16px !important; }
+              #printable-invoice-area .py-3 { padding-top: 8px !important; padding-bottom: 8px !important; }
+              #printable-invoice-area .px-2.5 { padding-left: 10px !important; padding-right: 10px !important; }
+              #printable-invoice-area .py-0.5 { padding-top: 2px !important; padding-bottom: 2px !important; }
+              #printable-invoice-area .px-1.5 { padding-left: 6px !important; padding-right: 6px !important; }
+              #printable-invoice-area .py-0.2 { padding-top: 1px !important; padding-bottom: 1px !important; }
+
+              #printable-invoice-area .mb-4 { margin-bottom: 12px !important; }
+              #printable-invoice-area .mb-2 { margin-bottom: 6px !important; }
+              #printable-invoice-area .mb-1 { margin-bottom: 4px !important; }
+              #printable-invoice-area .mt-1 { margin-top: 4px !important; }
+              #printable-invoice-area .mt-2 { margin-top: 6px !important; }
+              #printable-invoice-area .mt-0.5 { margin-top: 2px !important; }
+
+              #printable-invoice-area table { width: 100% !important; border-collapse: collapse !important; margin-bottom: 8px !important; }
+              #printable-invoice-area th { background-color: #f8fafc !important; text-align: left !important; padding: 6px 8px !important; border-bottom: 1px solid #cbd5e1 !important; color: #64748b !important; font-size: 8.5px !important; font-weight: 700 !important; text-transform: uppercase !important; }
+              #printable-invoice-area td { padding: 6px 8px !important; border-bottom: 1px solid #e2e8f0 !important; text-align: left !important; font-size: 10px !important; }
+              #printable-invoice-area .text-right { text-align: right !important; }
+              #printable-invoice-area .w-64, #printable-invoice-area .sm\\:w-64 { width: 220px !important; }
+              #printable-invoice-area .ml-auto { margin-left: auto !important; }
+              #printable-invoice-area .block { display: block !important; }
+              #printable-invoice-area .inline-block { display: inline-block !important; }
+              #printable-invoice-area .inline-flex { display: inline-flex !important; }
+              #printable-invoice-area .w-6 { width: 24px !important; min-width: 24px !important; }
+              #printable-invoice-area .h-6 { height: 24px !important; min-height: 24px !important; }
+              #printable-invoice-area .h-1.5 { height: 6px !important; }
+              #printable-invoice-area .shrink-0 { flex-shrink: 0 !important; }
+            `;
+            clonedDoc.head.appendChild(style);
+
+            // Disable external link stylesheets only in clonedDoc so html2canvas doesn't fail on lab()/oklch() rules in Tailwind CSS
+            const linkElements = Array.from(clonedDoc.querySelectorAll("link[rel='stylesheet']"));
+            for (const linkEl of linkElements) {
+              (linkEl as HTMLLinkElement).disabled = true;
+            }
+          }
+        },
         jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
       };
       
-      // Wait for the browser to recalculate styles and layout after stylesheet injection
+      // Wait for the browser to recalculate layout
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      await html2pdf().from(element).set(opt).save();
+      await html2pdf().set(opt).from(element).save();
     } catch (err) {
       console.error("Failed to generate PDF via html2pdf:", err);
-      // Restore styles before running the fallback printing, so it isn't blank
-      restoreAll();
-      window.print();
     } finally {
       restoreAll();
+      setIsDownloadingPDF(false);
     }
   };
 
@@ -2168,7 +2430,7 @@ export default function ProjectMilestoneTracker({
             >
               <i className="fa-solid fa-file-invoice-dollar"></i> View Invoice
             </button>
-            {userRole === "client" && activeContract.status !== "Completed" && (
+            {userRole === "client" && activeContract.status !== "Completed" && activeContract.status !== "Cancelled" && activeContract.status !== "CANCELLED" && (
               <button
                 onClick={handleCancelContract}
                 disabled={milestoneActionLoading}
@@ -2177,7 +2439,7 @@ export default function ProjectMilestoneTracker({
                 Cancel Job
               </button>
             )}
-            {userRole === "freelancer" && activeContract.status !== "Completed" && (
+            {userRole === "freelancer" && activeContract.status !== "Completed" && activeContract.status !== "Cancelled" && activeContract.status !== "CANCELLED" && (
               <button
                 onClick={handleFreelancerCancelContract}
                 disabled={milestoneActionLoading}
@@ -4099,6 +4361,13 @@ export default function ProjectMilestoneTracker({
             }
 
             @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                background: #ffffff !important;
+                overflow: visible !important;
+              }
               body * {
                 visibility: hidden;
               }
@@ -4107,14 +4376,17 @@ export default function ProjectMilestoneTracker({
               }
               #printable-invoice-area {
                 position: absolute;
-                left: 0;
                 top: 0;
-                width: 100%;
-                border: none !important;
-                box-shadow: none !important;
-                padding: 0 !important;
+                left: 0;
+                width: 100% !important;
                 margin: 0 !important;
-                background: white !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                box-shadow: none !important;
+                border: none !important;
+              }
+              .print\:hidden {
+                display: none !important;
               }
             }
           `}} />
@@ -4143,78 +4415,113 @@ export default function ProjectMilestoneTracker({
                 <div className="h-1.5 bg-gradient-to-r from-primary to-cyan-500 shrink-0 print:hidden" />
 
                 {/* Invoice Header */}
-                <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50/50 shrink-0">
-                  <div className="text-left">
-                    <div className="flex items-center gap-1.5">
-                      <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center text-white font-extrabold text-[10px]">
-                        LF
-                      </div>
-                      <span className="text-xs font-bold text-slate-805 tracking-wide">LancerFlow Invoice</span>
-                    </div>
-                    <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
-                      {selectedInvoiceItem ? "Payment Receipt" : "Contract Escrow Ledger"}
-                    </p>
-                  </div>
-
-                  <div className="text-left sm:text-right">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-150">
-                      Paid & Released
-                    </span>
-                    <p className="text-[9px] font-semibold text-slate-500 mt-1">
-                      ID: <span className="text-slate-700 font-bold">
-                        {selectedInvoiceItem 
-                          ? `INV-${selectedInvoiceItem.type === 'timecard' ? 'TC' : 'MS'}-${selectedInvoiceItem.id || 'RC'}-${new Date(selectedInvoiceItem.date).getTime().toString().slice(-4)}`
-                          : `INV-CON-${activeContract.contract_id}-${new Date(activeContract.created_at).getTime().toString().slice(-4)}`
-                        }
-                      </span>
-                    </p>
-                  </div>
-                </div>
+                <table className="w-full border-collapse border-b border-slate-100 bg-slate-50/50" style={{ tableLayout: "fixed" }}>
+                  <tbody>
+                    <tr>
+                      <td className="p-4 text-left align-middle" style={{ width: "55%" }}>
+                        <div className="flex items-center gap-2">
+                          {logoUrl ? (
+                            <img
+                              src={logoUrl}
+                              alt={siteName}
+                              style={{
+                                height: "26px",
+                                maxHeight: "26px",
+                                maxWidth: "130px",
+                                width: "auto",
+                                objectFit: "contain",
+                                display: "inline-block",
+                                verticalAlign: "middle"
+                              }}
+                              crossOrigin="anonymous"
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-primary to-cyan-500 flex items-center justify-center text-white font-extrabold text-[10px] shrink-0">
+                              {siteName ? siteName.substring(0, 2).toUpperCase() : "B2L"}
+                            </div>
+                          )}
+                          <span className="text-xs font-bold text-slate-900 tracking-wide">
+                            {logoUrl ? "Invoice" : `${siteName} Invoice`}
+                          </span>
+                        </div>
+                        <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-wider">
+                          {selectedInvoiceItem ? "Payment Receipt" : "Contract Escrow Ledger"}
+                        </p>
+                      </td>
+                      <td className="p-4 text-right align-middle" style={{ width: "45%" }}>
+                        <div style={{ display: "inline-block", textAlign: "right" }}>
+                          <span className="invoice-badge-green">
+                            Paid & Released
+                          </span>
+                        </div>
+                        <p className="text-[9px] font-semibold text-slate-500 mt-1">
+                          ID: <span className="text-slate-800 font-bold">
+                            {selectedInvoiceItem 
+                              ? `INV-${selectedInvoiceItem.type === 'timecard' ? 'TC' : 'MS'}-${selectedInvoiceItem.id || 'RC'}-${new Date(selectedInvoiceItem.date).getTime().toString().slice(-4)}`
+                              : `INV-CON-${activeContract.contract_id}-${new Date(activeContract.created_at).getTime().toString().slice(-4)}`
+                            }
+                          </span>
+                        </p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
                 {/* Meta details (Date/Time Issued) */}
-                <div className="px-5 py-3 bg-slate-50/20 border-b border-slate-100 grid grid-cols-2 gap-4 text-[9px] font-semibold text-slate-500">
-                  <div>
-                    <span>Date Issued: </span>
-                    <span className="text-slate-800 font-bold">
-                      {new Date(selectedInvoiceItem ? selectedInvoiceItem.date : activeContract.updated_at).toLocaleDateString(undefined, {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric"
-                      })}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span>Time Issued: </span>
-                    <span className="text-slate-800 font-bold">
-                      {new Date(selectedInvoiceItem ? selectedInvoiceItem.date : activeContract.updated_at).toLocaleTimeString(undefined, {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit"
-                      })}
-                    </span>
-                  </div>
-                </div>
+                <table className="w-full border-collapse bg-slate-50/20 border-b border-slate-100" style={{ tableLayout: "fixed" }}>
+                  <tbody>
+                    <tr>
+                      <td className="px-4 py-2.5 text-left text-[9px] font-semibold text-slate-500" style={{ width: "50%" }}>
+                        <span>Date Issued: </span>
+                        <span className="text-slate-800 font-bold">
+                          {new Date(selectedInvoiceItem ? selectedInvoiceItem.date : activeContract.updated_at).toLocaleDateString(undefined, {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric"
+                          })}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-right text-[9px] font-semibold text-slate-500" style={{ width: "50%" }}>
+                        <span>Time Issued: </span>
+                        <span className="text-slate-800 font-bold">
+                          {new Date(selectedInvoiceItem ? selectedInvoiceItem.date : activeContract.updated_at).toLocaleTimeString(undefined, {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit"
+                          })}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
                 {/* Billed To / From Party Section */}
-                <div className="p-5 grid grid-cols-2 gap-4 border-b border-slate-100 text-left shrink-0">
-                  <div>
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Billed To (Host Client)</span>
-                    <h4 className="text-[11px] font-bold text-slate-800 truncate">{activeContract.client_name}</h4>
-                    <p className="text-[9px] text-slate-400 font-semibold truncate leading-none mt-0.5">{activeContract.client_email}</p>
-                    <span className="inline-block mt-1 text-[8px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.2 rounded uppercase">
-                      Client
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Service Provider (Freelancer)</span>
-                    <h4 className="text-[11px] font-bold text-slate-800 truncate">{activeContract.freelancer_name}</h4>
-                    <p className="text-[9px] text-slate-400 font-semibold truncate leading-none mt-0.5">{activeContract.freelancer_email}</p>
-                    <span className="inline-block mt-1 text-[8px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.2 rounded uppercase">
-                      Freelancer
-                    </span>
-                  </div>
-                </div>
+                <table className="w-full border-collapse border-b border-slate-100" style={{ tableLayout: "fixed" }}>
+                  <tbody>
+                    <tr>
+                      <td className="p-4 text-left align-top" style={{ width: "50%" }}>
+                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Billed To (Host Client)</span>
+                        <h4 className="text-[11px] font-bold text-slate-900 leading-snug">{activeContract.client_name}</h4>
+                        <p className="text-[9px] text-slate-400 font-semibold mt-0.5">{activeContract.client_email}</p>
+                        <div className="mt-1.5">
+                          <span className="invoice-badge-gray">
+                            Client
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-4 text-left align-top" style={{ width: "50%" }}>
+                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Service Provider (Freelancer)</span>
+                        <h4 className="text-[11px] font-bold text-slate-900 leading-snug">{activeContract.freelancer_name}</h4>
+                        <p className="text-[9px] text-slate-400 font-semibold mt-0.5">{activeContract.freelancer_email}</p>
+                        <div className="mt-1.5">
+                          <span className="invoice-badge-gray">
+                            Freelancer
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
 
                 {/* Project Details & Milestones Table */}
                 <div className="p-5 flex-grow">
@@ -4230,12 +4537,12 @@ export default function ProjectMilestoneTracker({
                   <div className="border border-slate-200/80 rounded-xl overflow-hidden mb-4">
                     {selectedInvoiceItem ? (
                       /* Single Item Detail Receipt View */
-                      <table className="w-full text-[10px] font-semibold text-slate-650">
+                      <table className="w-full text-[10px] font-semibold text-slate-650 border-collapse">
                         <thead className="bg-slate-50 border-b border-slate-150 text-[8px] font-bold text-slate-500 uppercase tracking-wider text-left">
                           <tr>
-                            <th className="p-2.5">Released Item / Description</th>
-                            <th className="p-2.5">Billing Type</th>
-                            <th className="p-2.5 text-right">Released Payout</th>
+                            <th className="p-2.5" style={{ width: "45%" }}>Released Item / Description</th>
+                            <th className="p-2.5" style={{ width: "30%" }}>Billing Type</th>
+                            <th className="p-2.5 text-right" style={{ width: "25%" }}>Released Payout</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-150 text-left">
@@ -4267,13 +4574,13 @@ export default function ProjectMilestoneTracker({
                       </table>
                     ) : (
                       /* Full Escrow Ledger View */
-                      <table className="w-full text-[10px] font-semibold text-slate-650">
+                      <table className="w-full text-[10px] font-semibold text-slate-650 border-collapse">
                         <thead className="bg-slate-50 border-b border-slate-150 text-[8px] font-bold text-slate-500 uppercase tracking-wider text-left">
                           <tr>
-                            <th className="p-2.5">Description</th>
-                            <th className="p-2.5">Status</th>
-                            <th className="p-2.5 text-right">Agreed</th>
-                            <th className="p-2.5 text-right">Paid</th>
+                            <th className="p-2.5" style={{ width: "45%" }}>Description</th>
+                            <th className="p-2.5 text-center" style={{ width: "20%" }}>Status</th>
+                            <th className="p-2.5 text-right" style={{ width: "17.5%" }}>Agreed</th>
+                            <th className="p-2.5 text-right" style={{ width: "17.5%" }}>Paid</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-150 text-left">
@@ -4284,8 +4591,8 @@ export default function ProjectMilestoneTracker({
                                   <span className="font-bold text-slate-800 block">Hourly Work ({tc.hours}h {tc.minutes}m)</span>
                                   <span className="text-[8px] text-slate-400 block">Worked on {new Date(tc.work_date).toLocaleDateString()}</span>
                                 </td>
-                                <td className="p-2.5">
-                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                <td className="p-2.5 text-center">
+                                  <span className="invoice-badge-green">
                                     Released
                                   </span>
                                 </td>
@@ -4316,16 +4623,16 @@ export default function ProjectMilestoneTracker({
                                       </span>
                                     )}
                                   </td>
-                                  <td className="p-2.5">
-                                    <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[8px] font-bold uppercase tracking-wider ${
+                                  <td className="p-2.5 text-center">
+                                    <span className={
                                       mPaid
-                                        ? (isDisputeSplit ? "bg-amber-50 text-amber-700 border border-amber-100" : "bg-emerald-50 text-emerald-700 border border-emerald-100")
+                                        ? (isDisputeSplit ? "invoice-badge-amber" : "invoice-badge-green")
                                         : mFunded
-                                          ? "bg-teal-50 text-teal-700 border border-teal-100"
+                                          ? "invoice-badge-teal"
                                           : activeContract.status === "Cancelled"
-                                            ? "bg-rose-50 text-rose-700 border border-rose-100"
-                                            : "bg-slate-100 text-slate-500 border border-slate-150"
-                                    }`}>
+                                            ? "invoice-badge-rose"
+                                            : "invoice-badge-gray"
+                                    }>
                                       {mPaid ? (isDisputeSplit ? "Split" : "Released") : mFunded ? "Escrow (Funded)" : activeContract.status === "Cancelled" ? "Refunded" : "Escrow"}
                                     </span>
                                   </td>
@@ -4372,16 +4679,20 @@ export default function ProjectMilestoneTracker({
                     ) : (
                       <div>
                         <span>All releases on this contract have been settled internal wallet-to-wallet using LancerFlow Escrow and Client balance checkout.</span>
-                        <div className="mt-2 grid grid-cols-2 gap-4">
-                          <div>
-                            <span className="block text-[8px] uppercase tracking-wider text-slate-400">Total Funded Escrow</span>
-                            <strong className="text-slate-800 text-[10px]">${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
-                          </div>
-                          <div>
-                            <span className="block text-[8px] uppercase tracking-wider text-slate-400">Primary Payment Gateway</span>
-                            <strong className="text-slate-800 text-[10px]">Stripe Checkout / Escrow Wallet</strong>
-                          </div>
-                        </div>
+                        <table className="w-full border-collapse mt-2">
+                          <tbody>
+                            <tr>
+                              <td className="text-left align-top" style={{ width: "50%" }}>
+                                <span className="block text-[8px] uppercase tracking-wider text-slate-400">Total Funded Escrow</span>
+                                <strong className="text-slate-800 text-[10px]">${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                              </td>
+                              <td className="text-left align-top" style={{ width: "50%" }}>
+                                <span className="block text-[8px] uppercase tracking-wider text-slate-400">Primary Payment Gateway</span>
+                                <strong className="text-slate-800 text-[10px]">Stripe Checkout / Escrow Wallet</strong>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>
@@ -4396,42 +4707,48 @@ export default function ProjectMilestoneTracker({
                           <p className="text-[9px] text-slate-500 font-semibold leading-relaxed mt-0.5">
                             {activeContract.dispute_resolution_details}
                           </p>
-                          <div className="grid grid-cols-2 gap-3 mt-2 pt-2 border-t border-rose-100/50 text-[9px] font-bold uppercase text-slate-455">
-                            <div>
-                              <span>Client Refund:</span>
-                              <strong className="text-rose-700 block text-[10px] font-bold mt-0.5">${returnedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
-                            </div>
-                            <div>
-                              <span>Freelancer Payout:</span>
-                              <strong className="text-emerald-700 block text-[10px] font-bold mt-0.5">${paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
-                            </div>
-                          </div>
+                          <table className="w-full border-collapse mt-2 pt-2 border-t border-rose-100/50 text-[9px] font-bold uppercase text-slate-455">
+                            <tbody>
+                              <tr>
+                                <td style={{ width: "50%" }}>
+                                  <span>Client Refund:</span>
+                                  <strong className="text-rose-700 block text-[10px] font-bold mt-0.5">${returnedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                                </td>
+                                <td style={{ width: "50%" }}>
+                                  <span>Freelancer Payout:</span>
+                                  <strong className="text-emerald-700 block text-[10px] font-bold mt-0.5">${paidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     </div>
                   )}
 
                   {/* Total Summary */}
-                  <div className="w-full sm:w-64 ml-auto space-y-1.5 border-t border-slate-200 pt-3 text-[9px] font-bold text-slate-500 uppercase text-left">
-                    <div className="grid grid-cols-2">
-                      <span>Total Amount:</span>
-                      <span className="text-right text-slate-700">${(selectedInvoiceItem ? selectedInvoiceItem.amount : totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <span>Net Released Payout:</span>
-                      <span className="text-right text-emerald-600">${(selectedInvoiceItem ? selectedInvoiceItem.amount : paidAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    {!selectedInvoiceItem && isDisputeSplit && (
-                      <div className="grid grid-cols-2 text-rose-650">
-                        <span>Returned to Client:</span>
-                        <span className="text-right">-${returnedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 border-t border-slate-250 pt-1.5 text-[10px] font-bold text-slate-800">
-                      <span>Total Paid:</span>
-                      <span className="text-right text-primary">${(selectedInvoiceItem ? selectedInvoiceItem.amount : clientPaidAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
+                  <table className="border-collapse ml-auto text-[9px] font-bold text-slate-500 uppercase text-left border-t border-slate-200 pt-3" style={{ width: "240px" }}>
+                    <tbody>
+                      <tr>
+                        <td className="py-1 text-left">Total Amount:</td>
+                        <td className="py-1 text-right text-slate-700">${(selectedInvoiceItem ? selectedInvoiceItem.amount : totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-1 text-left">Net Released Payout:</td>
+                        <td className="py-1 text-right text-emerald-600">${(selectedInvoiceItem ? selectedInvoiceItem.amount : paidAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                      {!selectedInvoiceItem && isDisputeSplit && (
+                        <tr className="text-rose-650">
+                          <td className="py-1 text-left">Returned to Client:</td>
+                          <td className="py-1 text-right">-${returnedAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      )}
+                      <tr className="border-t border-slate-250 text-[10px] text-slate-800">
+                        <td className="pt-2 text-left font-bold">Total Paid:</td>
+                        <td className="pt-2 text-right text-primary font-extrabold">${(selectedInvoiceItem ? selectedInvoiceItem.amount : clientPaidAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
@@ -4447,10 +4764,20 @@ export default function ProjectMilestoneTracker({
               </button>
               <button
                 onClick={handleDownloadPDF}
-                className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer border-0"
+                disabled={isDownloadingPDF}
+                className="px-4 py-1.5 bg-primary hover:bg-primary-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer border-0 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <i className="fa-solid fa-file-pdf"></i>
-                <span>Download PDF</span>
+                {isDownloadingPDF ? (
+                  <>
+                    <i className="fa-solid fa-circle-notch fa-spin"></i>
+                    <span>Downloading PDF...</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-file-pdf"></i>
+                    <span>Download PDF</span>
+                  </>
+                )}
               </button>
               <button
                 onClick={() => window.print()}

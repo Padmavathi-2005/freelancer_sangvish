@@ -91,17 +91,32 @@ export default function FreelancerProjectsTab() {
     }
   }, [selectedContract, loading]);
 
-  // Filter contracts
+  // Filter & sort contracts: Ongoing projects first, and newly created projects at the beginning of the list
   const filteredContracts = useMemo(() => {
+    let list = [...(freelancerContracts || [])];
+
     if (activeSubTab === "ongoing") {
-      return freelancerContracts.filter(
+      list = list.filter(
         (c) => c.status === "Hired" || c.status === "Work Started" || c.status === "In Progress" || c.status === "Under Review" || c.status === "Disputed" || c.status === "Work Completed"
       );
+    } else if (activeSubTab === "completed") {
+      list = list.filter((c) => c.status === "Completed" || c.status === "Cancelled" || c.status === "Closed");
     }
-    if (activeSubTab === "completed") {
-      return freelancerContracts.filter((c) => c.status === "Completed");
-    }
-    return freelancerContracts;
+
+    return list.sort((a: any, b: any) => {
+      const aStatus = (a.status || "").toLowerCase();
+      const bStatus = (b.status || "").toLowerCase();
+      const aIsCompleted = aStatus === "completed" || aStatus === "cancelled" || aStatus === "closed";
+      const bIsCompleted = bStatus === "completed" || bStatus === "cancelled" || bStatus === "closed";
+
+      if (!aIsCompleted && bIsCompleted) return -1; // Ongoing projects at the beginning
+      if (aIsCompleted && !bIsCompleted) return 1;  // Completed projects at the end
+
+      // Within same status group, sort newest created projects first
+      const aTime = a.created_at ? new Date(a.created_at).getTime() : (Number(a.contract_id || a.id) || 0);
+      const bTime = b.created_at ? new Date(b.created_at).getTime() : (Number(b.contract_id || b.id) || 0);
+      return bTime - aTime;
+    });
   }, [freelancerContracts, activeSubTab]);
 
   // Compute metrics

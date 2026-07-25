@@ -1,7 +1,8 @@
 import { API_URL } from "@/config/api";
 import React, { useState, useMemo } from "react";
 import CustomSelect from "../CustomSelect";
-import { FiSettings, FiUser, FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiTrash2, FiPlus, FiCircle, FiFileText, FiUpload } from "react-icons/fi";
+import { FiSettings, FiUser, FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiTrash2, FiPlus, FiCircle, FiFileText, FiUpload, FiShield, FiPhone, FiMail, FiSend, FiKey, FiLoader } from "react-icons/fi";
+import { useDashboard } from "@/app/dashboard/DashboardContext";
 
 interface SettingsTabProps {
   userRole: string | null;
@@ -86,10 +87,35 @@ export default function SettingsTab({
   profileImage = null,
   handleProfileImageUpload,
   setSelectedFreelancerProfile,
-  userEmail,
+  userEmail: propUserEmail,
 }: SettingsTabProps) {
+  const dashboardContext = useDashboard();
+  const {
+    userEmail = propUserEmail || "",
+    userPhone = "",
+    setUserPhone = () => {},
+    emailVerified = false,
+    phoneVerified = false,
+    emailOtp = "",
+    setEmailOtp = () => {},
+    phoneOtp = "",
+    setPhoneOtp = () => {},
+    emailOtpSent = false,
+    phoneOtpSent = false,
+    sendingEmailOtp = false,
+    sendingPhoneOtp = false,
+    verifyingEmailOtp = false,
+    verifyingPhoneOtp = false,
+    handleSendEmailOtp = async () => {},
+    handleVerifyEmailOtp = async () => {},
+    handleSendPhoneOtp = async () => {},
+    handleVerifyPhoneOtp = async () => {},
+    otpError = "",
+    otpSuccess = ""
+  } = dashboardContext || {};
+
   // Local state for settings subtabs
-  const [settingsTabMode, setSettingsTabMode] = useState<"hub" | "profile" | "subscription">("hub");
+  const [settingsTabMode, setSettingsTabMode] = useState<"hub" | "profile" | "subscription" | "verification">("hub");
   const [activeSettingsSubTab, setActiveSettingsSubTab] = useState<"account" | "profile" | "subscription">("account");
   const [userSubscription, setUserSubscription] = useState<any>(null);
   const [allPlans, setAllPlans] = useState<any[]>([]);
@@ -272,7 +298,8 @@ export default function SettingsTab({
       return [
         { number: 1, label: "Company Basics", done: Boolean(clientBasics?.company_name) },
         { number: 2, label: "Company Details", done: Boolean(clientBasics?.company_website || clientBasics?.company_description) },
-        { number: 3, label: "Hiring Contact Info", done: Boolean(clientBasics?.hiring_contact_name) }
+        { number: 3, label: "Hiring Contact Info", done: Boolean(clientBasics?.hiring_contact_name) },
+        { number: 4, label: "Contact Verification", done: emailVerified && phoneVerified }
       ];
     } else {
       return [
@@ -280,10 +307,11 @@ export default function SettingsTab({
         { number: 2, label: "Work Experience", done: experiences.length > 0 },
         { number: 3, label: "Education History", done: education.length > 0 },
         { number: 4, label: "Certifications", done: certifications.length > 0 },
-        { number: 5, label: "Skills Selector", done: selectedSkills.length > 0 }
+        { number: 5, label: "Skills Selector", done: selectedSkills.length > 0 },
+        { number: 6, label: "Contact Verification", done: emailVerified && phoneVerified }
       ];
     }
-  }, [userRole, clientBasics, profileBasics, experiences, education, certifications, selectedSkills]);
+  }, [userRole, clientBasics, profileBasics, experiences, education, certifications, selectedSkills, emailVerified, phoneVerified]);
 
   const settingsProgress = useMemo(() => {
     if (settingsSteps.length === 0) return 0;
@@ -538,7 +566,7 @@ export default function SettingsTab({
           <p className="text-xs text-slate-400">Configure your professional identity, view platform details, and manage subscriptions.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
           {/* Box 1: Profile */}
           <div 
             onClick={() => {
@@ -549,21 +577,21 @@ export default function SettingsTab({
                 setActiveSettingsSubTab("profile");
               }
             }}
-            className="bg-white border border-slate-200/80 hover:border-teal-700/30 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
+            className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 hover:border-teal-700/30 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
           >
             <div>
               <div className="flex justify-between items-start">
-                <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
                   <FiUser className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] bg-slate-100 text-slate-650 font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                <span className="text-[10px] bg-slate-100 dark:bg-zinc-800 text-slate-650 dark:text-slate-300 font-black px-3 py-1 rounded-full uppercase tracking-wider">
                   {settingsProgress}% Complete
                 </span>
               </div>
-              <h3 className="text-base font-extrabold text-slate-850 mt-4 group-hover:text-teal-750 transition-colors">
+              <h3 className="text-base font-extrabold text-slate-850 dark:text-white mt-4 group-hover:text-teal-750 transition-colors">
                 {userRole === "client" ? "Company Profile" : "Professional Profile"}
               </h3>
-              <p className="text-xs text-slate-500 font-semibold mt-1 leading-normal max-w-sm">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-normal max-w-sm">
                 Set up your professional title, availability rates, experiences, educations, and showcase skills.
               </p>
             </div>
@@ -579,22 +607,47 @@ export default function SettingsTab({
                 setActiveSettingsSubTab("subscription");
               }
             }}
-            className="bg-white border border-slate-200/80 hover:border-teal-700/30 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
+            className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 hover:border-teal-700/30 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
           >
             <div>
               <div className="flex justify-between items-start">
-                <div className="w-12 h-12 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
                   <FiCheckCircle className="w-5 h-5" />
                 </div>
-                <span className="text-[10px] bg-teal-55 text-teal-800 font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                <span className="text-[10px] bg-teal-55 dark:bg-teal-950/40 text-teal-800 dark:text-teal-400 font-black px-3 py-1 rounded-full uppercase tracking-wider">
                   {userSubscription?.plan_name || "Starter"} Plan
                 </span>
               </div>
-              <h3 className="text-base font-extrabold text-slate-850 mt-4 group-hover:text-teal-755 transition-colors">
+              <h3 className="text-base font-extrabold text-slate-850 dark:text-white mt-4 group-hover:text-teal-755 transition-colors">
                 Membership Plan
               </h3>
-              <p className="text-xs text-slate-500 font-semibold mt-1 leading-normal max-w-sm">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-normal max-w-sm">
                 View current active membership details, check platform allowances, and upgrade subscription tiers.
+              </p>
+            </div>
+          </div>
+
+          {/* Box 3: Account Verification (Email & Mobile OTP) */}
+          <div 
+            onClick={() => {
+              setSettingsTabMode("verification");
+            }}
+            className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 hover:border-teal-700/30 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between min-h-[190px] text-left"
+          >
+            <div>
+              <div className="flex justify-between items-start">
+                <div className="w-12 h-12 rounded-xl bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 flex items-center justify-center text-lg shadow-sm group-hover:bg-[#063c38] group-hover:text-white transition-all shrink-0">
+                  <FiShield className="w-5 h-5" />
+                </div>
+                <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider ${emailVerified && phoneVerified ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" : "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"}`}>
+                  {emailVerified && phoneVerified ? "100% Verified" : "Pending Verification"}
+                </span>
+              </div>
+              <h3 className="text-base font-extrabold text-slate-850 dark:text-white mt-4 group-hover:text-teal-750 transition-colors">
+                Account & Contact Verification
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-normal max-w-sm">
+                Verify your registered Email Address and Mobile Number with 6-digit OTP codes to build trust and unlock platform features.
               </p>
             </div>
           </div>
@@ -602,10 +655,205 @@ export default function SettingsTab({
 
         <button
           onClick={() => setActiveTab("workspace")}
-          className="w-full text-center py-3.5 text-xs font-black text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all cursor-pointer mt-4"
+          className="w-full text-center py-3.5 text-xs font-black text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-50 dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 rounded-xl transition-all cursor-pointer mt-4"
         >
           ← Back to Workspace Hub
         </button>
+      </div>
+    );
+  }
+
+  // RENDER: ACCOUNT & CONTACT VERIFICATION SCREEN
+  if (settingsTabMode === "verification") {
+    return (
+      <div className="relative z-10 w-full animate-fadeIn flex flex-col gap-6 text-left">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-6 rounded-2xl shadow-sm">
+          <div>
+            <div className="flex items-center gap-2">
+              <FiShield className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <h2 className="text-xl font-black text-slate-800 dark:text-white">Account & Contact Verification</h2>
+            </div>
+            <p className="text-xs text-slate-400 dark:text-slate-400 mt-1">Verify your email address and mobile number with 6-digit OTP security codes.</p>
+          </div>
+          <button
+            onClick={() => setSettingsTabMode("hub")}
+            className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all border border-slate-200/60 dark:border-zinc-700 shrink-0 cursor-pointer"
+          >
+            ← Back to Settings Hub
+          </button>
+        </div>
+
+        {/* Global Feedback Banner */}
+        {otpSuccess && (
+          <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl text-emerald-700 dark:text-emerald-300 text-xs font-extrabold flex items-center gap-2">
+            <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{otpSuccess}</span>
+          </div>
+        )}
+        {otpError && (
+          <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-700 dark:text-rose-300 text-xs font-extrabold flex items-center gap-2">
+            <FiAlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>{otpError}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Card 1: Email Verification */}
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between gap-5 text-left">
+            <div>
+              <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 flex items-center justify-center text-base shrink-0">
+                    <FiMail className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Email Verification</h3>
+                    <p className="text-[11px] text-slate-400">Registered platform email address</p>
+                  </div>
+                </div>
+                {emailVerified ? (
+                  <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                    <FiCheck className="w-3 h-3" /> Verified
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-black text-amber-600 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-1 rounded-full uppercase tracking-wider">
+                    Unverified
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Email Address</label>
+                  <input
+                    type="email"
+                    value={userEmail}
+                    disabled
+                    className="bg-slate-100 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-xl px-4 py-3 text-xs text-slate-700 dark:text-slate-300 font-bold cursor-not-allowed opacity-80"
+                  />
+                </div>
+
+                {!emailVerified && (
+                  <div className="space-y-3 pt-2">
+                    {!emailOtpSent ? (
+                      <button
+                        onClick={handleSendEmailOtp}
+                        className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <FiSend className="w-3.5 h-3.5" />
+                        <span>Send Email OTP</span>
+                      </button>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            maxLength={6}
+                            placeholder="Enter 6-digit Email OTP"
+                            value={emailOtp}
+                            onChange={(e) => setEmailOtp(e.target.value)}
+                            className="flex-1 bg-slate-50 dark:bg-zinc-800 border border-slate-250 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-white font-mono font-bold text-center tracking-widest focus:outline-none focus:border-primary/50"
+                          />
+                          <button
+                            onClick={handleVerifyEmailOtp}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer whitespace-nowrap"
+                          >
+                            Verify Email
+                          </button>
+                        </div>
+                        <button
+                          onClick={handleSendEmailOtp}
+                          className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-left border-none bg-transparent cursor-pointer"
+                        >
+                          Didn't get code? Resend OTP
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Mobile Number Verification */}
+          <div className="bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between gap-5 text-left">
+            <div>
+              <div className="flex justify-between items-center pb-4 border-b border-slate-100 dark:border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 flex items-center justify-center text-base shrink-0">
+                    <FiPhone className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Mobile Number Verification</h3>
+                    <p className="text-[11px] text-slate-400">Mobile OTP Authentication</p>
+                  </div>
+                </div>
+                {phoneVerified ? (
+                  <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
+                    <FiCheck className="w-3 h-3" /> Verified
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-black text-amber-600 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-1 rounded-full uppercase tracking-wider">
+                    Unverified
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Mobile Phone Number</label>
+                  <input
+                    type="tel"
+                    placeholder="+1 (555) 123-4567 or +91 9876543210"
+                    value={userPhone}
+                    disabled={phoneVerified}
+                    onChange={(e) => setUserPhone(e.target.value)}
+                    className="bg-slate-50 dark:bg-zinc-800 border border-slate-250 dark:border-zinc-700 rounded-xl px-4 py-3 text-xs text-slate-800 dark:text-white font-bold focus:outline-none focus:border-primary/50"
+                  />
+                </div>
+
+                {!phoneVerified && (
+                  <div className="space-y-3 pt-2">
+                    {!phoneOtpSent ? (
+                      <button
+                        onClick={handleSendPhoneOtp}
+                        className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <FiSend className="w-3.5 h-3.5" />
+                        <span>Send Mobile OTP</span>
+                      </button>
+                    ) : (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            maxLength={6}
+                            placeholder="Enter 6-digit OTP"
+                            value={phoneOtp}
+                            onChange={(e) => setPhoneOtp(e.target.value)}
+                            className="flex-1 bg-slate-50 dark:bg-zinc-800 border border-slate-250 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-white font-mono font-bold text-center tracking-widest focus:outline-none focus:border-primary/50"
+                          />
+                          <button
+                            onClick={handleVerifyPhoneOtp}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer whitespace-nowrap"
+                          >
+                            Verify Phone
+                          </button>
+                        </div>
+                        <button
+                          onClick={handleSendPhoneOtp}
+                          className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-left border-none bg-transparent cursor-pointer"
+                        >
+                          Didn't get code? Resend OTP
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -618,7 +866,7 @@ export default function SettingsTab({
         <div className="xl:col-span-4 bg-white border border-slate-200/85 rounded-xl p-6 shadow-sm flex flex-col gap-6 order-last xl:order-first">
           <div>
             <h2 className="text-base font-extrabold text-slate-800">Profile Setup Checklist</h2>
-            <p className="text-slate-400 text-xs mt-1">Complete each section to activate your profile on the SQL DB.</p>
+            <p className="text-slate-400 text-xs mt-1">Complete each section to activate and publish your profile.</p>
           </div>
 
           <div className="flex items-center gap-4 bg-slate-50 border border-slate-150 rounded-xl p-4.5">
@@ -762,7 +1010,9 @@ export default function SettingsTab({
 
                   <div className="text-right sm:text-left shrink-0">
                     <span className="text-lg font-black text-slate-900 leading-tight font-sans">
-                      {userSubscription?.price || "Free"}
+                      {!userSubscription?.price || parseFloat(String(userSubscription.price).replace(/[^0-9.]/g, "")) === 0 || String(userSubscription.price).trim() === "0.00" || String(userSubscription.price).trim() === "0"
+                        ? "Free"
+                        : userSubscription.price}
                     </span>
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mt-0.5">
                       {userSubscription?.period || ""}
@@ -1478,8 +1728,8 @@ export default function SettingsTab({
             {/* FREELANCER STEP 5: SKILLS */}
             {userRole !== "client" && profileStep === 5 && (
               <div className="flex flex-col gap-6">
-                <p className="text-xs text-slate-505 font-semibold leading-relaxed text-left">
-                  Select tags representing your expert programming languages, frameworks, or design systems. These will map to the `user_skills` database table.
+                <p className="text-xs text-slate-500 font-semibold leading-relaxed text-left">
+                  Select tags representing your expert programming languages, frameworks, or design systems.
                 </p>
 
                 <div className="flex flex-wrap gap-2.5">
@@ -1517,8 +1767,245 @@ export default function SettingsTab({
                   <button
                     onClick={async () => {
                       await handleSaveStep(5);
+                      setProfileStep(6);
+                    }}
+                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <span>Save & Continue</span>
+                    <span className="text-xxs text-white">→</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* FREELANCER STEP 6 & CLIENT STEP 4: CONTACT & ACCOUNT VERIFICATION */}
+            {((userRole !== "client" && profileStep === 6) || (userRole === "client" && profileStep === 4)) && (
+              <div className="flex flex-col gap-6 text-left">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-850">Contact & Account Verification</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">Verify your registered email address and mobile phone number with 6-digit OTP codes.</p>
+                  </div>
+                  <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider ${emailVerified && phoneVerified ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                    {emailVerified && phoneVerified ? "100% Verified" : "Pending Verification"}
+                  </span>
+                </div>
+
+                {/* Global Feedback Banner */}
+                {otpSuccess && (
+                  <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs font-extrabold flex items-center gap-2">
+                    <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{otpSuccess}</span>
+                  </div>
+                )}
+                {otpError && (
+                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-extrabold flex items-center gap-2">
+                    <FiAlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{otpError}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Email Verification Box */}
+                  <div className="bg-slate-50/50 border border-slate-200/80 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2.5">
+                        <FiMail className="w-4 h-4 text-teal-600" />
+                        <span className="text-xs font-extrabold text-slate-800">Email Address</span>
+                      </div>
+                      {emailVerified ? (
+                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <FiCheck className="w-3 h-3" /> Verified
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                          Unverified
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <input
+                        type="email"
+                        value={userEmail}
+                        disabled
+                        className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 font-bold opacity-80 cursor-not-allowed"
+                      />
+                      {!emailVerified && (
+                        <div>
+                          {!emailOtpSent ? (
+                            <button
+                              type="button"
+                              disabled={sendingEmailOtp}
+                              onClick={handleSendEmailOtp}
+                              className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {sendingEmailOtp ? (
+                                <>
+                                  <FiLoader className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Sending Email OTP...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FiSend className="w-3.5 h-3.5 text-white" />
+                                  <span className="text-white">Send Email OTP</span>
+                                </>
+                              )}
+                            </button>
+                          ) : (
+                            <div className="flex flex-col gap-2.5">
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  maxLength={6}
+                                  placeholder="Enter 6-digit OTP"
+                                  value={emailOtp}
+                                  onChange={(e) => setEmailOtp(e.target.value)}
+                                  className="flex-1 bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs font-mono font-bold text-center tracking-widest"
+                                />
+                                <button
+                                  type="button"
+                                  disabled={verifyingEmailOtp || !emailOtp.trim()}
+                                  onClick={handleVerifyEmailOtp}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {verifyingEmailOtp ? (
+                                    <>
+                                      <FiLoader className="w-3 h-3 animate-spin text-white" />
+                                      <span className="text-white">Verifying...</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-white">Verify</span>
+                                  )}
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={sendingEmailOtp}
+                                onClick={handleSendEmailOtp}
+                                className="text-[11px] font-bold text-slate-400 hover:text-slate-600 text-left border-none bg-transparent cursor-pointer disabled:opacity-50"
+                              >
+                                {sendingEmailOtp ? "Resending Email OTP..." : "Resend OTP"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mobile Verification Box */}
+                  <div className="bg-slate-50/50 border border-slate-200/80 rounded-xl p-5 flex flex-col justify-between gap-4">
+                    <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2.5">
+                        <FiPhone className="w-4 h-4 text-teal-600" />
+                        <span className="text-xs font-extrabold text-slate-800">Mobile Phone Number</span>
+                      </div>
+                      {phoneVerified ? (
+                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <FiCheck className="w-3 h-3" /> Verified
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                          Unverified
+                        </span>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <input
+                        type="tel"
+                        placeholder="+1 (555) 123-4567 or +91 9876543210"
+                        value={userPhone}
+                        disabled={phoneVerified}
+                        onChange={(e) => setUserPhone(e.target.value)}
+                        className={`w-full bg-white border rounded-xl px-3.5 py-2.5 text-xs text-slate-850 font-bold transition-all ${otpError ? "border-rose-500 ring-2 ring-rose-500/20" : "border-slate-250 focus:border-primary/50"}`}
+                      />
+                      {otpError && (
+                        <p className="text-xs font-extrabold text-rose-600 dark:text-rose-400 mt-1 select-none flex items-center gap-1">
+                          ⚠️ {otpError}
+                        </p>
+                      )}
+                      {!phoneVerified && (
+                        <div>
+                          {!phoneOtpSent ? (
+                            <button
+                              type="button"
+                              disabled={sendingPhoneOtp}
+                              onClick={handleSendPhoneOtp}
+                              className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {sendingPhoneOtp ? (
+                                <>
+                                  <FiLoader className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Sending Mobile OTP...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <FiSend className="w-3.5 h-3.5 text-white" />
+                                  <span className="text-white">Send Mobile OTP</span>
+                                </>
+                              )}
+                            </button>
+                          ) : (
+                            <div className="flex flex-col gap-2.5">
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  maxLength={6}
+                                  placeholder="Enter 6-digit OTP"
+                                  value={phoneOtp}
+                                  onChange={(e) => setPhoneOtp(e.target.value)}
+                                  className="flex-1 bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs font-mono font-bold text-center tracking-widest"
+                                />
+                                <button
+                                  type="button"
+                                  disabled={verifyingPhoneOtp || !phoneOtp.trim()}
+                                  onClick={handleVerifyPhoneOtp}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  {verifyingPhoneOtp ? (
+                                    <>
+                                      <FiLoader className="w-3 h-3 animate-spin text-white" />
+                                      <span className="text-white">Verifying...</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-white">Verify</span>
+                                  )}
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={sendingPhoneOtp}
+                                onClick={handleSendPhoneOtp}
+                                className="text-[11px] font-bold text-slate-400 hover:text-slate-600 text-left border-none bg-transparent cursor-pointer disabled:opacity-50"
+                              >
+                                {sendingPhoneOtp ? "Resending Mobile OTP..." : "Resend OTP"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center mt-4 border-t border-slate-100 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setProfileStep(userRole === "client" ? 3 : 5)}
+                    className="text-slate-500 hover:text-slate-800 text-xs font-bold"
+                  >
+                    ← Previous Step
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (userRole === "client") {
+                        await handleSaveClientStepSettings(3);
+                      } else {
+                        await handleSaveStep(5);
+                      }
                       localStorage.setItem("onboarding_completed", "true");
-                      triggerToast("success", "Freelancer Profile Completed successfully! Published to SQL schema.");
+                      triggerToast("success", "Profile setup & verification completed!");
                       setTimeout(() => {
                         setActiveTab("workspace");
                         if (typeof window !== "undefined") {
@@ -1528,8 +2015,8 @@ export default function SettingsTab({
                     }}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
                   >
-                    <FiCheckCircle className="w-4 h-4 shrink-0" />
-                    <span>Complete Profile Setup</span>
+                    <FiCheckCircle className="w-4 h-4 shrink-0 text-white" />
+                    <span className="text-white">Complete Profile Setup</span>
                   </button>
                 </div>
               </div>
@@ -1725,19 +2212,12 @@ export default function SettingsTab({
                   <button
                     onClick={async () => {
                       await handleSaveClientStepSettings(3);
-                      localStorage.setItem("onboarding_completed", "true");
-                      triggerToast("success", "Client Profile Completed successfully!");
-                      setTimeout(() => {
-                        setActiveTab("workspace");
-                        if (typeof window !== "undefined") {
-                          window.location.reload();
-                        }
-                      }, 1000);
+                      setProfileStep(4);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
+                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                   >
-                    <FiCheckCircle className="w-4 h-4 shrink-0" />
-                    <span>Complete Client Setup</span>
+                    <span>Save & Continue</span>
+                    <span className="text-xxs text-white">→</span>
                   </button>
                 </div>
               </div>
@@ -1956,7 +2436,9 @@ export default function SettingsTab({
 
                 <div className="text-right sm:text-left shrink-0">
                   <span className="text-lg font-black text-slate-900 leading-tight font-sans">
-                    {userSubscription?.price || "Free"}
+                    {!userSubscription?.price || parseFloat(String(userSubscription.price).replace(/[^0-9.]/g, "")) === 0 || String(userSubscription.price).trim() === "0.00" || String(userSubscription.price).trim() === "0"
+                      ? "Free"
+                      : userSubscription.price}
                   </span>
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mt-0.5">
                     {userSubscription?.period || ""}

@@ -350,6 +350,13 @@ export default function ProjectDetailsPage() {
         return;
       }
 
+      const projectMaxBudget = parseFloat(job.budget || job.max_budget || 0);
+      if (projectMaxBudget > 0 && parsedBid > projectMaxBudget) {
+        setSubmitError(`Your bid amount ($${parsedBid.toLocaleString()}) cannot exceed the client's project budget ($${projectMaxBudget.toLocaleString()}).`);
+        setSubmitting(false);
+        return;
+      }
+
       if (job.project_type !== "Hourly") {
         const daysEntered = parseInt(deliveryDays);
         if (isNaN(daysEntered) || daysEntered <= 0) {
@@ -675,6 +682,11 @@ export default function ProjectDetailsPage() {
                       onChange={(e) => setBidAmount(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none font-semibold"
                     />
+                    {bidAmount && !isNaN(parseFloat(bidAmount)) && parseFloat(job.budget || job.max_budget || 0) > 0 && parseFloat(bidAmount) > parseFloat(job.budget || job.max_budget || 0) && (
+                      <div className="mt-2 text-[10px] font-extrabold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl p-3 animate-fadeIn flex items-center gap-1.5 text-left">
+                        <span>⚠️ Your bid amount (${parseFloat(bidAmount).toLocaleString()}) cannot exceed the client's project budget (${parseFloat(job.budget || job.max_budget || 0).toLocaleString()}).</span>
+                      </div>
+                    )}
                     {bidAmount && !isNaN(parseFloat(bidAmount)) && (
                       <div className="mt-2 text-[10px] text-slate-500 font-bold flex flex-col gap-1.5 bg-slate-100/60 rounded-xl p-3 border border-slate-200/50 animate-fadeIn">
                         <div className="flex justify-between items-center text-slate-600">
