@@ -1342,7 +1342,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const fetchCategoriesOnboard = async () => {
     try {
       const res = await fetch(`${API_URL}/admin/categories`);
-      if (res.ok) setCategories(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        const active = (Array.isArray(data) ? data : []).filter((c: any) =>
+          c.status === undefined || c.status === null || c.status === true || c.status === 1 || String(c.status).toLowerCase() === "active" || String(c.status).toLowerCase() === "true"
+        );
+        setCategories(active);
+      }
     } catch (e) {
       console.error("Categories fetch failed", e);
     }
@@ -1365,7 +1371,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${API_URL}/admin/skills`);
       if (res.ok) {
         const data = await res.json();
-        setAvailableSkills(Array.isArray(data) ? data : []);
+        const active = (Array.isArray(data) ? data : []).filter((sk: any) =>
+          sk.status === undefined || sk.status === null || sk.status === true || sk.status === 1 || String(sk.status).toLowerCase() === "active" || String(sk.status).toLowerCase() === "true"
+        );
+        setAvailableSkills(active);
       }
     } catch (e) {
       console.error("All skills fetch failed", e);
@@ -1566,7 +1575,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${API_URL}/admin/sub-categories`);
       if (res.ok) {
         const allSubs: SubCategory[] = await res.json();
-        setSubCategories(allSubs.filter(sub => sub.category_id.toString() === catId));
+        setSubCategories(allSubs.filter(sub => 
+          sub.category_id.toString() === catId &&
+          (sub.status === undefined || sub.status === null || (sub as any).status === true || (sub as any).status === 1 || String((sub as any).status).toLowerCase() === "active" || String((sub as any).status).toLowerCase() === "true")
+        ));
       }
     } catch (e) {
       console.error("Subcategories fetch failed", e);
@@ -2627,7 +2639,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch(`${API_URL}/admin/sub-categories`);
         if (res.ok) {
           const data = await res.json();
-          setPostJobSubCategories(data.filter((sub: any) => sub.category_id.toString() === catId));
+          setPostJobSubCategories(data.filter((sub: any) => 
+            sub.category_id.toString() === catId &&
+            (sub.status === undefined || sub.status === null || sub.status === true || sub.status === 1 || String(sub.status).toLowerCase() === "active" || String(sub.status).toLowerCase() === "true")
+          ));
         }
       } catch (e) {
         console.error("Failed to fetch sub-categories:", e);
@@ -2889,7 +2904,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/admin/categories`);
       if (res.ok) {
-        setGigCategories(await res.json());
+        const data = await res.json();
+        setGigCategories((Array.isArray(data) ? data : []).filter((c: any) =>
+          c.status === undefined || c.status === null || c.status === true || c.status === 1 || String(c.status).toLowerCase() === "active" || String(c.status).toLowerCase() === "true"
+        ));
       }
     } catch (e) {
       console.error("Failed to fetch categories:", e);
@@ -2901,10 +2919,13 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(`${API_URL}/admin/sub-categories`);
       if (res.ok) {
         const data = await res.json();
+        const activeSubs = (Array.isArray(data) ? data : []).filter((sub: any) =>
+          sub.status === undefined || sub.status === null || sub.status === true || sub.status === 1 || String(sub.status).toLowerCase() === "active" || String(sub.status).toLowerCase() === "true"
+        );
         if (catId) {
-          setGigSubCategories(data.filter((sub: any) => sub.category_id.toString() === catId));
+          setGigSubCategories(activeSubs.filter((sub: any) => sub.category_id.toString() === catId));
         } else {
-          setGigSubCategories(data);
+          setGigSubCategories(activeSubs);
         }
       }
     } catch (e) {

@@ -150,7 +150,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         className="fixed inset-0 z-[10000] flex items-center justify-center p-4 animate-fadeIn"
         style={{ background: "rgba(15,23,42,0.45)", backdropFilter: "blur(2.5px)" }}
       >
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative flex flex-col gap-4 text-left">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-6 relative flex flex-col gap-4 text-left max-h-[90vh] overflow-y-auto scrollbar-thin">
           <button
             onClick={() => setShowDisputeModal(false)}
             className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition cursor-pointer border-0 bg-transparent"
@@ -822,10 +822,10 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
           <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Order Specifications</h3>
-          <div className="flex justify-between items-start gap-4 flex-wrap">
-            <div>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 border-b border-slate-100/80 pb-4">
+            <div className="space-y-1">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Order ID: #{selectedGigOrderDetails.application_id}</span>
-              <p className="text-xs text-slate-500 font-bold mt-2">
+              <p className="text-xs text-slate-500 font-bold">
                 Freelancer:{" "}
                 <button
                   onClick={() => setSelectedFreelancerProfile({
@@ -840,17 +840,17 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 >
                   {selectedGigOrderDetails.freelancer_name}
                 </button>{" "}
-                ({selectedGigOrderDetails.freelancer_email})
+                <span className="text-[11px] text-slate-450 font-normal">({selectedGigOrderDetails.freelancer_email})</span>
               </p>
             </div>
-            <div className="text-right flex flex-col items-end gap-2">
-              <div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total Price</span>
-                <span className="text-sm font-black text-slate-800 bg-slate-100 border border-slate-200/50 px-3 py-1 rounded-xl block mt-1">
+            <div className="flex items-center justify-between gap-3 w-full sm:w-auto bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-slate-200/60">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Price:</span>
+                <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
                   {selectedGigOrderDetails.currency_symbol || "$"}{parseFloat(selectedGigOrderDetails.price).toLocaleString()}
                 </span>
               </div>
-              <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${
+              <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap ${
                 selectedGigOrderDetails.status === "Accepted" || selectedGigOrderDetails.status === "Completed" || selectedGigOrderDetails.contract_status === "Completed"
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                   : selectedGigOrderDetails.status === "Rejected" || selectedGigOrderDetails.contract_status === "Cancelled"
@@ -1028,29 +1028,31 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 }`} />
 
                 {/* Top meta */}
-                <div className="flex justify-between items-start gap-4 flex-wrap">
-                  <div className="cursor-pointer" onClick={() => setSelectedGigOrderDetails(app)}>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100/80 pb-4">
+                  <div className="cursor-pointer space-y-0.5 min-w-0" onClick={() => setSelectedGigOrderDetails(app)}>
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Order #{app.application_id}</span>
-                    <h3 className="text-sm font-black text-slate-800 mt-0.5 hover:text-primary transition-colors">{app.gig_title}</h3>
-                    <p className="text-xs text-slate-400 font-bold mt-1">{app.freelancer_name} · {app.freelancer_email}</p>
+                    <h3 className="text-sm sm:text-base font-black text-slate-800 hover:text-primary transition-colors truncate">{app.gig_title}</h3>
+                    <p className="text-xs text-slate-400 font-bold mt-1 truncate">{app.freelancer_name} · <span className="font-normal text-slate-450">{app.freelancer_email}</span></p>
                   </div>
 
-                  <div className="flex items-center gap-3 flex-wrap justify-end">
-                    <div className="text-right">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wide block">Total</span>
-                      <span className="text-sm font-extrabold text-slate-800 bg-slate-100 border border-slate-200/50 px-3 py-1 rounded-xl block mt-0.5">
-                        {app.currency_symbol || "$"}{total.toLocaleString()}
-                      </span>
-                    </div>
-                    {needsPayment && (
-                      <div className="text-right">
-                        <span className="text-[9px] font-black text-amber-600 uppercase tracking-wide block">Due Now</span>
-                        <span className="text-xs font-black text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-xl block mt-0.5">
-                          ${upfront.toFixed(2)}
+                  <div className="flex items-center justify-between gap-3 w-full sm:w-auto bg-slate-50/80 sm:bg-transparent p-2.5 sm:p-0 rounded-xl border sm:border-0 border-slate-200/60 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total:</span>
+                        <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                          {app.currency_symbol || "$"}{total.toLocaleString()}
                         </span>
                       </div>
-                    )}
-                    <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${
+                      {needsPayment && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider">Due:</span>
+                          <span className="text-xs font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+                            ${upfront.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap shrink-0 ${
                       app.status === "Accepted" || app.status === "Completed" || app.contract_status === "Completed"
                         ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                         : app.status === "Rejected" || app.contract_status === "Cancelled"

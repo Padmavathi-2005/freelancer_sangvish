@@ -20,7 +20,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "./DashboardContext";
-import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX, FiClock, FiShield, FiSearch, FiMail, FiTrendingUp, FiBriefcase, FiUsers, FiPlus, FiFileText } from "react-icons/fi";
+import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX, FiClock, FiShield, FiSearch, FiMail, FiTrendingUp, FiBriefcase, FiUsers, FiPlus, FiFileText, FiChevronDown } from "react-icons/fi";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import CustomSelect from "@/components/CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
@@ -1554,7 +1554,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* SCROLLABLE MAIN CONTENT AREA */}
-        <div className="flex-1 py-8 px-6 overflow-y-auto relative w-full flex flex-col gap-8 print:p-0 print:overflow-visible print:block print:gap-4">
+        <div className="flex-1 py-3 sm:py-8 px-2 sm:px-6 overflow-y-auto relative w-full flex flex-col gap-4 sm:gap-8 print:p-0 print:overflow-visible print:block print:gap-4">
           {/* Background Decorative Pattern */}
           <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0"></div>
 
@@ -3755,7 +3755,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 setShowHireWizard(false);
                 setDirectHireError("");
               }}
-              className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer z-10"
+              className="absolute top-4 sm:top-6 right-4 sm:right-6 font-black text-xs px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 hover:text-slate-950 transition-all cursor-pointer z-10 shadow-xs"
             >
               Close
             </button>
@@ -3971,7 +3971,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   {/* 1. Job linking mode selector */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Project Attachment *</label>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
                       <button
                         type="button"
                         onClick={() => {
@@ -4008,19 +4008,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Select Open Project *</label>
                       {clientJobs.filter((j) => j.status === "Open" && !j.contract_id).length > 0 ? (
-                        <select
-                          value={selectedExistingJobId}
-                          onChange={(e) => setSelectedExistingJobId(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-teal-700/50 focus:outline-none"
-                        >
-                          {clientJobs
-                            .filter((j) => j.status === "Open" && !j.contract_id)
-                            .map((job) => (
-                              <option key={job.job_id} value={job.job_id}>
-                                {job.title} (${parseFloat(job.budget).toLocaleString()})
-                              </option>
-                            ))}
-                        </select>
+                        <div className="relative w-full">
+                          <select
+                            value={selectedExistingJobId}
+                            onChange={(e) => setSelectedExistingJobId(e.target.value)}
+                            className="w-full bg-slate-50 border border-slate-250 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-800 focus:border-teal-700/50 focus:bg-white focus:outline-none appearance-none cursor-pointer font-semibold"
+                          >
+                            {clientJobs
+                              .filter((j) => j.status === "Open" && !j.contract_id)
+                              .map((job) => (
+                                <option key={job.job_id} value={job.job_id}>
+                                  {job.title} (${parseFloat(job.budget).toLocaleString()})
+                                </option>
+                              ))}
+                          </select>
+                          <FiChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        </div>
                       ) : (
                         <div className="p-3 bg-amber-50 border border-amber-200/50 text-amber-700 text-xxs font-bold rounded-xl flex items-center gap-1.5">
                           <span>You have no open projects. Please select "Create New Project Inline" instead.</span>
@@ -4149,7 +4152,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       </div>
                     </div>
 
-                    <div className="flex justify-between items-center text-[10px] font-extrabold uppercase mt-2 pt-2 border-t border-slate-100">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center text-[10px] font-extrabold uppercase mt-2 pt-2 border-t border-slate-100 gap-1">
                       <span className="text-slate-450">Milestones sum:</span>
                       <span className={`text-xs ${
                         hireMilestones.reduce((sum, m) => sum + m.amount, 0) > hireBidAmount

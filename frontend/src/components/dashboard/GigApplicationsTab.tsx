@@ -378,21 +378,21 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
           <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Order Specifications</h3>
-          <div className="flex justify-between items-start gap-4 flex-wrap">
-            <div>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 border-b border-slate-100/80 pb-4">
+            <div className="space-y-1">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Order ID: #{app.application_id}</span>
-              <p className="text-xs text-slate-500 font-bold mt-2">
-                Client Partner: <strong className="text-slate-700">{app.client_name}</strong> ({app.client_email})
+              <p className="text-xs text-slate-500 font-bold">
+                Client Partner: <strong className="text-slate-700">{app.client_name}</strong> <span className="text-[11px] text-slate-450 font-normal">({app.client_email})</span>
               </p>
             </div>
-            <div className="text-right flex flex-col items-end gap-2">
-              <div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Price & Budget</span>
-                <span className="text-sm font-black text-slate-800 bg-slate-100 border border-slate-200/50 px-3 py-1 rounded-xl block mt-1">
+            <div className="flex items-center justify-between gap-3 w-full sm:w-auto bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-slate-200/60">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Price:</span>
+                <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
                   {app.currency_symbol || "$"}{parseFloat(app.price).toLocaleString()}
                 </span>
               </div>
-              <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${
+              <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap ${
                 app.status === "Completed" || contractStatus === "Completed"
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                   : app.status === "Rejected" || contractStatus === "Cancelled"
@@ -641,7 +641,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
         {/* Dispute Modal Portal */}
         {showDisputeModal && typeof document !== "undefined" && createPortal(
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[0.5px] p-4 overflow-y-auto">
-            <div className="relative bg-white border border-slate-200 shadow-2xl rounded-xl max-w-md w-full animate-fadeIn overflow-hidden text-left text-slate-800 p-6 flex flex-col gap-5">
+            <div className="relative bg-white border border-slate-200 shadow-2xl rounded-xl max-w-md w-full animate-fadeIn text-left text-slate-800 p-5 sm:p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto scrollbar-thin">
               <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-sm font-extrabold text-slate-800">Raise Escrow Dispute</h3>
@@ -709,10 +709,10 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
 
       {/* Navigation Filter Tabs */}
       <div className="flex flex-wrap justify-between items-center border-b border-slate-100 pb-4 gap-4">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none w-full sm:w-auto">
           <button
             onClick={() => setActiveFilterTab("all")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeFilterTab === "all"
                 ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
                 : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
@@ -722,7 +722,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
           </button>
           <button
             onClick={() => setActiveFilterTab("pending")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeFilterTab === "pending"
                 ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
                 : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
@@ -732,7 +732,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
           </button>
           <button
             onClick={() => setActiveFilterTab("active")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeFilterTab === "active"
                 ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
                 : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
@@ -742,7 +742,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
           </button>
           <button
             onClick={() => setActiveFilterTab("completed")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeFilterTab === "completed"
                 ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
                 : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
@@ -815,17 +815,17 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
               </div>
 
               {/* Actions for Pending */}
-              <div className="flex justify-between items-center pt-3 border-t border-slate-100 mt-2">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 pt-3 border-t border-slate-100 mt-2">
                 <span className="text-xxs font-extrabold text-primary hover:underline">Click card to view details & track milestones →</span>
                 {app.status === "Pending" && (
-                  <div className="flex gap-2.5" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex gap-2.5 w-full sm:w-auto" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={async () => {
                         if (confirm("Are you sure you want to decline this order?")) {
                           await handleUpdateApplicationStatus(app.application_id, "Rejected");
                         }
                       }}
-                      className="px-4.5 py-2 rounded-xl font-bold text-xs border border-rose-200 text-rose-650 hover:text-rose-700 bg-rose-50 hover:bg-rose-100/70 transition-all cursor-pointer shadow-sm border-0"
+                      className="flex-1 sm:flex-initial px-4 py-2 rounded-xl font-bold text-xs border border-rose-200 text-rose-650 hover:text-rose-700 bg-rose-50 hover:bg-rose-100/70 transition-all cursor-pointer shadow-sm border-0 whitespace-nowrap text-center"
                     >
                       Decline Order
                     </button>
@@ -833,7 +833,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                       onClick={async () => {
                         await handleUpdateApplicationStatus(app.application_id, "Accepted");
                       }}
-                      className="px-4.5 py-2 rounded-xl font-bold text-xs text-white bg-primary hover:bg-primary-hover shadow-md hover:shadow-lg transition-all cursor-pointer border-0"
+                      className="flex-1 sm:flex-initial px-4 py-2 rounded-xl font-bold text-xs text-white bg-primary hover:bg-primary-hover shadow-md hover:shadow-lg transition-all cursor-pointer border-0 whitespace-nowrap text-center"
                     >
                       Accept Order
                     </button>

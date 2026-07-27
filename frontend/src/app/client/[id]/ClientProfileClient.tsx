@@ -100,7 +100,7 @@ export default function ClientProfileClient() {
       <Header />
       <div className="flex-1 pb-16 bg-slate-50/50">
         {/* Top Banner section */}
-        <div className="relative bg-gradient-to-br from-primary/10 via-slate-50/65 to-secondary/10 border-b border-slate-200/80 py-16 px-6 overflow-hidden text-slate-800">
+        <div className="relative bg-gradient-to-br from-primary/10 via-slate-50/65 to-secondary/10 border-b border-slate-200/80 py-8 sm:py-16 px-4 sm:px-6 overflow-hidden text-slate-800">
           {/* Subtle decorative background shapes */}
           <div className="absolute top-[-30%] left-[-10%] w-[35rem] h-[35rem] bg-primary/5 rounded-full filter blur-[100px] pointer-events-none" />
           <div className="absolute bottom-[-30%] right-[-10%] w-[35rem] h-[35rem] bg-secondary/5 rounded-full filter blur-[100px] pointer-events-none" />
@@ -141,10 +141,8 @@ export default function ClientProfileClient() {
                   <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-900">{profile?.company_name || "Independent Client Partner"}</h1>
                   <p className="text-slate-500 font-bold text-xs mt-1.5 flex flex-wrap items-center justify-center md:justify-start gap-1.5">
                     <span>Hired by <strong className="text-slate-700 font-bold">{user.name}</strong></span>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-slate-650">{profile?.industry || "Enterprise Management"}</span>
-                    <span className="text-slate-300">•</span>
-                    <span className="text-slate-600 flex items-center gap-1"><FiMapPin className="w-3 h-3 text-slate-400" /> Remote / Global</span>
+                    <span>• {profile?.industry || "Enterprise Management"}</span>
+                    <span>• <FiMapPin className="inline w-3 h-3 text-slate-400" /> Remote / Global</span>
                   </p>
                   <div className="flex items-center justify-center md:justify-start gap-2 mt-3.5 flex-wrap text-slate-600 font-bold text-xs">
                     <div className="flex items-center text-amber-400">
@@ -163,18 +161,18 @@ export default function ClientProfileClient() {
               </div>
 
               {/* Quick Metrics Cards */}
-              <div className="flex gap-4 flex-wrap justify-center shrink-0">
-                <div className="bg-white border border-slate-200/80 rounded-xl px-5 py-3.5 text-center min-w-[100px] shadow-sm">
-                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest block">Active Jobs</span>
-                  <span className="text-lg font-black text-primary mt-1 block">{stats.open_jobs} Open</span>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full md:w-auto shrink-0">
+                <div className="bg-white border border-slate-200/80 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-sm">
+                  <span className="text-[7.5px] sm:text-[8px] font-black uppercase text-slate-400 tracking-wider block truncate">Active Jobs</span>
+                  <span className="text-sm sm:text-lg font-black text-primary mt-0.5 sm:mt-1 block truncate">{stats.open_jobs} Open</span>
                 </div>
-                <div className="bg-white border border-slate-200/80 rounded-xl px-5 py-3.5 text-center min-w-[100px] shadow-sm">
-                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest block">Rating Avg</span>
-                  <span className="text-lg font-black text-amber-500 mt-1 block">{ratingAvg > 0 ? `${ratingAvg}/5.0` : "—"}</span>
+                <div className="bg-white border border-slate-200/80 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-sm">
+                  <span className="text-[7.5px] sm:text-[8px] font-black uppercase text-slate-400 tracking-wider block truncate">Rating Avg</span>
+                  <span className="text-sm sm:text-lg font-black text-amber-500 mt-0.5 sm:mt-1 block truncate">{ratingAvg > 0 ? `${ratingAvg}/5.0` : "—"}</span>
                 </div>
-                <div className="bg-white border border-slate-200/80 rounded-xl px-5 py-3.5 text-center min-w-[100px] shadow-sm">
-                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest block">Joined On</span>
-                  <span className="text-lg font-black text-slate-800 mt-1 block">
+                <div className="bg-white border border-slate-200/80 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-sm">
+                  <span className="text-[7.5px] sm:text-[8px] font-black uppercase text-slate-400 tracking-wider block truncate">Joined On</span>
+                  <span className="text-sm sm:text-lg font-black text-slate-800 mt-0.5 sm:mt-1 block truncate">
                     {new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
                   </span>
                 </div>
@@ -272,28 +270,28 @@ export default function ClientProfileClient() {
         <div className="flex flex-col gap-6 lg:col-span-2">
           
           {/* Tab Selector */}
-          <div className="bg-white border border-slate-200/80 rounded-xl p-1.5 shadow-sm flex gap-1">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-1.5 shadow-sm flex flex-col sm:flex-row gap-1.5 sm:gap-1">
             <button
               onClick={() => setActiveTab("jobs")}
-              className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer border-0 flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2.5 sm:py-3 px-3 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer border-0 flex items-center justify-center gap-2 ${
                 activeTab === "jobs"
                   ? "bg-primary text-white font-bold"
                   : "text-slate-500 hover:text-slate-805 hover:bg-slate-50"
               }`}
             >
-              <FiBriefcase className="w-3.5 h-3.5" />
+              <FiBriefcase className="w-3.5 h-3.5 shrink-0" />
               <span>Active Job Openings ({jobs.length})</span>
             </button>
 
             <button
               onClick={() => setActiveTab("reviews")}
-              className={`flex-1 py-3 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer border-0 flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2.5 sm:py-3 px-3 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer border-0 flex items-center justify-center gap-2 ${
                 activeTab === "reviews"
                   ? "bg-primary text-white font-bold"
                   : "text-slate-500 hover:text-slate-805 hover:bg-slate-50"
               }`}
             >
-              <FiStar className="w-3.5 h-3.5" />
+              <FiStar className="w-3.5 h-3.5 shrink-0" />
               <span>Freelancer Reviews ({reviews.length})</span>
             </button>
           </div>
@@ -324,12 +322,10 @@ export default function ClientProfileClient() {
                       <p className="text-slate-500 text-[11px] font-medium leading-relaxed line-clamp-2">
                         {job.description}
                       </p>
-                      <div className="flex items-center gap-4 text-[10px] font-bold text-slate-450 pt-2 flex-wrap">
+                      <div className="flex items-center gap-3 text-[10px] font-bold text-slate-450 pt-2 flex-wrap">
                         <span>Posted: {new Date(job.created_at).toLocaleDateString()}</span>
-                        <span>•</span>
-                        <span>Budget: <strong className="text-slate-700 font-bold">${parseFloat(job.budget || job.min_budget || 0).toLocaleString()}</strong></span>
-                        <span>•</span>
-                        <span>Proposals: <strong className="text-slate-700 font-bold">{job.proposal_count}</strong></span>
+                        <span>• Budget: <strong className="text-slate-700 font-bold">${parseFloat(job.budget || job.min_budget || 0).toLocaleString()}</strong></span>
+                        <span>• Proposals: <strong className="text-slate-700 font-bold">{job.proposal_count}</strong></span>
                       </div>
                     </div>
 

@@ -65,7 +65,7 @@ export default function WalletTab() {
   const availableBalance = Math.max(0, balance - pendingTotal);
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/50 scrollbar-thin">
+    <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-5 sm:space-y-8 bg-slate-50/50 scrollbar-thin">
       
       {/* HEADER SECTION */}
       <div className="flex flex-col gap-1.5">
@@ -83,7 +83,7 @@ export default function WalletTab() {
         <div className="lg:col-span-1 space-y-6">
           
           {/* Glassmorphic Credit Card */}
-          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-800 via-teal-700 to-cyan-600 p-6 text-white shadow-xl shadow-teal-900/10 min-h-[180px] flex flex-col justify-between">
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-teal-800 via-teal-700 to-cyan-600 p-4 sm:p-6 text-white shadow-xl shadow-teal-900/10 min-h-[170px] flex flex-col justify-between">
             {/* Background design elements */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-8 -mt-8"></div>
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-cyan-400/20 rounded-full blur-xl -ml-8 -mb-8"></div>
@@ -159,7 +159,7 @@ export default function WalletTab() {
 
         {/* WITHDRAWAL FORM */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm h-full space-y-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm h-full space-y-6">
             <div>
               <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
                 <i className="fa-solid fa-money-bill-transfer text-slate-700"></i> Request Fund Withdrawal / Payout
@@ -512,7 +512,7 @@ export default function WalletTab() {
       </div>
 
       {/* WITHDRAWAL REQUESTS LOG */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-4">
           <i className="fa-solid fa-clock-rotate-left text-slate-700"></i> Payout Withdrawal Requests
         </h2>
@@ -521,33 +521,33 @@ export default function WalletTab() {
             No withdrawal requests submitted yet.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-left text-xs border-collapse min-w-[550px]">
               <thead>
                 <tr className="border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider text-[9px]">
-                  <th className="py-2.5">Req ID</th>
-                  <th className="py-2.5">Date</th>
-                  <th className="py-2.5">Method</th>
-                  <th className="py-2.5">Payout Target</th>
-                  <th className="py-2.5 text-right">Amount</th>
-                  <th className="py-2.5 text-right">Status</th>
+                  <th className="py-2.5 pr-3 whitespace-nowrap">Req ID</th>
+                  <th className="py-2.5 pr-3 whitespace-nowrap">Date</th>
+                  <th className="py-2.5 pr-3 whitespace-nowrap">Method</th>
+                  <th className="py-2.5 pr-3 whitespace-nowrap">Payout Target</th>
+                  <th className="py-2.5 text-right px-3 whitespace-nowrap">Amount</th>
+                  <th className="py-2.5 text-right pl-3 whitespace-nowrap">Status</th>
                 </tr>
               </thead>
               <tbody className="font-bold text-slate-700">
                 {withdrawals.map((w: any) => (
                   <tr key={w.request_id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                    <td className="py-3 text-slate-400">#{w.request_id}</td>
-                    <td className="py-3 text-[10px] text-slate-500">
+                    <td className="py-3 pr-3 text-slate-400 whitespace-nowrap">#{w.request_id}</td>
+                    <td className="py-3 pr-3 text-[10px] text-slate-500 whitespace-nowrap">
                       {new Date(w.created_at).toLocaleDateString()}
                     </td>
-                    <td className="py-3 text-slate-600">{w.payment_method}</td>
-                    <td className="py-3 max-w-[200px] truncate text-slate-500" title={w.account_details}>
+                    <td className="py-3 pr-3 text-slate-600 whitespace-nowrap">{w.payment_method}</td>
+                    <td className="py-3 pr-3 max-w-[200px] truncate text-slate-500" title={w.account_details}>
                       {w.account_details}
                     </td>
-                    <td className="py-3 text-right text-slate-850">
+                    <td className="py-3 text-right px-3 text-slate-850 whitespace-nowrap">
                       ${parseFloat(w.amount).toFixed(2)}
                     </td>
-                    <td className="py-3 text-right">
+                    <td className="py-3 text-right pl-3 whitespace-nowrap">
                       <span
                         className={`text-[9px] px-2 py-0.5 rounded-full inline-block ${
                           w.status === "Approved"
@@ -569,7 +569,7 @@ export default function WalletTab() {
       </div>
 
       {/* TRANSACTION HISTORY */}
-      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-4">
           <i className="fa-solid fa-receipt text-slate-700"></i> Wallet Transactions Log
         </h2>
@@ -578,15 +578,15 @@ export default function WalletTab() {
             No transaction records found.
           </p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-left text-xs border-collapse min-w-[640px]">
               <thead>
                 <tr className="border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider text-[9px]">
-                  <th className="py-2.5">Tx ID</th>
-                  <th className="py-2.5">Date</th>
-                  <th className="py-2.5">Type</th>
-                  <th className="py-2.5">Description</th>
-                  <th className="py-2.5 text-right">Amount</th>
+                  <th className="py-2.5 pr-3 whitespace-nowrap">Tx ID</th>
+                  <th className="py-2.5 pr-3 whitespace-nowrap">Date</th>
+                  <th className="py-2.5 pr-3 whitespace-nowrap">Type</th>
+                  <th className="py-2.5 pr-3 whitespace-nowrap min-w-[220px]">Description</th>
+                  <th className="py-2.5 text-right pl-3 whitespace-nowrap">Amount</th>
                 </tr>
               </thead>
               <tbody className="font-bold text-slate-700">
@@ -607,17 +607,17 @@ export default function WalletTab() {
 
                   return (
                     <tr key={tx.transaction_id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                      <td className="py-3 text-slate-400">TX-{tx.transaction_id}</td>
-                      <td className="py-3 text-[10px] text-slate-500">
+                      <td className="py-3 pr-3 text-slate-400 whitespace-nowrap">TX-{tx.transaction_id}</td>
+                      <td className="py-3 pr-3 text-[10px] text-slate-500 whitespace-nowrap">
                         {new Date(tx.created_at).toLocaleDateString()}
                       </td>
-                      <td className="py-3 text-[10px]">
-                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
-                          {tx.type}
+                      <td className="py-3 pr-3 text-[10px] whitespace-nowrap">
+                        <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-bold capitalize">
+                          {String(tx.type || "").replace(/_/g, " ")}
                         </span>
                       </td>
-                      <td className="py-3 text-slate-500 font-semibold max-w-[300px]" title={tx.description}>
-                        <div className="truncate">{tx.description}</div>
+                      <td className="py-3 pr-3 text-slate-500 font-semibold min-w-[220px] max-w-[360px]" title={tx.description}>
+                        <div className="leading-snug">{tx.description}</div>
                         {parseFloat(tx.commission_amount || "0") > 0 && (() => {
                           const origAmt = parseFloat(tx.amount) + parseFloat(tx.commission_amount);
                           const commPercent = Math.round((parseFloat(tx.commission_amount) / origAmt) * 1000) / 10;
@@ -628,7 +628,7 @@ export default function WalletTab() {
                           );
                         })()}
                       </td>
-                      <td className={`py-3 text-right font-black ${amtStyle}`}>
+                      <td className={`py-3 text-right pl-3 font-black whitespace-nowrap ${amtStyle}`}>
                         {displayAmt}
                       </td>
                     </tr>

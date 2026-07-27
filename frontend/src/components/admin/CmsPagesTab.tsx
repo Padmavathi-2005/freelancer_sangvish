@@ -840,26 +840,6 @@ export default function CmsPagesTab() {
                                       className={textInputClass}
                                     />
                                   </div>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <label className={labelClass}>Search Placeholder</label>
-                                      <input
-                                        type="text"
-                                        value={block.data.searchPlaceholder || ""}
-                                        onChange={(e) => updateBlockData(block.id, "searchPlaceholder", e.target.value)}
-                                        className={textInputClass}
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className={labelClass}>Search Button Text</label>
-                                      <input
-                                        type="text"
-                                        value={block.data.buttonText || ""}
-                                        onChange={(e) => updateBlockData(block.id, "buttonText", e.target.value)}
-                                        className={textInputClass}
-                                      />
-                                    </div>
-                                  </div>
                                 </>
                               )}
 
@@ -1420,10 +1400,6 @@ export default function CmsPagesTab() {
                               <div className="bg-gradient-to-tr from-teal-900/10 to-teal-500/5 p-6 rounded-xl border border-teal-500/10 text-center flex flex-col items-center gap-3">
                                 <h1 className="text-sm font-extrabold text-teal-700">{block.data.headline}</h1>
                                 <p className="text-[10px] text-slate-400 max-w-sm">{block.data.subheadline}</p>
-                                <div className="flex items-center border rounded-lg bg-white overflow-hidden max-w-xs w-full">
-                                  <span className="flex-1 px-3 text-slate-400">{block.data.searchPlaceholder}</span>
-                                  <span className="bg-teal-700 text-white font-bold px-3 py-1 text-[10px]">{block.data.buttonText}</span>
-                                </div>
                               </div>
                             )}
 

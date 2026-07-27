@@ -242,19 +242,19 @@ export default function GigMilestoneTracker({
 
   return (
     <div className="flex flex-col gap-5 text-left">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-slate-50 border border-slate-200/55 p-4 rounded-xl text-center">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Milestones Completed</span>
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-base font-black text-slate-800">{progressPercent}%</span>
-            <div className="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div className="h-full bg-primary" style={{ width: `${progressPercent}%` }}></div>
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="bg-slate-50 border border-slate-200/55 p-3 sm:p-4 rounded-xl text-center overflow-hidden">
+          <span className="text-[8.5px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1.5 whitespace-nowrap truncate">Milestones Completed</span>
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+            <span className="text-sm sm:text-base font-black text-slate-800">{progressPercent}%</span>
+            <div className="w-10 sm:w-16 h-2 bg-slate-200 rounded-full overflow-hidden shrink-0">
+              <div className="h-full bg-primary transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
             </div>
           </div>
         </div>
-        <div className="bg-slate-50 border border-slate-200/55 p-4 rounded-xl text-center">
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Payments Paid</span>
-          <span className="text-base font-black text-slate-800 mt-1 block font-sans">
+        <div className="bg-slate-50 border border-slate-200/55 p-3 sm:p-4 rounded-xl text-center overflow-hidden">
+          <span className="text-[8.5px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1.5 whitespace-nowrap truncate">Payments Paid</span>
+          <span className="text-sm sm:text-base font-black text-slate-800 block font-sans whitespace-nowrap">
             ${paidAmount.toLocaleString()} <span className="text-xxs font-bold text-slate-450 font-sans">/ ${totalAmount.toLocaleString()}</span>
           </span>
         </div>
@@ -269,9 +269,9 @@ export default function GigMilestoneTracker({
 
           return (
             <div key={idx} className="flex flex-col gap-3">
-              <div className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between gap-4 shadow-xxs hover:border-slate-350 transition-all text-left">
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="flex items-center h-5 mt-0.5">
+              <div className="bg-white border border-slate-200 p-3.5 sm:p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shadow-xxs hover:border-slate-350 transition-all text-left">
+                <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+                  <div className="flex items-center h-5 mt-0.5 shrink-0">
                     <input
                       type="checkbox"
                       checked={isCompleted(m)}
@@ -280,11 +280,11 @@ export default function GigMilestoneTracker({
                       className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                     />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className={`text-xs font-bold text-slate-800 ${isCompleted(m) ? 'line-through text-slate-400' : ''}`}>{m.title}</p>
+                      <p className={`text-xs font-bold text-slate-800 leading-snug ${isCompleted(m) ? 'line-through text-slate-400' : ''}`}>{m.title}</p>
                       {hasContract && (
-                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${
+                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border whitespace-nowrap ${
                           milestonePaid
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
                             : m.status === 'Under Review'
@@ -297,15 +297,15 @@ export default function GigMilestoneTracker({
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] font-black text-primary">${parseFloat(m.amount).toLocaleString()}</span>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className="text-[10px] font-black text-primary whitespace-nowrap">${parseFloat(m.amount).toLocaleString()}</span>
                       {m.paid_at && (
-                        <span className="text-[9px] font-bold text-emerald-600">
+                        <span className="text-[9px] font-bold text-emerald-600 whitespace-nowrap">
                           • Paid on {new Date(m.paid_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}
                         </span>
                       )}
                       {!m.paid_at && (m.start_date || m.end_date) && (
-                        <span className="text-[9px] font-semibold text-slate-400">
+                        <span className="text-[9px] font-semibold text-slate-400 whitespace-nowrap">
                           • {m.start_date ? new Date(m.start_date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : 'N/A'} - {m.end_date ? new Date(m.end_date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : 'N/A'}
                         </span>
                       )}
@@ -353,7 +353,7 @@ export default function GigMilestoneTracker({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex items-center justify-end gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100/80">
                   {hasContract ? (
                     milestonePaid ? (
                       <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-150 px-2.5 py-1 rounded-lg uppercase tracking-wider">

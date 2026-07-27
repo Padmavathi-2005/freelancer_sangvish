@@ -139,55 +139,77 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
     return `${linePath} L ${points[points.length - 1].x} ${bottomY} L ${points[0].x} ${bottomY} Z`;
   }, [linePath, points, chartHeight, paddingBottom]);
 
+  // Helper to format real relative time from database timestamps
+  const formatRelativeTime = (dateStr?: string) => {
+    if (!dateStr) return "Recently";
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "Recently";
+    const diffMs = Date.now() - date.getTime();
+    if (diffMs < 0) return "Just now";
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  };
+
   // Generate Activity Logs dynamically based on database state
   const activityLogs = useMemo(() => {
     const logs: Array<{ type: "ALERT" | "SUCCESS" | "INFO" | "SYSTEM"; message: string; time: string; timestamp: number }> = [];
 
     // Add disputes
     if (disputes && disputes.length > 0) {
-      disputes.forEach((d) => {
+      disputes.forEach((d: any) => {
+        const dateVal = d.created_at || d.updated_at;
         logs.push({
           type: d.status === "Under Mediation" ? "ALERT" : "INFO",
           message: `Dispute Case #${d.id} for "${d.project}" (${d.client} vs ${d.freelancer}) - ${d.status}.`,
-          time: "Recently",
-          timestamp: Date.now() - 1000 * 60 * 20 // 20m ago
+          time: formatRelativeTime(dateVal),
+          timestamp: dateVal ? new Date(dateVal).getTime() : Date.now()
         });
       });
     }
 
     // Add active contracts
     if (transactionsList && transactionsList.length > 0) {
-      transactionsList.slice(0, 4).forEach((t, index) => {
+      transactionsList.slice(0, 5).forEach((t: any) => {
+        const dateVal = t.updated_at || t.created_at;
         logs.push({
           type: t.status === "Completed" ? "SUCCESS" : "INFO",
           message: `Escrow contract "${t.title}" status updated to ${t.status} ($${Number(t.budget).toLocaleString()}).`,
-          time: `${index + 1}h ago`,
-          timestamp: Date.now() - 1000 * 60 * 60 * (index + 1)
+          time: formatRelativeTime(dateVal),
+          timestamp: dateVal ? new Date(dateVal).getTime() : Date.now()
         });
       });
     }
 
     // Add projects
     if (projectsList && projectsList.length > 0) {
-      projectsList.slice(0, 4).forEach((p, index) => {
+      projectsList.slice(0, 5).forEach((p: any) => {
+        const dateVal = p.created_at;
         logs.push({
           type: "INFO",
           message: `Project listing "${p.title}" posted by client ${p.client_name || "Enterprise"}.`,
-          time: `${index + 2}h ago`,
-          timestamp: Date.now() - 1000 * 60 * 60 * (index + 2)
+          time: formatRelativeTime(dateVal),
+          timestamp: dateVal ? new Date(dateVal).getTime() : Date.now()
         });
       });
     }
 
     // Add users
     if (usersList && usersList.length > 0) {
-      usersList.slice(0, 4).forEach((u, index) => {
+      usersList.slice(0, 5).forEach((u: any) => {
         const roleStr = u.freelancer_onboarding && u.client_onboarding ? "Client & Freelancer" : u.freelancer_onboarding ? "Freelancer" : u.client_onboarding ? "Client" : "User";
+        const dateVal = u.created_at;
         logs.push({
           type: "SYSTEM",
           message: `User ${u.first_name || ""} ${u.last_name || ""} (${u.email}) joined as ${roleStr}.`,
-          time: `${index + 3}h ago`,
-          timestamp: Date.now() - 1000 * 60 * 60 * (index + 3)
+          time: formatRelativeTime(dateVal),
+          timestamp: dateVal ? new Date(dateVal).getTime() : Date.now()
         });
       });
     }
@@ -306,10 +328,10 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
           </div>
           <div>
             <h3 className="text-2xl font-black text-slate-800">
-              ${systemWalletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              ${totalEscrowVal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h3>
             <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5">
-              <span>Escrow value: ${totalEscrowVal.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+              <span>Held securely in active project escrows</span>
             </p>
           </div>
         </div>
@@ -591,7 +613,14 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
           </div>
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-500">
-            <span>Total Accounts</span>
+            <div>
+              <span>Total Accounts</span>
+              {userCounts.dualRole ? (
+                <span className="text-[10px] text-slate-400 font-medium block">
+                  Unique user profiles ({userCounts.dualRole} dual-role)
+                </span>
+              ) : null}
+            </div>
             <span className="text-slate-800 font-black text-sm">{userCounts.total || 0}</span>
           </div>
         </div>

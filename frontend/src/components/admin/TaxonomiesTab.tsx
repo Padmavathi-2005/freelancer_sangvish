@@ -197,9 +197,16 @@ export default function TaxonomiesTab({
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    
+    // Instant local image preview
+    try {
+      const localUrl = URL.createObjectURL(file);
+      setCategoryFormImage(localUrl);
+    } catch (e) {}
+
     try {
       setUploadingImage(true);
-      const file = e.target.files[0];
       const formData = new FormData();
       formData.append("file", file);
       
@@ -806,15 +813,34 @@ export default function TaxonomiesTab({
                     </label>
                   </div>
                   {categoryFormImage && (
-                    <div className="mt-1 w-full h-24 rounded-lg overflow-hidden border border-slate-200 bg-slate-50 relative group">
-                      <img src={categoryFormImage} className="w-full h-full object-cover" alt="Preview" />
-                      <button
-                        type="button"
-                        onClick={() => setCategoryFormImage("")}
-                        className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 text-[10px] cursor-pointer"
-                      >
-                        ✕
-                      </button>
+                    <div className="mt-2 w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-50 relative p-2 flex flex-col gap-1.5 animate-fadeIn">
+                      <div className="relative w-full h-36 rounded-lg overflow-hidden bg-slate-100 border border-slate-200/60 flex items-center justify-center">
+                        <img 
+                          src={
+                            categoryFormImage.startsWith("http://") || 
+                            categoryFormImage.startsWith("https://") || 
+                            categoryFormImage.startsWith("blob:") || 
+                            categoryFormImage.startsWith("data:")
+                              ? categoryFormImage 
+                              : `${API_URL.replace("/api", "")}${categoryFormImage.startsWith("/") ? categoryFormImage : `/${categoryFormImage}`}`
+                          } 
+                          className="w-full h-full object-cover" 
+                          alt="Category Cover Preview" 
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = "none";
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setCategoryFormImage("")}
+                          className="absolute top-2 right-2 bg-slate-900/80 hover:bg-slate-900 text-white rounded-lg px-2.5 py-1 text-[10px] font-bold cursor-pointer transition-all shadow-md flex items-center gap-1 border-0"
+                        >
+                          <span>✕ Remove Image</span>
+                        </button>
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-400 truncate px-1">
+                        Preview URL: {categoryFormImage}
+                      </span>
                     </div>
                   )}
                 </div>

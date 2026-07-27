@@ -157,13 +157,18 @@ export default function AdminAffiliatePage() {
 
       {/* Toast Notification */}
       {showToast && (
-        <div className={`fixed bottom-5 right-5 px-5 py-4 rounded-xl shadow-2xl flex flex-col gap-1 z-50 border ${
-          toastType === "success"
-            ? "bg-slate-900 border-slate-800 text-white"
-            : "bg-rose-950 border-rose-800 text-white"
-        }`}>
-          <span className={`text-xs font-black ${toastType === "success" ? "text-teal-400" : "text-rose-400"}`}>{toastTitle}</span>
-          <span className="text-[11px] font-semibold text-slate-300">{toastMsg}</span>
+        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-fadeIn max-w-sm">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0 shadow-sm ${
+            toastType === "success" ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
+          }`}>
+            {toastType === "success" ? "✓" : "✕"}
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-xs font-black text-white leading-tight">{toastTitle || "Notification"}</span>
+            {toastMsg && (
+              <span className="text-[11px] font-semibold text-slate-300 mt-0.5 leading-snug">{toastMsg}</span>
+            )}
+          </div>
         </div>
       )}
 

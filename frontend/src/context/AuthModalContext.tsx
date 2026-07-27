@@ -149,7 +149,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
 
       {/* Premium Glassmorphic Login Overlay Modal */}
       {isOpen && typeof window !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
           {/* Background Decorative Blurs */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
             <div className="absolute top-[10%] left-[20%] w-[25rem] h-[25rem] bg-teal-600/10 rounded-full filter blur-[80px]"></div>
@@ -157,7 +157,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Modal Container */}
-          <div className="relative z-10 w-full max-w-md bg-white border border-slate-200/85 rounded-xl p-6 sm:p-10 shadow-2xl shadow-slate-950/20 flex flex-col gap-6 text-slate-800 animate-scaleUp">
+          <div className="relative z-10 w-full max-w-md bg-white border border-slate-200/85 rounded-xl p-5 sm:p-8 shadow-2xl shadow-slate-950/20 flex flex-col gap-5 text-slate-800 animate-scaleUp my-auto max-h-[90vh] overflow-y-auto">
             {/* Close Button */}
             <button
               onClick={closeLoginModal}

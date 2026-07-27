@@ -31,6 +31,11 @@ export const auth = async (req, res, next) => {
             } else {
                 decoded.user_id = userCheck.rows[0].user_id;
             }
+        } else if (decoded.user_id) {
+            const activeCheck = await pool.query("SELECT is_active FROM users WHERE user_id = $1", [decoded.user_id]);
+            if (activeCheck.rows.length > 0 && activeCheck.rows[0].is_active === false) {
+                return res.status(403).json({ message: "Your account has been blocked by administrator." });
+            }
         }
 
         req.user = decoded;

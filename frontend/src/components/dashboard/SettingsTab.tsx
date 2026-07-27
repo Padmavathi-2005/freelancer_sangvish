@@ -873,7 +873,7 @@ export default function SettingsTab({
             <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
               <svg className="w-full h-full transform -rotate-90">
                 <circle cx="24" cy="24" r="20" className="stroke-slate-200" strokeWidth="4" fill="transparent" />
-                <circle cx="24" cy="24" r="20" className="stroke-primary transition-all duration-300" strokeWidth="4" fill="transparent"
+                <circle cx="24" cy="24" r="20" className="stroke-teal-700 transition-all duration-300" strokeWidth="4" fill="transparent"
                   strokeDasharray={2 * Math.PI * 20}
                   strokeDashoffset={2 * Math.PI * 20 * (1 - settingsProgress / 100)} />
               </svg>
@@ -901,7 +901,7 @@ export default function SettingsTab({
                   }}
                   className={`w-full text-left px-4 py-3.5 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center justify-between group ${
                     isCurrent
-                      ? "bg-primary text-white border-primary shadow-md shadow-primary/10"
+                      ? "bg-teal-700 text-white border-teal-700 shadow-md shadow-teal-700/10"
                       : "bg-slate-50/50 border-slate-200/80 text-slate-650 hover:bg-white hover:border-slate-355"
                   }`}
                 >
@@ -935,7 +935,7 @@ export default function SettingsTab({
                 }}
                 className={`w-full text-left px-4 py-3.5 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center justify-between group ${
                   profileStep === 99
-                    ? "bg-primary text-white border-primary shadow-md shadow-primary/10"
+                    ? "bg-teal-700 text-white border-teal-700 shadow-md shadow-teal-700/10"
                     : "bg-slate-50/50 border-slate-200/80 text-slate-650 hover:bg-white hover:border-slate-355"
                 }`}
               >
@@ -967,7 +967,7 @@ export default function SettingsTab({
           <div className="bg-white border border-slate-200/85 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 text-slate-800">
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
-                <span className="text-[10px] font-black text-primary uppercase tracking-wider block">
+                <span className="text-[10px] font-black text-teal-700 uppercase tracking-wider block">
                   {profileStep === 99 ? "Premium Perks" : `Step ${profileStep} of ${userRole === "client" ? "3" : "5"}`}
                 </span>
                 <h1 className="text-lg font-black text-slate-900 leading-tight">
@@ -1049,7 +1049,7 @@ export default function SettingsTab({
                             : 2;
                         window.location.href = `/pricing/${nextPlanId}`;
                       }}
-                      className="w-full sm:w-auto bg-[#063c38] hover:bg-[#084843] text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer text-center shrink-0"
+                      className="w-full sm:w-auto bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer text-center shrink-0"
                     >
                       Upgrade Now
                     </button>
@@ -1073,7 +1073,7 @@ export default function SettingsTab({
                     </div>
                     
                     {handleProfileImageUpload && (
-                      <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary hover:bg-primary-hover text-white flex items-center justify-center shadow-lg border-2 border-white cursor-pointer transition-all hover:scale-105 active:scale-95 group" title="Change profile photo">
+                      <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-teal-700 hover:bg-teal-800 text-white flex items-center justify-center shadow-lg border-2 border-white cursor-pointer transition-all hover:scale-105 active:scale-95 group" title="Change profile photo">
                         <i className="fa-solid fa-camera text-[10px] transition-transform group-hover:scale-110"></i>
                         <input
                           type="file"
@@ -1304,7 +1304,7 @@ export default function SettingsTab({
                       await handleSaveStep(1);
                       setProfileStep(2);
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 ml-auto animate-fadeIn"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 ml-auto animate-fadeIn"
                   >
                     <span>Save & Continue</span>
                     <span className="text-xxs">→</span>
@@ -1450,10 +1450,10 @@ export default function SettingsTab({
                   </button>
                 </div>
 
-                <div className="flex justify-between items-center mt-4 border-t border-slate-100 pt-5">
+                <div className="flex justify-between items-center mt-4 border-t border-slate-100 pt-5 flex-wrap sm:flex-nowrap gap-3">
                   <button
                     onClick={() => setProfileStep(1)}
-                    className="text-slate-500 hover:text-slate-800 text-xs font-extrabold"
+                    className="text-slate-500 hover:text-slate-800 text-xs font-extrabold whitespace-nowrap shrink-0"
                   >
                     ← Previous Step
                   </button>
@@ -1462,7 +1462,7 @@ export default function SettingsTab({
                       await handleSaveStep(2);
                       setProfileStep(3);
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
                   >
                     <span>Save & Continue</span>
                     <span className="text-xxs">→</span>
@@ -1581,10 +1581,10 @@ export default function SettingsTab({
                   </button>
                 </div>
 
-                <div className="flex justify-between items-center mt-4 border-t border-slate-100 pt-5">
+                <div className="flex justify-between items-center mt-4 border-t border-slate-100 pt-5 flex-wrap sm:flex-nowrap gap-3">
                   <button
                     onClick={() => setProfileStep(2)}
-                    className="text-slate-500 hover:text-slate-800 text-xs font-extrabold"
+                    className="text-slate-500 hover:text-slate-800 text-xs font-extrabold whitespace-nowrap shrink-0"
                   >
                     ← Previous Step
                   </button>
@@ -1593,7 +1593,7 @@ export default function SettingsTab({
                       await handleSaveStep(3);
                       setProfileStep(4);
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
                   >
                     <span>Save & Continue</span>
                     <span className="text-xxs">→</span>
@@ -1716,7 +1716,7 @@ export default function SettingsTab({
                       await handleSaveStep(4);
                       setProfileStep(5);
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <span>Save & Continue</span>
                     <span className="text-xxs">→</span>
@@ -1747,7 +1747,7 @@ export default function SettingsTab({
                         }}
                         className={`px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
                           isSelected
-                            ? "bg-primary border-primary text-white shadow-sm"
+                            ? "bg-teal-700 border-teal-700 text-white shadow-sm"
                             : "bg-slate-50 border-slate-200 text-slate-650 hover:bg-white hover:border-slate-355"
                         }`}
                       >
@@ -1769,7 +1769,7 @@ export default function SettingsTab({
                       await handleSaveStep(5);
                       setProfileStep(6);
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <span>Save & Continue</span>
                     <span className="text-xxs text-white">→</span>
@@ -1837,7 +1837,7 @@ export default function SettingsTab({
                               type="button"
                               disabled={sendingEmailOtp}
                               onClick={handleSendEmailOtp}
-                              className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-full bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {sendingEmailOtp ? (
                                 <>
@@ -1866,7 +1866,7 @@ export default function SettingsTab({
                                   type="button"
                                   disabled={verifyingEmailOtp || !emailOtp.trim()}
                                   onClick={handleVerifyEmailOtp}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   {verifyingEmailOtp ? (
                                     <>
@@ -1931,7 +1931,7 @@ export default function SettingsTab({
                               type="button"
                               disabled={sendingPhoneOtp}
                               onClick={handleSendPhoneOtp}
-                              className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-full bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               {sendingPhoneOtp ? (
                                 <>
@@ -2013,7 +2013,7 @@ export default function SettingsTab({
                         }
                       }, 1000);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-8 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-black text-xs px-8 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
                   >
                     <FiCheckCircle className="w-4 h-4 shrink-0 text-white" />
                     <span className="text-white">Complete Profile Setup</span>
@@ -2122,7 +2122,7 @@ export default function SettingsTab({
                       await handleSaveClientStepSettings(1);
                       setProfileStep(2);
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 ml-auto"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 ml-auto"
                   >
                     <span>Save & Continue</span>
                     <span className="text-xxs">→</span>
@@ -2167,7 +2167,7 @@ export default function SettingsTab({
                       await handleSaveClientStepSettings(2);
                       setProfileStep(3);
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <span>Save & Continue</span>
                     <span className="text-xxs">→</span>
@@ -2214,7 +2214,7 @@ export default function SettingsTab({
                       await handleSaveClientStepSettings(3);
                       setProfileStep(4);
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                   >
                     <span>Save & Continue</span>
                     <span className="text-xxs text-white">→</span>
@@ -2663,10 +2663,10 @@ export default function SettingsTab({
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center mt-2">
+                      <div className="flex justify-between items-center mt-2 flex-wrap sm:flex-nowrap gap-3">
                         <button
                           onClick={() => setClientSettingsStep(2)}
-                          className="text-slate-400 hover:text-slate-700 text-xs font-bold"
+                          className="text-slate-400 hover:text-slate-700 text-xs font-bold whitespace-nowrap shrink-0"
                         >
                           ← Previous Step
                         </button>
@@ -2675,10 +2675,10 @@ export default function SettingsTab({
                             await handleSaveClientStepSettings(3);
                             triggerToast("success", "Client Company Profile saved successfully to DB!");
                           }}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer whitespace-nowrap shrink-0"
                         >
                           <span className="flex items-center gap-1.5 justify-center">
-                            Save Company Profile <FiCheck className="w-3.5 h-3.5" />
+                            <FiCheck className="w-4 h-4 shrink-0" /> Complete Client Setup
                           </span>
                         </button>
                       </div>

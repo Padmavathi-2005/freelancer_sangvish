@@ -3,7 +3,7 @@ import { API_URL } from "@/config/api";
 
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FiSearch, FiChevronDown, FiHelpCircle, FiMail, FiMapPin, FiClock, FiBriefcase, FiActivity, FiSliders, FiX, FiUpload, FiCheckCircle, FiFileText } from "react-icons/fi";
@@ -53,15 +53,14 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) {
-      setErrorMsg("Please fill out your name and email address.");
+    if (!resumeUrl) {
+      setErrorMsg("Please upload your resume (PDF/Doc) before submitting.");
       return;
     }
     setSubmitting(true);
     setErrorMsg("");
-
     try {
-      const res = await fetch(`${API_URL}/careers/apply`, {
+      const res = await fetch(`${API_URL}/cv-applications`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -69,105 +68,100 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           email,
           phone,
           role,
-          coverLetter,
-          resumeUrl
+          cover_letter: coverLetter,
+          resume_url: resumeUrl
         })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to submit application");
-      
-      setSubmittedSuccess(true);
-    } catch (err: any) {
-      setErrorMsg(err.message || "An error occurred submitting your application.");
+      if (res.ok) {
+        setSubmittedSuccess(true);
+      } else {
+        const d = await res.json();
+        setErrorMsg(d.error || "Failed to submit application.");
+      }
+    } catch (err) {
+      setErrorMsg("Network error submitting application.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 animate-fadeIn">
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-xl w-full p-6 sm:p-8 relative overflow-hidden text-left max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-scaleUp text-left">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-800 transition cursor-pointer"
+          className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
         >
-          <FiX className="w-4 h-4" />
+          <FiX className="w-5 h-5" />
         </button>
 
         {submittedSuccess ? (
           <div className="py-8 text-center flex flex-col items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center text-3xl">
+            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-2xl font-black">
               <FiCheckCircle className="w-8 h-8" />
             </div>
-            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Application Received!</h3>
-            <p className="text-slate-600 text-xs sm:text-sm max-w-md font-medium leading-relaxed">
-              Thank you, <strong className="text-slate-900">{name}</strong>! We have received your CV for the <strong className="text-slate-900">{role}</strong> role. Our recruitment team will review your application and contact you at <strong className="text-slate-900">{email}</strong>.
+            <h3 className="text-xl font-black text-slate-900">Application Submitted!</h3>
+            <p className="text-xs text-slate-500 max-w-sm">
+              Thank you for expressing interest in joining Buy2Lancer. Our HR team will review your resume and profile shortly.
             </p>
             <button
               onClick={onClose}
-              className="bg-teal-700 hover:bg-teal-650 text-white font-bold text-xs px-6 py-3 rounded-xl shadow-md transition mt-4 cursor-pointer"
+              className="mt-2 px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-xl transition"
             >
               Close Window
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-              <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 border border-teal-100 flex items-center justify-center">
-                <FiBriefcase className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-850">Apply to Build With Us</h3>
-                <p className="text-slate-400 text-xs font-semibold">Submit your CV & profile to our recruitment division</p>
-              </div>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div>
+              <span className="text-[10px] font-black uppercase tracking-wider text-teal-600">Career Opportunities</span>
+              <h3 className="text-lg font-black text-slate-900 mt-0.5">Submit Your CV / Resume</h3>
             </div>
 
             {errorMsg && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl font-bold">
-                ⚠️ {errorMsg}
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl">
+                {errorMsg}
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Full Name *</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Full Name *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Sarah Jenkins"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500"
+                  placeholder="e.g. Alex Morgan"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-teal-600"
                 />
               </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Email Address *</label>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Email Address *</label>
                 <input
                   type="email"
                   required
-                  placeholder="sarah@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500"
+                  placeholder="alex@example.com"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-teal-600"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Phone Number</label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Phone Number</label>
                 <input
                   type="tel"
-                  placeholder="+1 (555) 019-2834"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500"
+                  placeholder="+1 (555) 000-0000"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-teal-600"
                 />
               </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Position / Role</label>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Target Position / Role</label>
                 <div className="relative">
                   <select
                     value={role}
@@ -995,19 +989,6 @@ export default function DynamicCmsPageClient() {
                       <p className="text-base sm:text-lg text-slate-500 max-w-2xl font-medium leading-relaxed">
                         {data.subheadline}
                       </p>
-                      
-                      {/* Interactive Search box mockup */}
-                      <div className="w-full max-w-xl bg-white border border-slate-200 rounded-xl p-2 shadow-lg hover:shadow-xl focus-within:ring-2 focus-within:ring-teal-500/25 transition-all duration-300 flex items-center gap-2 mt-4">
-                        <FiSearch className="w-5 h-5 text-slate-400 ml-2" />
-                        <input
-                          type="text"
-                          placeholder={data.searchPlaceholder}
-                          className="flex-1 text-sm text-slate-800 placeholder-slate-450 focus:outline-none"
-                        />
-                        <button className="bg-teal-700 hover:bg-teal-650 text-white font-bold text-sm px-6 py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-teal-700/25 active:scale-95 transform duration-250 cursor-pointer">
-                          {data.buttonText}
-                        </button>
-                      </div>
                     </div>
                   </section>
                 );
@@ -1105,10 +1086,10 @@ export default function DynamicCmsPageClient() {
                     <div className="absolute top-0 right-0 w-80 h-80 bg-teal-500/10 rounded-full filter blur-[100px] pointer-events-none" />
                     
                     <div className="max-w-7xl mx-auto px-4 text-center flex flex-col items-center gap-4 relative z-10">
-                      <h2 className="text-3xl sm:text-4xl font-black tracking-tight font-display">
+                      <h2 className="text-3xl sm:text-4xl font-black tracking-tight font-display text-white">
                         {data.title}
                       </h2>
-                      <p className="text-sm sm:text-base text-teal-100 max-w-xl opacity-90 font-medium">
+                      <p className="text-sm sm:text-base text-white/90 max-w-xl font-semibold leading-relaxed">
                         {data.description}
                       </p>
                       <a
@@ -1119,9 +1100,12 @@ export default function DynamicCmsPageClient() {
                             setIsCvModalOpen(true);
                           }
                         }}
-                        className="bg-white hover:bg-slate-100 text-teal-900 font-extrabold text-sm px-8 py-3.5 rounded-xl shadow-xl hover:shadow-2xl hover:scale-[1.03] mt-3 transition-all transform active:scale-95 cursor-pointer inline-flex items-center gap-2 border border-white/20"
+                        style={{ backgroundColor: "#ffffff", color: "#0f172a" }}
+                        className="!bg-white hover:!bg-slate-100 !text-slate-900 font-black text-xs sm:text-sm px-8 py-3.5 rounded-xl shadow-xl hover:shadow-2xl hover:scale-[1.03] mt-3 transition-all transform active:scale-95 cursor-pointer inline-flex items-center gap-2 border border-white/20 opacity-100 select-none"
                       >
-                        <span>{data.buttonText || "Email CV"}</span>
+                        <span style={{ color: "#0f172a", opacity: 1 }} className="text-slate-900 font-black">
+                          {data.buttonText && data.buttonText.trim() ? data.buttonText : "Email CV"}
+                        </span>
                       </a>
                     </div>
                   </section>

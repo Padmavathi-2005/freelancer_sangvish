@@ -15,12 +15,9 @@ function wrapInHtmlTemplate({ bodyText, siteName, emailLogo, emailSignature, ema
     ? emailCopyright.replace(/{{site_name}}/g, siteName).replace(/{{year}}/g, year)
     : `&copy; ${year} ${siteName}. All rights reserved.`;
 
-  const isPublicUrl = emailLogo && (emailLogo.startsWith("https://") || (emailLogo.startsWith("http://") && !emailLogo.includes("localhost")));
-
-  const logoHtml = isPublicUrl 
+  const logoHtml = emailLogo
     ? `<div style="text-align: center; margin-bottom: 20px;">
-         <img src="${emailLogo}" alt="${siteName}" style="max-height: 48px; width: auto; display: inline-block; vertical-align: middle; margin-right: 10px;" />
-         <span style="color: #0f766e; font-size: 26px; font-weight: 900; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.5px; vertical-align: middle;">${siteName}</span>
+         <img src="${emailLogo}" alt="${siteName}" style="max-height: 48px; width: auto; max-width: 220px; display: inline-block; vertical-align: middle;" />
        </div>`
     : `<div style="text-align: center; margin-bottom: 20px;">
          <div style="display: inline-block; text-align: center;">
@@ -29,7 +26,7 @@ function wrapInHtmlTemplate({ bodyText, siteName, emailLogo, emailSignature, ema
                <td style="background-color: #0f766e; color: #ffffff; width: 38px; height: 38px; border-radius: 10px; text-align: center; font-size: 20px; font-weight: 900; font-family: sans-serif; vertical-align: middle; line-height: 38px;">
                  ${siteName ? siteName.charAt(0).toUpperCase() : 'B'}
                </td>
-               <td style="padding-left: 10px; font-color: #0f766e; font-size: 26px; font-weight: 900; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.5px; vertical-align: middle;">
+               <td style="padding-left: 10px; font-size: 26px; font-weight: 900; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; letter-spacing: -0.5px; vertical-align: middle;">
                  <span style="color: #0f766e;">${siteName}</span>
                </td>
              </tr>

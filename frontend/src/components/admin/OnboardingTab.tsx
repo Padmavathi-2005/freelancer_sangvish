@@ -207,7 +207,34 @@ export default function OnboardingTab({
       header: "Actions",
       accessor: (row: any) => (
         <div className="flex items-center gap-1.5 flex-wrap justify-center">
-          {row.vetting_status !== "Approved" && (
+          {row.vetting_status === "Pending" && (
+            <>
+              <button
+                onClick={() => handleVettingAction(row.user_id, "Approved")}
+                disabled={vettingLoading === row.user_id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black border rounded-lg cursor-pointer transition-colors text-emerald-705 hover:bg-emerald-50 border-emerald-200 bg-white disabled:opacity-50"
+              >
+                {vettingLoading === row.user_id ? "..." : (
+                  <>
+                    <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Approve
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => handleVettingAction(row.user_id, "Rejected")}
+                disabled={vettingLoading === row.user_id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black border rounded-lg cursor-pointer transition-colors text-rose-605 hover:bg-rose-50 border-rose-200 bg-white disabled:opacity-50"
+              >
+                {vettingLoading === row.user_id ? "..." : (
+                  <>
+                    <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> Reject
+                  </>
+                )}
+              </button>
+            </>
+          )}
+
+          {row.vetting_status === "Rejected" && (
             <button
               onClick={() => handleVettingAction(row.user_id, "Approved")}
               disabled={vettingLoading === row.user_id}
@@ -220,24 +247,12 @@ export default function OnboardingTab({
               )}
             </button>
           )}
-          {row.vetting_status !== "Rejected" && (
-            <button
-              onClick={() => handleVettingAction(row.user_id, "Rejected")}
-              disabled={vettingLoading === row.user_id}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black border rounded-lg cursor-pointer transition-colors text-rose-605 hover:bg-rose-50 border-rose-200 bg-white disabled:opacity-50"
-            >
-              {vettingLoading === row.user_id ? "..." : (
-                <>
-                  <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> Reject
-                </>
-              )}
-            </button>
-          )}
+
           <button
             onClick={() => handleToggleUserActive(row.user_id)}
             className={`px-2.5 py-1 text-[10px] font-black border rounded-lg cursor-pointer transition-colors ${
               row.is_active !== false
-                ? "text-slate-600 hover:bg-slate-50 border-slate-200 bg-white"
+                ? "text-rose-600 hover:bg-rose-50 border-rose-200 bg-white"
                 : "text-emerald-600 hover:bg-emerald-50 border border-emerald-200/60 bg-white"
             }`}
           >
@@ -291,7 +306,34 @@ export default function OnboardingTab({
       header: "Actions",
       accessor: (row: any) => (
         <div className="flex items-center gap-1.5 flex-wrap justify-center">
-          {row.vetting_status !== "Approved" && (
+          {row.vetting_status === "Pending" && (
+            <>
+              <button
+                onClick={() => handleVettingAction(row.user_id, "Approved")}
+                disabled={vettingLoading === row.user_id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black border rounded-lg cursor-pointer transition-colors text-emerald-705 hover:bg-emerald-50 border-emerald-200 bg-white disabled:opacity-50"
+              >
+                {vettingLoading === row.user_id ? "..." : (
+                  <>
+                    <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Approve
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => handleVettingAction(row.user_id, "Rejected")}
+                disabled={vettingLoading === row.user_id}
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black border rounded-lg cursor-pointer transition-colors text-rose-605 hover:bg-rose-50 border-rose-200 bg-white disabled:opacity-50"
+              >
+                {vettingLoading === row.user_id ? "..." : (
+                  <>
+                    <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> Reject
+                  </>
+                )}
+              </button>
+            </>
+          )}
+
+          {row.vetting_status === "Rejected" && (
             <button
               onClick={() => handleVettingAction(row.user_id, "Approved")}
               disabled={vettingLoading === row.user_id}
@@ -304,24 +346,12 @@ export default function OnboardingTab({
               )}
             </button>
           )}
-          {row.vetting_status !== "Rejected" && (
-            <button
-              onClick={() => handleVettingAction(row.user_id, "Rejected")}
-              disabled={vettingLoading === row.user_id}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-black border rounded-lg cursor-pointer transition-colors text-rose-605 hover:bg-rose-50 border-rose-200 bg-white disabled:opacity-50"
-            >
-              {vettingLoading === row.user_id ? "..." : (
-                <>
-                  <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> Reject
-                </>
-              )}
-            </button>
-          )}
+
           <button
             onClick={() => handleToggleUserActive(row.user_id)}
             className={`px-2.5 py-1 text-[10px] font-black border rounded-lg cursor-pointer transition-colors ${
               row.is_active !== false
-                ? "text-slate-600 hover:bg-slate-50 border-slate-200 bg-white"
+                ? "text-rose-600 hover:bg-rose-50 border-rose-200 bg-white"
                 : "text-emerald-600 hover:bg-emerald-50 border border-emerald-200/60 bg-white"
             }`}
           >

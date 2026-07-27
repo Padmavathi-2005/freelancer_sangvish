@@ -42,6 +42,10 @@ export default function CleanupPage() {
       setCategoryFormSlug={adminState.setCategoryFormSlug}
       categoryFormDescription={adminState.categoryFormDescription}
       setCategoryFormDescription={adminState.setCategoryFormDescription}
+      categoryFormImage={adminState.categoryFormImage}
+      setCategoryFormImage={adminState.setCategoryFormImage}
+      categoryFormVideo={adminState.categoryFormVideo}
+      setCategoryFormVideo={adminState.setCategoryFormVideo}
       categoryFormStatus={adminState.categoryFormStatus}
       setCategoryFormStatus={adminState.setCategoryFormStatus}
       categoryFormError={adminState.categoryFormError}

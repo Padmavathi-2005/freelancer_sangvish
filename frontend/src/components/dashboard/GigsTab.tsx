@@ -1105,7 +1105,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       setActiveFormStep(2);
                     }
                   }}
-                  className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5 self-end hover:scale-[1.02] active:scale-95 mt-2"
+                  className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5 self-end hover:scale-[1.02] active:scale-95 mt-2 whitespace-nowrap"
                 >
                   <span>Continue to Pricing</span>
                   <FiArrowRight className="w-3.5 h-3.5" />
@@ -1183,11 +1183,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         <div className="flex flex-col gap-4">
                           <div>
                             <label className="text-xs font-bold block mb-2 text-slate-655">Pricing Mode</label>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col sm:flex-row gap-2">
                               <button
                                 type="button"
                                 onClick={() => setPriceType("single")}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer transition-all ${
+                                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold border cursor-pointer transition-all ${
                                   priceType === "single"
                                     ? "bg-slate-800 text-white border-slate-800"
                                     : "bg-white text-slate-600 border-slate-200 hover:border-slate-350"
@@ -1198,7 +1198,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                               <button
                                 type="button"
                                 onClick={() => setPriceType("range")}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer transition-all ${
+                                className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold border cursor-pointer transition-all ${
                                   priceType === "range"
                                     ? "bg-slate-800 text-white border-slate-800"
                                     : "bg-white text-slate-600 border-slate-200 hover:border-slate-350"
@@ -1429,22 +1429,22 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                               <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">Add features and choose whether they are included (checkmark) or set a specific text value for each plan.</p>
                             </div>
 
-                            <div className="overflow-x-auto">
-                              <table className="w-full text-left border-collapse text-xs">
+                            <div className="overflow-x-auto -mx-1 px-1 pb-2">
+                              <table className="w-full min-w-[520px] text-left border-collapse text-xs">
                                 <thead>
                                   <tr className="border-b border-slate-200 text-slate-400 font-extrabold uppercase text-[9px] tracking-wider">
                                     <th className="pb-2 pr-4 min-w-[150px]">Feature Name</th>
-                                    <th className="pb-2 pr-4 w-[110px]">Type</th>
-                                    <th className="pb-2 pr-4 text-center w-[75px]">Basic</th>
-                                    {enabledPlans.Standard && <th className="pb-2 pr-4 text-center w-[75px]">Standard</th>}
-                                    {enabledPlans.Premium && <th className="pb-2 pr-4 text-center w-[75px]">Premium</th>}
+                                    <th className="pb-2 pr-4 w-[110px] min-w-[110px]">Type</th>
+                                    <th className="pb-2 pr-4 text-center w-[75px] min-w-[75px]">Basic</th>
+                                    {enabledPlans.Standard && <th className="pb-2 pr-4 text-center w-[75px] min-w-[75px]">Standard</th>}
+                                    {enabledPlans.Premium && <th className="pb-2 pr-4 text-center w-[75px] min-w-[75px]">Premium</th>}
                                     <th className="pb-2 w-[40px]"></th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                   {featureRows.map((row, idx) => (
                                     <tr key={idx} className="hover:bg-slate-50/50">
-                                      <td className="py-2.5 pr-4">
+                                      <td className="py-2.5 pr-4 min-w-[150px]">
                                         <input
                                           type="text"
                                           placeholder="e.g. Speed Optimization"
@@ -1470,7 +1470,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-800 focus:outline-none"
                                         />
                                       </td>
-                                      <td className="py-2.5 pr-4">
+                                      <td className="py-2.5 pr-4 min-w-[110px]">
                                         <select
                                           value={row.type}
                                           onChange={(e) => {
@@ -1687,9 +1687,9 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         + Add Milestone
                       </button>
 
-                      <div className="flex justify-between items-center border-t border-slate-200 pt-3 mt-1">
-                        <span className="text-xs font-bold text-slate-550">Total Gig Price (Milestones Sum):</span>
-                        <span className="text-sm font-extrabold text-slate-800 bg-white border border-slate-200 px-3.5 py-1.5 rounded-xl font-sans">
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-t border-slate-200 pt-3 mt-1 bg-white/60 p-3 rounded-xl border">
+                        <span className="text-xs font-bold text-slate-650 leading-snug">Total Gig Price (Milestones Sum):</span>
+                        <span className="text-xs sm:text-sm font-black text-teal-800 bg-teal-50/80 border border-teal-200/80 px-3 py-1.5 rounded-xl font-sans max-w-full truncate [word-break:break-all]">
                           {currencies.find(c => c.currency_id.toString() === gigCurrencyId)?.symbol || "$"}{parseFloat(gigPrice || "0").toLocaleString()}
                         </span>
                       </div>
@@ -1828,11 +1828,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 </div>
 
                 {/* Step 2 Footer */}
-                <div className="flex justify-between items-center mt-2">
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-2">
                   <button
                     type="button"
                     onClick={() => setActiveFormStep(1)}
-                    className="bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200/80 border border-slate-200 font-extrabold text-xs px-5 py-3 rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                    className="w-full sm:w-auto bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200/80 border border-slate-200 font-extrabold text-xs px-5 py-3 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 order-last sm:order-first whitespace-nowrap"
                   >
                     <FiArrowLeft className="w-3.5 h-3.5" />
                     <span>Back</span>
@@ -1844,7 +1844,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         setActiveFormStep(3);
                       }
                     }}
-                    className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md cursor-pointer transition-all flex items-center gap-1.5 hover:scale-[1.02] active:scale-95"
+                    className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95 whitespace-nowrap"
                   >
                     <span>Continue to Media & Details</span>
                     <FiArrowRight className="w-3.5 h-3.5" />
@@ -2306,11 +2306,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 </div>
 
                 {/* Step 3 Footer */}
-                <div className="flex justify-between items-center mt-2">
+                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-2">
                   <button
                     type="button"
                     onClick={() => setActiveFormStep(2)}
-                    className="bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200/80 border border-slate-200 font-extrabold text-xs px-5 py-3 rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                    className="w-full sm:w-auto bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200/80 border border-slate-200 font-extrabold text-xs px-5 py-3 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 order-last sm:order-first whitespace-nowrap"
                   >
                     <FiArrowLeft className="w-3.5 h-3.5" />
                     <span>Back</span>
@@ -2318,7 +2318,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                   <button
                     type="submit"
                     disabled={gigPublishing}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50 border-none"
+                    className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50 border-none whitespace-nowrap"
                   >
                     {gigPublishing ? (
                       <>

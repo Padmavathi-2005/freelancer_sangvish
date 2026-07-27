@@ -167,6 +167,12 @@ export const login = async (req, res) => {
 
         }
 
+        if (user.is_active === false) {
+            return res.status(403).json({
+                message: 'Your account has been blocked by administrator. Please contact support.'
+            });
+        }
+
         const isMatch =
             await bcrypt.compare(
                 password,
@@ -664,6 +670,12 @@ export const socialLogin = async (req, res) => {
         }
 
         let user = await userModel.findUserByEmail(email);
+
+        if (user && user.is_active === false) {
+            return res.status(403).json({
+                message: 'Your account has been blocked by administrator. Please contact support.'
+            });
+        }
 
         if (!user) {
             // User doesn't exist, create a new one with a dummy/empty password_hash

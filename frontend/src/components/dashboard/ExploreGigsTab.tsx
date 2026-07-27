@@ -965,14 +965,14 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                 <button
                   type="submit"
                   disabled={orderSubmitting}
-                  className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                  className="bg-teal-700 hover:bg-teal-800 text-white font-black text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50 border-none"
                 >
                   {orderSubmitting ? (
                     "Submitting..."
                   ) : (
                     <>
                       <span>Order Service</span>
-                      <FiCheck className="w-3.5 h-3.5" />
+                      <FiCheck className="w-3.5 h-3.5 text-white" />
                     </>
                   )}
                 </button>

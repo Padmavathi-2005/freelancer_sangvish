@@ -105,22 +105,22 @@ export default function ReferralsPage() {
   const activeCount = data?.referred_users.filter((u) => u.is_active).length || 0;
 
   return (
-    <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 flex flex-col gap-8">
+    <div className="flex-1 max-w-5xl mx-auto w-full px-3 sm:px-4 py-2 sm:py-8 flex flex-col gap-5 sm:gap-8">
       
       {/* Title */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-805 tracking-tight">Refer & Earn</h1>
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Invite friends and earn wallet credits</p>
+      <div className="select-none">
+        <h1 className="text-xl sm:text-2xl font-black text-slate-805 tracking-tight">Refer & Earn</h1>
+        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1">Invite friends and earn wallet credits</p>
       </div>
 
       {/* Hero promo block (Dynamic Banner & Copy Box) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
         {/* Dynamic SVG Banner */}
-        <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-md border border-slate-200 bg-slate-50 flex items-center justify-center min-h-[220px]">
+        <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-slate-900 flex items-center justify-center">
           <img
             src={`${API_URL.replace("/api", "")}/api/users/referral/banner.svg`}
             alt="Dynamic Referral Program Promo Banner"
-            className="w-full h-auto object-cover"
+            className="w-full h-auto object-contain block"
           />
         </div>
 

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useAdmin } from "@/app/admin/AdminContext";
+import Table from "@/components/Table";
 
 export default function WalletManagementTab() {
   const {
@@ -27,6 +28,21 @@ export default function WalletManagementTab() {
   const [transferSuccessMsg, setTransferSuccessMsg] = useState<string>("");
   const [searchUserQuery, setSearchUserQuery] = useState<string>("");
 
+  // Pagination & Search states
+  const itemsPerPage = 10;
+  const [requestsPage, setRequestsPage] = useState<number>(1);
+  const [ledgerPage, setLedgerPage] = useState<number>(1);
+  const [transactionsPage, setTransactionsPage] = useState<number>(1);
+
+  const [ledgerSearch, setLedgerSearch] = useState<string>("");
+  const [transactionsSearch, setTransactionsSearch] = useState<string>("");
+
+  useEffect(() => {
+    setRequestsPage(1);
+    setLedgerPage(1);
+    setTransactionsPage(1);
+  }, [ledgerSearch, transactionsSearch, activeSubTab]);
+
   if (loadingAdminWallet && !adminWalletStats) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 bg-slate-50/50">
@@ -45,6 +61,214 @@ export default function WalletManagementTab() {
   const transactions = adminWalletStats?.transactions || [];
 
   const pendingWithdrawalsCount = withdrawalRequests.filter(r => r.status === "Pending").length;
+
+  // Requests Pagination
+  const paginatedRequests = useMemo(() => {
+    const start = (requestsPage - 1) * itemsPerPage;
+    return withdrawalRequests.slice(start, start + itemsPerPage);
+  }, [withdrawalRequests, requestsPage]);
+  const totalRequestsPages = useMemo(() => Math.ceil(withdrawalRequests.length / itemsPerPage), [withdrawalRequests]);
+
+  // Ledger Filter & Pagination
+  const filteredWallets = useMemo(() => {
+    const q = ledgerSearch.toLowerCase().trim();
+    if (!q) return wallets;
+    return wallets.filter((w: any) =>
+      (w.user_name || "").toLowerCase().includes(q) ||
+      (w.email || "").toLowerCase().includes(q) ||
+      (w.wallet_id || "").toString().includes(q) ||
+      (w.role || "").toLowerCase().includes(q)
+    );
+  }, [wallets, ledgerSearch]);
+
+  const paginatedWallets = useMemo(() => {
+    const start = (ledgerPage - 1) * itemsPerPage;
+    return filteredWallets.slice(start, start + itemsPerPage);
+  }, [filteredWallets, ledgerPage]);
+  const totalLedgerPages = useMemo(() => Math.ceil(filteredWallets.length / itemsPerPage), [filteredWallets]);
+
+  // Transactions Filter & Pagination
+  const filteredTransactionsLog = useMemo(() => {
+    const q = transactionsSearch.toLowerCase().trim();
+    if (!q) return transactions;
+    return transactions.filter((tx: any) =>
+      (tx.transaction_id || "").toString().includes(q) ||
+      (tx.sender_name || "").toLowerCase().includes(q) ||
+      (tx.receiver_name || "").toLowerCase().includes(q) ||
+      (tx.type || "").toLowerCase().includes(q) ||
+      (tx.description || "").toLowerCase().includes(q) ||
+      (tx.amount || "").toString().includes(q)
+    );
+  }, [transactions, transactionsSearch]);
+
+  const paginatedTransactionsLog = useMemo(() => {
+    const start = (transactionsPage - 1) * itemsPerPage;
+    return filteredTransactionsLog.slice(start, start + itemsPerPage);
+  }, [filteredTransactionsLog, transactionsPage]);
+  const totalTransactionsPages = useMemo(() => Math.ceil(filteredTransactionsLog.length / itemsPerPage), [filteredTransactionsLog]);
+
+  // Columns Definitions
+  const requestColumns = [
+    {
+      header: "Req ID",
+      accessor: (req: any) => <span className="text-slate-400 font-bold">#{req.request_id}</span>
+    },
+    {
+      header: "User Details",
+      accessor: (req: any) => (
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-slate-800">{req.user_name}</p>
+          <p className="text-[10px] text-slate-400 font-medium">{req.email}</p>
+        </div>
+      )
+    },
+    {
+      header: "Method",
+      accessor: (req: any) => <span className="text-slate-600 font-semibold">{req.payment_method}</span>
+    },
+    {
+      header: "Payout Target Details",
+      accessor: (req: any) => (
+        <span className="max-w-[200px] truncate block text-slate-500 font-semibold" title={req.account_details}>
+          {req.account_details}
+        </span>
+      )
+    },
+    {
+      header: "Amount",
+      className: "text-right",
+      accessor: (req: any) => <span className="text-slate-850 text-xs font-black">${parseFloat(req.amount).toFixed(2)}</span>
+    },
+    {
+      header: "User Balance",
+      className: "text-right",
+      accessor: (req: any) => <span className="text-slate-400 font-semibold">${parseFloat(req.current_wallet_balance).toFixed(2)}</span>
+    },
+    {
+      header: "Status",
+      className: "text-right",
+      accessor: (req: any) => (
+        <span
+          className={`text-[9px] px-2 py-0.5 rounded-full inline-block font-bold ${
+            req.status === "Approved"
+              ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+              : req.status === "Rejected"
+              ? "bg-rose-50 text-rose-600 border border-rose-100"
+              : "bg-amber-50 text-amber-600 border border-amber-100"
+          }`}
+        >
+          {req.status}
+        </span>
+      )
+    },
+    {
+      header: "Action",
+      className: "text-right",
+      accessor: (req: any) => req.status === "Pending" ? (
+        <div className="flex gap-1.5 justify-end">
+          <button
+            onClick={() => handleApproveWithdrawal(req.request_id)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition shadow-sm"
+          >
+            Approve
+          </button>
+          <button
+            onClick={() => handleRejectWithdrawal(req.request_id)}
+            className="bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition border border-rose-100"
+          >
+            Reject
+          </button>
+        </div>
+      ) : (
+        <span className="text-[10px] text-slate-350 font-bold">PROCESSED</span>
+      )
+    }
+  ];
+
+  const ledgerColumns = [
+    {
+      header: "Wallet ID",
+      accessor: (w: any) => <span className="text-slate-400 font-bold">W-LDT-{w.wallet_id}</span>
+    },
+    {
+      header: "User",
+      accessor: (w: any) => <span className="font-black text-slate-850">{w.user_name || "Platform User"}</span>
+    },
+    {
+      header: "Email Address",
+      accessor: (w: any) => <span className="text-slate-500 font-semibold">{w.email}</span>
+    },
+    {
+      header: "Workspace Role",
+      accessor: (w: any) => (
+        <span className={`uppercase text-[10px] font-black px-2 py-0.5 rounded-md ${w.role === "client" ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-teal-50 text-teal-600 border border-teal-100"}`}>
+          {w.role}
+        </span>
+      )
+    },
+    {
+      header: "Account Setup",
+      accessor: (w: any) => (
+        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${w.is_onboarded ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"}`}>
+          {w.is_onboarded ? "Onboarding complete" : "Draft"}
+        </span>
+      )
+    },
+    {
+      header: "Virtual Balance (USD)",
+      className: "text-right",
+      accessor: (w: any) => <span className="font-black text-slate-850 text-sm">${parseFloat(w.balance).toFixed(2)}</span>
+    }
+  ];
+
+  const transactionColumns = [
+    {
+      header: "Tx ID",
+      accessor: (tx: any) => <span className="text-slate-400 font-bold">TX-{tx.transaction_id}</span>
+    },
+    {
+      header: "Timestamp",
+      accessor: (tx: any) => <span className="text-[10px] text-slate-500 font-semibold">{new Date(tx.created_at).toLocaleString()}</span>
+    },
+    {
+      header: "Sender User",
+      accessor: (tx: any) => <span className="text-slate-600 font-bold">{tx.sender_name || "External Deposit"}</span>
+    },
+    {
+      header: "Receiver User",
+      accessor: (tx: any) => <span className="text-slate-600 font-bold">{tx.receiver_name || "Platform Escrow"}</span>
+    },
+    {
+      header: "Type",
+      accessor: (tx: any) => (
+        <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md">
+          {tx.type}
+        </span>
+      )
+    },
+    {
+      header: "Description",
+      accessor: (tx: any) => (
+        <span className="max-w-[200px] truncate block text-slate-500 font-semibold" title={tx.description}>
+          {tx.description}
+        </span>
+      )
+    },
+    {
+      header: "Commission",
+      className: "text-right",
+      accessor: (tx: any) => (
+        <span className="text-rose-500 font-bold">
+          {parseFloat(tx.commission_amount) > 0 ? `$${parseFloat(tx.commission_amount).toFixed(2)}` : "-"}
+        </span>
+      )
+    },
+    {
+      header: "Net Amount",
+      className: "text-right",
+      accessor: (tx: any) => <span className="font-black text-slate-850">${parseFloat(tx.amount).toFixed(2)}</span>
+    }
+  ];
 
   return (
     <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-8 bg-slate-50/50 scrollbar-thin">
@@ -76,7 +300,7 @@ export default function WalletManagementTab() {
         {/* System Escrow Wallet Balance */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Escrow Holdings</span>
+            <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">System Wallet Reserve</span>
             <span className="text-xs font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full border border-teal-100">PLATFORM</span>
           </div>
           <div className="space-y-1">
@@ -188,83 +412,17 @@ export default function WalletManagementTab() {
                 <div className="text-center py-8 text-xs font-bold text-slate-400 animate-pulse">
                   Querying payout tables...
                 </div>
-              ) : withdrawalRequests.length === 0 ? (
-                <p className="text-xs text-slate-400 font-semibold text-center py-8">
-                  No payout/withdrawal requests recorded.
-                </p>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider text-[9px]">
-                        <th className="py-2.5">Req ID</th>
-                        <th className="py-2.5">User Details</th>
-                        <th className="py-2.5">Method</th>
-                        <th className="py-2.5">Payout Target details</th>
-                        <th className="py-2.5 text-right">Amount</th>
-                        <th className="py-2.5 text-right">User Balance</th>
-                        <th className="py-2.5 text-right">Status</th>
-                        <th className="py-2.5 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="font-bold text-slate-700">
-                      {withdrawalRequests.map((req: any) => (
-                        <tr key={req.request_id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                          <td className="py-4 text-slate-400">#{req.request_id}</td>
-                          <td className="py-4">
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-slate-800">{req.user_name}</p>
-                              <p className="text-[10px] text-slate-400 font-medium">{req.email}</p>
-                            </div>
-                          </td>
-                          <td className="py-4 text-slate-600">{req.payment_method}</td>
-                          <td className="py-4 max-w-[200px] truncate text-slate-500 font-semibold" title={req.account_details}>
-                            {req.account_details}
-                          </td>
-                          <td className="py-4 text-right text-slate-850 text-xs font-black">
-                            ${parseFloat(req.amount).toFixed(2)}
-                          </td>
-                          <td className="py-4 text-right text-slate-400 font-semibold">
-                            ${parseFloat(req.current_wallet_balance).toFixed(2)}
-                          </td>
-                          <td className="py-4 text-right">
-                            <span
-                              className={`text-[9px] px-2 py-0.5 rounded-full inline-block ${
-                                req.status === "Approved"
-                                  ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
-                                  : req.status === "Rejected"
-                                  ? "bg-rose-50 text-rose-600 border border-rose-100"
-                                  : "bg-amber-50 text-amber-600 border border-amber-100"
-                              }`}
-                            >
-                              {req.status}
-                            </span>
-                          </td>
-                          <td className="py-4 text-right">
-                            {req.status === "Pending" ? (
-                              <div className="flex gap-1.5 justify-end">
-                                <button
-                                  onClick={() => handleApproveWithdrawal(req.request_id)}
-                                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition shadow-sm"
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleRejectWithdrawal(req.request_id)}
-                                  className="bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition border border-rose-100"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-[10px] text-slate-350">PROCESSED</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <Table
+                  columns={requestColumns}
+                  data={paginatedRequests}
+                  currentPage={requestsPage}
+                  totalPages={totalRequestsPages}
+                  onPageChange={setRequestsPage}
+                  totalItems={withdrawalRequests.length}
+                  itemsPerPage={itemsPerPage}
+                  emptyMessage="No payout/withdrawal requests recorded."
+                />
               )}
             </div>
           )}
@@ -272,102 +430,54 @@ export default function WalletManagementTab() {
           {/* TAB 2: USER WALLETS LEDGER */}
           {activeSubTab === "ledger" && (
             <div className="space-y-4">
-              {wallets.length === 0 ? (
-                <p className="text-xs text-slate-400 font-semibold text-center py-8">
-                  No active user wallets created yet.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider text-[9px]">
-                        <th className="py-2.5">Wallet ID</th>
-                        <th className="py-2.5">User</th>
-                        <th className="py-2.5">Email Address</th>
-                        <th className="py-2.5">Workspace Role</th>
-                        <th className="py-2.5">Account Setup</th>
-                        <th className="py-2.5 text-right">Virtual Balance (USD)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="font-bold text-slate-700">
-                      {wallets.map((w: any) => (
-                        <tr key={w.wallet_id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                          <td className="py-3.5 text-slate-400">W-LDT-{w.wallet_id}</td>
-                          <td className="py-3.5 text-slate-850 font-black">{w.user_name || "Platform User"}</td>
-                          <td className="py-3.5 text-slate-500 font-semibold">{w.email}</td>
-                          <td className="py-3.5 uppercase text-[10px] font-black">
-                            <span className={`px-2 py-0.5 rounded-md ${w.role === "client" ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-teal-50 text-teal-600 border border-teal-100"}`}>
-                              {w.role}
-                            </span>
-                          </td>
-                          <td className="py-3.5">
-                            <span className={`text-[9px] px-2 py-0.5 rounded-full ${w.is_onboarded ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"}`}>
-                              {w.is_onboarded ? "Onboarding complete" : "Draft"}
-                            </span>
-                          </td>
-                          <td className="py-3.5 text-right font-black text-slate-850 text-sm">
-                            ${parseFloat(w.balance).toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="w-full sm:w-64 relative">
+                  <input
+                    type="text"
+                    placeholder="Search user ledgers..."
+                    value={ledgerSearch}
+                    onChange={(e) => setLedgerSearch(e.target.value)}
+                    className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 focus:bg-white rounded-xl pl-3.5 pr-4 py-2 text-xs text-slate-800 focus:outline-none transition-all"
+                  />
                 </div>
-              )}
+              </div>
+              <Table
+                columns={ledgerColumns}
+                data={paginatedWallets}
+                currentPage={ledgerPage}
+                totalPages={totalLedgerPages}
+                onPageChange={setLedgerPage}
+                totalItems={filteredWallets.length}
+                itemsPerPage={itemsPerPage}
+                emptyMessage="No active user wallets match search."
+              />
             </div>
           )}
 
           {/* TAB 3: SYSTEM TRANSACTIONS */}
           {activeSubTab === "transactions" && (
             <div className="space-y-4">
-              {transactions.length === 0 ? (
-                <p className="text-xs text-slate-400 font-semibold text-center py-8">
-                  No transactions recorded on this platform.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider text-[9px]">
-                        <th className="py-2.5">Tx ID</th>
-                        <th className="py-2.5">Timestamp</th>
-                        <th className="py-2.5">Sender user</th>
-                        <th className="py-2.5">Receiver user</th>
-                        <th className="py-2.5">Type</th>
-                        <th className="py-2.5">Description</th>
-                        <th className="py-2.5 text-right">Commission</th>
-                        <th className="py-2.5 text-right">Net Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="font-bold text-slate-700">
-                      {transactions.map((tx: any) => (
-                        <tr key={tx.transaction_id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                          <td className="py-3.5 text-slate-400">TX-{tx.transaction_id}</td>
-                          <td className="py-3.5 text-[10px] text-slate-500 font-semibold">
-                            {new Date(tx.created_at).toLocaleString()}
-                          </td>
-                          <td className="py-3.5 text-slate-600">{tx.sender_name || "External Deposit"}</td>
-                          <td className="py-3.5 text-slate-600">{tx.receiver_name || "Platform Escrow"}</td>
-                          <td className="py-3.5 text-[10px]">
-                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">
-                              {tx.type}
-                            </span>
-                          </td>
-                          <td className="py-3.5 text-slate-500 font-semibold max-w-[200px] truncate" title={tx.description}>
-                            {tx.description}
-                          </td>
-                          <td className="py-3.5 text-right text-rose-500 font-bold">
-                            {parseFloat(tx.commission_amount) > 0 ? `$${parseFloat(tx.commission_amount).toFixed(2)}` : "-"}
-                          </td>
-                          <td className="py-3.5 text-right font-black text-slate-850">
-                            ${parseFloat(tx.amount).toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="w-full sm:w-64 relative">
+                  <input
+                    type="text"
+                    placeholder="Search transactions log..."
+                    value={transactionsSearch}
+                    onChange={(e) => setTransactionsSearch(e.target.value)}
+                    className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 focus:bg-white rounded-xl pl-3.5 pr-4 py-2 text-xs text-slate-800 focus:outline-none transition-all"
+                  />
                 </div>
-              )}
+              </div>
+              <Table
+                columns={transactionColumns}
+                data={paginatedTransactionsLog}
+                currentPage={transactionsPage}
+                totalPages={totalTransactionsPages}
+                onPageChange={setTransactionsPage}
+                totalItems={filteredTransactionsLog.length}
+                itemsPerPage={itemsPerPage}
+                emptyMessage="No matching system transactions found."
+              />
             </div>
           )}
 

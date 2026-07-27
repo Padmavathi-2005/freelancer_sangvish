@@ -40,8 +40,72 @@ interface Plan {
 
 export default function Pricing() {
   const { currency } = useLanguage();
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [plans, setPlans] = useState<Plan[]>([
+    {
+      plan_id: 1,
+      name: "Starter",
+      description: "Ideal for emerging freelancers and individual buyers building their initial presence.",
+      price: "0.00",
+      period: "Month",
+      features: [
+        "Standard Platform Fee (5%)",
+        "Up to 10 Monthly Bids/Proposals",
+        "Post Up to 3 Active Jobs",
+        "Community & Standard Support"
+      ],
+      button_text: "Get Started Free",
+      is_popular: false,
+      is_current: false,
+      gig_discount_percent: 0,
+      proposal_limit: 10,
+      job_posting_limit: 3,
+      transaction_fee_percent: "5.0",
+      featured_job_allowance: false
+    },
+    {
+      plan_id: 2,
+      name: "Professional",
+      description: "Designed for active contractors and growing agencies maximizing client outreach.",
+      price: "29.00",
+      period: "Month",
+      features: [
+        "Reduced 2.0% Transaction Fee",
+        "10% Discount on Service Gigs",
+        "Unlimited Bids & Proposals",
+        "Featured Badge & Priority Support"
+      ],
+      button_text: "Upgrade to Professional",
+      is_popular: true,
+      is_current: false,
+      gig_discount_percent: 10,
+      proposal_limit: 999,
+      job_posting_limit: 20,
+      transaction_fee_percent: "2.0",
+      featured_job_allowance: true
+    },
+    {
+      plan_id: 3,
+      name: "Enterprise",
+      description: "Full-scale corporate tier with zero fees and dedicated account executive.",
+      price: "99.00",
+      period: "Month",
+      features: [
+        "0.0% Zero Transaction Fees",
+        "20% Discount on Service Gigs",
+        "Unlimited Job Postings & Hiring",
+        "Dedicated Account Executive"
+      ],
+      button_text: "Contact Enterprise",
+      is_popular: false,
+      is_current: false,
+      gig_discount_percent: 20,
+      proposal_limit: 999,
+      job_posting_limit: 999,
+      transaction_fee_percent: "0.0",
+      featured_job_allowance: true
+    }
+  ]);
+  const [loading, setLoading] = useState(false);
   const [activePlanId, setActivePlanId] = useState<number | null>(null);
   
   // Interactive Calculator States
@@ -55,28 +119,31 @@ export default function Pricing() {
   useEffect(() => {
     const fetchPlansAndSubscription = async () => {
       try {
-        setLoading(true);
-        // Fetch plans
-        const resPlans = await fetch(`${API_URL}/subscription-plans`);
-        if (!resPlans.ok) throw new Error("Failed to load plans.");
-        const plansData = await resPlans.json();
-        setPlans(plansData);
-
-        // Fetch user active plan if logged in
-        const token = localStorage.getItem("token");
-        if (token) {
-          const resSub = await fetch(`${API_URL}/users/me/subscription`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (resSub.ok) {
-            const subData = await resSub.json();
-            setActivePlanId(subData.active_plan_id);
+        const apiUrl = API_URL || "http://localhost:5000/api";
+        const resPlans = await fetch(`${apiUrl}/subscription-plans`);
+        if (resPlans.ok) {
+          const plansData = await resPlans.json();
+          if (Array.isArray(plansData) && plansData.length > 0) {
+            setPlans(plansData);
           }
         }
-      } catch (e) {
-        console.error("Pricing page data loading error:", e);
-      } finally {
-        setLoading(false);
+
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+        if (token) {
+          try {
+            const resSub = await fetch(`${apiUrl}/users/me/subscription`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (resSub.ok) {
+              const subData = await resSub.json();
+              setActivePlanId(subData.active_plan_id);
+            }
+          } catch {
+            // Ignore sub fetch error silently
+          }
+        }
+      } catch {
+        // Silent fallback to default plans
       }
     };
     fetchPlansAndSubscription();
@@ -279,7 +346,7 @@ export default function Pricing() {
                       className={`w-full font-black text-xs py-3.5 rounded-xl block text-center transition active:scale-[0.98] cursor-pointer ${
                         isPopular
                           ? "bg-white text-slate-900 hover:bg-slate-100 shadow-md"
-                          : "bg-primary text-white hover:bg-primary-hover"
+                          : "bg-teal-700 text-white hover:bg-teal-800"
                       }`}
                     >
                       {parseFloat((dbPlan.price || 0).toString()) === 0 ? "Get Started Free" : "Buy Plan"}

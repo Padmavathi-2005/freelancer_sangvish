@@ -17,11 +17,22 @@ const resolveLogoUrl = (url: string) => {
 
 
 import React, { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { FiZap, FiPlus, FiGrid, FiChevronDown, FiChevronRight, FiSearch, FiUser, FiLogOut } from "react-icons/fi";
 
 export default function Header() {
+  const pathname = usePathname() || "";
+  const isHome1Active = pathname === "/" || pathname === "/home-1";
+  const isHome2Active = pathname === "/home-2";
+  const isHome3Active = pathname === "/home-3";
+
+  const isTalentActive = pathname.startsWith("/talent");
+  const isProjectsActive = pathname.startsWith("/projects");
+  const isGigsActive = pathname.startsWith("/gigs");
+  const isBlogsActive = pathname.startsWith("/blogs");
+
   const { lang, currency, currencySymbol, activeLanguages, currencies, changeLanguage, changeCurrency, t } = useLanguage();
   const { openLoginModal } = useAuthModal();
   const [isOpen, setIsOpen] = useState(false);
@@ -337,15 +348,39 @@ export default function Header() {
               </a>
 
               {/* Home Dropdown Options on Hover */}
-              <div className="absolute left-0 mt-1 w-44 bg-white dark:bg-zinc-900 border border-slate-200/85 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/home:opacity-100 group-hover/home:visible transition-all duration-200 z-50">
-                <a href="/" className="block px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary font-bold transition-colors">
-                  Home 1 (Default)
+              <div className="absolute left-0 mt-1 w-48 bg-white dark:bg-zinc-900 border border-slate-200/85 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/home:opacity-100 group-hover/home:visible transition-all duration-200 z-50">
+                <a
+                  href="/"
+                  className={`flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors ${
+                    isHome1Active
+                      ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
+                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary"
+                  }`}
+                >
+                  <span>Home 1 (Default)</span>
+                  {isHome1Active && <span className="text-teal-600 font-black">✓</span>}
                 </a>
-                <a href="/home-2" className="block px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary font-bold transition-colors">
-                  Home 2
+                <a
+                  href="/home-2"
+                  className={`flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors ${
+                    isHome2Active
+                      ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
+                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary"
+                  }`}
+                >
+                  <span>Home 2</span>
+                  {isHome2Active && <span className="text-teal-600 font-black">✓</span>}
                 </a>
-                <a href="/home-3" className="block px-4 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary font-bold transition-colors">
-                  Home 3
+                <a
+                  href="/home-3"
+                  className={`flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors ${
+                    isHome3Active
+                      ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
+                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary"
+                  }`}
+                >
+                  <span>Home 3</span>
+                  {isHome3Active && <span className="text-teal-600 font-black">✓</span>}
                 </a>
               </div>
             </div>
@@ -450,16 +485,36 @@ export default function Header() {
               </div>
 
               {/* Navigation Links */}
-              <a href="/talent" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
+              <a
+                href="/talent"
+                className={`font-bold text-sm leading-none transition-all duration-200 ${
+                  isTalentActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-700 hover:text-primary"
+                }`}
+              >
                 {t("nav_talent", "Hire Freelancers")}
               </a>
-              <a href="/projects" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
+              <a
+                href="/projects"
+                className={`font-bold text-sm leading-none transition-all duration-200 ${
+                  isProjectsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-700 hover:text-primary"
+                }`}
+              >
                 {t("nav_projects", "Find Projects")}
               </a>
-              <a href="/gigs" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
+              <a
+                href="/gigs"
+                className={`font-bold text-sm leading-none transition-all duration-200 ${
+                  isGigsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-700 hover:text-primary"
+                }`}
+              >
                 {t("nav_gigs", "Explore Gigs")}
               </a>
-              <a href="/blogs" className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200">
+              <a
+                href="/blogs"
+                className={`font-bold text-sm leading-none transition-all duration-200 ${
+                  isBlogsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-700 hover:text-primary"
+                }`}
+              >
                 {t("nav_blogs", "Blogs")}
               </a>
 
@@ -623,32 +678,97 @@ export default function Header() {
         }`}
       >
         <div className="px-4 pt-4 pb-28 space-y-2 flex flex-col min-h-full">
-          <div className="space-y-1 bg-slate-100 dark:bg-zinc-800 p-2 rounded-xl border border-slate-200 dark:border-zinc-700">
-            <span className="block px-3 py-1 text-xs font-bold text-slate-400 uppercase tracking-wider">Home Variations</span>
-            <a href="/" className="block px-3 py-1.5 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors">
-              Home 1 (Default)
+          <div className="space-y-1 bg-slate-100 dark:bg-zinc-800 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700">
+            <span className="block px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider">Home Variations</span>
+            <a
+              href="/"
+              className={`flex items-center justify-between px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
+                isHome1Active
+                  ? "bg-teal-700 text-white font-extrabold shadow-sm"
+                  : "text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
+              }`}
+            >
+              <span>Home 1 (Default)</span>
+              {isHome1Active && <span className="text-xs font-black">✓</span>}
             </a>
-            <a href="/home-2" className="block px-3 py-1.5 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors">
-              Home 2
+            <a
+              href="/home-2"
+              className={`flex items-center justify-between px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
+                isHome2Active
+                  ? "bg-teal-700 text-white font-extrabold shadow-sm"
+                  : "text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
+              }`}
+            >
+              <span>Home 2</span>
+              {isHome2Active && <span className="text-xs font-black">✓</span>}
             </a>
-            <a href="/home-3" className="block px-3 py-1.5 rounded-lg text-sm font-bold text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700 transition-colors">
-              Home 3
+            <a
+              href="/home-3"
+              className={`flex items-center justify-between px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
+                isHome3Active
+                  ? "bg-teal-700 text-white font-extrabold shadow-sm"
+                  : "text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
+              }`}
+            >
+              <span>Home 3</span>
+              {isHome3Active && <span className="text-xs font-black">✓</span>}
             </a>
           </div>
-          <a href="/gigs" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            Categories
+
+          <a
+            href="/gigs"
+            className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${
+              isGigsActive
+                ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
+                : "text-slate-700 dark:text-slate-200 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <span>Categories</span>
+            {isGigsActive && <span className="text-xs font-black text-teal-600">●</span>}
           </a>
-          <a href="/talent" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            Hire Freelancers
+          <a
+            href="/talent"
+            className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${
+              isTalentActive
+                ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
+                : "text-slate-700 dark:text-slate-200 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <span>Hire Freelancers</span>
+            {isTalentActive && <span className="text-xs font-black text-teal-600">●</span>}
           </a>
-          <a href="/projects" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            Find Projects
+          <a
+            href="/projects"
+            className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${
+              isProjectsActive
+                ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
+                : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <span>Find Projects</span>
+            {isProjectsActive && <span className="text-xs font-black text-teal-600">●</span>}
           </a>
-          <a href="/gigs" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            Explore Gigs
+          <a
+            href="/gigs"
+            className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${
+              isGigsActive
+                ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
+                : "text-slate-700 dark:text-slate-200 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <span>Explore Gigs</span>
+            {isGigsActive && <span className="text-xs font-black text-teal-600">●</span>}
           </a>
-          <a href="/blogs" className="text-slate-700 dark:text-slate-200 hover:text-primary font-bold px-4 py-2.5 rounded-lg text-base hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            Blogs
+          <a
+            href="/blogs"
+            className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${
+              isBlogsActive
+                ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
+                : "text-slate-700 dark:text-slate-200 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <span>Blogs</span>
+            {isBlogsActive && <span className="text-xs font-black text-teal-600">●</span>}
           </a>
 
           <hr className="border-slate-200 my-2" />

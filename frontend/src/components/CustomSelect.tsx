@@ -95,7 +95,7 @@ export default function CustomSelect({
       </button>
 
       {!disabled && isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1 w-full max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[100] max-h-64 overflow-y-auto p-1 space-y-0.5 animate-fadeIn">
+        <div className="absolute left-0 right-0 top-full mt-1 w-full max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[100] max-h-44 sm:max-h-56 overflow-y-auto scrollbar-thin p-1 space-y-0.5 animate-fadeIn">
           {!multiple && placeholder && !options.some((o) => String(o.value) === String(value)) && (
             <button
               type="button"

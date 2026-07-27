@@ -961,6 +961,24 @@ body.dark .hero-floating-card .text-slate-500 {
   color: #a1a1aa !important; /* Zinc-400 */
 }
 
+/* CMS Page & Banner Text Contrast Fixes */
+.cms-html-content p,
+.cms-html-content span,
+.cms-html-content h1,
+.cms-html-content h2,
+.cms-html-content h3,
+.cms-html-content h4 {
+  color: inherit;
+}
+.bg-primary p,
+.bg-primary span,
+[class*="bg-gradient"] p,
+[class*="bg-gradient"] span,
+section[class*="bg-teal"] p,
+section[class*="bg-emerald"] p {
+  color: rgba(255, 255, 255, 0.95);
+}
+
 body.dark .group\/user-menu .absolute,
 body.dark header .absolute.right-0.mt-3,
 .dark header .absolute.right-0.mt-3 {

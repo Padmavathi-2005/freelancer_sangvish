@@ -161,7 +161,7 @@ export default function FreelancerProjectsTab() {
     <div className="flex flex-col gap-8 w-full text-slate-800">
       
       {/* Header */}
-      <div className="text-left">
+      <div className="text-left px-4 sm:px-0">
         <h1 className="text-xl font-black text-slate-900 tracking-tight">My Projects & Contracts</h1>
         <p className="text-slate-500 text-xs mt-1 font-semibold">
           Manage your active freelancer assignments, track completion milestones, and view client history.

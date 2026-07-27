@@ -82,18 +82,20 @@ export default function Hero() {
   useEffect(() => {
     const fetchTopFreelancers = async () => {
       try {
-        const res = await fetch(`${API_URL}/freelancer/public/list`);
+        const apiUrl = API_URL || "http://localhost:5000/api";
+        const res = await fetch(`${apiUrl}/freelancer/public/list`, {
+          headers: { "Content-Type": "application/json" }
+        });
         if (res.ok) {
           const freelancers = await res.json();
-          // Sort by rating DESC, then by completed_jobs DESC
-          const sorted = freelancers.sort((a: any, b: any) => {
-            const rA = parseFloat(a.rating || 0);
-            const rB = parseFloat(b.rating || 0);
-            if (rB !== rA) return rB - rA;
-            return (b.completed_jobs || 0) - (a.completed_jobs || 0);
-          });
+          if (Array.isArray(freelancers) && freelancers.length >= 2) {
+            const sorted = freelancers.sort((a: any, b: any) => {
+              const rA = parseFloat(a.rating || 0);
+              const rB = parseFloat(b.rating || 0);
+              if (rB !== rA) return rB - rA;
+              return (b.completed_jobs || 0) - (a.completed_jobs || 0);
+            });
 
-          if (sorted.length >= 2) {
             const formatted = sorted.slice(0, 2).map((f: any) => {
               let displayName = f.display_name || f.name;
               if (f.name && f.name.includes(" ")) {
@@ -106,7 +108,7 @@ export default function Hero() {
                 rating: parseFloat(f.rating || 0),
                 hourly_rate: f.hourly_rate ? parseFloat(f.hourly_rate).toFixed(0) : "N/A",
                 profile_image: f.profile_image 
-                  ? (f.profile_image.startsWith("http") ? f.profile_image : `${API_URL.replace("/api", "")}${f.profile_image.startsWith("/") ? f.profile_image : `/${f.profile_image}`}`)
+                  ? (f.profile_image.startsWith("http") ? f.profile_image : `${apiUrl.replace("/api", "")}${f.profile_image.startsWith("/") ? f.profile_image : `/${f.profile_image}`}`)
                   : "",
                 slug: f.slug || f.user_id.toString()
               };
@@ -114,8 +116,8 @@ export default function Hero() {
             setTopFreelancers(formatted);
           }
         }
-      } catch (err) {
-        console.error("Failed to fetch top rated freelancers for hero:", err);
+      } catch {
+        // Fallback silently to default top freelancers if backend is unreachable
       }
     };
     fetchTopFreelancers();

@@ -23,6 +23,7 @@ import {
   FiGlobe,
   FiAlertTriangle,
   FiCheckCircle,
+  FiChevronDown,
   FiSliders,
   FiUser
 } from "react-icons/fi";
@@ -98,7 +99,7 @@ export default function FreelancerProfileClient() {
     fetchClientJobs();
   }, []);
 
-  const openJobs = clientJobs.filter((job: any) => (job.status === "Open" || job.status === "Pending") && !job.contract_id);
+  const openJobs = clientJobs.filter((job: any) => (job.status === "Open" || job.status === "Pending") && job.status !== "Suspended" && !job.contract_id);
   useEffect(() => {
     if (openJobs.length > 0 && !selectedJobForInvite) {
       setSelectedJobForInvite(openJobs[0].job_id.toString());
@@ -362,7 +363,7 @@ export default function FreelancerProfileClient() {
           <p className="text-sm text-slate-500 max-w-sm mt-2">{error || "The developer profile you are seeking does not exist."}</p>
           <button
             onClick={() => router.back()}
-            className="mt-6 bg-primary hover:bg-primary-hover text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all"
+            className="mt-6 bg-teal-700 hover:bg-teal-800 text-white font-black text-xs sm:text-sm px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer border-none"
           >
             Go Back
           </button>
@@ -410,7 +411,7 @@ export default function FreelancerProfileClient() {
       </div>
 
       {/* Profile Cover & Header Area - Light Premium Styling */}
-      <div className="relative w-full bg-gradient-to-br from-teal-50/70 via-slate-50/40 to-emerald-50/30 border-b border-slate-150 py-16 px-4 sm:px-6 lg:px-8 overflow-hidden text-left">
+      <div className="relative w-full bg-gradient-to-br from-teal-50/70 via-slate-50/40 to-emerald-50/30 border-b border-slate-150 py-8 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden text-left">
         {/* Cover Abstract Art */}
         <div className="absolute inset-0 pointer-events-none opacity-40">
           <div className="absolute top-[-40%] left-[-10%] w-[40rem] h-[40rem] bg-teal-500/5 rounded-full filter blur-[120px]"></div>
@@ -915,13 +916,18 @@ export default function FreelancerProfileClient() {
                   Verified feedback submitted by clients who hired this freelancer.
                 </p>
               </div>
-              <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/60 p-4 rounded-xl shrink-0 self-start sm:self-center">
-                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-50 text-teal-700 text-lg font-black border border-teal-100">
-                  ★ {(reviews.reduce((acc: number, r: any) => acc + Number(r.rating), 0) / reviews.length).toFixed(1)}
+              <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 px-4 py-3 rounded-2xl shadow-xs shrink-0 self-start sm:self-center">
+                <div className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/50 shrink-0">
+                  <span className="text-base font-black text-amber-500 leading-none">★</span>
+                  <span className="text-lg font-black font-mono leading-none">
+                    {(reviews.reduce((acc: number, r: any) => acc + Number(r.rating), 0) / reviews.length).toFixed(1)}
+                  </span>
                 </div>
                 <div>
-                  <p className="text-xs font-black text-slate-800">Average Rating</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">{reviews.length} total review{reviews.length > 1 ? 's' : ''}</p>
+                  <p className="text-xs font-black text-slate-800 dark:text-slate-100">Average Rating</p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-400 font-extrabold uppercase tracking-wider mt-0.5">
+                    {reviews.length} TOTAL REVIEW{reviews.length > 1 ? 'S' : ''}
+                  </p>
                 </div>
               </div>
             </div>
@@ -981,7 +987,7 @@ export default function FreelancerProfileClient() {
                 setShowHireModal(false);
                 setHireMessage("");
               }}
-              className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 hover:text-slate-800 cursor-pointer"
+              className="absolute top-4 sm:top-6 right-4 sm:right-6 font-black text-xs px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 hover:text-slate-950 transition-all cursor-pointer shadow-xs"
             >
               Close
             </button>
@@ -993,7 +999,7 @@ export default function FreelancerProfileClient() {
             </div>
 
             {/* Option Selector Tabs */}
-            <div className="flex bg-slate-100 p-1 rounded-xl mb-5 gap-1">
+            <div className="flex flex-col sm:flex-row bg-slate-100 p-1 rounded-xl mb-5 gap-1">
               <button
                 type="button"
                 onClick={() => setInviteOption("existing")}
@@ -1024,18 +1030,21 @@ export default function FreelancerProfileClient() {
                   <>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Select Project *</label>
-                      <select
-                        required
-                        value={selectedJobForInvite}
-                        onChange={(e) => setSelectedJobForInvite(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold"
-                      >
-                        {openJobs.map((job: any) => (
-                          <option key={job.job_id} value={job.job_id}>
-                            {job.title} (${parseFloat(job.budget).toFixed(2)})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative w-full">
+                        <select
+                          required
+                          value={selectedJobForInvite}
+                          onChange={(e) => setSelectedJobForInvite(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl pl-4 pr-10 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold appearance-none cursor-pointer"
+                        >
+                          {openJobs.map((job: any) => (
+                            <option key={job.job_id} value={job.job_id}>
+                              {job.title} (${parseFloat(job.budget).toFixed(2)})
+                            </option>
+                          ))}
+                        </select>
+                        <FiChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

@@ -235,7 +235,7 @@ export default function PricingPage() {
                     {/* Popular badge */}
                     {isPopular && (
                       <div className="flex justify-center pt-3 pb-0">
-                        <span className="shimmer-badge rotateBadge flex items-center gap-1.5 bg-primary-hover text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
+                        <span className="shimmer-badge rotateBadge flex items-center gap-1.5 bg-teal-800 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
                           <FiStar className="w-2.5 h-2.5" style={{ animation: "rotateBadge 2s ease-in-out infinite" }} />
                           Most Popular
                         </span>
@@ -243,17 +243,17 @@ export default function PricingPage() {
                     )}
                     {isActive && !isPopular && (
                       <div className="absolute top-3 right-3">
-                        <span className="bg-primary text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">✓ Active</span>
+                        <span className="bg-teal-700 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">✓ Active</span>
                       </div>
                     )}
 
                     {/* Header */}
-                    <div className={`px-7 pt-7 pb-6 ${isPopular ? "bg-primary text-white" : isLight ? "bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/80" : "bg-[#1e293b] border-b border-slate-700/50"}`}>
+                    <div className={`px-7 pt-7 pb-6 ${isPopular ? "bg-teal-700 text-white" : isLight ? "bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/80" : "bg-[#1e293b] border-b border-slate-700/50"}`}>
                       {plan.badge_image && (
                         <img src={plan.badge_image} alt={plan.name} className="w-9 h-9 rounded-xl object-cover mb-3 border border-white/20 shadow"
                           onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
                       )}
-                      <p className={`text-[9px] font-black uppercase tracking-widest ${isPopular ? "text-white/90" : isLight ? "text-primary" : "text-amber-400"}`}>
+                      <p className={`text-[9px] font-black uppercase tracking-widest ${isPopular ? "text-white/90" : isLight ? "text-teal-700" : "text-amber-400"}`}>
                         {plan.name}
                       </p>
                       <div className="mt-3 flex items-baseline gap-1.5">
@@ -288,8 +288,8 @@ export default function PricingPage() {
                                 animationDelay: `${parseFloat(delay) + i * 0.06}s`,
                               }}
                             >
-                              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isPopular ? "bg-primary-light" : isLight ? "bg-primary-light" : "bg-slate-700"}`}>
-                                <FiCheck className={`w-3 h-3 ${isPopular ? "text-primary" : isLight ? "text-primary" : "text-amber-400"}`} />
+                              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isPopular ? "bg-teal-50" : isLight ? "bg-teal-50" : "bg-slate-700"}`}>
+                                <FiCheck className={`w-3 h-3 ${isPopular ? "text-teal-700" : isLight ? "text-teal-700" : "text-amber-400"}`} />
                               </span>
                               <span className={`text-[11px] font-semibold ${isPopular ? "text-slate-100" : isLight ? "text-slate-700 dark:text-slate-300" : "text-slate-300"}`}>{f}</span>
                             </div>
@@ -304,10 +304,10 @@ export default function PricingPage() {
                         href={`/pricing/${plan.plan_id}`}
                         className={`btn-shine w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold transition-all duration-200 active:scale-[0.98] ${
                           isActive
-                            ? "bg-primary-light border border-primary/20 text-primary"
+                            ? "bg-teal-50 border border-teal-200 text-teal-700"
                             : isPopular
-                            ? "bg-primary hover:bg-primary-hover text-white shadow-lg shadow-primary/30"
-                            : "bg-primary hover:bg-primary-hover text-white shadow-sm"
+                            ? "bg-teal-700 hover:bg-teal-800 text-white shadow-lg shadow-teal-700/30"
+                            : "bg-teal-700 hover:bg-teal-800 text-white shadow-sm"
                         }`}
                       >
                         {isActive ? "Current Plan" : isFree ? "Get Started Free" : plan.button_text || `Choose ${plan.name}`}

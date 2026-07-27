@@ -32,7 +32,9 @@ export default function Home2Categories() {
         const res = await fetch(`${API_URL}/categories`);
         if (res.ok) {
           const data = await res.json();
-          setCategories(data);
+          setCategories((Array.isArray(data) ? data : []).filter((c: any) =>
+            c.status === undefined || c.status === null || c.status === true || c.status === 1 || String(c.status).toLowerCase() === "active" || String(c.status).toLowerCase() === "true"
+          ));
         }
       } catch (e) {
         console.error("Failed to load categories:", e);

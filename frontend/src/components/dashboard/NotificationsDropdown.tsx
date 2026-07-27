@@ -11,6 +11,24 @@ interface NotificationsDropdownProps {
   setActiveTab: (tab: string) => void;
 }
 
+const formatNotificationMessage = (msg: string) => {
+  if (!msg) return "";
+  if (typeof msg === "string" && (msg.trim().startsWith("{") || msg.trim().startsWith("["))) {
+    try {
+      const parsed = JSON.parse(msg);
+      if (parsed.isCustomOffer || parsed.type === "offer") {
+        return `Custom Offer: "${parsed.title || 'Project Offer'}" for $${parseFloat(parsed.price || parsed.amount || 0).toLocaleString()}`;
+      }
+      if (parsed.text || parsed.message) {
+        return parsed.text || parsed.message;
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  return msg;
+};
+
 export default function NotificationsDropdown({
   notifications,
   unreadNotificationsCount,
@@ -111,7 +129,7 @@ export default function NotificationsDropdown({
                         </span>
                       </div>
                       <p className="text-[10px] text-slate-500 font-medium leading-normal mt-0.5 break-words">
-                        {n.message}
+                        {formatNotificationMessage(n.message)}
                       </p>
                     </div>
                   </div>

@@ -310,28 +310,7 @@ export default function FindWorkTab({
           </div>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex overflow-x-auto gap-2 pb-1 scrollbar-none no-scrollbar">
-          {[
-            { id: "all", label: "All Talents" },
-            { id: "development", label: "Development" },
-            { id: "design", label: "Design & UX" },
-            { id: "marketing", label: "Marketing" },
-            { id: "ai", label: "AI & ML Experts" },
-          ].map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id as any)}
-              className={`px-4 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
-                selectedCategory === category.id
-                  ? "bg-primary text-white shadow-md shadow-primary/10"
-                  : "bg-white text-slate-500 border border-slate-200 hover:text-slate-850 hover:bg-slate-50"
-              }`}
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
+
 
         {/* Freelancers Grid */}
         {filteredFreelancers.length > 0 ? (
@@ -616,8 +595,8 @@ export default function FindWorkTab({
                     isApplied ? "bg-emerald-500" : "bg-gradient-to-r from-primary to-cyan-500 opacity-80"
                   }`} />
 
-                <div className="flex justify-between items-start gap-4">
-                  <div className="text-left">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-2.5 sm:gap-4">
+                  <div className="text-left w-full sm:w-auto">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-sm font-extrabold text-slate-850">{job.title}</h3>
                       {isApplied && (
@@ -636,17 +615,16 @@ export default function FindWorkTab({
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                       <span className="text-slate-400 text-[10px] font-bold">
                         Posted by <strong>{job.company_name || job.client_name}</strong>
                       </span>
-                      <span className="text-slate-300 text-[10px]">•</span>
                       <span className="text-slate-400 text-[10px] font-bold">
-                        {new Date(job.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                        • {new Date(job.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     <span className="text-[10px] font-black bg-cyan-50 text-cyan-700 border border-cyan-150 px-2 py-0.5 rounded uppercase tracking-wider">
                       {job.category_name || "Project"}
                     </span>

@@ -49,7 +49,15 @@ import {
     deleteBackup,
     getAdminProfile,
     getAdminDisputes,
-    getAdminDisputeMessages
+    getAdminDisputeMessages,
+    reopenAdminDispute,
+    getContactInquiries,
+    updateContactInquiryStatus,
+    deleteContactInquiry,
+    replyContactInquiry,
+    getNewsletterSubscribers,
+    updateNewsletterSubscriberStatus,
+    deleteNewsletterSubscriber
 } from "../controllers/adminController.js";
 import {
     getSettings,
@@ -193,5 +201,17 @@ router.post("/affiliates/commissions/:id/reject", adminAuth, rejectAffiliateComm
 router.get("/disputes", adminAuth, getAdminDisputes);
 router.get("/disputes/:id/messages", adminAuth, getAdminDisputeMessages);
 router.post("/disputes/:id/resolve", adminAuth, adminResolve);
+router.post("/disputes/:id/reopen", adminAuth, reopenAdminDispute);
+
+// Admin Contact Inquiries routes
+router.get("/contact-inquiries", adminAuth, getContactInquiries);
+router.patch("/contact-inquiries/:id/status", adminAuth, updateContactInquiryStatus);
+router.post("/contact-inquiries/:id/reply", adminAuth, replyContactInquiry);
+router.delete("/contact-inquiries/:id", adminAuth, deleteContactInquiry);
+
+// Admin Newsletter Subscribers routes
+router.get("/newsletter-subscribers", adminAuth, getNewsletterSubscribers);
+router.patch("/newsletter-subscribers/:id/status", adminAuth, updateNewsletterSubscriberStatus);
+router.delete("/newsletter-subscribers/:id", adminAuth, deleteNewsletterSubscriber);
 
 export default router;

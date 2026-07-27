@@ -151,7 +151,7 @@ export default function SubscriptionTab() {
   const progressPercent = Math.min(100, (usedBids / totalBids) * 100);
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-slate-50/50 scrollbar-thin">
+    <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-5 sm:space-y-8 bg-slate-50/50 scrollbar-thin">
       
       {/* HEADER SECTION */}
       <div className="flex flex-col gap-1.5">
@@ -173,7 +173,7 @@ export default function SubscriptionTab() {
 
             <div className="flex justify-between items-start z-10">
               <div>
-                <p className="text-[10px] uppercase font-bold tracking-widest text-teal-200">
+                <p className="text-[10px] uppercase font-extrabold tracking-widest text-white/80">
                   Current Membership
                 </p>
                 <h3 className="text-2xl font-black tracking-tight text-white/95 mt-1">
@@ -189,12 +189,12 @@ export default function SubscriptionTab() {
               <p className="text-3xl font-black tracking-tight">
                 {planPrice === 0 ? "Free" : `$${planPrice.toFixed(2)}`}
               </p>
-              <p className="text-[10px] text-teal-100 font-semibold uppercase tracking-wider mt-1">
+              <p className="text-[10px] text-white/90 font-bold uppercase tracking-wider mt-1">
                 Billed every {duration} Days
               </p>
             </div>
 
-            <div className="flex justify-between items-center text-[10px] text-teal-200/90 font-bold z-10 mt-4 border-t border-white/10 pt-3">
+            <div className="flex justify-between items-center text-[10px] text-white/90 font-extrabold z-10 mt-4 border-t border-white/20 pt-3">
               {subInfo.active_plan_expires_at && subInfo.active_plan_id !== 1 && subInfo.active_plan_id !== 5 ? (
                 <span className="flex items-center gap-1">
                   <FiCalendar /> Expires: {new Date(subInfo.active_plan_expires_at).toLocaleDateString()} ({Math.max(0, Math.ceil((new Date(subInfo.active_plan_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))} Days Left)
@@ -204,7 +204,7 @@ export default function SubscriptionTab() {
                   <FiCalendar /> Cycle Limit: {duration} Days
                 </span>
               )}
-              <span className="uppercase">Role: {subInfo.plan_role || "Seller"}</span>
+              <span className="uppercase text-white/90 font-black">Role: {subInfo.plan_role || "Seller"}</span>
             </div>
           </div>
 

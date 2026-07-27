@@ -245,14 +245,15 @@ export default function EmailSettingsTab({
 
       {/* FLOATING SUCCESS TOAST */}
       {showToast && (
-        <div 
-          className="fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-white/10 animate-slideIn"
-          style={{ backgroundColor: "var(--color-primary, #0f766e)", color: "#ffffff" }}
-        >
-          <span className="text-white font-bold text-base" style={{ color: "#ffffff" }}>✓</span>
-          <div className="flex flex-col">
-            <span className="text-xs font-black" style={{ color: "#ffffff" }}>{toastTitle}</span>
-            <span className="text-[10px] font-semibold mt-0.5" style={{ color: "rgba(255, 255, 255, 0.9)" }}>{toastText}</span>
+        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-slideIn max-w-sm">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
+            ✓
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-xs font-black text-white leading-tight">{toastTitle || "Notification"}</span>
+            {toastText && (
+              <span className="text-[11px] font-semibold text-slate-300 mt-0.5 leading-snug">{toastText}</span>
+            )}
           </div>
         </div>
       )}

@@ -26,7 +26,7 @@ export interface DisputeCase {
   reason: string;
   clientStatement: string;
   freelancerStatement: string;
-  status: "Under Mediation" | "Resolved (Refunded Client)" | "Resolved (Released to Freelancer)" | "Resolved (Split)";
+  status: "Under Mediation" | "Escalated" | "Resolved" | "Closed" | "Resolved (Refunded Client)" | "Resolved (Released to Freelancer)" | "Resolved (Split)";
   client_id?: number | string;
   freelancer_id?: number | string;
   conversation_id?: number | string;
@@ -667,9 +667,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           const notifRes = await fetch(`${API_URL}/notifications`, {
             headers: { "Authorization": `Bearer ${token}` }
           });
+          let mappedList: any[] = [];
           if (notifRes.ok) {
             const data = await notifRes.json();
-            const mappedList = data.map((notif: any) => ({
+            mappedList = data.map((notif: any) => ({
               id: notif.notification_id.toString(),
               title: notif.title,
               message: notif.message,
@@ -679,9 +680,38 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
               read: notif.is_read,
               timestamp: new Date(notif.created_at).toLocaleDateString()
             }));
-            setAdminNotificationsState(mappedList);
-            localStorage.setItem("admin_notifications", JSON.stringify(mappedList));
           }
+
+          try {
+            const inqRes = await fetch(`${API_URL}/admin/contact-inquiries`, {
+              headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (inqRes.ok) {
+              const inquiries = await inqRes.json();
+              const pendingInquiries = inquiries.filter((i: any) => i.status === "Pending");
+              pendingInquiries.forEach((inq: any) => {
+                const inqId = `inq_${inq.id}`;
+                if (!mappedList.some(n => n.id === inqId)) {
+                  mappedList.unshift({
+                    id: inqId,
+                    title: "New Public Contact Inquiry",
+                    message: `${inq.name || inq.email}: "${inq.subject || 'Inquiry'}"`,
+                    targetTab: "contact_inquiries",
+                    targetRoute: "/admin/contact-inquiries",
+                    targetSubTab: "",
+                    targetId: inq.id,
+                    read: false,
+                    timestamp: new Date(inq.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                  });
+                }
+              });
+            }
+          } catch (inqErr) {
+            console.error("Failed to load contact inquiries for notification bell:", inqErr);
+          }
+
+          setAdminNotificationsState(mappedList);
+          localStorage.setItem("admin_notifications", JSON.stringify(mappedList));
         } catch (err) {
           console.error("Failed to load admin notifications/profile session:", err);
         }
@@ -1395,6 +1425,17 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const handleSubcategorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubcategoryFormError(null);
+
+    if (!subcategoryFormCategoryId || !subcategoryFormCategoryId.trim() || Number(subcategoryFormCategoryId) <= 0 || isNaN(Number(subcategoryFormCategoryId))) {
+      setSubcategoryFormError("Please select a parent category.");
+      return;
+    }
+
+    if (!subcategoryFormName || !subcategoryFormName.trim()) {
+      setSubcategoryFormError("Please enter a subcategory name.");
+      return;
+    }
+
     setSubcategoryFormLoading(true);
 
     const token = localStorage.getItem("adminToken");
@@ -1480,7 +1521,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setEditingSubcategory(null);
     setSubcategoryModalMode("create");
     setSubcategoryFormName("");
-    setSubcategoryFormCategoryId("");
+    const defaultCatId = categoriesList.length > 0 ? String(categoriesList[0].id || categoriesList[0].category_id || "") : "";
+    setSubcategoryFormCategoryId(defaultCatId);
     setSubcategoryFormStatus("Active");
     setSubcategoryFormError(null);
     setIsSubcategoryModalOpen(true);
@@ -1561,6 +1603,17 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const handleSkillSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSkillFormError(null);
+
+    if (!skillFormSubcategoryId || !skillFormSubcategoryId.trim() || Number(skillFormSubcategoryId) <= 0 || isNaN(Number(skillFormSubcategoryId))) {
+      setSkillFormError("Please select a parent subcategory.");
+      return;
+    }
+
+    if (!skillFormName || !skillFormName.trim()) {
+      setSkillFormError("Please enter a skill name.");
+      return;
+    }
+
     setSkillFormLoading(true);
 
     const token = localStorage.getItem("adminToken");
@@ -1645,7 +1698,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setEditingSkill(null);
     setSkillModalMode("create");
     setSkillFormName("");
-    setSkillFormSubcategoryId("");
+    const defaultSubId = subcategoriesList.length > 0 ? String(subcategoriesList[0].id || subcategoriesList[0].sub_category_id || "") : "";
+    setSkillFormSubcategoryId(defaultSubId);
     setSkillFormStatus("Active");
     setSkillFormError(null);
     setIsSkillModalOpen(true);
@@ -1745,6 +1799,19 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (err) {
         console.error("Error resolving dispute:", err);
+      }
+    } else if (resolution === "Under Mediation") {
+      try {
+        const token = localStorage.getItem("adminToken");
+        if (token) {
+          await fetch(`${API_URL}/admin/disputes/${id}/reopen`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          fetchDisputes();
+        }
+      } catch (err) {
+        console.error("Error reopening dispute:", err);
       }
     } else {
       setDisputes((prev) =>
@@ -2189,7 +2256,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     let total = usersList.length;
     let freelancers = usersList.filter(u => u.freelancer_onboarding).length;
     let clients = usersList.filter(u => u.client_onboarding).length;
-    return { total, freelancers, clients };
+    let dualRole = usersList.filter(u => u.freelancer_onboarding && u.client_onboarding).length;
+    return { total, freelancers, clients, dualRole };
   }, [usersList]);
 
   const filteredUsers = useMemo(() => {

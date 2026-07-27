@@ -25,23 +25,26 @@ export default function Footer({ transparent = false }: FooterProps) {
     setMounted(true);
     const fetchSettings = async () => {
       try {
-        const res = await fetch(`${API_URL}/settings`);
+        const apiUrl = API_URL || "http://localhost:5000/api";
+        const res = await fetch(`${apiUrl}/settings`);
         if (res.ok) {
           const data = await res.json();
-          data.forEach((setting: any) => {
-            let val = setting.setting_value;
-            if (typeof val === "string") {
-              try {
-                const parsed = JSON.parse(val);
-                if (typeof parsed === "string") val = parsed;
-              } catch (e) {}
-            }
-            if (setting.setting_key === "site_logo" && val) setSiteLogo(val);
-            if (setting.setting_key === "site_name" && val) setSiteName(val);
-          });
+          if (Array.isArray(data)) {
+            data.forEach((setting: any) => {
+              let val = setting.setting_value;
+              if (typeof val === "string") {
+                try {
+                  const parsed = JSON.parse(val);
+                  if (typeof parsed === "string") val = parsed;
+                } catch (e) {}
+              }
+              if (setting.setting_key === "site_logo" && val) setSiteLogo(val);
+              if (setting.setting_key === "site_name" && val) setSiteName(val);
+            });
+          }
         }
-      } catch (err) {
-        console.error("Failed to fetch settings in Footer:", err);
+      } catch {
+        // Fallback silently if settings endpoint is temporarily unreachable
       }
     };
     fetchSettings();

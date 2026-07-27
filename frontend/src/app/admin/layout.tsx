@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AdminProvider, useAdmin } from "./AdminContext";
-import { FiMenu, FiX, FiBell, FiAlertTriangle, FiCheckCircle, FiUser, FiLayers, FiSettings, FiDollarSign, FiBriefcase, FiZap, FiUsers, FiClipboard, FiCreditCard, FiFileText, FiGlobe, FiHardDrive } from "react-icons/fi";
+import { FiMenu, FiX, FiBell, FiAlertTriangle, FiCheckCircle, FiUser, FiLayers, FiSettings, FiDollarSign, FiBriefcase, FiZap, FiUsers, FiClipboard, FiCreditCard, FiFileText, FiGlobe, FiHardDrive, FiMail } from "react-icons/fi";
 import { API_URL, API_BASE_URL } from "@/config/api";
 
 const resolveLogoUrl = (url: string) => {
@@ -157,13 +157,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       setProjectMenuOpen(false);
       setSettingsMenuOpen(false);
       setMarketingMenuOpen(false);
-    } else if (activeTab === "search_logs" || activeTab === "seo_settings") {
+    } else if (activeTab === "search_logs" || activeTab === "seo_settings" || pathname === "/admin/newsletter") {
       setMarketingMenuOpen(true);
       setSettingsMenuOpen(false);
       setProjectMenuOpen(false);
       setGigMenuOpen(false);
     }
-  }, [activeTab]);
+  }, [activeTab, pathname]);
 
   const containerClass = `w-full min-h-screen flex flex-col lg:flex-row max-w-full relative lg:h-screen lg:overflow-hidden ${
     isDark ? "dark bg-slate-900 text-slate-100" : "light bg-slate-50 text-slate-800"
@@ -590,6 +590,26 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </button>
 
+          <Link
+            href="/admin/contact-inquiries"
+            className={navBtnClass("contact-inquiries", [], pathname === "/admin/contact-inquiries")}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <FiMail className="w-4 h-4 shrink-0" />
+              <span>Contact Inquiries</span>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/newsletter"
+            className={navBtnClass("newsletter", [], pathname === "/admin/newsletter")}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <FiUsers className="w-4 h-4 shrink-0" />
+              <span>Newsletter Subscribers</span>
+            </div>
+          </Link>
+
           {/* Group 3.5: Marketing & Discovery */}
           <div className="text-[9px] font-black tracking-widest uppercase text-slate-450 dark:text-slate-500 mt-4 mb-2 px-2.5 select-none">
             Marketing & SEO
@@ -640,6 +660,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 >
                   SEO & Meta Preview
                 </button>
+                <Link
+                  href="/admin/newsletter"
+                  className={subNavBtnClass("newsletter", [], pathname === "/admin/newsletter")}
+                >
+                  Newsletter Subscribers
+                </Link>
               </div>
             )}
           </div>
@@ -778,7 +804,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               {isAdminNotificationsOpen && (
-                <div className={`absolute right-0 mt-3 w-[23rem] rounded-xl border shadow-xl p-4 flex flex-col gap-3 select-none animate-fadeIn ${
+                <div className={`absolute right-0 mt-3 w-[23rem] rounded-xl border shadow-xl p-4 flex flex-col gap-3 select-none animate-fadeIn z-50 ${
                   isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
                 }`}>
                   <div className="flex items-center justify-between border-b pb-2.5 border-slate-100 dark:border-slate-850">
@@ -806,7 +832,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                             setIsAdminNotificationsOpen(false);
 
                             // Navigate to target Tab
-                            if (notif.targetTab === "transactions") {
+                            if (notif.targetRoute) {
+                              window.location.href = notif.targetRoute;
+                            } else if (notif.targetTab === "contact_inquiries") {
+                              window.location.href = "/admin/contact-inquiries";
+                            } else if (notif.targetTab === "transactions") {
                               setActiveTab("transactions");
                               if (notif.targetSubTab === "disputes") {
                                 setTransactionsSubTab("disputes");
@@ -920,12 +950,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className={statsCardClass}>
-                <span className={statsTitleClass}>Escrow Holdings</span>
+                <span className={statsTitleClass}>Total User Accounts</span>
                 <div className="flex items-baseline justify-between mt-2">
-                  <span className={`text-2xl font-black ${isDark ? "text-teal-400" : "text-teal-700"}`}>
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(adminWalletStats?.totalEscrow || 0)}
-                  </span>
-                  <span className={statsSubValueClass}>held securely</span>
+                  <span className={statsValueClass}>{usersList?.length || 0}</span>
+                  <span className={statsSubValueClass}>registered members</span>
                 </div>
               </div>
 

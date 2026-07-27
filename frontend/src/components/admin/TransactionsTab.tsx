@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Table from "@/components/Table";
 import { DisputeCase, useAdmin } from "@/app/admin/AdminContext";
 import { API_URL } from "@/config/api";
-import { FiMessageSquare } from "react-icons/fi";
+import { FiMessageSquare, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
 
 interface TransactionsTabProps {
   transactionsSubTab: "transactions" | "disputes";
@@ -64,7 +64,7 @@ export default function TransactionsTab({
         disp.freelancerStatement?.toLowerCase().includes(query) ||
         disp.id?.toString().includes(query);
 
-      const isResolved = disp.status.startsWith("Resolved");
+      const isResolved = disp.status.startsWith("Resolved") || disp.status === "Closed" || disp.status === "Resolved";
       const matchesFilter = 
         disputeFilter === "all" ||
         (disputeFilter === "resolved" && isResolved) ||
@@ -278,7 +278,7 @@ export default function TransactionsTab({
                     : "text-slate-500 hover:text-slate-805"
                 }`}
               >
-                Pending ({disputes.filter(d => !d.status.startsWith("Resolved")).length})
+                Pending ({disputes.filter(d => !d.status.startsWith("Resolved") && d.status !== "Closed").length})
               </button>
               <button
                 type="button"
@@ -289,7 +289,7 @@ export default function TransactionsTab({
                     : "text-slate-500 hover:text-slate-805"
                 }`}
               >
-                Resolved ({disputes.filter(d => d.status.startsWith("Resolved")).length})
+                Resolved ({disputes.filter(d => d.status.startsWith("Resolved") || d.status === "Closed").length})
               </button>
               <button
                 type="button"
@@ -381,17 +381,31 @@ export default function TransactionsTab({
                   <div className="flex flex-wrap items-center justify-between border-t border-slate-100 pt-4 gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-slate-500">Mediation Status: </span>
-                      <span className={`text-xs font-semibold px-2.5 py-0.5 rounded border ${
-                        !disp.status.startsWith("Resolved") ? "bg-amber-50 text-amber-700 border-amber-200" :
-                        disp.status.includes("Refunded") ? "bg-cyan-50 text-cyan-700 border-cyan-200" :
-                        disp.status.includes("Released") ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                        "bg-slate-100 text-slate-650 border border-slate-200"
+                      <span className={`text-xs font-black px-3 py-1 rounded-full border flex items-center gap-1.5 ${
+                        !disp.status.startsWith("Resolved") && disp.status !== "Closed"
+                          ? "bg-amber-50 text-amber-700 border-amber-200"
+                          : "bg-emerald-50 text-emerald-700 border-emerald-200 shadow-2xs"
                       }`}>
-                        {disp.status}
+                        {disp.status.startsWith("Resolved") || disp.status === "Closed" ? (
+                          <>
+                            <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>
+                              {disp.status.includes("Refunded")
+                                ? "Closed & Resolved (Refunded Client)"
+                                : disp.status.includes("Released")
+                                ? "Closed & Resolved (Released to Freelancer)"
+                                : disp.status.includes("Split")
+                                ? "Closed & Resolved (Partial Split)"
+                                : "Closed & Resolved"}
+                            </span>
+                          </>
+                        ) : (
+                          <span>{disp.status}</span>
+                        )}
                       </span>
                     </div>
 
-                    {!disp.status.startsWith("Resolved") ? (
+                    {!disp.status.startsWith("Resolved") && disp.status !== "Closed" ? (
                       <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => resolveDispute(disp.id, "Resolved (Refunded Client)")}
@@ -463,8 +477,9 @@ export default function TransactionsTab({
                         </button>
                         <button
                           onClick={() => resolveDispute(disp.id, "Under Mediation")}
-                          className="text-xs font-semibold text-slate-400 hover:text-slate-650 cursor-pointer underline bg-transparent border-0"
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-250 text-slate-700 font-bold transition-all text-xs rounded-lg cursor-pointer flex items-center gap-1.5"
                         >
+                          <FiRefreshCw className="w-3.5 h-3.5 text-slate-500" />
                           Reopen Case
                         </button>
                       </div>

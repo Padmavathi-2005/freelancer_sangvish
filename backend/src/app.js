@@ -85,10 +85,25 @@ app.post('/api/contact', async (req, res) => {
     if (!email || !message) {
       return res.status(400).json({ error: "Email and message are required fields." });
     }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS contact_inquiries (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255),
+        email VARCHAR(255) NOT NULL,
+        subject VARCHAR(255) DEFAULT 'General Inquiry',
+        message TEXT NOT NULL,
+        status VARCHAR(50) DEFAULT 'Pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE contact_inquiries ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Pending';
+      ALTER TABLE contact_inquiries ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+      ALTER TABLE contact_inquiries ADD COLUMN IF NOT EXISTS subject VARCHAR(255) DEFAULT 'General Inquiry';
+    `);
     
     const result = await pool.query(
-      `INSERT INTO contact_inquiries (name, email, subject, message)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO contact_inquiries (name, email, subject, message, status)
+       VALUES ($1, $2, $3, $4, 'Pending')
        RETURNING *`,
       [name || null, email, subject || 'General Inquiry', message]
     );
@@ -152,6 +167,16 @@ app.post('/api/newsletter/subscribe', async (req, res) => {
     if (!email) {
       return res.status(400).json({ error: "Email address is required." });
     }
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        status VARCHAR(50) DEFAULT 'Subscribed',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Subscribed';
+    `);
     
     // Check if already subscribed
     const checkSub = await pool.query(
@@ -164,8 +189,8 @@ app.post('/api/newsletter/subscribe', async (req, res) => {
     }
     
     const result = await pool.query(
-      `INSERT INTO newsletter_subscribers (email)
-       VALUES ($1)
+      `INSERT INTO newsletter_subscribers (email, status)
+       VALUES ($1, 'Subscribed')
        RETURNING *`,
       [email]
     );

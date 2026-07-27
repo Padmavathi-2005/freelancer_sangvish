@@ -671,8 +671,8 @@ export default function PlanDetailsPage() {
 
       {/* PayPal Sandbox Pop-up Modal Simulation */}
       {showPaypalModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-xl overflow-hidden w-full max-w-md animate-scaleUp">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-xl overflow-y-auto max-h-[90vh] w-full max-w-md animate-scaleUp">
             
             {/* Paypal Modal Header */}
             <div className="bg-[#003087] text-white px-6 py-4 flex justify-between items-center shadow-sm">
@@ -690,7 +690,7 @@ export default function PlanDetailsPage() {
             </div>
             
             {/* Paypal Modal Content */}
-            <form onSubmit={handlePaypalSubmit} className="p-6 flex flex-col gap-5">
+            <form onSubmit={handlePaypalSubmit} className="p-6 flex flex-col gap-5" autoComplete="off">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[9px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-wider">Purchase Details</span>
                 <span className="text-xs font-black text-slate-800 dark:text-slate-100">LancerFlow {plan.name} Plan Membership Upgrade</span>
@@ -710,6 +710,7 @@ export default function PlanDetailsPage() {
                     value={paypalEmail}
                     onChange={(e) => setPaypalEmail(e.target.value)}
                     placeholder="sandbox-buyer@lancerflow.com"
+                    autoComplete="off"
                     className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-white focus:outline-none focus:border-teal-700 transition w-full"
                   />
                 </div>

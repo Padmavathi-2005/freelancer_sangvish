@@ -720,13 +720,15 @@ export default function SubscriptionPlansPage() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] bg-gradient-to-r from-teal-700 to-teal-800 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 animate-fadeIn border border-teal-650 max-w-sm">
-          <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-emerald-400 font-black text-sm shrink-0">
+        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-fadeIn max-w-sm">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
             ✓
           </div>
           <div className="flex flex-col text-left">
-            <span className="text-xs font-black text-white leading-none">{toast.title}</span>
-            <span className="text-[10px] text-teal-100/90 font-semibold mt-1 leading-normal">{toast.text}</span>
+            <span className="text-xs font-black text-white leading-tight">{toast.title || "Notification"}</span>
+            {toast.text && (
+              <span className="text-[11px] text-slate-300 font-semibold mt-0.5 leading-snug">{toast.text}</span>
+            )}
           </div>
         </div>
       )}

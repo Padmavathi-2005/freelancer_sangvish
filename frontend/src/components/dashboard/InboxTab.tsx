@@ -1,7 +1,7 @@
 import { API_URL, API_BASE_URL } from "@/config/api";
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { FiMessageSquare } from "react-icons/fi";
+import { FiMessageSquare, FiChevronDown } from "react-icons/fi";
 import { useDashboard } from "../../app/dashboard/DashboardContext";
 
 interface InboxTabProps {
@@ -525,7 +525,7 @@ export default function InboxTab({
                     return (
                       <div
                         key={idx}
-                        className="flex justify-center my-3 w-full select-none"
+                        className="flex flex-col items-center my-3 w-full select-none"
                       >
                         <div className={`border rounded-xl p-4 shadow-sm text-left max-w-md w-full bg-slate-50/50 ${
                           disputeData.type === "dispute_resolved"
@@ -673,22 +673,22 @@ export default function InboxTab({
                               </div>
 
                               {disputeData.proposer_id !== currentUser?.user_id && !hasActionAfterSettlement(disputeData.dispute_id) && (
-                                <div className="mt-3 flex gap-2">
+                                <div className="mt-3 flex flex-col sm:flex-row gap-2">
                                   <button
                                     disabled={disputeActionLoading}
                                     onClick={() => handleAcceptSettlement(disputeData.dispute_id, disputeData.client_refund_percent)}
-                                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] py-2 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider animate-pulse disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9.5px] py-2.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider animate-pulse disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                   >
                                     {disputeData.client_refund_percent === 0
                                       ? "Accept — No Refund"
                                       : disputeData.client_refund_percent === 100
                                         ? "Accept — Full Refund"
-                                        : `Accept — ${disputeData.client_refund_percent}% / ${disputeData.freelancer_pay_percent}% Split`}
+                                        : `Accept ${disputeData.client_refund_percent}% / ${disputeData.freelancer_pay_percent}% Split`}
                                   </button>
                                   <button
                                     disabled={disputeActionLoading}
                                     onClick={() => handleEscalateDispute(disputeData.dispute_id)}
-                                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9px] py-2 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="bg-rose-600 hover:bg-rose-700 text-white font-black text-[9.5px] py-2.5 px-3 rounded-lg border-0 cursor-pointer shadow-sm uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                                   >
                                     Let Admin Decide
                                   </button>
@@ -1043,7 +1043,7 @@ export default function InboxTab({
               <button
                 type="submit"
                 disabled={sendingChatMessage || !newMessageText.trim()}
-                className="bg-primary hover:bg-primary-hover text-white px-5 py-3 rounded-xl text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center shrink-0 border-0"
+                className="bg-teal-700 hover:bg-teal-800 text-white px-5 py-3 rounded-xl text-xs font-black shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center shrink-0 border-0"
               >
                 <i className="fa-solid fa-paper-plane text-xs"></i>
               </button>
@@ -1078,7 +1078,7 @@ export default function InboxTab({
             >
               Cancel
             </button>
-            <div className="border-b border-slate-100 pb-3 mb-4">
+            <div className="border-b border-slate-100 pb-3 mb-4 pr-20">
               <h3 className="text-sm font-black text-slate-800">Create Custom Payment Offer</h3>
               <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Discussed custom parameters or extra features. Fix the payment amount here.</p>
             </div>
@@ -1108,16 +1108,19 @@ export default function InboxTab({
 
               <div>
                 <label className="text-xs font-bold block mb-1 text-slate-600">Select Associated Gig *</label>
-                <select
-                  value={offerGigId}
-                  onChange={(e) => setOfferGigId(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-800 focus:border-primary focus:outline-none font-bold"
-                >
-                  <option value="">-- Choose Gig --</option>
-                  {gigs.map((g: any) => (
-                    <option key={g.gig_id} value={g.gig_id}>{g.title}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={offerGigId}
+                    onChange={(e) => setOfferGigId(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none font-bold appearance-none pr-10 cursor-pointer transition-all shadow-xs"
+                  >
+                    <option value="">-- Choose Gig --</option>
+                    {gigs.map((g: any) => (
+                      <option key={g.gig_id} value={g.gig_id}>{g.title}</option>
+                    ))}
+                  </select>
+                  <FiChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               <div>
@@ -1180,7 +1183,7 @@ export default function InboxTab({
                     triggerToast("error", "Failed to send custom offer.");
                   }
                 }}
-                className="w-full mt-2 bg-primary hover:bg-primary-hover text-white font-black text-xs py-2.5 rounded-xl shadow-md transition-all uppercase tracking-wider text-center cursor-pointer border-0"
+                className="w-full mt-2 bg-teal-700 hover:bg-teal-800 text-white font-black text-xs py-2.5 rounded-xl shadow-md transition-all uppercase tracking-wider text-center cursor-pointer border-0"
               >
                 Send Offer to Client
               </button>
@@ -1199,11 +1202,11 @@ export default function InboxTab({
                 setShowDisputeResponseModal(false);
                 setDisputeResponseTargetId(null);
               }}
-              className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 hover:text-slate-850 cursor-pointer"
+              className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 hover:text-slate-850 cursor-pointer z-10"
             >
               Cancel
             </button>
-            <div className="border-b border-slate-100 pb-3 mb-4">
+            <div className="border-b border-slate-100 pb-3 mb-4 pr-20">
               <h3 className="text-sm font-black text-slate-800">⚠️ Respond to Dispute</h3>
               <p className="text-[10px] text-slate-400 font-semibold mt-0.5">Configure your dispute response and proposal splits below.</p>
             </div>

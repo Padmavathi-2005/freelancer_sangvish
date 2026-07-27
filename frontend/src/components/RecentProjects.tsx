@@ -18,14 +18,16 @@ export default function RecentProjects() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        setLoading(true);
-        const res = await fetch(`${API_URL}/jobs/public`);
+        const apiUrl = API_URL || "http://localhost:5000/api";
+        const res = await fetch(`${apiUrl}/jobs/public`);
         if (res.ok) {
           const data = await res.json();
-          setProjects(data);
+          if (Array.isArray(data)) {
+            setProjects(data);
+          }
         }
-      } catch (err) {
-        console.error("Failed to fetch landing page projects:", err);
+      } catch {
+        // Silent fallback
       } finally {
         setLoading(false);
       }
@@ -36,24 +38,27 @@ export default function RecentProjects() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const res = await fetch(`${API_URL}/settings`);
+        const apiUrl = API_URL || "http://localhost:5000/api";
+        const res = await fetch(`${apiUrl}/settings`);
         if (res.ok) {
           const data = await res.json();
-          const siteRaw = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;
-          if (siteRaw) {
-            let parsed = siteRaw;
-            if (typeof parsed === "string") {
-              try { parsed = JSON.parse(parsed); } catch {}
-            }
-            if (parsed.site_short_name) {
-              setSiteShortName(parsed.site_short_name);
-            } else if (parsed.site_name) {
-              setSiteShortName(parsed.site_name);
+          if (Array.isArray(data)) {
+            const siteRaw = data.find((s: any) => s.setting_key === "site_settings")?.setting_value;
+            if (siteRaw) {
+              let parsed = siteRaw;
+              if (typeof parsed === "string") {
+                try { parsed = JSON.parse(parsed); } catch {}
+              }
+              if (parsed.site_short_name) {
+                setSiteShortName(parsed.site_short_name);
+              } else if (parsed.site_name) {
+                setSiteShortName(parsed.site_name);
+              }
             }
           }
         }
-      } catch (e) {
-        console.error("Failed to load settings in recent projects:", e);
+      } catch {
+        // Silent fallback
       }
     };
     loadSettings();

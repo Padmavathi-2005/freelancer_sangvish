@@ -424,6 +424,23 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
           </p>
         </div>
       </div>
+
+      {/* FLOATING TOAST */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-fadeIn max-w-sm">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm shrink-0 shadow-sm ${
+            toast.type === "success" ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"
+          }`}>
+            {toast.type === "success" ? "✓" : "✕"}
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-xs font-black text-white leading-tight">
+              {toast.type === "success" ? "Success" : "Error"}
+            </span>
+            <span className="text-[11px] font-semibold text-slate-300 mt-0.5 leading-snug">{toast.message}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

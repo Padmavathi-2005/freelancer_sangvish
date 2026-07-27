@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { FiMessageSquare, FiX, FiSend, FiMaximize, FiMinimize } from "react-icons/fi";
+import { usePathname } from "next/navigation";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { API_URL, API_BASE_URL } from "@/config/api";
 
@@ -955,7 +956,9 @@ export default function AIChatbot() {
     "Show active projects & job listings"
   ];
 
-  if (!mounted) return null;
+  const pathname = usePathname();
+
+  if (!mounted || pathname?.startsWith("/admin")) return null;
 
   return (
     <>

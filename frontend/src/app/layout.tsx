@@ -244,7 +244,6 @@ export default async function RootLayout({
             <MaintenanceGuard>
               {children}
             </MaintenanceGuard>
-            <AIChatbot />
           </AuthModalProvider>
         </LanguageProvider>
       </body>

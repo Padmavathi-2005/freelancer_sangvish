@@ -96,11 +96,15 @@ function CategoriesContent() {
 
         if (catRes.ok) {
           const cats = await catRes.json();
-          setCategories(cats);
+          setCategories((Array.isArray(cats) ? cats : []).filter((c: any) =>
+            c.status === undefined || c.status === null || c.status === true || c.status === 1 || String(c.status).toLowerCase() === "active" || String(c.status).toLowerCase() === "true"
+          ));
         }
         if (subRes.ok) {
           const subs = await subRes.json();
-          setSubcategories(subs);
+          setSubcategories((Array.isArray(subs) ? subs : []).filter((s: any) =>
+            s.status === undefined || s.status === null || s.status === true || s.status === 1 || String(s.status).toLowerCase() === "active" || String(s.status).toLowerCase() === "true"
+          ));
         }
         if (statRes.ok) {
           const stats = await statRes.json();

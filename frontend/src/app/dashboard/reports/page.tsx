@@ -335,15 +335,15 @@ export default function ReportsPage() {
         </div>
 
         {filteredTransactions.length > 0 ? (
-          <div className="overflow-x-auto print:overflow-visible print:break-inside-auto">
-            <table className="w-full text-xs font-bold text-slate-600">
+          <div className="overflow-x-auto print:overflow-visible print:break-inside-auto scrollbar-thin">
+            <table className="w-full text-xs font-bold text-slate-600 min-w-[550px]">
               <thead>
                 <tr className="border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 text-left">
-                  <th className="pb-3.5 pl-3 pr-2">Transaction ID</th>
-                  <th className="pb-3.5 px-2">Details</th>
-                  <th className="pb-3.5 px-2">Date</th>
-                  <th className="pb-3.5 px-2">Status</th>
-                  <th className="pb-3.5 text-right pr-3 pl-2">Amount</th>
+                  <th className="pb-3.5 pl-3 pr-2 whitespace-nowrap">Transaction ID</th>
+                  <th className="pb-3.5 px-2 whitespace-nowrap">Details</th>
+                  <th className="pb-3.5 px-2 whitespace-nowrap">Date</th>
+                  <th className="pb-3.5 px-2 whitespace-nowrap">Status</th>
+                  <th className="pb-3.5 text-right pr-3 pl-2 whitespace-nowrap">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -357,7 +357,7 @@ export default function ReportsPage() {
 
                   return (
                     <tr key={tx.key} className="hover:bg-slate-50/50 transition-colors print:break-inside-avoid">
-                      <td className="py-4 pl-3 pr-2 font-mono text-xxs text-slate-400">
+                      <td className="py-4 pl-3 pr-2 font-mono text-xxs text-slate-400 whitespace-nowrap">
                         {tx.displayId}
                       </td>
                       <td className="py-4 px-2">
@@ -373,10 +373,10 @@ export default function ReportsPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-2 text-slate-500 font-medium">
+                      <td className="py-4 px-2 text-slate-500 font-medium whitespace-nowrap">
                         {dateStr}
                       </td>
-                      <td className="py-4 px-2">
+                      <td className="py-4 px-2 whitespace-nowrap">
                         <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
                           tx.status === "PENDING"
                             ? "bg-amber-50 text-amber-700 border border-amber-200/80"
@@ -387,7 +387,7 @@ export default function ReportsPage() {
                           {tx.status}
                         </span>
                       </td>
-                      <td className={`py-4 text-right font-black pr-3 pl-2 text-sm ${isCredit ? "text-emerald-600" : "text-rose-600"}`}>
+                      <td className={`py-4 text-right font-black pr-3 pl-2 text-sm whitespace-nowrap ${isCredit ? "text-emerald-600" : "text-rose-600"}`}>
                         {isCredit ? "+" : "-"}${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                     </tr>

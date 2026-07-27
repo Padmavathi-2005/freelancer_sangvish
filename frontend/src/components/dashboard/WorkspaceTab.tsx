@@ -102,7 +102,7 @@ export default function WorkspaceTab({
   }, [freelancerContracts, gigApplications]);
 
   const displayClientProjects = useMemo(() => {
-    const ongoing = clientJobs.filter(j => j.status !== "Completed" && j.status !== "Closed");
+    const ongoing = clientJobs.filter(j => j.status !== "Completed" && j.status !== "Closed" && j.status !== "Suspended");
     return (ongoing.length > 0 ? ongoing : clientJobs).slice(0, 2);
   }, [clientJobs]);
 
@@ -395,7 +395,11 @@ export default function WorkspaceTab({
                               </div>
                               <div className="flex flex-col items-end shrink-0">
                                 <span className="text-xs font-black text-slate-800">${parseFloat(job.budget || job.max_budget || 0).toLocaleString()}</span>
-                                <span className="text-[9px] font-black text-slate-450 uppercase tracking-wider mt-0.5">{job.status}</span>
+                                <span className={`text-[9px] font-black uppercase tracking-wider mt-0.5 ${
+                                  job.status === "Suspended"
+                                    ? "text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200"
+                                    : "text-slate-450"
+                                }`}>{job.status}</span>
                               </div>
                             </div>
                           ))

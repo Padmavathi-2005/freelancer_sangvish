@@ -281,7 +281,7 @@ export default function ProposalsTab({
   };
 
   const [selectedProposalDetails, setSelectedProposalDetails] = useState<any | null>(null);
-  const [projectFilter, setProjectFilter] = useState<"all" | "pending" | "ongoing" | "dispute" | "completed" | "draft" | "hired" | "proposals_arrived" | "proposals_not_arrived">("all");
+  const [projectFilter, setProjectFilter] = useState<"all" | "pending" | "ongoing" | "dispute" | "completed" | "draft" | "hired" | "proposals_arrived" | "proposals_not_arrived" | "suspended">("all");
   const [freelancerFilter, setFreelancerFilter] = useState<"all" | "pending" | "accepted" | "declined">("all");
 
   const [searchProjectQuery, setSearchProjectQuery] = useState("");
@@ -494,20 +494,22 @@ export default function ProposalsTab({
       let matchStatus = true;
       if (projectFilter === "draft") {
         matchStatus = jStatus === "draft";
+      } else if (projectFilter === "suspended") {
+        matchStatus = jStatus === "suspended";
       } else if (projectFilter === "pending") {
-        matchStatus = cStatus === "pending" || cStatus === "hired" || jStatus === "pending";
+        matchStatus = (cStatus === "pending" || cStatus === "hired" || jStatus === "pending") && jStatus !== "suspended";
       } else if (projectFilter === "ongoing") {
-        matchStatus = cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active" || cStatus === "work started" || cStatus === "work_started" || cStatus === "under review" || cStatus === "under_review";
+        matchStatus = (cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active" || cStatus === "work started" || cStatus === "work_started" || cStatus === "under review" || cStatus === "under_review") && jStatus !== "suspended";
       } else if (projectFilter === "dispute") {
-        matchStatus = cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed";
+        matchStatus = (cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed") && jStatus !== "suspended";
       } else if (projectFilter === "completed") {
-        matchStatus = cStatus === "completed" || cStatus === "work completed" || cStatus === "work_completed" || jStatus === "completed";
+        matchStatus = (cStatus === "completed" || cStatus === "work completed" || cStatus === "work_completed" || jStatus === "completed") && jStatus !== "suspended";
       } else if (projectFilter === "hired") {
-        matchStatus = !!job.contract_id && cStatus !== "cancelled";
+        matchStatus = !!job.contract_id && cStatus !== "cancelled" && jStatus !== "suspended";
       } else if (projectFilter === "proposals_arrived") {
-        matchStatus = !job.contract_id && parseInt(job.proposal_count || 0) > 0 && jStatus !== "draft";
+        matchStatus = !job.contract_id && parseInt(job.proposal_count || 0) > 0 && jStatus !== "draft" && jStatus !== "suspended";
       } else if (projectFilter === "proposals_not_arrived") {
-        matchStatus = !job.contract_id && parseInt(job.proposal_count || 0) === 0 && jStatus !== "draft";
+        matchStatus = !job.contract_id && parseInt(job.proposal_count || 0) === 0 && jStatus !== "draft" && jStatus !== "suspended";
       }
 
       if (!matchStatus) return false;
@@ -1198,25 +1200,25 @@ export default function ProposalsTab({
                     />
                   </div>
 
-                  <div className="flex justify-end gap-3 mt-2 border-t border-slate-100 pt-4">
+                  <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-2.5 sm:gap-3 mt-2 border-t border-slate-100 pt-4">
                     <button
                       type="button"
                       onClick={resetWizardState}
-                      className="px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer"
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer whitespace-nowrap"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
                       onClick={handleSaveAsDraft}
-                      className="px-5 py-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/60 text-amber-700 font-extrabold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/60 text-amber-700 font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                     >
                       <i className="fa-solid fa-floppy-disk text-[10px]"></i>
                       <span>Save as Draft</span>
                     </button>
                     <button
                       type="submit"
-                      className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                      className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                     >
                       <span>Save & continue</span>
                       <span className="text-xxs">→</span>
@@ -1256,7 +1258,7 @@ export default function ProposalsTab({
                   <div className="flex flex-col gap-1.5 text-left">
                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Required Skills</label>
                     {postJobAvailableSkills.length > 0 ? (
-                      <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                      <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-3.5 pb-4 bg-slate-50 border border-slate-200 rounded-xl scrollbar-thin">
                         {postJobAvailableSkills.map((skill) => {
                           const isChecked = postJobSelectedSkills.includes(skill.skill_id);
                           return (
@@ -1324,34 +1326,34 @@ export default function ProposalsTab({
                     )}
                                 </div>
 
-                  <div className="flex justify-between items-center mt-2 border-t border-slate-100 pt-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-2 border-t border-slate-100 pt-4">
                     <button
                       type="button"
                       onClick={() => setPostJobStep(1)}
-                      className="px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap order-last sm:order-first"
                     >
                       <span className="text-xxs">←</span>
                       <span>Back to Step 1</span>
                     </button>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full sm:w-auto">
                       <button
                         type="button"
                         onClick={resetWizardState}
-                        className="px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer"
+                        className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer whitespace-nowrap"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={handleSaveAsDraft}
-                        className="px-5 py-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/60 text-amber-700 font-extrabold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                        className="w-full sm:w-auto px-5 py-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/60 text-amber-700 font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                       >
                         <i className="fa-solid fa-floppy-disk text-[10px]"></i>
                         <span>Save as Draft</span>
                       </button>
                       <button
                         type="submit"
-                        className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                       >
                         <span>Save & Continue</span>
                         <span className="text-xxs">→</span>
@@ -1467,34 +1469,34 @@ export default function ProposalsTab({
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center mt-6 border-t border-slate-100 pt-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-6 border-t border-slate-100 pt-4">
                     <button
                       type="button"
                       onClick={() => setPostJobStep(2)}
-                      className="px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap order-last sm:order-first"
                     >
                       <span className="text-xxs">←</span>
                       <span>Back to Step 2</span>
                     </button>
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full sm:w-auto">
                       <button
                         type="button"
                         onClick={resetWizardState}
-                        className="px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer"
+                        className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer whitespace-nowrap"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
                         onClick={handleSaveAsDraft}
-                        className="px-5 py-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/60 text-amber-700 font-extrabold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+                        className="w-full sm:w-auto px-5 py-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/60 text-amber-700 font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                       >
                         <i className="fa-solid fa-floppy-disk text-[10px]"></i>
                         <span>Save as Draft</span>
                       </button>
                       <button
                         type="submit"
-                        className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                        className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                       >
                         <span>{editingDraftJobId ? "Publish Project" : "Post Project to Network"}</span>
                         <FiCheck className="w-3.5 h-3.5 shrink-0" />
@@ -1608,6 +1610,7 @@ export default function ProposalsTab({
                 { id: "proposals_not_arrived", label: "Proposals Not Arrived", icon: "fa-solid fa-envelope text-slate-400" },
                 { id: "ongoing", label: "Ongoing", icon: "fa-solid fa-spinner text-emerald-600 animate-spin-slow" },
                 { id: "dispute", label: "Disputed", icon: "fa-solid fa-triangle-exclamation text-rose-500" },
+                { id: "suspended", label: "Suspended", icon: "fa-solid fa-ban text-rose-500" },
                 { id: "completed", label: "Completed", icon: "fa-solid fa-circle-check text-teal-600" },
                 { id: "draft", label: "Drafts", icon: "fa-solid fa-file-signature text-slate-555" }
               ].map((tab) => {
@@ -1615,13 +1618,14 @@ export default function ProposalsTab({
                   const cStatus = j.contract_status?.toLowerCase();
                   const jStatus = j.status?.toLowerCase();
                   if (tab.id === "draft") return jStatus === "draft";
-                  if (tab.id === "pending") return cStatus === "pending" || cStatus === "hired" || jStatus === "pending";
-                  if (tab.id === "ongoing") return cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active" || cStatus === "work started" || cStatus === "work_started" || cStatus === "under review" || cStatus === "under_review";
-                  if (tab.id === "dispute") return cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed";
-                  if (tab.id === "completed") return cStatus === "completed" || cStatus === "work completed" || cStatus === "work_completed" || jStatus === "completed";
-                  if (tab.id === "hired") return !!j.contract_id && cStatus !== "cancelled";
-                  if (tab.id === "proposals_arrived") return !j.contract_id && parseInt(j.proposal_count || 0) > 0 && jStatus !== "draft";
-                  if (tab.id === "proposals_not_arrived") return !j.contract_id && parseInt(j.proposal_count || 0) === 0 && jStatus !== "draft";
+                  if (tab.id === "suspended") return jStatus === "suspended";
+                  if (tab.id === "pending") return (cStatus === "pending" || cStatus === "hired" || jStatus === "pending") && jStatus !== "suspended";
+                  if (tab.id === "ongoing") return (cStatus === "in_progress" || cStatus === "in-progress" || cStatus === "active" || cStatus === "work started" || cStatus === "work_started" || cStatus === "under review" || cStatus === "under_review") && jStatus !== "suspended";
+                  if (tab.id === "dispute") return (cStatus === "disputed" || cStatus === "dispute" || jStatus === "disputed") && jStatus !== "suspended";
+                  if (tab.id === "completed") return (cStatus === "completed" || cStatus === "work completed" || cStatus === "work_completed" || jStatus === "completed") && jStatus !== "suspended";
+                  if (tab.id === "hired") return !!j.contract_id && cStatus !== "cancelled" && jStatus !== "suspended";
+                  if (tab.id === "proposals_arrived") return !j.contract_id && parseInt(j.proposal_count || 0) > 0 && jStatus !== "draft" && jStatus !== "suspended";
+                  if (tab.id === "proposals_not_arrived") return !j.contract_id && parseInt(j.proposal_count || 0) === 0 && jStatus !== "draft" && jStatus !== "suspended";
                   return true;
                 }).length;
 
@@ -1692,17 +1696,21 @@ export default function ProposalsTab({
               <div key={job.job_id} className={`bg-white border rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col md:flex-row justify-between gap-6 relative overflow-hidden ${
                 job.status === "Draft"
                   ? "border-amber-200/70 hover:border-amber-300"
+                  : job.status === "Suspended"
+                  ? "border-rose-200 hover:border-rose-300 bg-rose-50/10"
                   : "border-slate-200/80 hover:border-slate-300"
               }`}>
                 <div className={`absolute top-0 left-0 w-full h-1 opacity-80 ${
                   job.status === "Draft"
                     ? "bg-amber-500"
+                    : job.status === "Suspended"
+                    ? "bg-rose-500"
                     : "bg-gradient-to-r from-primary to-cyan-500"
                 }`} />
 
                 {/* Left side details */}
                 <div className="flex-grow flex flex-col gap-4 text-left">
-                  <div className="flex justify-between items-start gap-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2.5 sm:gap-4">
                     <div className="flex flex-col gap-1 cursor-pointer" onClick={() => job.status === "Draft" ? handleResumeDraft(job) : setSelectedProjectDetails(job)}>
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-sm font-extrabold text-slate-850 hover:text-primary transition-colors">{job.title}</h3>
@@ -1717,7 +1725,7 @@ export default function ProposalsTab({
                         Posted on {new Date(job.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       <span className="text-[10px] font-black bg-cyan-50 text-cyan-700 border border-cyan-150 px-2 py-0.5 rounded uppercase tracking-wider">
                         {job.category_name || "Project"}
                       </span>
@@ -1734,6 +1742,8 @@ export default function ProposalsTab({
                       <span className={`text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider ${
                         job.status === "Draft"
                           ? "bg-amber-50 text-amber-700 border border-amber-205"
+                          : job.status === "Suspended"
+                          ? "bg-rose-50 text-rose-700 border border-rose-200"
                           : "bg-emerald-50 text-emerald-700 border border-emerald-150"
                       }`}>
                         {job.status}
@@ -1780,7 +1790,25 @@ export default function ProposalsTab({
 
                 {/* Right side status/action panel */}
                 <div className="w-full md:w-64 md:border-l border-slate-100 md:pl-6 flex flex-col justify-center items-stretch shrink-0 gap-3 text-left">
-                  {job.status === "Draft" ? (
+                  {job.status === "Suspended" ? (
+                    <>
+                      <div className="bg-rose-50 border border-rose-200 rounded-xl p-3.5 text-center">
+                        <span className="text-[9px] font-black text-rose-700 uppercase tracking-widest block mb-1">
+                          🚫 Project Suspended
+                        </span>
+                        <span className="text-[10px] text-slate-600 font-semibold leading-relaxed">
+                          This project was suspended by administration. It is hidden from public search and proposals.
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setSelectedProjectDetails(job)}
+                        className="w-full bg-slate-700 hover:bg-slate-800 text-white font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md cursor-pointer flex items-center justify-center gap-1.5 border-0"
+                      >
+                        <i className="fa-solid fa-eye"></i>
+                        <span>View Details</span>
+                      </button>
+                    </>
+                  ) : job.status === "Draft" ? (
                     <>
                       <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3 text-center">
                         <span className="text-[9px] font-black text-amber-700 uppercase tracking-widest block mb-1">
@@ -2421,29 +2449,28 @@ export default function ProposalsTab({
               <div key={proposal.proposal_id} className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4 relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-full h-1 ${topBarColorClass}`} />
                 
-                <div className="flex justify-between items-start gap-4">
-                  <div>
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-2.5 sm:gap-4">
+                  <div className="text-left w-full sm:w-auto">
                     <h3 
                       onClick={() => setSelectedProposalDetails(proposal)}
-                      className="text-sm font-extrabold text-slate-850 hover:text-primary transition-colors cursor-pointer flex items-center gap-2"
+                      className="text-sm font-extrabold text-slate-850 hover:text-primary transition-colors cursor-pointer flex items-center gap-2 flex-wrap"
                     >
                       <span>{proposal.job_title}</span>
                       {proposal.initiated_by === "client" && (
-                        <span className="bg-amber-100 text-amber-800 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider">Direct Hire Offer</span>
+                        <span className="bg-amber-100 text-amber-800 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">Direct Hire Offer</span>
                       )}
                     </h3>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                       <span className="text-slate-400 text-[10px] font-bold">
                         Client: <strong>{proposal.client_company_name || proposal.client_name}</strong> ({proposal.client_email})
                       </span>
-                      <span className="text-slate-300 text-[10px]">•</span>
                       <span className="text-slate-400 text-[10px] font-bold">
-                        Offer Date: {new Date(proposal.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                        • Offer Date: {new Date(proposal.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                   </div>
-                  <div>
-                    <span className={`text-[10px] font-black border px-2 py-0.5 rounded uppercase tracking-wider ${statusColorClass}`}>
+                  <div className="shrink-0">
+                    <span className={`text-[10px] font-black border px-2.5 py-0.5 rounded uppercase tracking-wider whitespace-nowrap shrink-0 ${statusColorClass}`}>
                       {displayStatus}
                     </span>
                   </div>

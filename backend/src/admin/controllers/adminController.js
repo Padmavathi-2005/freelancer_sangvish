@@ -1394,3 +1394,192 @@ export const getAdminDisputeMessages = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+export const reopenAdminDispute = async (req, res) => {
+    try {
+        const disputeId = parseInt(req.params.id);
+        await pool.query(
+            "UPDATE disputes SET status = 'Under Mediation', resolved_at = NULL, resolution_type = NULL, resolution_details = NULL WHERE dispute_id = $1",
+            [disputeId]
+        );
+        res.json({ success: true, message: "Dispute case reopened for mediation." });
+    } catch (err) {
+        console.error("Failed to reopen dispute:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Admin Contact Inquiries Management
+export const getContactInquiries = async (req, res) => {
+    try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS contact_inquiries (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255),
+            email VARCHAR(255) NOT NULL,
+            subject VARCHAR(255) DEFAULT 'General Inquiry',
+            message TEXT NOT NULL,
+            status VARCHAR(50) DEFAULT 'Pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='contact_inquiries' AND column_name='id') THEN
+              IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='contact_inquiries' AND column_name='inquiry_id') THEN
+                ALTER TABLE contact_inquiries RENAME COLUMN inquiry_id TO id;
+              ELSIF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='contact_inquiries' AND column_name='contact_id') THEN
+                ALTER TABLE contact_inquiries RENAME COLUMN contact_id TO id;
+              ELSE
+                ALTER TABLE contact_inquiries ADD COLUMN id SERIAL;
+              END IF;
+            END IF;
+          END $$;
+          ALTER TABLE contact_inquiries ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Pending';
+          ALTER TABLE contact_inquiries ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+          ALTER TABLE contact_inquiries ADD COLUMN IF NOT EXISTS subject VARCHAR(255) DEFAULT 'General Inquiry';
+        `);
+
+        const result = await pool.query(`
+            SELECT id, name, email, subject, message, COALESCE(status, 'Pending') as status, created_at
+            FROM contact_inquiries
+            ORDER BY created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching contact inquiries:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const updateContactInquiryStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const result = await pool.query(
+            `UPDATE contact_inquiries SET status = $1 WHERE id = $2 RETURNING *`,
+            [status || 'Responded', id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Contact inquiry not found." });
+        }
+        res.json({ message: "Inquiry status updated successfully.", inquiry: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const deleteContactInquiry = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query(`DELETE FROM contact_inquiries WHERE id = $1`, [id]);
+        res.json({ message: "Contact inquiry deleted successfully." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const replyContactInquiry = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { replySubject, replyMessage } = req.body;
+
+        if (!replyMessage) {
+            return res.status(400).json({ error: "Reply message body is required." });
+        }
+
+        const inqRes = await pool.query(`SELECT * FROM contact_inquiries WHERE id = $1`, [id]);
+        if (inqRes.rows.length === 0) {
+            return res.status(404).json({ error: "Contact inquiry not found." });
+        }
+        const inquiry = inqRes.rows[0];
+
+        try {
+            const { sendEmail } = await import("../../utils/emailHelper.js");
+            await sendEmail({
+                to: inquiry.email,
+                subject: replySubject || `Re: ${inquiry.subject}`,
+                text: replyMessage
+            });
+        } catch (emailErr) {
+            console.error("Email sending notice:", emailErr.message);
+        }
+
+        const updateRes = await pool.query(
+            `UPDATE contact_inquiries SET status = 'Responded' WHERE id = $1 RETURNING *`,
+            [id]
+        );
+
+        res.json({
+            success: true,
+            message: "Reply processed and inquiry marked as Responded!",
+            inquiry: updateRes.rows[0]
+        });
+    } catch (err) {
+        console.error("Error replying to contact inquiry:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Admin Newsletter Subscribers Management
+export const getNewsletterSubscribers = async (req, res) => {
+    try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+            id SERIAL PRIMARY KEY,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            status VARCHAR(50) DEFAULT 'Subscribed',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='newsletter_subscribers' AND column_name='id') THEN
+              IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='newsletter_subscribers' AND column_name='subscriber_id') THEN
+                ALTER TABLE newsletter_subscribers RENAME COLUMN subscriber_id TO id;
+              ELSIF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='newsletter_subscribers' AND column_name='newsletter_id') THEN
+                ALTER TABLE newsletter_subscribers RENAME COLUMN newsletter_id TO id;
+              ELSE
+                ALTER TABLE newsletter_subscribers ADD COLUMN id SERIAL;
+              END IF;
+            END IF;
+          END $$;
+          ALTER TABLE newsletter_subscribers ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Subscribed';
+        `);
+
+        const result = await pool.query(`
+            SELECT id, email, COALESCE(status, 'Subscribed') as status, created_at
+            FROM newsletter_subscribers
+            ORDER BY created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching newsletter subscribers:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const updateNewsletterSubscriberStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const result = await pool.query(
+            `UPDATE newsletter_subscribers SET status = $1 WHERE id = $2 RETURNING *`,
+            [status || 'Subscribed', id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Subscriber not found." });
+        }
+        res.json({ message: "Subscriber status updated successfully.", subscriber: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const deleteNewsletterSubscriber = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query(`DELETE FROM newsletter_subscribers WHERE id = $1`, [id]);
+        res.json({ message: "Newsletter subscriber deleted successfully." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};

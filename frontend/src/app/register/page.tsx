@@ -122,7 +122,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="light w-full min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col justify-center items-center px-4 relative overflow-hidden">
+    <div className="light w-full min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col justify-center items-center px-4 py-8 sm:py-12 relative overflow-y-auto">
       
       {/* Premium background mesh blurs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -130,20 +130,20 @@ export default function RegisterPage() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[35rem] h-[35rem] bg-emerald-600/10 rounded-full filter blur-[80px]"></div>
       </div>
 
-      <div className="relative z-10 w-full max-w-md flex flex-col gap-6">
+      <div className="relative z-10 w-full max-w-md flex flex-col gap-5 my-auto">
         
         {/* Brand Header */}
         <div className="text-center">
-          <a href="/" className="inline-block text-3xl font-extrabold text-[#0a5a54] tracking-tight font-display mb-1 select-none">
+          <a href="/" className="inline-block text-2xl sm:text-3xl font-extrabold text-[#0a5a54] tracking-tight font-display mb-1 select-none">
             Freelancer
           </a>
-          <p className="text-xs sm:text-sm text-slate-500 font-bold tracking-wide uppercase mt-1.5">
+          <p className="text-xs sm:text-sm text-slate-500 font-bold tracking-wide uppercase mt-1">
             Create Your Account
           </p>
         </div>
 
         {/* Card wrapper */}
-        <div className="bg-white/80 backdrop-blur-md border border-slate-200/80 rounded-xl p-6 sm:p-10 shadow-2xl shadow-slate-100/50 flex flex-col gap-6">
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200/80 rounded-xl p-5 sm:p-8 shadow-2xl shadow-slate-100/50 flex flex-col gap-5">
           <div className="text-center sm:text-left">
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 leading-tight font-display">
               Register

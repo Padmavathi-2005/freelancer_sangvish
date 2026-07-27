@@ -138,7 +138,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
 
   // Filter open jobs for invite dropdown
   const openJobs = useMemo(() => {
-    return (clientJobs || []).filter((job: any) => (job.status === "Open" || job.status === "Pending") && !job.contract_id);
+    return (clientJobs || []).filter((job: any) => (job.status === "Open" || job.status === "Pending") && job.status !== "Suspended" && !job.contract_id);
   }, [clientJobs]);
 
   // Set default offer details when selected freelancer changes
@@ -436,28 +436,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
           </div>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none no-scrollbar select-none">
-          {[
-            { id: "all", label: "All Talents" },
-            { id: "development", label: "Development" },
-            { id: "design", label: "Design & UX" },
-            { id: "marketing", label: "Marketing" },
-            { id: "ai", label: "AI & ML Experts" },
-          ].map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id as any)}
-              className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-200 cursor-pointer ${
-                selectedCategory === category.id
-                  ? "bg-primary text-white shadow-md shadow-primary/10"
-                  : "bg-white text-slate-505 hover:text-slate-850 border border-slate-205 hover:bg-slate-50"
-              }`}
-            >
-              {category.label}
-            </button>
-          ))}
-        </div>
+
 
         {/* Grid of Freelancer Cards */}
         {filteredFreelancers.length > 0 ? (

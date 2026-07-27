@@ -127,10 +127,10 @@ export default function AffiliatePortalPage() {
 
   if (data && !data.is_affiliate) {
     return (
-      <div className="flex-grow max-w-2xl mx-auto w-full px-4 pt-2 pb-2 flex flex-col gap-6 text-center animate-fadeIn">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-black text-slate-805 tracking-tight">Become an Affiliate Partner</h1>
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Earn recurring commissions on platform fees</p>
+      <div className="flex-grow max-w-2xl mx-auto w-full px-3 sm:px-4 py-2 sm:py-6 flex flex-col gap-5 sm:gap-6 text-center animate-fadeIn">
+        <div className="space-y-1">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-805 tracking-tight">Become an Affiliate Partner</h1>
+          <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1">Earn recurring commissions on platform fees</p>
         </div>
         <p className="text-sm text-slate-500 font-semibold leading-relaxed max-w-lg mx-auto">
           Unlock your affiliate referral links and start earning recurring commissions. Invite freelancers, contractors, or clients to LancerFlow and receive <span className="text-emerald-700 font-extrabold">10% of all service fees</span> collected from their transactions!
@@ -237,16 +237,16 @@ export default function AffiliatePortalPage() {
     : "";
 
   return (
-    <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 flex flex-col gap-8">
+    <div className="flex-1 max-w-5xl mx-auto w-full px-3 sm:px-4 py-2 sm:py-8 flex flex-col gap-5 sm:gap-8">
       
       {/* Title */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-805 tracking-tight">Affiliate Portal</h1>
-        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Earn recurring commissions on platform fees</p>
+      <div className="select-none">
+        <h1 className="text-xl sm:text-2xl font-black text-slate-805 tracking-tight">Affiliate Portal</h1>
+        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1">Earn recurring commissions on platform fees</p>
       </div>
 
       {/* Hero Promo Box */}
-      <div className="bg-white border border-slate-200 text-slate-800 p-8 rounded-2xl shadow-sm relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="bg-white border border-slate-200 text-slate-800 p-5 sm:p-8 rounded-2xl shadow-sm relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="absolute top-[-20%] left-[-10%] w-[24rem] h-[24rem] bg-teal-500/5 rounded-full filter blur-[80px] pointer-events-none" />
         
         <div className="flex-grow flex flex-col gap-3 relative z-10 text-center md:text-left">

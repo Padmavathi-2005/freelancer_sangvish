@@ -993,29 +993,29 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
       {/* Package Content */}
       <div className="p-6 flex flex-col gap-5">
-        <div className="flex justify-between items-baseline">
-          <span className="text-slate-400 block font-bold uppercase tracking-widest text-[9px]">
+        <div className="flex flex-row justify-between items-start gap-3 border-b border-slate-100/80 pb-3">
+          <span className="text-slate-400 block font-bold uppercase tracking-widest text-[9px] shrink-0 pt-0.5 max-w-[50%] truncate">
             {hasCustomPlans && activePlan ? (activePlan.title?.trim() ? activePlan.title : `${activePlan.name} Package`) : (activePackageTab === "popular" ? "🚀 Recommended TIER" : t("pricing_package", "Pricing Package"))}
           </span>
-          <div className="text-right flex flex-col items-end">
+          <div className="text-right flex flex-col items-end shrink-0 min-w-0">
             {hasPlanDiscount ? (
               <>
-                <span className="text-slate-450 text-xs font-bold line-through">
+                <span className="text-slate-400 text-xs font-bold line-through block">
                   {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
                 </span>
-                <span className="text-xl sm:text-2xl font-black text-slate-900 break-all max-w-full text-right">
+                <span className="text-xl sm:text-2xl font-black text-slate-900 block leading-none mt-0.5">
                   {gig.currency_symbol || "$"}{parseFloat(getDiscountedPackagePrice(getPackagePrice()).toFixed(2)).toLocaleString()}
                 </span>
               </>
             ) : (
-              <span className="text-xl sm:text-2xl font-black text-slate-900 break-all max-w-full text-right">
+              <span className="text-xl sm:text-2xl font-black text-slate-900 block leading-none">
                 {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
               </span>
             )}
-            <span className="text-slate-400 text-xxs font-bold uppercase tracking-wider block">
+            <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wide block mt-1 leading-tight">
               {gig.currency_code} 
               {hasPlanDiscount 
-                ? ` (${planDiscountPercent}% off with ${gig.plan_name})` 
+                ? ` (${planDiscountPercent}% off)` 
                 : (gig.discount_percent && parseFloat(gig.discount_percent) > 0 ? ` (${parseFloat(gig.discount_percent)}% off)` : "")
               }
             </span>
@@ -1153,13 +1153,13 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
       {/* Floating Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border bg-white animate-slideIn">
+        <div className="fixed bottom-6 inset-x-4 sm:left-auto sm:right-6 max-w-md mx-auto sm:mx-0 z-[99999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-200 bg-white/95 backdrop-blur-md animate-slideIn text-left">
           {toast.type === "success" ? (
             <FiCheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
           ) : (
             <FiAlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
           )}
-          <span className="text-xs font-bold text-slate-800">{toast.message}</span>
+          <span className="text-xs font-bold text-slate-800 leading-snug">{toast.message}</span>
         </div>
       )}
 
@@ -1334,7 +1334,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
              </div>
 
              {/* MOBILE ONLY: Package Pricing Card right below Description */}
-             <div className="block lg:hidden w-full">
+             <div className="block lg:hidden w-full my-2">
                {renderPackagePricingCard()}
              </div>
  
@@ -2244,7 +2244,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 <button
                   type="submit"
                   disabled={orderSubmitting}
-                  className="bg-teal-700 hover:bg-teal-600 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                  className="bg-teal-700 hover:bg-teal-800 text-white font-black text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 border-none"
                 >
                   {orderSubmitting ? "Ordering..." : "Submit Order Request"}
                 </button>

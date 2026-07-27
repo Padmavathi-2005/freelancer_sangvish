@@ -30,7 +30,8 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
           }
         }
       } catch (err) {
-        console.error("Error checking maintenance mode:", err);
+        // Backend server offline or starting up - default to non-maintenance mode
+        setMaintenanceEnabled(false);
       }
     };
 
@@ -42,16 +43,16 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
 
   if (!isAdminPath && maintenanceEnabled) {
     return (
-      <div className="min-h-screen w-full bg-slate-950 text-white flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans select-none">
-        {/* Glowing Background Elements */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-teal-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 translate-y-1/2 w-96 h-96 bg-rose-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="min-h-screen w-full bg-slate-50 text-slate-800 flex flex-col items-center justify-center p-6 relative overflow-hidden font-sans select-none">
+        {/* Glowing Background Accent Elements */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 translate-y-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="max-w-xl w-full bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl text-center relative z-10 flex flex-col items-center">
+        <div className="max-w-xl w-full bg-white border border-slate-200/80 rounded-3xl p-8 sm:p-12 shadow-xl text-center relative z-10 flex flex-col items-center">
           
           {/* Animated Icon Header */}
           <div className="relative mb-6">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-teal-500/20 to-emerald-500/20 border border-teal-500/30 flex items-center justify-center text-teal-400 shadow-inner">
+            <div className="w-20 h-20 rounded-3xl bg-teal-50 border border-teal-200/60 flex items-center justify-center text-teal-600 shadow-inner">
               <FiTool className="w-10 h-10 animate-bounce" />
             </div>
             <span className="absolute -top-1 -right-1 flex h-4 w-4">
@@ -60,49 +61,33 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
             </span>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-black uppercase tracking-widest mb-4">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-rose-50 border border-rose-200/60 text-rose-600 text-[10px] font-black uppercase tracking-widest mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
             System Maintenance Mode Active
           </div>
 
-          <h1 className="text-2xl sm:text-4xl font-black text-white leading-tight tracking-tight mb-3">
+          <h1 className="text-2xl sm:text-4xl font-black text-slate-850 leading-tight tracking-tight mb-3">
             We'll Be Right Back!
           </h1>
 
-          <p className="text-slate-400 text-xs sm:text-sm font-medium leading-relaxed max-w-md mb-8">
+          <p className="text-slate-500 text-xs sm:text-sm font-medium leading-relaxed max-w-md mb-6">
             Our platform is currently undergoing scheduled system maintenance and infrastructure upgrades to serve you better. Public services and client dashboards will resume shortly.
           </p>
 
           {/* Status Box */}
-          <div className="w-full bg-slate-950/60 border border-slate-800/80 rounded-2xl p-4 mb-8 text-left flex flex-col gap-2.5">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
+          <div className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-left flex flex-col gap-2.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-600">
               <span className="flex items-center gap-1.5">
-                <FiCheckCircle className="w-4 h-4 text-emerald-400" />
+                <FiCheckCircle className="w-4 h-4 text-emerald-600" />
                 Data & Security Safety
               </span>
-              <span className="text-emerald-400 font-bold text-[10px] uppercase">100% Protected</span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <FiShield className="w-4 h-4 text-teal-400" />
-                Administrator Portal
-              </span>
-              <span className="text-teal-400 font-bold text-[10px] uppercase">Accessible</span>
+              <span className="text-emerald-600 font-bold text-[10px] uppercase">100% Protected</span>
             </div>
           </div>
 
-          {/* Admin Login Link */}
-          <a
-            href="/admin/login"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 text-white font-extrabold text-xs shadow-lg shadow-teal-500/20 transition-all active:scale-95 border-none"
-          >
-            <span>Administrator Access</span>
-            <FiArrowRight className="w-4 h-4" />
-          </a>
-
         </div>
 
-        <p className="text-slate-600 text-[11px] font-semibold mt-8 relative z-10">
+        <p className="text-slate-400 text-[11px] font-semibold mt-8 relative z-10">
           &copy; {new Date().getFullYear()} LancerFlow Platform. All rights reserved.
         </p>
       </div>

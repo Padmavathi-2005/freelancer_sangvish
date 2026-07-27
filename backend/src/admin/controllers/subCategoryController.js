@@ -44,7 +44,6 @@ export const getSubCategory = async (req, res) => {
 
 export const addSubCategory = async (req, res) => {
     try {
-
         const {
             category_id,
             sub_category_name,
@@ -52,31 +51,45 @@ export const addSubCategory = async (req, res) => {
             status
         } = req.body;
 
+        if (!category_id || isNaN(Number(category_id)) || Number(category_id) <= 0) {
+            return res.status(400).json({
+                message: "Please select a valid parent category."
+            });
+        }
+
+        if (!sub_category_name || !sub_category_name.trim()) {
+            return res.status(400).json({
+                message: "Please enter a subcategory name."
+            });
+        }
+
         const result =
             await SubCategory.createSubCategory(
                 category_id,
-                sub_category_name,
+                sub_category_name.trim(),
                 sub_category_image || null,
                 status ?? true
             );
 
         res.status(201).json({
-            message: "Sub category created",
+            message: "Subcategory created successfully",
             sub_category: result.rows[0]
         });
 
     } catch (error) {
-
+        if (error.code === '23503' || (error.message && error.message.includes('foreign key constraint'))) {
+            return res.status(400).json({
+                message: "Selected parent category does not exist. Please select a valid parent category."
+            });
+        }
         res.status(500).json({
             message: error.message
         });
-
     }
 };
 
 export const editSubCategory = async (req, res) => {
     try {
-
         const { id } = req.params;
 
         const {
@@ -86,32 +99,47 @@ export const editSubCategory = async (req, res) => {
             status
         } = req.body;
 
+        if (!category_id || isNaN(Number(category_id)) || Number(category_id) <= 0) {
+            return res.status(400).json({
+                message: "Please select a valid parent category."
+            });
+        }
+
+        if (!sub_category_name || !sub_category_name.trim()) {
+            return res.status(400).json({
+                message: "Please enter a subcategory name."
+            });
+        }
+
         const result =
             await SubCategory.updateSubCategory(
                 id,
                 category_id,
-                sub_category_name,
+                sub_category_name.trim(),
                 sub_category_image,
                 status
             );
 
         if (result.rows.length === 0) {
             return res.status(404).json({
-                message: "Sub category not found"
+                message: "Subcategory not found"
             });
         }
 
         res.status(200).json({
-            message: "Sub category updated",
+            message: "Subcategory updated successfully",
             sub_category: result.rows[0]
         });
 
     } catch (error) {
-
+        if (error.code === '23503' || (error.message && error.message.includes('foreign key constraint'))) {
+            return res.status(400).json({
+                message: "Selected parent category does not exist. Please select a valid parent category."
+            });
+        }
         res.status(500).json({
             message: error.message
         });
-
     }
 };
 
