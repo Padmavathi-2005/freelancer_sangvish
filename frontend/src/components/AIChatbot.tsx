@@ -978,7 +978,7 @@ export default function AIChatbot() {
       {/* Floating Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-white dark:bg-zinc-900 text-slate-800 dark:text-white shadow-2xl hover:shadow-teal-900/20 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-teal-600/40 p-1.5 cursor-pointer group"
+        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-white dark:bg-zinc-900 text-slate-800 dark:text-white shadow-2xl hover:shadow-teal-900/20 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-teal-600/40 p-2 cursor-pointer group"
         aria-label="Open AI Assistant"
       >
         {isOpen ? (
@@ -991,17 +991,17 @@ export default function AIChatbot() {
               <img 
                 src={siteChatbotAvatar ? resolveChatLogoUrl(siteChatbotAvatar) : siteFavicon ? resolveChatLogoUrl(siteFavicon) : siteLogo ? resolveChatLogoUrl(siteLogo) : "/favicon.ico"} 
                 alt="AI Assistant" 
-                className="w-full h-full object-contain rounded-full animate-fadeIn group-hover:scale-105 transition-transform"
+                className="w-full h-full object-contain animate-fadeIn group-hover:scale-105 transition-transform"
                 onError={() => setBtnImageFailed(true)}
               />
             ) : (
               <img
                 src="https://cdn-icons-png.flaticon.com/512/8943/8943377.png"
                 alt="AI Chat"
-                className="w-full h-full object-contain rounded-full animate-fadeIn group-hover:scale-105 transition-transform"
+                className="w-full h-full object-contain animate-fadeIn group-hover:scale-105 transition-transform"
               />
             )}
-            <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5 z-10">
+            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 z-10">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-sm"></span>
             </span>
