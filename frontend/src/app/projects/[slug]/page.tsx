@@ -909,10 +909,10 @@ export default function ProjectDetailsPage() {
                 {/* Copy Link */}
                 <button
                   onClick={handleCopyLink}
-                  className="w-9 h-9 rounded-xl bg-primary-light hover:bg-primary text-primary hover:text-white flex items-center justify-center transition-all duration-300 border border-primary-light hover:border-primary shadow-sm hover:shadow-emerald-50 hover:-translate-y-0.5 cursor-pointer"
+                  className="w-9 h-9 rounded-xl bg-primary-light hover:bg-primary text-primary hover:!text-white flex items-center justify-center transition-all duration-300 border border-primary-light hover:border-primary shadow-sm hover:shadow-emerald-50 hover:-translate-y-0.5 cursor-pointer group"
                   title="Copy Link"
                 >
-                  <i className={`fa-solid ${copiedShare ? 'fa-circle-check text-emerald-500' : 'fa-copy'} text-sm`}></i>
+                  <i className={`fa-solid ${copiedShare ? 'fa-circle-check text-emerald-500' : 'fa-copy'} text-sm group-hover:!text-white`}></i>
                 </button>
               </div>
             </div>

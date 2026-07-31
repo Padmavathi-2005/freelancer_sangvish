@@ -9,11 +9,11 @@ import { useRouter } from "next/navigation";
 
 // 5 distinct icon shapes to cycle through for company logos
 const COMPANY_ICON_POOL = [
-  <svg key="tri" className="w-5 h-5 text-slate-400/80 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2z" /></svg>,
-  <svg key="globe" className="w-5 h-5 text-slate-400/80 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><ellipse cx="12" cy="12" rx="8" ry="3" /></svg>,
-  <svg key="info" className="w-5 h-5 text-slate-400/80 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" /></svg>,
-  <svg key="grid2" className="w-5 h-5 text-slate-400/80 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" /><rect x="14" y="12" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="3" y="16" width="7" height="5" /></svg>,
-  <svg key="umb" className="w-5 h-5 text-slate-400/80 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 22V12m0 0a5 5 0 0 0 5-5H7a5 5 0 0 0 5 5zM12 12V6" /></svg>,
+  <svg key="tri" className="w-5 h-5 text-slate-600 dark:text-slate-400 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 22h20L12 2z" /></svg>,
+  <svg key="globe" className="w-5 h-5 text-slate-600 dark:text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" /><ellipse cx="12" cy="12" rx="8" ry="3" /></svg>,
+  <svg key="info" className="w-5 h-5 text-slate-600 dark:text-slate-400 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" /></svg>,
+  <svg key="grid2" className="w-5 h-5 text-slate-600 dark:text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="9" /><rect x="14" y="12" width="7" height="9" /><rect x="14" y="3" width="7" height="5" /><rect x="3" y="16" width="7" height="5" /></svg>,
+  <svg key="umb" className="w-5 h-5 text-slate-600 dark:text-slate-400 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 22V12m0 0a5 5 0 0 0 5-5H7a5 5 0 0 0 5 5zM12 12V6" /></svg>,
 ];
 
 const FALLBACK_COMPANIES = ["Google", "Microsoft", "Amazon", "Meta", "Netflix", "Stripe", "Airbnb"];
@@ -230,7 +230,7 @@ export default function Hero() {
   };
 
   return (
-    <main className="flex-1 relative overflow-hidden bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#ffffff] dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 lg:h-[calc(100vh-80px)] lg:min-h-[560px] lg:max-h-[720px] flex flex-col justify-between z-10 px-4 sm:px-6 lg:px-8">
+    <main className="flex-1 relative overflow-hidden bg-gradient-to-b from-[#f8fafc] via-[#f1f5f9] to-[#ffffff] dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 lg:h-[calc(100vh-80px)] lg:min-h-[560px] lg:max-h-[720px] flex flex-col justify-between z-10 w-full">
 
       {/* Animated gradient mesh blobs and grid overlay */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -241,7 +241,7 @@ export default function Hero() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center w-full relative z-10 max-w-[1600px] mx-auto pt-12 pb-8 lg:pt-16 lg:pb-12">
+      <div className="flex-1 flex items-center w-full relative z-10 max-w-[1600px] mx-auto pt-12 pb-8 lg:pt-16 lg:pb-12 px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center w-full">
 
           {/* Left Column */}
@@ -276,10 +276,10 @@ export default function Hero() {
             {/* Search */}
             <form
               onSubmit={handleSearchSubmit}
-              className="hero-search-form w-full max-w-xl mx-auto lg:mx-0 mt-2 bg-white dark:bg-zinc-900 p-1.5 rounded-xl border border-slate-200 dark:border-zinc-700/80 shadow-xl shadow-slate-100 dark:shadow-none flex flex-col sm:flex-row gap-1.5 transition-all duration-300 focus-within:border-primary/40 focus-within:shadow-2xl focus-within:shadow-primary/5"
+              className="hero-search-form w-full max-w-2xl mx-auto lg:mx-0 mt-2 bg-white dark:bg-zinc-900 p-1.5 rounded-xl border border-slate-300 dark:border-zinc-700/80 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col sm:flex-row gap-1.5 transition-all duration-300 focus-within:border-[#0a5a54]/40 focus-within:shadow-2xl focus-within:shadow-[#0a5a54]/5"
             >
-              <div className="flex-1 flex items-center px-3 gap-2.5 relative">
-                <svg className="w-5 h-5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex-1 flex items-center px-3 gap-2.5 relative min-w-0">
+                <svg className="w-5 h-5 text-slate-600 dark:text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -289,31 +289,31 @@ export default function Hero() {
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
                   style={{ border: "none", outline: "none", boxShadow: "none" }}
-                  className="w-full text-slate-800 dark:text-white text-sm sm:text-base border-none outline-none focus:outline-none focus:ring-0 shadow-none bg-transparent py-2.5 z-10"
+                  className="w-full text-slate-900 dark:text-white font-bold text-xs sm:text-sm md:text-base border-none outline-none focus:outline-none focus:ring-0 shadow-none bg-transparent py-2.5 z-10"
                 />
                 {!isFocused && !searchQuery && (
-                  <div className="absolute left-[38px] text-slate-400 dark:text-slate-350 text-sm sm:text-base pointer-events-none select-none z-0 flex items-center">
-                    <span className="hidden sm:inline">{t("hero_search_placeholder", heroContent.hero_search_placeholder)}&nbsp;</span>
-                    <span className="sm:hidden">{t("search", "Search")}&nbsp;</span>
-                    <span className="text-slate-400/70 dark:text-slate-400 font-normal">e.g. </span>
-                    <span className="text-primary dark:text-white font-semibold ml-1 relative">
+                  <div className="absolute left-[38px] right-2 text-slate-900 dark:text-slate-100 font-bold text-xs sm:text-sm md:text-base pointer-events-none select-none z-20 flex items-center whitespace-nowrap overflow-hidden pr-1">
+                    <span className="hidden md:inline text-slate-900 dark:text-slate-100 font-extrabold shrink-0">{t("hero_search_placeholder", heroContent.hero_search_placeholder)}&nbsp;</span>
+                    <span className="md:hidden text-slate-900 dark:text-slate-100 font-extrabold shrink-0">{t("search_talent", "Search talent")}&nbsp;</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-bold shrink-0">e.g.&nbsp;</span>
+                    <span style={{ color: "#0a5a54" }} className="font-extrabold dark:!text-teal-300 relative shrink-0 whitespace-nowrap">
                       {currentText}
-                      <span className="absolute -right-[3px] top-[1.5px] bottom-[1.5px] w-[1.5px] bg-primary dark:bg-white animate-blink"></span>
+                      <span style={{ backgroundColor: "#0a5a54" }} className="absolute -right-[3px] top-[1.5px] bottom-[1.5px] w-[1.5px] dark:!bg-white animate-blink"></span>
                     </span>
                   </div>
                 )}
               </div>
               <button
                 type="submit"
-                className="bg-primary hover:bg-primary-hover text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all duration-200 shrink-0 active:scale-[0.98] cursor-pointer hover:shadow-lg"
+                className="bg-[#0a5a54] hover:bg-[#07433e] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-xl transition-all duration-200 shrink-0 active:scale-[0.98] cursor-pointer hover:shadow-lg"
               >
                 {t("hero_search_btn", heroContent.hero_search_btn)}
               </button>
             </form>
 
             {/* Hot Skills */}
-            <div className="flex flex-wrap gap-2.5 justify-center lg:justify-start items-center text-xs font-semibold text-slate-500 dark:text-slate-400 mt-2">
-              <span>{t("hero_popular_label", heroContent.hero_popular_label).split(":")[0]}:</span>
+            <div className="flex flex-wrap gap-2.5 justify-center lg:justify-start items-center text-xs font-semibold text-slate-700 dark:text-slate-300 mt-2">
+              <span className="text-slate-800 dark:text-slate-200 font-extrabold">{t("hero_popular_label", heroContent.hero_popular_label).split(":")[0]}:</span>
               {(t("hero_popular_label", heroContent.hero_popular_label).includes(":")
                 ? t("hero_popular_label", heroContent.hero_popular_label).split(":")[1]
                 : t("hero_popular_label", heroContent.hero_popular_label)
@@ -321,7 +321,7 @@ export default function Hero() {
                 <button
                   key={skill}
                   onClick={() => handleQuickTagClick(skill)}
-                  className="hover:text-white hover:bg-primary hover:border-primary border border-primary/20 dark:border-zinc-700 bg-primary-light dark:bg-zinc-800/80 text-primary dark:text-white px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer dark:hover:bg-white dark:hover:text-slate-900 text-xs font-semibold"
+                  className="border border-teal-700/20 dark:border-zinc-700 bg-teal-50 dark:bg-zinc-800/80 text-[#0a5a54] dark:text-teal-300 hover:bg-[#0a5a54] hover:text-white dark:hover:bg-teal-400 dark:hover:text-zinc-950 px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer text-xs font-extrabold"
                 >
                   {skill}
                 </button>
@@ -434,8 +434,8 @@ export default function Hero() {
       </div>
 
       {/* Trusted Companies Ticker */}
-      <div className="w-full bg-slate-50/80 dark:bg-zinc-900/50 backdrop-blur-sm border-t border-slate-200/50 dark:border-zinc-800/40 pt-5 pb-3.5 overflow-hidden shrink-0 z-10 mt-6 lg:mt-8">
-        <p className="text-center text-[10px] sm:text-xs font-bold tracking-[0.22em] text-slate-400/90 uppercase mb-5">
+      <div className="w-full bg-slate-100/90 dark:bg-zinc-900/50 backdrop-blur-sm border-t border-slate-300/80 dark:border-zinc-800/40 pt-5 pb-3.5 overflow-hidden shrink-0 z-10 mt-6 lg:mt-8">
+        <p className="text-center text-[10px] sm:text-xs font-black tracking-[0.22em] text-slate-700 dark:text-slate-300 uppercase mb-5">
           {t("trusted_title", "Trusted by Innovative Companies Worldwide")}
         </p>
         <div className="overflow-hidden relative w-full mask-gradient">
@@ -443,7 +443,7 @@ export default function Hero() {
             {[...companies, ...companies, ...companies, ...companies].map((name, index) => (
               <div key={index} className="flex items-center gap-2.5 mx-10 sm:mx-16 shrink-0">
                 {COMPANY_ICON_POOL[index % COMPANY_ICON_POOL.length]}
-                <span className="text-slate-400 font-extrabold text-xs sm:text-sm tracking-wider uppercase font-display">
+                <span className="text-slate-700 dark:text-slate-300 font-black text-xs sm:text-sm tracking-wider uppercase font-display">
                   {name}
                 </span>
               </div>

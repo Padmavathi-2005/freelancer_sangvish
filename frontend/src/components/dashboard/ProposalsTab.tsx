@@ -2209,12 +2209,12 @@ export default function ProposalsTab({
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Your Bid Amount</span>
               <strong className="text-slate-800 text-sm font-black">${parseFloat(proposal.bid_amount).toLocaleString()}</strong>
-              <span className="text-xxs text-slate-400">(Job Budget: {displayBudget})</span>
+              <span className="text-[9.5px] font-semibold text-slate-400 leading-none mt-0.5">(Job Budget: {displayBudget})</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Delivery Days</span>
               <strong className="text-slate-800 text-sm font-black">{proposal.delivery_days} Days</strong>
-              <span className="text-xxs text-slate-400">(Requested timeline)</span>
+              <span className="text-[9.5px] font-semibold text-slate-400 leading-none mt-0.5">(Requested timeline)</span>
             </div>
           </div>
 
@@ -2521,7 +2521,7 @@ export default function ProposalsTab({
 
                   <button
                     onClick={() => setSelectedProposalDetails(proposal)}
-                    className="bg-primary/10 hover:bg-primary text-primary hover:text-white border border-primary/20 hover:border-primary px-3.5 py-2 rounded-xl text-xxs font-black transition-all cursor-pointer flex items-center gap-1"
+                    className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl text-xs font-black shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-1.5 border-0"
                   >
                     <span>View Details</span>
                     <i className="fa-solid fa-arrow-right text-[10px]"></i>

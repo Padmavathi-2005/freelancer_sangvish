@@ -771,7 +771,10 @@ export default function InboxTab({
                                     const data = await res.json();
                                     if (res.ok) {
                                       triggerToast("success", "Custom offer accepted and order placed!");
-                                      setSelectedConvId(selectedConvId); 
+                                      setSelectedConvId(selectedConvId);
+                                      if (typeof window !== "undefined") {
+                                        window.location.href = "/dashboard/orders";
+                                      }
                                     } else {
                                       triggerToast("error", data.message || "Failed to accept custom offer.");
                                     }
@@ -814,12 +817,12 @@ export default function InboxTab({
 
                     return (
                       <div key={idx} className="flex justify-center my-3.5 w-full select-none">
-                        <div className="bg-gradient-to-r from-teal-50/70 to-emerald-50/70 border border-emerald-200 rounded-xl px-5 py-3 text-[10.5px] font-semibold text-teal-950 max-w-[85%] text-left shadow-sm leading-relaxed whitespace-pre-wrap">
-                          <span className="font-black text-teal-800 uppercase tracking-widest text-[8.5px] block mb-1.5 flex items-center gap-1.5">
-                            <i className="fa-solid fa-circle-info text-teal-700"></i> {isPlatformMsg ? "Platform Notification" : "System Notification"}
+                        <div className="bg-slate-100/90 dark:bg-slate-900 border border-slate-300/80 dark:border-slate-800 rounded-xl px-5 py-3 text-xs font-semibold max-w-[85%] text-left shadow-sm leading-relaxed whitespace-pre-wrap">
+                          <span className="system-notification-header font-black uppercase tracking-widest text-[9.5px] mb-1.5 flex items-center gap-1.5">
+                            <i className="fa-solid fa-circle-info text-primary dark:text-teal-400"></i> {isPlatformMsg ? "Platform Notification" : "System Notification"}
                           </span>
-                          {cleanText}
-                          <span className="block text-[8px] font-bold text-slate-400 mt-2 text-right">
+                          <span className="text-slate-900 dark:text-slate-100 font-semibold">{cleanText}</span>
+                          <span className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-2 text-right">
                             {new Date(msg.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
@@ -1281,6 +1284,86 @@ export default function InboxTab({
                   </div>
                 </div>
               )}
+
+              {/* Financial Breakdown & Calculation Card */}
+              {(() => {
+                const activeDisputeMsg = chatMessages.find(m => {
+                  try {
+                    const parsed = JSON.parse(m.message_text);
+                    return parsed.isDispute && parsed.dispute_id === disputeResponseTargetId;
+                  } catch (e) { return false; }
+                });
+
+                let parsedDispute: any = null;
+                try {
+                  if (activeDisputeMsg) parsedDispute = JSON.parse(activeDisputeMsg.message_text);
+                } catch (e) {}
+
+                const totalBudget = parseFloat(parsedDispute?.budget || activeConv?.budget || "230");
+                const alreadyPaid = parsedDispute?.paid_amount ? parseFloat(parsedDispute.paid_amount) : (totalBudget > 30 ? totalBudget - 30 : 0);
+                const unreleasedEscrow = Math.max(0, totalBudget - alreadyPaid);
+
+                let calculatedClientRefund = 0;
+                if (disputeResponseRefundType === "Full") {
+                  calculatedClientRefund = unreleasedEscrow;
+                } else if (disputeResponseRefundType === "Partial") {
+                  calculatedClientRefund = (unreleasedEscrow * disputeResponseRefundPercent) / 100;
+                } else {
+                  calculatedClientRefund = 0;
+                }
+
+                const calculatedFreelancerPayout = alreadyPaid + (unreleasedEscrow - calculatedClientRefund);
+
+                return (
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex flex-col gap-2 text-xs text-slate-700">
+                    <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                      <span className="font-extrabold text-slate-500 uppercase text-[9px] tracking-wider">Financial Escrow Breakdown</span>
+                      <span className="font-black text-slate-800 text-xs">Total Budget: ${totalBudget.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex flex-col gap-1 text-[10px]">
+                      <div className="flex justify-between items-center text-slate-600 font-semibold">
+                        <span>Previously Earned by Freelancer (Approved Scope):</span>
+                        <span className="font-black text-emerald-700">${alreadyPaid.toFixed(2)}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-slate-600 font-semibold">
+                        <span>Remaining Escrow (Under Dispute):</span>
+                        <span className="font-black text-amber-700">${unreleasedEscrow.toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 flex flex-col gap-1 text-[10.5px]">
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-slate-600">Client Refund Amount:</span>
+                        <span className="text-rose-600 font-black text-xs">${calculatedClientRefund.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center font-bold">
+                        <span className="text-slate-600">Freelancer Payout (Total Retained):</span>
+                        <span className="text-emerald-600 font-black text-xs">${calculatedFreelancerPayout.toFixed(2)}</span>
+                      </div>
+
+                      <p className="text-[9px] font-semibold text-slate-500 mt-1 pt-1 border-t border-slate-100 leading-snug">
+                        {disputeResponseRefundType === "Full" && (
+                          <span>
+                            💡 <strong>Full Refund selected:</strong> Refunding 100% of remaining unreleased escrow (${unreleasedEscrow.toFixed(2)}) back to client. Freelancer retains earned milestones (${alreadyPaid.toFixed(2)}).
+                          </span>
+                        )}
+                        {disputeResponseRefundType === "Partial" && (
+                          <span>
+                            💡 <strong>{disputeResponseRefundPercent}% Split selected:</strong> Refunding {disputeResponseRefundPercent}% of unreleased escrow (${calculatedClientRefund.toFixed(2)}) to client. Freelancer receives remaining balance + earned funds (${calculatedFreelancerPayout.toFixed(2)}).
+                          </span>
+                        )}
+                        {disputeResponseRefundType === "None" && (
+                          <span>
+                            💡 <strong>No Refund / Contest selected:</strong> Releasing 100% of remaining escrow (${unreleasedEscrow.toFixed(2)}) to freelancer upon dispute approval.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Rich Text Editor Explanation */}
               <div className="flex flex-col">

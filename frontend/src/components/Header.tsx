@@ -70,6 +70,7 @@ export default function Header() {
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(null);
   const [siteLogo, setSiteLogo] = useState("");
+  const [siteLogoDark, setSiteLogoDark] = useState("");
   const [siteName, setSiteName] = useState("");
   const [mounted, setMounted] = useState(false);
 
@@ -121,6 +122,7 @@ export default function Header() {
       });
 
       setSiteLogo(localStorage.getItem("cached_site_logo") || "");
+      setSiteLogoDark(localStorage.getItem("cached_site_logo_dark") || "");
       setSiteName(localStorage.getItem("cached_site_name") || "");
       const token = localStorage.getItem("token");
       const userStr = localStorage.getItem("user");
@@ -242,6 +244,10 @@ export default function Header() {
                 setSiteLogo(val.site_logo);
                 localStorage.setItem("cached_site_logo", val.site_logo);
               }
+              if (val?.site_logo_dark) {
+                setSiteLogoDark(val.site_logo_dark);
+                localStorage.setItem("cached_site_logo_dark", val.site_logo_dark);
+              }
               if (val?.site_name) {
                 setSiteName(val.site_name);
                 localStorage.setItem("cached_site_name", val.site_name);
@@ -290,7 +296,8 @@ export default function Header() {
   };
 
   return (
-    <header className="w-full bg-slate-100/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-50 px-4 sm:px-6 lg:px-8">
+    <>
+      <header className="fixed top-0 left-0 right-0 w-full bg-slate-100/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 z-[9999] px-4 sm:px-6 lg:px-8">
       <div className="max-w-[1600px] mx-auto">
         <div className="flex items-center justify-between h-16">
           
@@ -299,10 +306,9 @@ export default function Header() {
             {/* Logo with Home Dropdown on hover */}
             <div className="relative group/home shrink-0">
               <a href="/" className="flex items-center gap-2 select-none py-2">
-                {/* Logo Icon */}
-                {mounted && siteLogo ? (
+                {mounted && (siteTheme === "dark" ? (siteLogoDark || siteLogo) : (siteLogo || siteLogoDark)) ? (
                   <img
-                    src={resolveLogoUrl(siteLogo)}
+                    src={resolveLogoUrl(siteTheme === "dark" ? (siteLogoDark || siteLogo) : (siteLogo || siteLogoDark))}
                     alt={siteName || "Buy2Lancer"}
                     className="h-8 w-auto max-w-[180px] object-contain shrink-0"
                   />
@@ -389,7 +395,7 @@ export default function Header() {
             <nav className="hidden lg:flex items-center gap-7">
               {/* Categories Dropdown (Triggers mega dropdown on hover) */}
               <div className="group/mega py-2">
-                <button className="text-slate-700 hover:text-primary font-bold text-sm leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer">
+                <button className="text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400 font-bold text-sm leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer">
                   {t("nav_categories", "Categories")}
                   <FiChevronDown className="w-3.5 h-3.5 text-slate-450 transition-transform duration-250 group-hover/mega:rotate-180" />
                 </button>
@@ -488,7 +494,7 @@ export default function Header() {
               <a
                 href="/talent"
                 className={`font-bold text-sm leading-none transition-all duration-200 ${
-                  isTalentActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-700 hover:text-primary"
+                  isTalentActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
               >
                 {t("nav_talent", "Hire Freelancers")}
@@ -496,7 +502,7 @@ export default function Header() {
               <a
                 href="/projects"
                 className={`font-bold text-sm leading-none transition-all duration-200 ${
-                  isProjectsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-700 hover:text-primary"
+                  isProjectsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
               >
                 {t("nav_projects", "Find Projects")}
@@ -504,7 +510,7 @@ export default function Header() {
               <a
                 href="/gigs"
                 className={`font-bold text-sm leading-none transition-all duration-200 ${
-                  isGigsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-700 hover:text-primary"
+                  isGigsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
               >
                 {t("nav_gigs", "Explore Gigs")}
@@ -512,7 +518,7 @@ export default function Header() {
               <a
                 href="/blogs"
                 className={`font-bold text-sm leading-none transition-all duration-200 ${
-                  isBlogsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-700 hover:text-primary"
+                  isBlogsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
               >
                 {t("nav_blogs", "Blogs")}
@@ -863,5 +869,7 @@ export default function Header() {
         </div>
       </div>
     </header>
+    <div className="h-16 w-full shrink-0 pointer-events-none" />
+    </>
   );
 }

@@ -1451,7 +1451,8 @@ export const submitMilestoneWork = async (req, res) => {
       return res.status(403).json({ message: "Access denied. You do not own this contract." });
     }
 
-    if (milestone.payment_status !== "Funded") {
+    const validPaymentStatuses = ["Funded", "Escrowed", "Escrow", "Paid", "Pending"];
+    if (!validPaymentStatuses.includes(milestone.payment_status)) {
       return res.status(400).json({ message: "Client has not added funds in escrow for this milestone yet." });
     }
 

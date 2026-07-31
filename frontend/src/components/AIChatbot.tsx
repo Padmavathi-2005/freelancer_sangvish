@@ -117,6 +117,11 @@ function CheckoutWidget({ gigId, title, price, currencyId = 1, onSuccess }: Chec
         if (payRes.ok) {
           setSuccess(true);
           onSuccess(`Order placed and paid for via wallet! Contract is now active.`);
+          setTimeout(() => {
+            if (typeof window !== "undefined") {
+              window.location.href = "/dashboard/orders";
+            }
+          }, 1000);
         } else {
           throw new Error(payData.message || "Wallet payment failed. Please make sure you have sufficient funds.");
         }
@@ -965,7 +970,7 @@ export default function AIChatbot() {
       {/* Floating Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-primary hover:bg-primary-hover text-white shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-none cursor-pointer group"
+        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-[#0a5a54] hover:bg-[#07433e] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-white/20 cursor-pointer group"
         aria-label="Open AI Assistant"
       >
         {isOpen ? (
@@ -973,9 +978,9 @@ export default function AIChatbot() {
         ) : (
           <div className="relative flex items-center justify-center">
             <FiMessageSquare className="w-6 h-6 animate-fadeIn group-hover:rotate-6 transition-transform" />
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-400 border-2 border-white dark:border-zinc-900 shadow-sm"></span>
             </span>
           </div>
         )}

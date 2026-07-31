@@ -81,8 +81,8 @@ export default function Footer({ transparent = false }: FooterProps) {
   return (
     <footer className={`w-full pt-12 pb-10 px-4 sm:px-6 lg:px-8 relative z-10 select-none overflow-hidden ${
       transparent
-        ? "border-t border-slate-200/70"
-        : "bg-slate-100 border-t border-slate-200"
+        ? "border-t border-slate-800/80 bg-slate-950 text-white"
+        : "bg-slate-900 dark:bg-zinc-950 border-t border-slate-800 text-white"
     }`}>
 
       <div className="max-w-[1600px] mx-auto relative z-10">
@@ -96,26 +96,28 @@ export default function Footer({ transparent = false }: FooterProps) {
                 <img
                   src={resolveLogoUrl(siteLogo)}
                   alt={siteName || "Freelancer"}
-                  className="h-9 w-auto max-w-[200px] object-contain shrink-0"
+                  className="h-9 w-auto max-w-[200px] object-contain shrink-0 filter dark:invert-0"
                 />
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-750 font-extrabold shadow-sm shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-[#10b981]/20 border border-[#10b981]/40 flex items-center justify-center text-[#10b981] font-extrabold shadow-sm shrink-0">
                     <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                   </div>
-                  <span className="font-extrabold text-2xl text-slate-900 tracking-tight font-display flex items-baseline gap-0.5 select-none">
-                    <span>{siteName || "Freelancer"}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-600 mb-0.5" />
+                  <span className="font-extrabold text-2xl tracking-tight font-display flex items-baseline gap-0.5 select-none">
+                    <span className="font-extrabold text-white">{siteName || "Freelancer"}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] mb-0.5" />
                   </span>
                 </div>
               )}
             </a>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed max-w-sm font-sans">
+            
+            <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed max-w-sm font-sans">
               {t("footer_brand_desc", "Precision in Professionalism. Join a curated marketplace where verified talent builds modern client solutions.")}
             </p>
-            <p className="text-[11px] text-slate-400 font-semibold tracking-wider uppercase mt-2">
+            
+            <p className="text-[11px] text-slate-400 font-extrabold tracking-wider uppercase mt-2">
               {t("footer_copyright", `© ${currentYear} Freelancer Marketplace. All rights reserved.`)}
             </p>
           </div>
@@ -124,15 +126,15 @@ export default function Footer({ transparent = false }: FooterProps) {
           <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-10">
             {Object.entries(footerLinks).map(([key, group]) => (
               <div key={key} className="flex flex-col text-left">
-                <h3 className="font-black text-slate-800 text-xs sm:text-sm tracking-widest uppercase mb-5 font-display select-none">
+                <h3 className="font-black text-white text-xs sm:text-sm tracking-widest uppercase mb-5 font-display select-none">
                   {group.title}
                 </h3>
-                <ul className="flex flex-col gap-3 text-xs sm:text-sm text-slate-500 font-medium font-sans">
+                <ul className="flex flex-col gap-3 text-xs sm:text-sm text-slate-300 font-semibold font-sans">
                   {group.links.map((link, i) => (
                     <li key={i}>
                       <a
                         href={link.href}
-                        className="hover:text-teal-700 hover:translate-x-0.5 transition-all duration-150 block w-fit"
+                        className="hover:text-[#10b981] transition-all duration-150 block w-fit"
                       >
                         {link.label}
                       </a>
@@ -148,4 +150,3 @@ export default function Footer({ transparent = false }: FooterProps) {
     </footer>
   );
 }
-

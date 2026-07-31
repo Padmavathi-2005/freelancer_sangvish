@@ -18,6 +18,124 @@ interface ClientOrdersTabProps {
   setActiveTab: (val: any) => void;
 }
 
+export const getOrderStatusPill = (app: any) => {
+  if (!app) return { text: "Pending", style: "bg-amber-50 text-amber-700 border-amber-200" };
+
+  if (app.contract_status === "Disputed" || app.dispute_status === "Open" || app.dispute_status === "Escalated") {
+    return { text: "Disputed / Under Mediation", style: "bg-rose-50 text-rose-700 border-rose-200" };
+  }
+  if (app.contract_status === "Completed" || app.status === "Completed") {
+    return { text: "Completed", style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  }
+  if (app.contract_status === "Under Review") {
+    return { text: "Under Review", style: "bg-amber-50 text-amber-700 border-amber-200" };
+  }
+  if (app.contract_id || app.contract_status === "In Progress" || app.contract_status === "Work Started" || app.payment_status === "Paid") {
+    return { text: "Work Started", style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  }
+  if (app.status === "Accepted") {
+    return { text: "Accepted", style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  }
+  if (app.status === "Rejected" || app.contract_status === "Cancelled") {
+    return { text: "Cancelled", style: "bg-rose-50 text-rose-700 border-rose-200" };
+  }
+  return { text: app.status || "Pending", style: "bg-amber-50 text-amber-700 border-amber-200" };
+};
+
+export const renderOrderBreakdown = (app: any) => {
+  if (!app) return null;
+  const reqText = app.requirements || "";
+  const total = parseFloat(app.price || 0);
+
+  const planMatch = reqText.match(/\[Plan Ordered:\s*([^\]]+)\]/i);
+  const planName = planMatch ? planMatch[1].trim() : null;
+
+  // 1. Extract Add-ons from requirements string
+  const extrasMatch = reqText.match(/\[Ordered Extras\s*\/\s*Add-ons:\s*([\s\S]*?)\]/i);
+  let addonsList: { title: string; price: number }[] = [];
+
+  if (extrasMatch && extrasMatch[1]) {
+    const rawExtras = extrasMatch[1].trim();
+    const lines = rawExtras.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      const priceMatch = line.match(/(.*?)\(\+\$?([\d.]+)\)/);
+      if (priceMatch) {
+        const title = priceMatch[1].replace(/^[-\s]+/, "").trim();
+        const price = parseFloat(priceMatch[2]);
+        addonsList.push({ title, price });
+      } else {
+        const cleanTitle = line.replace(/^[-\s]+/, "").trim();
+        if (cleanTitle) addonsList.push({ title: cleanTitle, price: 0 });
+      }
+    }
+  }
+
+  // 2. Extract Custom Features from app.milestones
+  let customFeaturesList: { title: string; price: number }[] = [];
+  let rawMilestones: any[] = [];
+  try {
+    rawMilestones = typeof app.milestones === "string" ? JSON.parse(app.milestones) : (app.milestones || []);
+  } catch (e) {}
+
+  for (const m of rawMilestones) {
+    if (!m.title) continue;
+    const titleLower = m.title.toLowerCase();
+    if (titleLower.includes("primary") || titleLower.includes("base") || titleLower.includes("entire gig scope")) {
+      continue;
+    }
+    const existsInAddons = addonsList.some(a => a.title.toLowerCase() === m.title.toLowerCase());
+    if (!existsInAddons) {
+      customFeaturesList.push({
+        title: m.title,
+        price: parseFloat(m.amount || 0)
+      });
+    }
+  }
+
+  const addonsSum = addonsList.reduce((sum, a) => sum + a.price, 0);
+  const featuresSum = customFeaturesList.reduce((sum, f) => sum + f.price, 0);
+  const baseCost = Math.max(0, total - (addonsSum + featuresSum));
+
+  let notes = reqText
+    .replace(/\[Ordered Extras\s*\/\s*Add-ons:[\s\S]*?\]/gi, "")
+    .replace(/\[Plan Ordered:\s*[^\]]+\]/gi, "")
+    .trim();
+
+  return (
+    <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex items-center gap-1.5 bg-white border border-slate-200/90 px-3 py-1.5 rounded-lg shadow-2xs">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Base Project Cost:</span>
+          <span className="font-extrabold text-slate-800">
+            {planName ? `${planName.toUpperCase()} Plan` : "Base Service"} ({app.currency_symbol || "$"}{baseCost.toLocaleString()})
+          </span>
+        </div>
+
+        {addonsList.map((addon, idx) => (
+          <div key={`addon-${idx}`} className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/90 text-emerald-800 px-3 py-1.5 rounded-lg">
+            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Extra Add-on:</span>
+            <span className="font-extrabold">{addon.title} {addon.price > 0 ? `(+${app.currency_symbol || "$"}${addon.price})` : ""}</span>
+          </div>
+        ))}
+
+        {customFeaturesList.map((feature, idx) => (
+          <div key={`feat-${idx}`} className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200/90 text-indigo-800 px-3 py-1.5 rounded-lg">
+            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider">Custom Feature:</span>
+            <span className="font-extrabold">{feature.title} {feature.price > 0 ? `(+${app.currency_symbol || "$"}${feature.price})` : ""}</span>
+          </div>
+        ))}
+      </div>
+
+      {notes && (
+        <div className="border-t border-slate-200/60 pt-2 text-slate-600">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Project Instructions & Requirements:</span>
+          <p className="text-xs font-medium leading-relaxed whitespace-pre-wrap">{notes}</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
   selectedGigOrderDetails,
   setSelectedGigOrderDetails,
@@ -34,8 +152,36 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
   const [payError, setPayError] = useState("");
   const [paySuccess, setPaySuccess] = useState(false);
   const [stripeReturnHandled, setStripeReturnHandled] = useState(false);
+  const [congratsModalData, setCongratsModalData] = useState<{
+    show: boolean;
+    amount: number;
+    title: string;
+    orderId: string | number;
+  } | null>(null);
 
   const { handleStartConversation } = useDashboard();
+
+  useEffect(() => {
+    if (congratsModalData?.show) {
+      const timer = setTimeout(() => {
+        setCongratsModalData(null);
+      }, 4500);
+      return () => clearTimeout(timer);
+    }
+  }, [congratsModalData]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && clientApplications.length > 0 && !selectedGigOrderDetails) {
+      const params = new URLSearchParams(window.location.search);
+      const appIdParam = params.get("application_id") || params.get("order_id");
+      if (appIdParam) {
+        const found = clientApplications.find((a: any) => a.application_id.toString() === appIdParam.toString());
+        if (found) {
+          setSelectedGigOrderDetails(found);
+        }
+      }
+    }
+  }, [clientApplications, selectedGigOrderDetails]);
 
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState("Work quality is poor");
@@ -125,12 +271,12 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         triggerToast("success", "Dispute raised successfully!", "Check your inbox chat thread for the mediation interface.");
         setShowDisputeModal(false);
         setDisputeDescription("");
-        await fetchClientApplications();
         if (selectedGigOrderDetails) {
-          const updated = { ...selectedGigOrderDetails, contract_status: "Disputed" };
+          const updated = { ...selectedGigOrderDetails, contract_status: "Disputed", dispute_status: "Open" };
           setSelectedGigOrderDetails(updated);
           handleUpdateGigApplication(updated);
         }
+        await fetchClientApplications();
       } else {
         triggerToast("error", data.message || "Failed to raise dispute.");
       }
@@ -415,6 +561,12 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
           triggerToast("success", "Stripe payment confirmed! Contract is now active.", "Work will begin shortly.");
           setPaySuccess(true);
           await fetchClientApplications();
+          setCongratsModalData({
+            show: true,
+            amount: parseFloat(amount),
+            title: "Gig Order Contract",
+            orderId: appId
+          });
         } else {
           triggerToast("error", data.message || "Failed to confirm Stripe payment.");
         }
@@ -502,6 +654,13 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         // Update the selected detail view
         const updated = clientApplications.find((a) => a.application_id === app.application_id);
         if (updated) setSelectedGigOrderDetails(updated);
+
+        setCongratsModalData({
+          show: true,
+          amount: upfront,
+          title: app.gig_title || "Gig Order",
+          orderId: app.application_id
+        });
       } else {
         setPayError(data.message || "Payment failed. Please try again.");
       }
@@ -843,75 +1002,28 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 <span className="text-[11px] text-slate-450 font-normal">({selectedGigOrderDetails.freelancer_email})</span>
               </p>
             </div>
-            <div className="flex items-center justify-between gap-3 w-full sm:w-auto bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-slate-200/60">
+            <div className="flex items-center gap-3 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Price:</span>
                 <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
                   {selectedGigOrderDetails.currency_symbol || "$"}{parseFloat(selectedGigOrderDetails.price).toLocaleString()}
                 </span>
               </div>
-              <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap ${
-                selectedGigOrderDetails.status === "Accepted" || selectedGigOrderDetails.status === "Completed" || selectedGigOrderDetails.contract_status === "Completed"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : selectedGigOrderDetails.status === "Rejected" || selectedGigOrderDetails.contract_status === "Cancelled"
-                    ? "bg-rose-50 text-rose-700 border-rose-200"
-                    : "bg-amber-50 text-amber-700 border-amber-200"
-              }`}>
-                {selectedGigOrderDetails.contract_status === "Completed" ? "Completed" : selectedGigOrderDetails.status}
-              </span>
+              {(() => {
+                const badge = getOrderStatusPill(selectedGigOrderDetails);
+                return (
+                  <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap ${badge.style}`}>
+                    {badge.text}
+                  </span>
+                );
+              })()}
             </div>
           </div>
 
-          <div className="bg-slate-50 border border-slate-150 rounded-xl p-4">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide block mb-1">Your Project Requirements</span>
-            <p className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap font-medium">{selectedGigOrderDetails.requirements}</p>
-          </div>
+          {renderOrderBreakdown(selectedGigOrderDetails)}
         </div>
 
-        {/* Vertical Payment Steps Tracker */}
-        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
-          <h3 className="text-sm font-extrabold text-slate-855 border-b border-slate-100 pb-2">Payment Status</h3>
-          <div className="flex flex-col">
-            {([
-              { label: "Order Placed", date: selectedGigOrderDetails.created_at, done: true, sub: "Gig request submitted" },
-              { label: "Freelancer Accepted", date: selectedGigOrderDetails.accepted_at || selectedGigOrderDetails.created_at, done: selectedGigOrderDetails.status === "Accepted" || selectedGigOrderDetails.status === "Completed", sub: selectedGigOrderDetails.status === "Accepted" || selectedGigOrderDetails.status === "Completed" ? "Freelancer accepted the work request" : "Awaiting freelancer acceptance" },
-              { label: "Payment Made", date: selectedGigOrderDetails.paid_at, done: selectedGigOrderDetails.payment_status === "Paid" || selectedGigOrderDetails.status === "Completed", sub: selectedGigOrderDetails.payment_status === "Paid" || selectedGigOrderDetails.status === "Completed" ? "Funds secured in escrow" : "Awaiting payment checkout" },
-              { label: "Order Completed", date: selectedGigOrderDetails.completed_at, done: selectedGigOrderDetails.status === "Completed", sub: selectedGigOrderDetails.status === "Completed" ? "All deliverables completed & approved" : "Order in progress" },
-            ]).map((step, idx, arr) => {
-              const done = step.done;
-              const isLast = idx === arr.length - 1;
-              const circleStyle = done ? "bg-teal-600 border-teal-600 text-white shadow-teal-100" : "bg-slate-50 border-slate-200 text-slate-400";
-              return (
-                <div key={idx} className="flex gap-4">
-                  {/* Dot containing only tick or index */}
-                  <div className="flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border-2 transition-all ${circleStyle}`}>
-                      {done ? "✓" : idx + 1}
-                    </div>
-                    {!isLast && (
-                      <div className={`w-0.5 flex-1 min-h-[28px] mt-1 mb-0.5 ${done ? "bg-teal-300" : "bg-slate-150"}`} />
-                    )}
-                  </div>
 
-                  <div className={`flex-1 ${isLast ? "pb-0" : "pb-5"}`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                      <div>
-                        <p className={`text-xs font-extrabold ${done ? "text-slate-800" : "text-slate-400"}`}>{step.label}</p>
-                        {step.sub && <p className={`text-[10px] font-semibold mt-0.5 ${done ? "text-teal-600" : "text-slate-400"}`}>{step.sub}</p>}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-semibold text-slate-400 whitespace-nowrap">
-                          {step.date ? new Date(step.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Pending"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
         {selectedGigOrderDetails.status === "Accepted" && selectedGigOrderDetails.payment_status === "Paid" && selectedGigOrderDetails.contract_status === "Under Review" && (
           <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -1014,7 +1126,14 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         <div className="flex flex-col gap-4">
           {clientApplications.map((app) => {
             const { hasMilestones, upfront, total } = getUpfront(app);
-            const needsPayment = app.status === "Accepted";
+            const isPaid = Boolean(
+              app.contract_id || 
+              app.payment_status === "Paid" || 
+              app.contract_status === "In Progress" || 
+              app.contract_status === "Under Review" || 
+              app.contract_status === "Completed"
+            );
+            const needsPayment = app.status === "Accepted" && !isPaid;
 
             return (
               <div
@@ -1035,7 +1154,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                     <p className="text-xs text-slate-400 font-bold mt-1 truncate">{app.freelancer_name} · <span className="font-normal text-slate-450">{app.freelancer_email}</span></p>
                   </div>
 
-                  <div className="flex items-center justify-between gap-3 w-full sm:w-auto bg-slate-50/80 sm:bg-transparent p-2.5 sm:p-0 rounded-xl border sm:border-0 border-slate-200/60 shrink-0">
+                  <div className="flex items-center gap-3 shrink-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total:</span>
@@ -1052,30 +1171,34 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                         </div>
                       )}
                     </div>
-                    <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap shrink-0 ${
-                      app.status === "Accepted" || app.status === "Completed" || app.contract_status === "Completed"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : app.status === "Rejected" || app.contract_status === "Cancelled"
-                          ? "bg-rose-50 text-rose-700 border-rose-200"
-                          : "bg-amber-50 text-amber-700 border-amber-200"
-                    }`}>
-                      {app.contract_status === "Completed" ? "Completed" : app.status}
-                    </span>
+                    {(() => {
+                      const badge = getOrderStatusPill(app);
+                      return (
+                        <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap shrink-0 ${badge.style}`}>
+                          {badge.text}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
 
-                {/* Requirements preview */}
-                <div className="bg-slate-50 border border-slate-150 rounded-xl p-3">
-                  <p className="text-slate-600 text-xs leading-relaxed font-medium line-clamp-2">{app.requirements}</p>
-                </div>
+                {/* Requirements & Price Breakdown */}
+                {renderOrderBreakdown(app)}
 
                 {/* Footer action */}
                 <div className="flex justify-between items-center">
-                  {needsPayment && (
+                  {needsPayment ? (
                     <span className="text-[10px] font-bold text-primary flex items-center gap-1">
                       <FiCreditCard className="w-3 h-3" />
                       {hasMilestones ? "100% upfront (escrow)" : "Full payment required to start"}
                     </span>
+                  ) : isPaid ? (
+                    <span className="text-[10px] font-extrabold text-emerald-700 flex items-center gap-1">
+                      <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      Paid & Escrow Protected
+                    </span>
+                  ) : (
+                    <span />
                   )}
                   <button
                     onClick={() => { setPayError(""); setPaySuccess(false); setSelectedGigOrderDetails(app); }}
@@ -1248,6 +1371,56 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         document.body
       )}
       {renderDisputeModal()}
+
+      {/* Payment Completed Congratulations Modal */}
+      {congratsModalData?.show && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-emerald-500/30 text-center relative overflow-hidden flex flex-col items-center gap-4 animate-scaleUp text-slate-800">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500" />
+            
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shadow-inner border border-emerald-300 animate-bounce mt-2">
+              🎉
+            </div>
+
+            <div>
+              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full uppercase tracking-widest">
+                Payment Completed
+              </span>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 mt-2.5">
+                Congratulations! 🚀
+              </h2>
+              <p className="text-xs text-slate-600 font-medium mt-1.5 leading-relaxed">
+                Your escrow payment of <strong className="text-slate-900 font-black">${congratsModalData.amount.toLocaleString()}</strong> for <span className="font-bold text-slate-800">"{congratsModalData.title}"</span> has been confirmed. The freelancer has been notified to begin work!
+              </p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 w-full text-left flex items-center justify-between text-xs font-bold text-slate-700">
+              <span className="text-slate-400 text-[10px] uppercase font-black">Status</span>
+              <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                <FiCheckCircle className="w-4 h-4 text-emerald-600" /> Contract Active & In Escrow
+              </span>
+            </div>
+
+            <div className="flex gap-3 w-full mt-1">
+              <button
+                onClick={() => {
+                  const found = clientApplications.find(a => a.application_id.toString() === congratsModalData.orderId.toString());
+                  if (found) setSelectedGigOrderDetails(found);
+                  setCongratsModalData(null);
+                }}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-3 rounded-xl shadow-lg transition-all cursor-pointer border-0"
+              >
+                View Order Tracker →
+              </button>
+            </div>
+
+            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
+              <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 animate-shrinkWidth" />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };

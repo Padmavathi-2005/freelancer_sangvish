@@ -4,7 +4,7 @@ import React from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Categories from "@/components/Categories";
-import FeaturedFreelancers from "@/components/FeaturedFreelancers";
+import Home1Freelancers from "@/components/home/Home1Freelancers";
 import PopularServices from "@/components/PopularServices";
 import RecentProjects from "@/components/RecentProjects";
 import Pricing from "@/components/Pricing";
@@ -21,7 +21,7 @@ export default function Home1() {
       <Header />
       <Hero />
       <Categories />
-      <FeaturedFreelancers />
+      <Home1Freelancers />
       <PopularServices />
       <RecentProjects />
       <Pricing />

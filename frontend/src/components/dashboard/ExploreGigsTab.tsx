@@ -294,6 +294,8 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
           setApplyingGig(null);
           setOrderSuccess(false);
           fetchClientApplications(); // Synchronize orders
+          const appId = data.application?.application_id || "";
+          router.push(`/dashboard/orders${appId ? `?application_id=${appId}` : ""}`);
         }, 1500);
       } else {
         setOrderError(data.message || "Failed to order service.");

@@ -12,7 +12,10 @@ export function applyTheme(theme: string, primaryColor: string, secondaryColor: 
     return trimmed;
   };
 
-  const pColor = formatColor(primaryColor);
+  let pColor = formatColor(primaryColor);
+  if (!pColor || pColor.toLowerCase() === '#ffffff' || pColor.toLowerCase() === '#fff' || pColor.toLowerCase() === 'white') {
+    pColor = '#0a5a54';
+  }
   const sColor = formatColor(secondaryColor);
   
   if (theme === 'light') {

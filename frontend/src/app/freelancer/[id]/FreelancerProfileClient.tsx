@@ -410,12 +410,12 @@ export default function FreelancerProfileClient() {
         </div>
       </div>
 
-      {/* Profile Cover & Header Area - Light Premium Styling */}
-      <div className="relative w-full bg-gradient-to-br from-teal-50/70 via-slate-50/40 to-emerald-50/30 border-b border-slate-150 py-8 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden text-left">
+      {/* Profile Cover & Header Area - High Contrast Styling */}
+      <div className="relative w-full bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 py-8 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden text-left">
         {/* Cover Abstract Art */}
         <div className="absolute inset-0 pointer-events-none opacity-40">
-          <div className="absolute top-[-40%] left-[-10%] w-[40rem] h-[40rem] bg-teal-500/5 rounded-full filter blur-[120px]"></div>
-          <div className="absolute bottom-[-40%] right-[-10%] w-[40rem] h-[40rem] bg-emerald-500/5 rounded-full filter blur-[120px]"></div>
+          <div className="absolute top-[-40%] left-[-10%] w-[40rem] h-[40rem] bg-teal-500/10 rounded-full filter blur-[120px]"></div>
+          <div className="absolute bottom-[-40%] right-[-10%] w-[40rem] h-[40rem] bg-emerald-500/10 rounded-full filter blur-[120px]"></div>
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row items-center md:items-end justify-between gap-8">
@@ -425,20 +425,20 @@ export default function FreelancerProfileClient() {
               <img
                 src={user.profile_image.startsWith("/") && !user.profile_image.startsWith("/public") ? `https://freelancer.sangvish.com${user.profile_image}` : user.profile_image}
                 alt={user.name || "Freelancer"}
-                className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl object-cover border-4 border-white shadow-xl ring-2 ring-slate-200/60"
+                className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl object-cover border-4 border-white dark:border-zinc-800 shadow-xl ring-2 ring-slate-200/80 dark:ring-zinc-700"
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-3xl sm:text-4xl border-4 border-white shadow-xl ring-2 ring-slate-200/60 select-none">
+              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-[#0a5a54] text-white flex items-center justify-center font-black text-3xl sm:text-4xl border-4 border-white dark:border-zinc-800 shadow-xl ring-2 ring-slate-200/80 dark:ring-zinc-700 select-none">
                 {(user.name || user.email || "Freelancer").substring(0, 2).toUpperCase()}
               </div>
             )}
 
             {/* Profile Info */}
-            <div className="text-slate-800 flex flex-col items-center md:items-start text-center md:text-left">
+            <div className="text-slate-900 dark:text-slate-100 flex flex-col items-center md:items-start text-center md:text-left">
               {/* Name & Verified Badge */}
               <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
                   {user.first_name || user.last_name
                     ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
                     : user.display_name || user.name || user.email || "Freelancer"}
@@ -457,47 +457,47 @@ export default function FreelancerProfileClient() {
                   </span>
                 )}
                 {profile?.availability_status === "Available" ? (
-                  <span className="text-[10px] font-black bg-emerald-100/90 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[11px] font-black bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
                     {t("available_now", "Available Now")}
                   </span>
                 ) : (
-                  <span className="text-[10px] font-black bg-amber-100/90 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  <span className="text-[11px] font-black bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30 px-3 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-600 dark:bg-amber-400" />
                     {t("currently_busy", "Currently Busy")}
                   </span>
                 )}
               </div>
 
               {/* Professional Title / Role */}
-              <p className="text-sm sm:text-base text-teal-800 font-extrabold mt-2">
+              <p className="text-base sm:text-lg text-slate-800 dark:text-slate-200 font-extrabold mt-2">
                 {profile?.professional_title || profile?.role || "Elite Freelancer Professional"}
               </p>
               
               {/* Quick Profile Stat Cards */}
               <div className="flex flex-wrap justify-center md:justify-start items-center gap-2 sm:gap-3 mt-4">
-                <div className="bg-white/90 border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-2xs flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                  <FiStar className="w-3.5 h-3.5 text-amber-450 fill-amber-450 shrink-0" />
-                  <span className="font-black">
+                <div className="bg-white dark:bg-zinc-800/90 border border-slate-300 dark:border-zinc-700 rounded-xl px-3.5 py-2 shadow-xs flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
+                  <FiStar className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+                  <span className="font-black text-slate-900 dark:text-white text-sm">
                     {reviews && reviews.length > 0 
                       ? (reviews.reduce((acc: number, r: any) => acc + Number(r.rating), 0) / reviews.length).toFixed(1)
                       : "5.0"}
                   </span>
-                  <span className="text-slate-400 font-bold">
+                  <span className="text-slate-600 dark:text-slate-400 font-bold">
                     ({Math.max(data?.completedJobs ?? 0, reviews.length)} {t("jobs", "jobs")})
                   </span>
                 </div>
 
-                <div className="bg-white/90 border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-2xs flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                  <span className="text-slate-400 font-semibold">{t("hourly_rate", "Hourly Rate")}:</span>
-                  <span className="font-black text-teal-700">
+                <div className="bg-white dark:bg-zinc-800/90 border border-slate-300 dark:border-zinc-700 rounded-xl px-3.5 py-2 shadow-xs flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
+                  <span className="text-slate-600 dark:text-slate-400 font-bold">{t("hourly_rate", "Hourly Rate")}:</span>
+                  <span className="font-black text-[#0a5a54] dark:text-teal-400 text-sm">
                     {profile?.hourly_rate ? `$${parseFloat(profile.hourly_rate).toFixed(0)}/hr` : "N/A"}
                   </span>
                 </div>
 
-                <div className="bg-white/90 border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-2xs flex items-center gap-1.5 text-xs font-bold text-slate-800">
-                  <span className="text-slate-400 font-semibold">{t("exp_level", "Exp Level")}:</span>
-                  <span className="font-black text-slate-800">
+                <div className="bg-white dark:bg-zinc-800/90 border border-slate-300 dark:border-zinc-700 rounded-xl px-3.5 py-2 shadow-xs flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
+                  <span className="text-slate-600 dark:text-slate-400 font-bold">{t("exp_level", "Exp Level")}:</span>
+                  <span className="font-black text-slate-900 dark:text-white text-sm">
                     {profile?.experience_level || "Expert"}
                   </span>
                 </div>
@@ -510,7 +510,7 @@ export default function FreelancerProfileClient() {
             {loggedInUserId && (loggedInUserId === Number(user?.user_id) || loggedInUserId === Number(profile?.user_id)) ? (
               <button
                 onClick={() => router.push("/dashboard?tab=settings")}
-                className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-2"
+                className="flex-1 md:flex-none justify-center bg-[#0a5a54] hover:bg-[#074540] text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-2 border-none"
               >
                 <FiSliders className="w-4 h-4" />
                 <span>{t("btn_edit_profile", "Edit Profile")}</span>
@@ -528,10 +528,10 @@ export default function FreelancerProfileClient() {
                       router.push(`/dashboard?tab=inbox&contactId=${id}`);
                     }
                   }}
-                  className="flex-1 md:flex-none justify-center bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs px-5 py-3.5 rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-2"
+                  className="flex-1 md:flex-none justify-center bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-slate-100 font-extrabold text-xs px-5 py-3.5 rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-2"
                 >
-                  <FiMessageSquare className="w-4 h-4 text-slate-400" />
-                  <span>{t("btn_send_message", "Send Message")}</span>
+                  <FiMessageSquare className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                  <span className="font-extrabold text-slate-800 dark:text-slate-100">{t("btn_send_message", "Send Message")}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -544,7 +544,7 @@ export default function FreelancerProfileClient() {
                       setShowHireModal(true);
                     }
                   }}
-                  className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-black text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border-none flex items-center gap-2"
+                  className="flex-1 md:flex-none justify-center bg-[#0a5a54] hover:bg-[#074540] text-white font-black text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border-none flex items-center gap-2"
                 >
                   <FiUser className="w-4 h-4" />
                   <span>{t("btn_hire_freelancer", "Hire Freelancer")}</span>

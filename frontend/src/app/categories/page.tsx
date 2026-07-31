@@ -76,6 +76,35 @@ function CategoryIcon({ name }: { name: string }) {
   );
 }
 
+function getCategoryFallbackImage(name: string): string {
+  const lower = (name || "").toLowerCase();
+  if (lower.includes("web") || lower.includes("code") || lower.includes("dev")) {
+    return "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80";
+  }
+  if (lower.includes("design") || lower.includes("ui") || lower.includes("ux") || lower.includes("graphic")) {
+    return "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?auto=format&fit=crop&w=600&q=80";
+  }
+  if (lower.includes("ai") || lower.includes("machine") || lower.includes("automat") || lower.includes("bot")) {
+    return "https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=600&q=80";
+  }
+  if (lower.includes("market") || lower.includes("seo") || lower.includes("social") || lower.includes("digital") || lower.includes("ad")) {
+    return "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=600&q=80";
+  }
+  if (lower.includes("mobile") || lower.includes("android") || lower.includes("ios") || lower.includes("app")) {
+    return "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?auto=format&fit=crop&w=600&q=80";
+  }
+  if (lower.includes("writ") || lower.includes("content") || lower.includes("blog") || lower.includes("copy")) {
+    return "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=600&q=80";
+  }
+  if (lower.includes("video") || lower.includes("animation") || lower.includes("motion")) {
+    return "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?auto=format&fit=crop&w=600&q=80";
+  }
+  if (lower.includes("data") || lower.includes("analytics") || lower.includes("database")) {
+    return "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80";
+  }
+  return "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?auto=format&fit=crop&w=600&q=80";
+}
+
 function CategoriesContent() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
@@ -208,11 +237,12 @@ function CategoriesContent() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {filteredCategories.map((cat: any) => {
               const count = cat.freelancer_count;
+              const fallback = getCategoryFallbackImage(cat.category_name);
               const catImage = cat.category_image
                 ? cat.category_image.startsWith("http")
                   ? cat.category_image
-                  : `${API_BASE_URL}/${cat.category_image.replace(/^\/?/, "")}`
-                : null;
+                  : `${API_BASE_URL.replace(/\/api\/?$/, "")}/${cat.category_image.replace(/^\/?/, "")}`
+                : fallback;
 
               return (
                 <div 
@@ -223,18 +253,17 @@ function CategoriesContent() {
                              hover:border-primary/30 flex flex-col text-left"
                 >
                   {/* Image / icon area */}
-                  <div className="relative h-44 bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
-                    {catImage ? (
-                      <img
-                        src={catImage}
-                        alt={cat.category_name}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center gap-2 text-primary/40">
-                        <CategoryIcon name={cat.category_name} />
-                      </div>
-                    )}
+                  <div className="relative h-44 bg-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                    <img
+                      src={catImage}
+                      alt={cat.category_name}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = fallback;
+                      }}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
                     {/* Freelancer count badge */}
                     {count > 0 && (
                       <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full

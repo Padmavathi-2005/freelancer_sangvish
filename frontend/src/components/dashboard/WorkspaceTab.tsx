@@ -103,7 +103,7 @@ export default function WorkspaceTab({
 
   const displayClientProjects = useMemo(() => {
     const ongoing = clientJobs.filter(j => j.status !== "Completed" && j.status !== "Closed" && j.status !== "Suspended");
-    return (ongoing.length > 0 ? ongoing : clientJobs).slice(0, 2);
+    return (ongoing.length > 0 ? ongoing : clientJobs).slice(0, 4);
   }, [clientJobs]);
 
   const displayClientContracts = useMemo(() => {
@@ -117,17 +117,17 @@ export default function WorkspaceTab({
       const aTime = a.created_at ? new Date(a.created_at).getTime() : (Number(a.contract_id || a.id) || 0);
       const bTime = b.created_at ? new Date(b.created_at).getTime() : (Number(b.contract_id || b.id) || 0);
       return bTime - aTime;
-    }).slice(0, 2);
+    }).slice(0, 4);
   }, [freelancerContracts]);
 
   const displayClientGigOrders = useMemo(() => {
     const ongoing = clientApplications.filter(a => a.status !== "Completed");
-    return (ongoing.length > 0 ? ongoing : clientApplications).slice(0, 2);
+    return (ongoing.length > 0 ? ongoing : clientApplications).slice(0, 4);
   }, [clientApplications]);
 
   const displayFreelancerProposals = useMemo(() => {
     const ongoing = freelancerProposals.filter(p => p.status === "Pending");
-    return (ongoing.length > 0 ? ongoing : freelancerProposals).slice(0, 2);
+    return (ongoing.length > 0 ? ongoing : freelancerProposals).slice(0, 4);
   }, [freelancerProposals]);
 
   const displayFreelancerContracts = useMemo(() => {
@@ -141,12 +141,12 @@ export default function WorkspaceTab({
       const aTime = a.created_at ? new Date(a.created_at).getTime() : (Number(a.contract_id || a.id) || 0);
       const bTime = b.created_at ? new Date(b.created_at).getTime() : (Number(b.contract_id || b.id) || 0);
       return bTime - aTime;
-    }).slice(0, 2);
+    }).slice(0, 4);
   }, [freelancerContracts]);
 
   const displayFreelancerGigOrders = useMemo(() => {
     const ongoing = gigApplications.filter(a => a.status !== "Completed");
-    return (ongoing.length > 0 ? ongoing : gigApplications).slice(0, 2);
+    return (ongoing.length > 0 ? ongoing : gigApplications).slice(0, 4);
   }, [gigApplications]);
 
   const dynamicMonthlyData = useMemo(() => {
@@ -195,23 +195,23 @@ export default function WorkspaceTab({
               setProfileStep(firstIncomplete);
             }
           }}
-          className="bg-gradient-to-r from-teal-600/5 to-cyan-500/5 border border-teal-650/30 hover:border-teal-600/70 hover:shadow-md cursor-pointer transition-all duration-200 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm animate-fadeIn relative z-10 group"
+          className="bg-gradient-to-r from-teal-600/5 to-cyan-500/5 dark:from-teal-950/40 dark:to-cyan-950/30 border border-teal-500/30 dark:border-teal-700/50 hover:border-teal-600/70 hover:shadow-md cursor-pointer transition-all duration-200 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm animate-fadeIn relative z-10 group"
         >
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[10px] font-black bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded uppercase tracking-wider group-hover:bg-primary/20 transition-all">Profile Status</span>
-              <span className="text-xs font-black text-slate-800">{profileCompletionProgress}% Complete</span>
+              <span className="text-[10px] font-black bg-primary/10 text-primary dark:bg-primary/20 dark:text-teal-300 border border-primary/20 px-2 py-0.5 rounded uppercase tracking-wider group-hover:bg-primary/20 transition-all">Profile Status</span>
+              <span className="text-xs font-black text-slate-800 dark:text-slate-200">{profileCompletionProgress}% Complete</span>
             </div>
-            <h2 className="text-sm font-extrabold text-slate-855 group-hover:text-primary transition-colors">
+            <h2 className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-primary dark:group-hover:text-teal-400 transition-colors">
               {userRole === "client" ? "Complete your Client Profile step-by-step" : "Complete your Freelancer Profile step-by-step"}
             </h2>
-            <p className="text-slate-500 text-xs mt-1 font-medium">
+            <p className="text-slate-600 dark:text-slate-300 text-xs mt-1 font-medium">
               {userRole === "client" 
                 ? "Filling in your company basics, online presence details, and hiring contact representative info unlocks remote talent lists."
                 : "Filling in your professional title, experience history, education, certifications, and skills unlocks direct job placement contracts."}
             </p>
             
-            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/65 mt-3.5 max-w-md">
+            <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden border border-slate-300 dark:border-slate-600 mt-3.5 max-w-md">
               <div className="h-full bg-gradient-to-r from-primary to-cyan-500 transition-all duration-300" style={{ width: `${profileCompletionProgress}%` }}></div>
             </div>
           </div>
@@ -228,18 +228,20 @@ export default function WorkspaceTab({
                     setProfileStep(step.number);
                   }
                 }}
-                className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer ${
+                className={`text-xs font-black px-3.5 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
                   step.done
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-250 hover:bg-emerald-100"
-                    : "bg-white text-slate-600 border-slate-250 hover:border-primary/50 hover:bg-slate-50"
+                    ? "bg-emerald-100/90 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 dark:hover:bg-emerald-900"
+                    : "bg-white dark:bg-zinc-900 border-teal-700/40 dark:border-zinc-700 hover:border-teal-700 hover:bg-teal-50/50 dark:hover:bg-zinc-800"
                 }`}
               >
                 {step.done ? (
-                  <FiCheckCircle className="text-emerald-500 w-4 h-4 shrink-0" />
+                  <FiCheckCircle className="step-pill-icon-done w-4 h-4 shrink-0" />
                 ) : (
-                  <FiCircle className="text-slate-355 w-4 h-4 shrink-0" />
+                  <FiCircle className="step-pill-icon-todo w-4 h-4 shrink-0" />
                 )}
-                <span>{step.label}</span>
+                <span className="step-pill-text font-black">
+                  {step.label}
+                </span>
               </button>
             ))}
           </div>

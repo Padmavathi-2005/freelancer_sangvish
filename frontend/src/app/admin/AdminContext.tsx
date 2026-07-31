@@ -352,7 +352,7 @@ interface AdminContextType {
   fetchDisputes: () => Promise<void>;
   pendingVettingCount: number;
   activeDisputesCount: number;
-  userCounts: { total: number; freelancers: number; clients: number };
+  userCounts: { total: number; freelancers: number; clients: number; dualRole?: number };
 
   // Filtered/Paginated Lists
   filteredUsers: any[];

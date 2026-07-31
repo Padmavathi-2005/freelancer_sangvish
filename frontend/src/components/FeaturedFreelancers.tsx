@@ -197,7 +197,7 @@ export default function FeaturedFreelancers() {
                             onError={() => setFailedImages((prev) => ({ ...prev, [freelancer.user_id]: true }))}
                           />
                         ) : (
-                          <div className={`w-[52px] h-[52px] rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center font-black text-white text-base select-none shadow-sm`}>
+                          <div className="w-[52px] h-[52px] rounded-xl bg-[#0a5a54] dark:bg-teal-750 flex items-center justify-center font-black text-white text-base select-none shadow-sm border border-teal-600/20">
                             {getInitials(freelancer.name || freelancer.email || "FL")}
                           </div>
                         )}
@@ -208,7 +208,7 @@ export default function FeaturedFreelancers() {
                       {/* Name + Title + Rating */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-black text-slate-900 dark:text-white text-sm truncate">
+                          <span className="font-black text-slate-900 dark:text-white text-lg sm:text-xl truncate">
                             {freelancer.name || freelancer.email || "Freelancer"}
                           </span>
                           {/* Verified */}
@@ -232,7 +232,7 @@ export default function FeaturedFreelancers() {
                           </span>
                           {freelancer.experience_level && (
                             <>
-                              <span className="text-slate-300 dark:text-zinc-600">•</span>
+                              <span className="inline-block w-1 h-1 rounded-full bg-slate-300 dark:bg-zinc-600 shrink-0" />
                               <span className="text-[10px] font-bold text-slate-400 dark:text-zinc-500">{freelancer.experience_level}</span>
                             </>
                           )}
@@ -270,20 +270,30 @@ export default function FeaturedFreelancers() {
                       </div>
                     )}
 
-                    {/* CTA */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-                        if (!token) router.push("/login");
-                        else if (freelancer.user_id) router.push(`/freelancer/${slugParam}?hire=true`);
-                        else router.push("/talent");
-                      }}
-                      className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white font-bold text-xs py-2.5 rounded-xl transition-all duration-200 active:scale-[0.98] hover:shadow-lg hover:shadow-primary/20 cursor-pointer border-none mt-auto group/btn"
-                    >
-                      {t("btn_hire_now", "Hire Now")}
-                      <FiArrowRight className="w-3.5 h-3.5 transform group-hover/btn:translate-x-0.5 transition-transform" />
-                    </button>
+                    {/* Bottom Row: Dynamic Category + Hire CTA */}
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-zinc-800/80 mt-auto">
+                      {freelancer.category_name || freelancer.sub_category_name ? (
+                        <span className="text-[11px] font-extrabold text-slate-600 dark:text-slate-400 truncate max-w-[170px] select-none">
+                          {freelancer.category_name || freelancer.sub_category_name}
+                        </span>
+                      ) : (
+                        <div />
+                      )}
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+                          if (!token) router.push("/login");
+                          else if (freelancer.user_id) router.push(`/freelancer/${slugParam}?hire=true`);
+                          else router.push("/talent");
+                        }}
+                        className="flex items-center justify-center gap-1.5 bg-[#0a5a54] hover:bg-[#07433e] text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.97] hover:shadow-md cursor-pointer border-none group/btn shrink-0"
+                      >
+                        {t("btn_hire_now", "Hire Now")}
+                        <FiArrowRight className="w-3.5 h-3.5 transform group-hover/btn:translate-x-0.5 transition-transform" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}

@@ -16,6 +16,7 @@ interface SubCategory {
   sub_category_id: number;
   category_id: number;
   sub_category_name: string;
+  status?: any;
 }
 
 interface Skill {
@@ -952,7 +953,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     details?: string;
   }>({ show: false, type: "success", message: "" });
 
-  // Map pathname to activeTab
+  // Map pathname and search params to activeTab
   const activeTab = useMemo(() => {
     const routeMap: Record<string, string> = {
       "/dashboard": "workspace",
@@ -975,6 +976,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       "/dashboard/referrals": "referrals",
       "/dashboard/affiliate": "affiliate",
     };
+
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab");
+      if (tabParam) {
+        if (tabParam === "orders" || tabParam === "client_orders") return "client_orders";
+        if (tabParam === "applications" || tabParam === "gig_applications") return "gig_applications";
+        if (Object.values(routeMap).includes(tabParam)) return tabParam;
+      }
+    }
+
     return routeMap[pathname] || "workspace";
   }, [pathname]);
 
@@ -2847,6 +2859,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           fetchFreelancerApplications();
           fetchClientApplications();
           fetchWalletInfo();
+          const appId = data.application?.application_id || "";
+          router.push(`/dashboard/orders${appId ? `?application_id=${appId}` : ""}`);
         }, 1500);
       } else {
         setOrderError(data.message || "Failed to submit application.");

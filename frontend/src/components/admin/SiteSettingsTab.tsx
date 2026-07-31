@@ -2,7 +2,8 @@
 import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect } from "react";
-import { FiGlobe, FiUploadCloud, FiExternalLink } from "react-icons/fi";
+import { FiGlobe, FiUploadCloud, FiExternalLink, FiPlus, FiTrash2 } from "react-icons/fi";
+import { Home3HeroSlide, DEFAULT_HOME3_HERO_SLIDES } from "@/components/home/Home3Hero";
 
 interface SiteSettingsTabProps {
   handleSaveSetting: (key: string, value: any, category?: string) => Promise<void>;
@@ -27,6 +28,10 @@ export default function SiteSettingsTab({
   const [instagramUrl, setInstagramUrl] = useState("https://instagram.com");
   const [linkedinUrl, setLinkedinUrl] = useState("https://linkedin.com");
   const [defaultHomePage, setDefaultHomePage] = useState("home_1");
+
+  // Home 3 Hero Carousel Slides state
+  const [hero3Slides, setHero3Slides] = useState<Home3HeroSlide[]>(DEFAULT_HOME3_HERO_SLIDES);
+  const [uploadingSlideIdx, setUploadingSlideIdx] = useState<{ index: number; target: "image_1" | "image_2" } | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -117,12 +122,24 @@ export default function SiteSettingsTab({
             const rawInstagram = data.find((s: any) => s.setting_key === "instagram_url")?.setting_value;
             const rawLinkedin = data.find((s: any) => s.setting_key === "linkedin_url")?.setting_value;
             const rawDefaultHome = data.find((s: any) => s.setting_key === "default_home_page")?.setting_value;
+            const rawHero3Slides = data.find((s: any) => s.setting_key === "home3_hero_slides")?.setting_value;
 
             if (rawAppStore) setAppStoreUrl(rawAppStore);
             if (rawGooglePlay) setGooglePlayUrl(rawGooglePlay);
             if (rawInstagram) setInstagramUrl(rawInstagram);
             if (rawLinkedin) setLinkedinUrl(rawLinkedin);
             if (rawDefaultHome) setDefaultHomePage(typeof rawDefaultHome === "string" ? rawDefaultHome.replace(/"/g, "") : rawDefaultHome);
+            if (rawHero3Slides) {
+              try {
+                let parsed = rawHero3Slides;
+                if (typeof parsed === "string") parsed = JSON.parse(parsed);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  setHero3Slides(parsed);
+                }
+              } catch (e) {
+                console.error("Failed to parse hero 3 slides:", e);
+              }
+            }
           }
       } catch (e) {
         console.error("Failed to load settings options", e);
@@ -130,6 +147,68 @@ export default function SiteSettingsTab({
     };
     loadOptions();
   }, []);
+
+  // Slide helper functions
+  const handleSlideChange = (index: number, field: keyof Home3HeroSlide, value: string) => {
+    setHero3Slides((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleAddSlide = () => {
+    setHero3Slides((prev) => [
+      ...prev,
+      {
+        id: `slide-${Date.now()}`,
+        title: "New Freelance Banner Title",
+        highlight_text: "Freelance Banner",
+        subtitle: "Add your slide description text here.",
+        primary_btn_text: "Try it Free",
+        primary_btn_link: "/talent",
+        secondary_btn_text: "Learn More",
+        secondary_btn_link: "/gigs",
+        image_1: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=600&auto=format&fit=crop&q=80",
+        image_2: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=600&auto=format&fit=crop&q=80",
+        image_1_bg: "#0d9488",
+        image_2_bg: "#eab308"
+      }
+    ]);
+  };
+
+  const handleRemoveSlide = (index: number) => {
+    if (hero3Slides.length <= 1) {
+      alert("You must keep at least one hero slide.");
+      return;
+    }
+    setHero3Slides((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSlideImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number, target: "image_1" | "image_2") => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    try {
+      setUploadingSlideIdx({ index, target });
+      const file = e.target.files[0];
+      const formData = new FormData();
+      formData.append("file", file);
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
+      const res = await fetch(`${API_URL}/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData
+      });
+      if (!res.ok) throw new Error("Upload failed");
+      const data = await res.json();
+      handleSlideChange(index, target, data.url);
+      triggerToast("Upload Success", `Slide image uploaded successfully!`);
+    } catch (err: any) {
+      console.error(err);
+      triggerToast("Upload Failed", err.message || "Failed to upload image");
+    } finally {
+      setUploadingSlideIdx(null);
+    }
+  };
 
   // Bulk manual save action for Site Settings
   const handleBulkSave = async () => {
@@ -164,6 +243,7 @@ export default function SiteSettingsTab({
       await handleSaveSetting("instagram_url", instagramUrl, "site_settings");
       await handleSaveSetting("linkedin_url", linkedinUrl, "site_settings");
       await handleSaveSetting("default_home_page", defaultHomePage, "site_settings");
+      await handleSaveSetting("home3_hero_slides", JSON.stringify(hero3Slides), "site_settings");
 
       triggerToast("Settings Saved", "Site identity and SEO settings saved successfully!");
       setSaveStatus({ type: "success", text: "✓ Site settings saved successfully!" });
@@ -333,8 +413,8 @@ export default function SiteSettingsTab({
           </div>
 
           {/* SITE LOGO UPLOADER (DARK THEME) */}
-          <div className="flex flex-col gap-3 bg-slate-900/90 border border-slate-800 p-5 rounded-xl">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Logo (Dark Theme)</span>
+          <div className="flex flex-col gap-3 bg-slate-900 border border-slate-800 p-5 rounded-xl text-white">
+            <span style={{ color: "#f1f5f9" }} className="text-[10px] font-black uppercase tracking-wider !text-slate-100">Site Logo (Dark Theme)</span>
             
             <div className="relative group border border-dashed border-slate-700 hover:border-teal-500 rounded-xl h-36 flex flex-col items-center justify-center bg-slate-950 overflow-hidden transition-all duration-200 shadow-sm">
               {siteLogoDark ? (
@@ -354,9 +434,9 @@ export default function SiteSettingsTab({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-2 text-slate-500">
-                  <FiUploadCloud className="w-8 h-8 text-slate-500" />
-                  <span className="text-[10px] font-bold">Upload dark logo</span>
+                <div className="flex flex-col items-center gap-2 text-slate-400">
+                  <FiUploadCloud className="w-8 h-8 text-slate-400" />
+                  <span style={{ color: "#cbd5e1" }} className="text-[10px] font-bold !text-slate-300">Upload dark logo</span>
                 </div>
               )}
               <input
@@ -372,8 +452,9 @@ export default function SiteSettingsTab({
               type="text"
               value={siteLogoDark}
               onChange={(e) => setSiteLogoDark(e.target.value)}
-              placeholder="/public/logo.png"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-300 focus:outline-none focus:border-teal-500 transition"
+              placeholder="/public/images/logo-dark.png"
+              style={{ color: "#ffffff" }}
+              className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono !text-white focus:outline-none focus:border-teal-400 transition"
             />
           </div>
 
@@ -518,6 +599,211 @@ export default function SiteSettingsTab({
               className="w-full bg-slate-50 border border-slate-202 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm"
             />
           </div>
+        </div>
+      </div>
+
+      {/* HOME 3 HERO CAROUSEL MANAGER */}
+      <div className="border-b border-slate-100 pb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h4 className="text-sm font-extrabold text-slate-855 flex items-center gap-2">
+              <FiGlobe className="w-4 h-4 text-teal-600" />
+              <span>Home 3 Hero Banner Carousel Slides</span>
+            </h4>
+            <p className="text-xs text-slate-505 font-semibold mt-0.5">
+              Manage banner slides for Home Page Three. Upload 2 cut-out images per slide, customize title/highlight text, CTA buttons, and backdrop circle colors.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddSlide}
+            className="bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition flex items-center gap-2 shadow-sm cursor-pointer border-none"
+          >
+            <FiPlus className="w-4 h-4" />
+            <span>Add Slide</span>
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-6">
+          {hero3Slides.map((slide, idx) => (
+            <div key={slide.id || idx} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col gap-4 text-white shadow-md">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <span className="bg-teal-600/30 text-teal-300 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border border-teal-500/30">
+                  Slide #{idx + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveSlide(idx)}
+                  className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer border-none bg-transparent"
+                >
+                  <FiTrash2 className="w-4 h-4" />
+                  <span>Remove Slide</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Title</span>
+                  <input
+                    type="text"
+                    value={slide.title}
+                    onChange={(e) => handleSlideChange(idx, "title", e.target.value)}
+                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Underlined Highlight Text</span>
+                  <input
+                    type="text"
+                    value={slide.highlight_text}
+                    onChange={(e) => handleSlideChange(idx, "highlight_text", e.target.value)}
+                    placeholder="Text inside title to highlight green"
+                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Subtitle / Description</span>
+                <textarea
+                  value={slide.subtitle}
+                  onChange={(e) => handleSlideChange(idx, "subtitle", e.target.value)}
+                  rows={2}
+                  className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-medium"
+                />
+              </div>
+
+              {/* Buttons Links */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Primary Button Text</span>
+                  <input
+                    type="text"
+                    value={slide.primary_btn_text}
+                    onChange={(e) => handleSlideChange(idx, "primary_btn_text", e.target.value)}
+                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Primary Button Link</span>
+                  <input
+                    type="text"
+                    value={slide.primary_btn_link}
+                    onChange={(e) => handleSlideChange(idx, "primary_btn_link", e.target.value)}
+                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Secondary Button Text</span>
+                  <input
+                    type="text"
+                    value={slide.secondary_btn_text}
+                    onChange={(e) => handleSlideChange(idx, "secondary_btn_text", e.target.value)}
+                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Secondary Button Link</span>
+                  <input
+                    type="text"
+                    value={slide.secondary_btn_link}
+                    onChange={(e) => handleSlideChange(idx, "secondary_btn_link", e.target.value)}
+                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Dual Cutout Images & Circle Background Colors */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+                
+                {/* Image 1 Box */}
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2.5">
+                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-wider">Cut-out Person Image 1 (Left Circle)</span>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      style={{ backgroundColor: slide.image_1_bg || "#0d9488" }} 
+                      className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-slate-700 flex items-center justify-center relative"
+                    >
+                      <img src={slide.image_1} className="w-full h-full object-cover object-top" alt="Cutout 1" />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                      <input
+                        type="text"
+                        value={slide.image_1}
+                        onChange={(e) => handleSlideChange(idx, "image_1", e.target.value)}
+                        placeholder="Image URL"
+                        className="dark-card-input w-full border border-slate-700 rounded-lg px-2.5 py-1.5 text-[10px] font-mono"
+                      />
+                      <div className="flex items-center gap-2">
+                        <label className="bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg cursor-pointer shrink-0">
+                          {uploadingSlideIdx?.index === idx && uploadingSlideIdx?.target === "image_1" ? "Uploading..." : "Upload Image 1"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleSlideImageUpload(e, idx, "image_1")}
+                            className="hidden"
+                          />
+                        </label>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[9px] font-bold text-slate-400">Circle Color:</span>
+                          <input
+                            type="color"
+                            value={slide.image_1_bg || "#0d9488"}
+                            onChange={(e) => handleSlideChange(idx, "image_1_bg", e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer bg-transparent border-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Image 2 Box */}
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2.5">
+                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-wider">Cut-out Person Image 2 (Right Circle)</span>
+                  <div className="flex items-center gap-3">
+                    <div 
+                      style={{ backgroundColor: slide.image_2_bg || "#eab308" }} 
+                      className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-slate-700 flex items-center justify-center relative"
+                    >
+                      <img src={slide.image_2} className="w-full h-full object-cover object-top" alt="Cutout 2" />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                      <input
+                        type="text"
+                        value={slide.image_2}
+                        onChange={(e) => handleSlideChange(idx, "image_2", e.target.value)}
+                        placeholder="Image URL"
+                        className="dark-card-input w-full border border-slate-700 rounded-lg px-2.5 py-1.5 text-[10px] font-mono"
+                      />
+                      <div className="flex items-center gap-2">
+                        <label className="bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg cursor-pointer shrink-0">
+                          {uploadingSlideIdx?.index === idx && uploadingSlideIdx?.target === "image_2" ? "Uploading..." : "Upload Image 2"}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleSlideImageUpload(e, idx, "image_2")}
+                            className="hidden"
+                          />
+                        </label>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[9px] font-bold text-slate-400">Circle Color:</span>
+                          <input
+                            type="color"
+                            value={slide.image_2_bg || "#eab308"}
+                            onChange={(e) => handleSlideChange(idx, "image_2_bg", e.target.value)}
+                            className="w-6 h-6 rounded cursor-pointer bg-transparent border-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          ))}
         </div>
       </div>
 

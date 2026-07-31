@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { FiBriefcase, FiMessageSquare, FiRefreshCw, FiClock, FiCheckCircle, FiDollarSign, FiAlertTriangle, FiX } from "react-icons/fi";
 import GigMilestoneTracker from "./GigMilestoneTracker";
+import { renderOrderBreakdown, getOrderStatusPill } from "./ClientOrdersTab";
 import { createPortal } from "react-dom";
 import CustomSelect from "@/components/CustomSelect";
 
@@ -385,7 +386,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                 Client Partner: <strong className="text-slate-700">{app.client_name}</strong> <span className="text-[11px] text-slate-450 font-normal">({app.client_email})</span>
               </p>
             </div>
-            <div className="flex items-center justify-between gap-3 w-full sm:w-auto bg-slate-50/80 sm:bg-transparent p-3 sm:p-0 rounded-xl border sm:border-0 border-slate-200/60">
+            <div className="flex items-center gap-3 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Price:</span>
                 <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
@@ -404,54 +405,10 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
             </div>
           </div>
 
-          <div className="bg-slate-50 border border-slate-150 rounded-xl p-4">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide block mb-1">Project Requirements</span>
-            <p className="text-slate-600 text-xs leading-relaxed whitespace-pre-wrap font-medium">{app.requirements}</p>
-          </div>
+          {renderOrderBreakdown(app)}
         </div>
 
-        {/* Steps Tracker */}
-        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
-          <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Work & Payment Status</h3>
-          <div className="flex flex-col">
-            {([
-              { label: "Order Received", date: app.created_at, done: true, sub: "Client placed service order request" },
-              { label: "Order Accepted", date: app.accepted_at || (app.status !== "Pending" ? app.created_at : undefined), done: app.status !== "Pending", sub: app.status !== "Pending" ? "You accepted the order request" : "Awaiting your acceptance" },
-              { label: "Escrow Deposited", date: app.paid_at, done: isPaid, sub: isPaid ? "Client funded the order (held in escrow)" : "Awaiting client checkout payment" },
-              { label: "Work Started", date: app.work_started_at, done: contractStatus === "Work Started" || contractStatus === "Under Review" || contractStatus === "Completed", sub: (contractStatus === "Work Started" || contractStatus === "Under Review" || contractStatus === "Completed") ? "Service implementation is in progress" : "Awaiting Work Start action" },
-              { label: "Deliverables Submitted", date: app.submitted_at, done: contractStatus === "Under Review" || contractStatus === "Completed", sub: (contractStatus === "Under Review" || contractStatus === "Completed") ? "Project deliverables sent to client" : "Pending work completion submission" },
-              { label: "Order Completed", date: app.completed_at, done: contractStatus === "Completed" || app.status === "Completed", sub: (contractStatus === "Completed" || app.status === "Completed") ? "All milestones approved and paid out" : "Awaiting final approval" },
-            ]).map((step, idx, arr) => {
-              const done = step.done;
-              const isLast = idx === arr.length - 1;
-              const circleStyle = done ? "bg-teal-600 border-teal-600 text-white shadow-teal-100" : "bg-slate-50 border-slate-200 text-slate-400";
-              return (
-                <div key={idx} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border-2 transition-all ${circleStyle}`}>
-                      {done ? "✓" : idx + 1}
-                    </div>
-                    {!isLast && (
-                      <div className={`w-0.5 flex-1 min-h-[28px] mt-1 mb-0.5 ${done ? "bg-teal-300" : "bg-slate-150"}`} />
-                    )}
-                  </div>
-                  <div className={`flex-1 ${isLast ? "pb-0" : "pb-5"}`}>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                      <div>
-                        <p className={`text-xs font-extrabold ${done ? "text-slate-800" : "text-slate-400"}`}>{step.label}</p>
-                        {step.sub && <p className={`text-[10px] font-semibold mt-0.5 ${done ? "text-teal-600" : "text-slate-400"}`}>{step.sub}</p>}
-                      </div>
-                      <span className="text-[10px] font-semibold text-slate-400 whitespace-nowrap">
-                        {step.date ? new Date(step.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Pending"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+
 
         {/* Action Panel */}
         <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -796,22 +753,20 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                     {app.currency_symbol || "$"}{parseFloat(app.price).toLocaleString()}
                   </span>
                   
-                  <span className={`text-[10px] font-black px-2.5 py-1 rounded uppercase tracking-wider border ${
-                    app.status === "Accepted" || app.status === "Completed" || app.contract_status === "Completed"
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                      : app.status === "Rejected" || app.contract_status === "Cancelled"
-                        ? "bg-rose-50 text-rose-700 border-rose-200"
-                        : "bg-amber-50 text-amber-700 border-amber-200"
-                  }`}>
-                    {app.contract_status === "Completed" ? "Completed" : app.status}
-                  </span>
+                  {(() => {
+                    const badge = getOrderStatusPill(app);
+                    return (
+                      <span className={`text-[10px] font-black px-2.5 py-1 rounded uppercase tracking-wider border ${badge.style}`}>
+                        {badge.text}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
 
-              {/* Requirements */}
-              <div className="bg-slate-50 border border-slate-150 rounded-xl p-4 mt-2">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide block mb-1">Project Instructions & Requirements</span>
-                <p className="text-slate-650 text-xs leading-relaxed whitespace-pre-wrap font-medium">{app.requirements.length > 180 ? app.requirements.substring(0, 180) + "..." : app.requirements}</p>
+              {/* Requirements & Breakdown */}
+              <div className="mt-2">
+                {renderOrderBreakdown(app)}
               </div>
 
               {/* Actions for Pending */}

@@ -96,6 +96,37 @@ export default function ProjectMilestoneTracker({
   const [siteName, setSiteName] = useState(() => localStorage.getItem("cached_site_name") || "Buy2Lancer");
   const [siteLogo, setSiteLogo] = useState(() => localStorage.getItem("cached_site_logo") || "");
 
+  const [congratsModalData, setCongratsModalData] = useState<{
+    show: boolean;
+    amount: number;
+    title: string;
+    projectId?: string | number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (congratsModalData?.show) {
+      const timer = setTimeout(() => {
+        setCongratsModalData(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [congratsModalData]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("payment_success") === "true" || params.get("session_id")) {
+        setCongratsModalData({
+          show: true,
+          amount: job?.budget ? parseFloat(job.budget) : 0,
+          title: job?.title || "Project Contract",
+          projectId: job?.job_id
+        });
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [job]);
+
   const [trackerTab, setTrackerTab] = useState<"milestones" | "proposals">("milestones");
   const [selectedContractId, setSelectedContractId] = useState<number | null>(null);
 
@@ -500,6 +531,12 @@ export default function ProjectMilestoneTracker({
             `Hired successfully! ${payMethod === "paypal" ? "PayPal" : "Wallet"} payment of $${upfrontAmount.toFixed(2)} confirmed.`,
             "Your contract is now active."
           );
+          setCongratsModalData({
+            show: true,
+            amount: upfrontAmount,
+            title: job?.title || "Project Contract",
+            projectId: job?.job_id
+          });
           setPayingProposal(null);
           fetchProposals();
           fetchContracts();
@@ -1549,6 +1586,12 @@ export default function ProjectMilestoneTracker({
       const data = await res.json();
       if (res.ok) {
         triggerToast("success", type === "milestone" ? "Milestone funded successfully!" : "Extra revision funded successfully!", data.message);
+        setCongratsModalData({
+          show: true,
+          amount: amount || 0,
+          title: job?.title || "Project Contract",
+          projectId: job?.job_id
+        });
         setActivePaymentModal(null);
         fetchContracts();
       } else {
@@ -1576,6 +1619,12 @@ export default function ProjectMilestoneTracker({
       const data = await res.json();
       if (res.ok) {
         triggerToast("success", "Milestone funded successfully!", data.message);
+        setCongratsModalData({
+          show: true,
+          amount: amount || 0,
+          title: title || job?.title || "Project Milestone",
+          projectId: job?.job_id
+        });
         fetchContracts();
       } else {
         triggerToast("error", data.message || "Failed to fund milestone.");
@@ -4902,6 +4951,54 @@ export default function ProjectMilestoneTracker({
                   </>
                 )}
               </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Payment Completed Congratulations Modal */}
+      {congratsModalData?.show && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fadeIn text-left">
+          <div className="bg-white rounded-3xl p-7 max-w-md w-full shadow-2xl border border-emerald-500/30 text-center relative overflow-hidden flex flex-col items-center gap-4 animate-scaleUp text-slate-800">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500" />
+            
+            <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shadow-inner border border-emerald-300 animate-bounce mt-2 select-none">
+              🎉
+            </div>
+
+            <div>
+              <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full uppercase tracking-widest">
+                Payment Completed
+              </span>
+              <h2 className="text-lg sm:text-xl font-black text-slate-900 mt-2.5">
+                Congratulations! 🚀
+              </h2>
+              <p className="text-xs text-slate-600 font-medium mt-1.5 leading-relaxed">
+                Your escrow payment of <strong className="text-slate-900 font-black">${congratsModalData.amount.toLocaleString()}</strong> for <span className="font-bold text-slate-800">"{congratsModalData.title}"</span> has been confirmed. The contract is active!
+              </p>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 w-full text-left flex items-center justify-between text-xs font-bold text-slate-700">
+              <span className="text-slate-400 text-[10px] uppercase font-black">Status</span>
+              <span className="text-emerald-700 font-extrabold flex items-center gap-1">
+                <FiCheckCircle className="w-4 h-4 text-emerald-600" /> Contract Active & In Escrow
+              </span>
+            </div>
+
+            <div className="flex gap-3 w-full mt-1">
+              <button
+                onClick={() => {
+                  setCongratsModalData(null);
+                }}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs py-3 rounded-xl shadow-lg transition-all cursor-pointer border-0"
+              >
+                View Project Tracker →
+              </button>
+            </div>
+
+            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
+              <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 animate-shrinkWidth" />
             </div>
           </div>
         </div>,

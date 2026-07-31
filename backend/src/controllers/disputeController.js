@@ -228,21 +228,30 @@ export const respondToDispute = async (req, res) => {
       await pool.query("BEGIN");
       try {
         if (raisedByRole === "client") {
-          // Client raised it (wants refund), Freelancer accepts -> Refund Client
+          // Client raised it (wants refund), Freelancer accepts -> Refund remaining unreleased escrow to Client
+          const paidRes = await pool.query(
+            "SELECT COALESCE(SUM(CAST(amount AS numeric)), 0) as paid_amount FROM contract_milestones WHERE contract_id = $1 AND (status = 'Completed' OR payment_status = 'Paid')",
+            [contract.contract_id]
+          );
+          const paidAmount = parseFloat(paidRes.rows[0]?.paid_amount || 0);
+          const refundAmount = Math.max(0, budget - paidAmount);
+
           const clientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [dispute.client_id]);
           const clientWallet = clientWalletRes.rows[0];
 
-          await pool.query("UPDATE wallets SET balance = balance - $1 WHERE wallet_id = $2", [budget, sysWallet.wallet_id]);
-          await pool.query("UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2", [budget, clientWallet.wallet_id]);
+          if (refundAmount > 0 && clientWallet) {
+            await pool.query("UPDATE wallets SET balance = balance - $1 WHERE wallet_id = $2", [refundAmount, sysWallet.wallet_id]);
+            await pool.query("UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2", [refundAmount, clientWallet.wallet_id]);
 
-          await pool.query(
-            `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
-             VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
-            [sysWallet.wallet_id, clientWallet.wallet_id, budget, `Refund from dispute resolution: ${contract.title}`]
-          );
+            await pool.query(
+              `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+               VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
+              [sysWallet.wallet_id, clientWallet.wallet_id, refundAmount, `Unreleased escrow refund from dispute resolution: ${contract.title}`]
+            );
+          }
 
           await pool.query("UPDATE contracts SET status = 'Cancelled', progress = 0, updated_at = NOW() WHERE contract_id = $1", [contract.contract_id]);
-          await pool.query("UPDATE contract_milestones SET status = 'Cancelled', payment_status = 'Refunded' WHERE contract_id = $1", [contract.contract_id]);
+          await pool.query("UPDATE contract_milestones SET status = 'Cancelled', payment_status = 'Refunded' WHERE contract_id = $1 AND status != 'Completed' AND payment_status != 'Paid'", [contract.contract_id]);
           
           const proposalIdToCancel = contract.application_id || (await pool.query(
             "SELECT proposal_id FROM proposals WHERE job_id = $1 AND freelancer_id = $2 AND status = 'Accepted'",
@@ -253,9 +262,13 @@ export const respondToDispute = async (req, res) => {
             await pool.query("UPDATE proposals SET status = 'Cancelled', updated_at = NOW() WHERE proposal_id = $1", [proposalIdToCancel]);
           }
 
+          const detailsText = paidAmount > 0
+            ? `Freelancer accepted refund request. Remaining unreleased escrow of $${refundAmount.toFixed(2)} refunded to client ($${paidAmount.toFixed(2)} previously paid to freelancer for completed scope).`
+            : `Freelancer accepted refund request. Full escrow of $${refundAmount.toFixed(2)} refunded to client.`;
+
           await pool.query(
             "UPDATE disputes SET status = 'Resolved', resolution_type = 'Buyer_Won', resolved_at = NOW(), resolution_details = $1 WHERE dispute_id = $2",
-            ["Freelancer accepted refund request.", disputeId]
+            [detailsText, disputeId]
           );
 
           await pool.query("COMMIT");
@@ -275,11 +288,28 @@ export const respondToDispute = async (req, res) => {
             type: "dispute_resolved",
             dispute_id: disputeId,
             verdict: "Buyer Wins",
-            details: "Freelancer accepted the refund request. Entire escrow amount has been returned to client."
+            details: detailsText
           };
           await postSystemChatMessage(req.io, dispute.conversation_id, userId, payload);
 
-          return res.json({ message: "Refund accepted and contract cancelled." });
+          // Dispatch in-app notification to client
+          try {
+            await Notification.create({
+              userId: dispute.client_id,
+              title: "Dispute Resolved - Refund Issued",
+              message: detailsText,
+              type: "dispute_resolved",
+              referenceId: contract.contract_id.toString()
+            });
+            if (req.io) {
+              req.io.to(`user_${dispute.client_id}`).emit("notification", {
+                title: "Dispute Resolved - Refund Issued",
+                message: detailsText
+              });
+            }
+          } catch (nErr) {}
+
+          return res.json({ message: detailsText });
         } else {
           // Freelancer raised it (wants payout), Client accepts -> Release to Freelancer
           let freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [dispute.freelancer_id]);
@@ -317,6 +347,23 @@ export const respondToDispute = async (req, res) => {
           };
           await postSystemChatMessage(req.io, dispute.conversation_id, userId, payload);
 
+          // Dispatch in-app notification to freelancer
+          try {
+            await Notification.create({
+              userId: dispute.freelancer_id,
+              title: "Dispute Resolved - Payout Released",
+              message: `Client accepted payout release for contract "${contract.title}". Escrow budget of $${budget.toFixed(2)} transferred to your wallet.`,
+              type: "dispute_resolved",
+              referenceId: contract.contract_id.toString()
+            });
+            if (req.io) {
+              req.io.to(`user_${dispute.freelancer_id}`).emit("notification", {
+                title: "Dispute Resolved - Payout Released",
+                message: `Client accepted payout release for contract "${contract.title}".`
+              });
+            }
+          } catch (nErr) {}
+
           return res.json({ message: "Payout release accepted and contract completed." });
         }
       } catch (txErr) {
@@ -343,6 +390,24 @@ export const respondToDispute = async (req, res) => {
         explanation
       };
       await postSystemChatMessage(req.io, dispute.conversation_id, userId, payload);
+
+      // Dispatch in-app notification to opponent
+      try {
+        const opponentId = dispute.client_id === userId ? dispute.freelancer_id : dispute.client_id;
+        await Notification.create({
+          userId: opponentId,
+          title: "Dispute Contested",
+          message: `The dispute on contract "${contract.title}" has been contested. View chat for details.`,
+          type: "dispute_updated",
+          referenceId: contract.contract_id.toString()
+        });
+        if (req.io) {
+          req.io.to(`user_${opponentId}`).emit("notification", {
+            title: "Dispute Contested",
+            message: `The dispute on contract "${contract.title}" has been contested.`
+          });
+        }
+      } catch (nErr) {}
 
       return res.json({ message: "Dispute contested successfully." });
     }
@@ -387,6 +452,25 @@ export const proposeSettlement = async (req, res) => {
       freelancer_pay_percent: 100.0 - parseFloat(client_refund_percent)
     };
     await postSystemChatMessage(req.io, dispute.conversation_id, userId, payload);
+
+    // Dispatch in-app notification to opponent
+    try {
+      const opponentId = dispute.client_id === userId ? dispute.freelancer_id : dispute.client_id;
+      const isClient = dispute.client_id === userId;
+      await Notification.create({
+        userId: opponentId,
+        title: "Settlement Proposal Offered",
+        message: `${isClient ? "Client" : "Freelancer"} proposed a ${client_refund_percent}% client / ${100 - client_refund_percent}% freelancer split settlement.`,
+        type: "dispute_updated",
+        referenceId: dispute.contract_id.toString()
+      });
+      if (req.io) {
+        req.io.to(`user_${opponentId}`).emit("notification", {
+          title: "Settlement Proposal Offered",
+          message: `Settlement split proposed: ${client_refund_percent}% client / ${100 - client_refund_percent}% freelancer.`
+        });
+      }
+    } catch (nErr) {}
 
     return res.json({ message: "Settlement proposal posted." });
   } catch (err) {
@@ -489,6 +573,34 @@ export const acceptSettlement = async (req, res) => {
         details: `Mutual settlement accepted. Client refunded ${client_refund_percent}% ($${clientRefund.toFixed(2)}). Freelancer paid ${100 - client_refund_percent}% ($${freelancerPayout.toFixed(2)}) and received a net amount of $${freelancerNet.toFixed(2)}.`
       };
       await postSystemChatMessage(req.io, dispute.conversation_id, userId, payload);
+
+      // Dispatch in-app notification to both parties
+      try {
+        await Notification.create({
+          userId: dispute.client_id,
+          title: "Dispute Settlement Agreed",
+          message: `Dispute on contract "${contract.title}" resolved via agreed split: $${clientRefund.toFixed(2)} refunded to your wallet.`,
+          type: "dispute_resolved",
+          referenceId: contract.contract_id.toString()
+        });
+        await Notification.create({
+          userId: dispute.freelancer_id,
+          title: "Dispute Settlement Agreed",
+          message: `Dispute on contract "${contract.title}" resolved via agreed split: $${freelancerPayout.toFixed(2)} paid to your wallet.`,
+          type: "dispute_resolved",
+          referenceId: contract.contract_id.toString()
+        });
+        if (req.io) {
+          req.io.to(`user_${dispute.client_id}`).emit("notification", {
+            title: "Dispute Settlement Agreed",
+            message: `$${clientRefund.toFixed(2)} refunded to your wallet.`
+          });
+          req.io.to(`user_${dispute.freelancer_id}`).emit("notification", {
+            title: "Dispute Settlement Agreed",
+            message: `$${freelancerPayout.toFixed(2)} paid to your wallet.`
+          });
+        }
+      } catch (nErr) {}
 
       return res.json({ message: "Mutual settlement executed successfully." });
     } catch (txErr) {

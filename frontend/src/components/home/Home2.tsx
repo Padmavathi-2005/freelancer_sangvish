@@ -68,21 +68,21 @@ export default function Home2() {
           <div className="hidden lg:block w-60 shrink-0" />
 
           {/* CENTER: Main hero content */}
-          <div className="flex-1 flex flex-col items-center text-center gap-7">
+          <div className="flex-1 flex flex-col items-center text-center">
 
-          {/* Main Headline with DB-driven Primary Color Highlight */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.15] max-w-4xl font-display">
-            <span>{t("home2_hero_title_prefix", "Transform")}</span>{" "}
-            <span className="relative inline-block px-3.5 py-1 bg-primary text-white font-black rounded-xl shadow-xs transform -rotate-1 mx-1.5 transition-colors">
-              {t("home2_hero_title_highlight", "Your Team with")}
-            </span>{" "}
-            <span>{t("home2_hero_title_suffix", "Top Talent Discovery")}</span>
-          </h1>
+            {/* Main Headline with DB-driven Primary Color Highlight */}
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-[1.28] sm:leading-[1.25] max-w-4xl font-display">
+              <span className="inline-block">{t("home2_hero_title_prefix", "Transform")}</span>{" "}
+              <span className="relative inline-block px-4 py-1.5 bg-[#0a5a54] text-white font-black rounded-2xl shadow-sm transform -rotate-1 mx-1.5 whitespace-nowrap my-1">
+                {t("home2_hero_title_highlight", "Your Team with")}
+              </span>{" "}
+              <span className="inline-block">{t("home2_hero_title_suffix", "Top Talent Discovery")}</span>
+            </h1>
 
-          {/* Subtitle */}
-          <p className="text-sm sm:text-lg text-slate-600 dark:text-slate-300 font-medium max-w-2xl leading-relaxed">
-            {t("home2_hero_subtitle", "Flourish in a thriving freelance ecosystem dedicated to excellence and limitless opportunities.")}
-          </p>
+            {/* Subtitle */}
+            <p className="text-sm sm:text-lg text-slate-700 dark:text-slate-300 font-medium max-w-2xl leading-relaxed mt-5 sm:mt-6">
+              {t("home2_hero_subtitle", "Flourish in a thriving freelance ecosystem dedicated to excellence and limitless opportunities.")}
+            </p>
 
           {/* Solid White Search Card Box with No Internal Borders & Custom Dropdown */}
           <form

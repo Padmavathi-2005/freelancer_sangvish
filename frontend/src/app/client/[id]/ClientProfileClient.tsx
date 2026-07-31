@@ -162,17 +162,17 @@ export default function ClientProfileClient() {
 
               {/* Quick Metrics Cards */}
               <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full md:w-auto shrink-0">
-                <div className="bg-white border border-slate-200/80 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-sm">
-                  <span className="text-[7.5px] sm:text-[8px] font-black uppercase text-slate-400 tracking-wider block truncate">Active Jobs</span>
-                  <span className="text-sm sm:text-lg font-black text-primary mt-0.5 sm:mt-1 block truncate">{stats.open_jobs} Open</span>
+                <div className="bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-xs">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 tracking-wider block truncate">Active Jobs</span>
+                  <span className="text-sm sm:text-lg font-black text-[#0a5a54] dark:text-teal-400 mt-0.5 sm:mt-1 block truncate">{stats.open_jobs} Open</span>
                 </div>
-                <div className="bg-white border border-slate-200/80 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-sm">
-                  <span className="text-[7.5px] sm:text-[8px] font-black uppercase text-slate-400 tracking-wider block truncate">Rating Avg</span>
+                <div className="bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-xs">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 tracking-wider block truncate">Rating Avg</span>
                   <span className="text-sm sm:text-lg font-black text-amber-500 mt-0.5 sm:mt-1 block truncate">{ratingAvg > 0 ? `${ratingAvg}/5.0` : "—"}</span>
                 </div>
-                <div className="bg-white border border-slate-200/80 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-sm">
-                  <span className="text-[7.5px] sm:text-[8px] font-black uppercase text-slate-400 tracking-wider block truncate">Joined On</span>
-                  <span className="text-sm sm:text-lg font-black text-slate-800 mt-0.5 sm:mt-1 block truncate">
+                <div className="bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-xs">
+                  <span className="text-[9px] sm:text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 tracking-wider block truncate">Joined On</span>
+                  <span className="text-sm sm:text-lg font-black text-slate-900 dark:text-white mt-0.5 sm:mt-1 block truncate">
                     {new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
                   </span>
                 </div>

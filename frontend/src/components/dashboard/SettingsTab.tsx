@@ -902,7 +902,7 @@ export default function SettingsTab({
                   className={`w-full text-left px-4 py-3.5 rounded-xl border text-xs font-extrabold transition-all cursor-pointer flex items-center justify-between group ${
                     isCurrent
                       ? "bg-teal-700 text-white border-teal-700 shadow-md shadow-teal-700/10"
-                      : "bg-slate-50/50 border-slate-200/80 text-slate-650 hover:bg-white hover:border-slate-355"
+                      : "bg-slate-50/50 dark:bg-zinc-800/50 border-slate-200/80 dark:border-zinc-700/80 text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-zinc-800 hover:border-slate-400 dark:hover:border-zinc-600"
                   }`}
                 >
                   <div className="flex items-center gap-3">

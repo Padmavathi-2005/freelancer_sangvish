@@ -195,7 +195,7 @@ export const applyToFreelancerGig = async (req, res) => {
 
     // Retrieve gig details to identify owner
     const gigRes = await pool.query(
-      `SELECT g.freelancer_id AS freelancer_user_id, g.title 
+      `SELECT g.freelancer_id, g.title 
        FROM gigs g
        WHERE g.gig_id = $1`,
       [parseInt(gig_id)]
@@ -205,17 +205,39 @@ export const applyToFreelancerGig = async (req, res) => {
     }
     const gig = gigRes.rows[0];
 
-    if (gig.freelancer_user_id === clientId) {
+    if (gig.freelancer_id === clientId) {
       return res.status(400).json({ message: "You cannot order your own service gig." });
     }
 
-    const finalMilestones = milestones && Array.isArray(milestones) && milestones.length > 0 ? milestones : [];
+    const basePrice = parseFloat(price || 0);
+    let finalMilestones = milestones && Array.isArray(milestones) && milestones.length > 0 ? [...milestones] : [];
     const milestonesSum = finalMilestones.reduce((sum, m) => sum + parseFloat(m.amount || 0), 0);
-    const totalPrice = parseFloat(price) + milestonesSum;
+
+    let totalPrice = basePrice;
+    if (finalMilestones.length > 0) {
+      if (milestonesSum < basePrice) {
+        const baseAmount = basePrice - milestonesSum;
+        const hasBase = finalMilestones.some(m => m.title && (m.title.toLowerCase().includes("primary") || m.title.toLowerCase().includes("base") || m.title.toLowerCase().includes("scope")));
+        if (!hasBase) {
+          finalMilestones = [
+            { title: "Primary Gig Scope & Deliverables", amount: baseAmount, description: "Base gig package scope" },
+            ...finalMilestones
+          ];
+        }
+        totalPrice = basePrice;
+      } else {
+        totalPrice = milestonesSum;
+      }
+    } else {
+      finalMilestones = [
+        { title: "Primary Gig Scope & Deliverables", amount: basePrice, description: "Base gig package scope" }
+      ];
+      totalPrice = basePrice;
+    }
 
     const application = await Gig.createApplication(gig_id, clientId, requirements, totalPrice, currency_id, finalMilestones);
 
-    // Save extra feature milestones to gig_application_milestones table if provided
+    // Save feature milestones to gig_application_milestones table
     if (finalMilestones.length > 0) {
       for (const m of finalMilestones) {
         await pool.query(
@@ -235,19 +257,36 @@ export const applyToFreelancerGig = async (req, res) => {
 
     // Save and dispatch notification to freelancer
     try {
-      const notif = await Notification.create({
+      const freelancerNotif = await Notification.create({
         userId: gig.freelancer_id,
         title: "New Gig Order Received",
-        message: `A client placed an order/application on your gig "${gig.title}"`,
+        message: `A client placed a new order for your gig "${gig.title}".`,
         type: "gig",
-        referenceId: gig_id.toString()
+        referenceId: application.application_id.toString()
       });
 
       if (req.io) {
-        req.io.to(`user_${gig.freelancer_id}`).emit("new_notification", notif);
+        req.io.to(`user_${gig.freelancer_id}`).emit("new_notification", freelancerNotif);
       }
     } catch (notifErr) {
       console.error("Failed to generate freelancer gig notification:", notifErr);
+    }
+
+    // Save and dispatch notification to client
+    try {
+      const clientNotif = await Notification.create({
+        userId: clientId,
+        title: "Gig Order Submitted",
+        message: `Your order for "${gig.title}" has been placed successfully.`,
+        type: "gig",
+        referenceId: application.application_id.toString()
+      });
+
+      if (req.io) {
+        req.io.to(`user_${clientId}`).emit("new_notification", clientNotif);
+      }
+    } catch (notifErr) {
+      console.error("Failed to generate client gig notification:", notifErr);
     }
 
     return res.status(201).json({

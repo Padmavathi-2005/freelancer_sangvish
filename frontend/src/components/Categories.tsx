@@ -106,15 +106,59 @@ function SkeletonCard() {
   );
 }
 
+function getCategoryFallbackImage(name: string): string {
+  const lower = (name || "").toLowerCase();
+  if (lower.includes("web") || lower.includes("code") || lower.includes("dev")) {
+    return "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600&auto=format&fit=crop&q=80";
+  }
+  if (lower.includes("design") || lower.includes("ui") || lower.includes("ux") || lower.includes("graphic")) {
+    return "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?w=600&auto=format&fit=crop&q=80";
+  }
+  if (lower.includes("ai") || lower.includes("machine") || lower.includes("automat") || lower.includes("bot") || lower.includes("intelligence")) {
+    return "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80";
+  }
+  if (lower.includes("market") || lower.includes("seo") || lower.includes("social") || lower.includes("digital") || lower.includes("ad")) {
+    return "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80";
+  }
+  if (lower.includes("mobile") || lower.includes("android") || lower.includes("ios") || lower.includes("app")) {
+    return "https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&auto=format&fit=crop&q=80";
+  }
+  if (lower.includes("writ") || lower.includes("content") || lower.includes("blog") || lower.includes("copy")) {
+    return "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&auto=format&fit=crop&q=80";
+  }
+  if (lower.includes("video") || lower.includes("animation") || lower.includes("motion")) {
+    return "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=600&auto=format&fit=crop&q=80";
+  }
+  if (lower.includes("data") || lower.includes("analytics") || lower.includes("database")) {
+    return "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&auto=format&fit=crop&q=80";
+  }
+  return "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&auto=format&fit=crop&q=80";
+}
+
+function resolveCategoryImageUrl(catImg: string | null | undefined, catName: string) {
+  const fallback = getCategoryFallbackImage(catName);
+  if (!catImg || typeof catImg !== "string" || !catImg.trim() || catImg === "null" || catImg === "undefined") {
+    return fallback;
+  }
+  let clean = catImg.trim();
+  if (clean.startsWith("http://") || clean.startsWith("https://")) {
+    return clean;
+  }
+  clean = clean.replace(/^\/?public\//, "/");
+  const baseBackend = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseBackend}${clean.startsWith("/") ? "" : "/"}${clean}`;
+}
+
 // ─── Category card ────────────────────────────────────────────────────────────
 function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void }) {
   const { t } = useLanguage();
   const count = parseInt(cat.freelancer_count || "0");
-  const imgSrc = cat.category_image
-    ? cat.category_image.startsWith("http")
-      ? cat.category_image
-      : `${API_BASE_URL}/${cat.category_image.replace(/^\/?/, "")}`
-    : null;
+  const fallbackImg = getCategoryFallbackImage(cat.category_name);
+  const [imgSrc, setImgSrc] = useState(() => resolveCategoryImageUrl(cat.category_image, cat.category_name));
+
+  useEffect(() => {
+    setImgSrc(resolveCategoryImageUrl(cat.category_image, cat.category_name));
+  }, [cat.category_image, cat.category_name]);
 
   return (
     <div
@@ -124,18 +168,17 @@ function CategoryCard({ cat, onClick }: { cat: CategoryStat; onClick: () => void
                  hover:border-primary/30 flex flex-col"
     >
       {/* Image / icon area */}
-      <div className="relative h-44 bg-slate-50 dark:bg-zinc-850 flex items-center justify-center overflow-hidden shrink-0">
-        {imgSrc ? (
-          <img
-            src={imgSrc}
-            alt={cat.category_name}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-2 text-primary/40">
-            <CategoryIcon name={cat.category_name} />
-          </div>
-        )}
+      <div className="relative h-44 bg-slate-100 dark:bg-zinc-850 flex items-center justify-center overflow-hidden shrink-0">
+        <img
+          src={imgSrc}
+          alt={cat.category_name}
+          onError={(e) => {
+            const target = e.currentTarget;
+            target.onerror = null;
+            target.src = fallbackImg;
+          }}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
         {/* Freelancer count badge */}
         {count > 0 && (
           <span className="absolute top-2.5 right-2.5 text-[10px] font-bold px-2 py-0.5 rounded-full

@@ -724,6 +724,15 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
         addonsText = `[Ordered Extras / Add-ons:\n` + selectedAddons.map(a => ` - ${a.title} (+${gig.currency_symbol || "$"}${a.price})`).join("\n") + `]\n\n`;
       }
 
+      const payloadMilestones = [
+        {
+          title: `Primary Service Package (${activePackageTab.toUpperCase()})`,
+          amount: basePkgPrice,
+          description: "Core service package delivery and requirements fulfillment"
+        },
+        ...(orderMilestones || [])
+      ];
+
       const res = await fetch(`${API_URL}/freelancer/client/gigs/apply`, {
         method: "POST",
         headers: {
@@ -735,7 +744,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
           requirements: `${addonsText}[Plan Ordered: ${activePackageTab.toUpperCase()}]\n\n${orderRequirements.trim()}`,
           price: finalPrice,
           currency_id: gig.currency_id,
-          milestones: orderMilestones
+          milestones: payloadMilestones
         })
       });
 
@@ -752,7 +761,8 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
         setTimeout(() => {
           setIsApplying(false);
           setOrderSuccess(false);
-          router.push("/dashboard?tab=client_orders");
+          const appId = data.application?.application_id || "";
+          router.push(`/dashboard/orders${appId ? `?application_id=${appId}` : ""}`);
         }, 1500);
       } else {
         setOrderError(data.message || "Failed to order service.");

@@ -52,9 +52,13 @@
 .text-primary {
   color: var(--color-primary, #0F766E);
 }
+.light .text-primary,
+body:not(.dark) .text-primary {
+  color: var(--color-primary, #0F766E) !important;
+}
 .dark .text-primary,
 body.dark .text-primary {
-  color: #ffffff !important;
+  color: #14b8a6 !important;
 }
 .hover\:text-primary:hover {
   color: var(--color-primary, #0F766E) !important;
@@ -85,6 +89,48 @@ body.dark .text-primary {
 }
 .hover\:text-slate-900:hover {
   color: #0f172a !important;
+}
+
+/* Step Pill Text & Icon Explicit Scoped Contrast Utilities */
+.step-pill-text {
+  color: var(--color-primary, #0F766E) !important;
+}
+.dark .step-pill-text,
+html.dark .step-pill-text,
+body.dark .step-pill-text,
+.dark body .step-pill-text {
+  color: #ffffff !important;
+}
+
+.step-pill-icon-done {
+  color: var(--color-primary, #0F766E) !important;
+}
+.dark .step-pill-icon-done,
+html.dark .step-pill-icon-done,
+body.dark .step-pill-icon-done,
+.dark body .step-pill-icon-done {
+  color: #34d399 !important;
+}
+
+.step-pill-icon-todo {
+  color: var(--color-primary, #0F766E) !important;
+}
+.dark .step-pill-icon-todo,
+html.dark .step-pill-icon-todo,
+body.dark .step-pill-icon-todo,
+.dark body .step-pill-icon-todo {
+  color: #2dd4bf !important;
+}
+
+/* System Notification Header Explicit Contrast Utility */
+.system-notification-header {
+  color: #0f172a !important;
+}
+.dark .system-notification-header,
+html.dark .system-notification-header,
+body.dark .system-notification-header,
+.dark body .system-notification-header {
+  color: #ffffff !important;
 }
 
 html {
@@ -545,21 +591,82 @@ textarea:-ms-input-placeholder {
   border-color: #1e293b !important; /* slate-800 */
 }
 
-/* Text overrides */
-.dark .text-slate-900,
-.dark .text-slate-850,
-.dark .text-slate-800,
-.dark .text-slate-805,
-.dark .text-slate-808,
-.dark .text-slate-700 {
-  color: #f1f5f9 !important; /* slate-100 */
+/* Text overrides for Light Mode */
+body:not(.dark) .text-slate-900,
+body:not(.dark) .text-slate-850,
+body:not(.dark) .text-slate-800,
+body:not(.dark) .text-slate-808,
+.light .text-slate-900,
+.light .text-slate-800 {
+  color: #0f172a !important; /* dark slate-900 */
 }
 
-.dark .text-slate-500,
-.dark .text-slate-505,
-.dark .text-slate-555,
-.dark .text-slate-600 {
-  color: #94a3b8 !important; /* slate-400 */
+body:not(.dark) .text-slate-700,
+.light .text-slate-700 {
+  color: #334155 !important; /* dark slate-700 */
+}
+
+body:not(.dark) .text-slate-600,
+body:not(.dark) .text-slate-555,
+body:not(.dark) .text-slate-505,
+.light .text-slate-600 {
+  color: #475569 !important; /* dark slate-600 */
+}
+
+body:not(.dark) .text-slate-500,
+body:not(.dark) .text-slate-400,
+.light .text-slate-500 {
+  color: #475569 !important; /* dark slate-600 */
+}
+
+/* Comprehensive Text overrides for Dark Mode */
+.dark .text-slate-900:not(button),
+.dark .text-slate-850:not(button),
+.dark .text-slate-800:not(button) {
+  color: #f8fafc !important; /* slate-50 */
+}
+
+.dark .text-slate-700:not(button) {
+  color: #e2e8f0 !important; /* slate-200 */
+}
+
+.dark .text-slate-600:not(button),
+.dark .text-slate-500:not(button) {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+/* Button & Badge White Text Preservation in All Themes */
+button.text-white,
+a.text-white {
+  color: #ffffff !important;
+}
+
+/* Dark Card Input Text & Placeholder Contrast */
+.dark-card-input,
+.light .dark-card-input,
+.dark .dark-card-input,
+input.dark-card-input,
+textarea.dark-card-input,
+.light input.dark-card-input,
+.dark input.dark-card-input,
+.light input[type="text"].dark-card-input,
+.dark input[type="text"].dark-card-input,
+.light textarea.dark-card-input,
+.dark textarea.dark-card-input {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-color: #020617 !important;
+}
+.dark-card-input::placeholder,
+.light .dark-card-input::placeholder,
+.dark .dark-card-input::placeholder,
+input.dark-card-input::placeholder,
+textarea.dark-card-input::placeholder,
+.light input.dark-card-input::placeholder,
+.dark input.dark-card-input::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
+  opacity: 1 !important;
 }
 
 /* Custom stats widgets / badges */
@@ -804,6 +911,19 @@ textarea:-ms-input-placeholder {
   animation: fadeIn 0.2s ease-out forwards;
 }
 
+@keyframes shrinkWidth {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+.animate-shrinkWidth {
+  animation: shrinkWidth 4500ms linear forwards;
+}
+
 /* Scoped Dark Mode CSS overrides for landing page sections and cards */
 body.dark {
   background-color: #09090b !important;
@@ -921,26 +1041,6 @@ body.dark .bg-gradient-to-b.from-slate-100 {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Fix visibility of #0a5a54 (dark green highlight) in dark mode by converting to white */
-body.dark .text-\[\#0a5a54\] {
-  color: #ffffff !important;
-}
-
-body.dark .bg-\[\#e6f0ef\]\/50 {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
-  color: #ffffff !important;
-}
-
-body.dark .bg-\[\#0a5a54\] {
-  background-color: #ffffff !important;
-  color: #09090b !important;
-}
-
-body.dark .hover\:bg-\[\#0a5a54\]:hover {
-  background-color: #ffffff !important;
-  color: #09090b !important;
-}
 
 /* Specific overrides for Hero search form, floating cards, and mockup container in dark theme */
 body.dark .hero-floating-card {

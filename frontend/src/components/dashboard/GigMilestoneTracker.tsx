@@ -25,6 +25,39 @@ export default function GigMilestoneTracker({
   const [milestoneFiles, setMilestoneFiles] = useState<{ name: string; url: string }[]>([]);
   const [isMilestoneUploading, setIsMilestoneUploading] = useState(false);
 
+  let milestoneList: any[] = [];
+  try {
+    milestoneList = typeof application.milestones === 'string'
+      ? JSON.parse(application.milestones)
+      : (application.milestones || []);
+  } catch (e) {
+    console.error(e);
+  }
+
+  const price = parseFloat(application.price || 0);
+  if (milestoneList.length === 0) {
+    milestoneList = [
+      { id: "gm1", title: "Primary Gig Scope & Deliverables", percentage: 100, amount: price, completed: false, paid: false }
+    ];
+  } else {
+    // Check if milestones sum matches total order price
+    const currentSum = milestoneList.reduce((sum: number, m: any) => sum + parseFloat(m.amount || 0), 0);
+    const diff = price - currentSum;
+    if (diff > 0.01) {
+      const hasBaseScope = milestoneList.some((m: any) =>
+        (m.title && m.title.toLowerCase().includes("primary")) ||
+        (m.title && m.title.toLowerCase().includes("base")) ||
+        (m.title && m.title.toLowerCase().includes("scope"))
+      );
+      if (!hasBaseScope) {
+        milestoneList = [
+          { id: "gm_base", title: "Primary Gig Scope & Deliverables", amount: diff, completed: false, paid: false },
+          ...milestoneList
+        ];
+      }
+    }
+  }
+
   const refreshApplication = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -83,12 +116,35 @@ export default function GigMilestoneTracker({
     }
   };
 
-  const handleSubmitMilestone = async (milestoneId: number, files: { name: string; url: string }[] = []) => {
+  const handleSubmitMilestone = async (milestoneId: any, files: { name: string; url: string }[] = []) => {
     try {
       setMilestoneActionLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/payments/contract/milestone/${milestoneId}/submit`, {
-        method: "POST",
+
+      const targetM = milestoneList.find((m: any) => 
+        (m.milestone_id && m.milestone_id.toString() === milestoneId?.toString()) ||
+        (m.id && m.id.toString() === milestoneId?.toString()) ||
+        m.title === milestoneId
+      );
+
+      const numId = targetM?.milestone_id ? parseInt(targetM.milestone_id) : parseInt(milestoneId);
+
+      let url = "";
+      let method = "POST";
+
+      if (!isNaN(numId) && numId > 0) {
+        url = `${API_URL}/payments/contract/milestone/${numId}/submit`;
+        method = "POST";
+      } else if (application.contract_id) {
+        url = `${API_URL}/freelancer/contracts/${application.contract_id}/request-payment`;
+        method = "PUT";
+      } else {
+        triggerToast("error", "Unable to submit: contract ID not found.");
+        return;
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: { 
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}` 
@@ -167,21 +223,6 @@ export default function GigMilestoneTracker({
       setMilestoneActionLoading(false);
     }
   };
-  let milestoneList = [];
-  try {
-    milestoneList = typeof application.milestones === 'string'
-      ? JSON.parse(application.milestones)
-      : (application.milestones || []);
-  } catch (e) {
-    console.error(e);
-  }
-
-  const price = parseFloat(application.price);
-  if (milestoneList.length === 0) {
-    milestoneList = [
-      { id: "gm1", title: "Entire Gig Scope", percentage: 100, amount: price, completed: false, paid: false }
-    ];
-  }
 
   const isCompleted = (m: any) => m.completed === true || m.completed === 'true' || m.status === 'Completed';
   const isPaid = (m: any) => m.paid === true || m.paid === 'true' || m.payment_status === 'Paid';
@@ -260,205 +301,367 @@ export default function GigMilestoneTracker({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <h4 className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1">Gig Milestones Checklist</h4>
-        {milestoneList.map((m: any, idx: number) => {
-          const mIdentifier = (m.milestone_id || m.id || m.title || idx).toString();
-          const milestonePaid = isPaid(m);
-          const hasContract = !!application.contract_id;
+      {/* 2-Column Layout: Left = Project Timeline, Right = Milestones Checklist */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Left Column: PROJECT TIMELINE */}
+        <div className="md:col-span-1 bg-slate-50/80 border border-slate-200/80 rounded-2xl p-5 flex flex-col gap-4 text-left shadow-2xs h-fit">
+          <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
+            <h4 className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Project Timeline</h4>
+            {(application.contract_status === "Disputed" || application.dispute_status === "Open") && (
+              <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full uppercase">Disputed</span>
+            )}
+          </div>
 
-          return (
-            <div key={idx} className="flex flex-col gap-3">
-              <div className="bg-white border border-slate-200 p-3.5 sm:p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shadow-xxs hover:border-slate-350 transition-all text-left">
-                <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
-                  <div className="flex items-center h-5 mt-0.5 shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={isCompleted(m)}
-                      disabled={hasContract}
-                      onChange={() => !hasContract && handleToggleMilestone(mIdentifier, 'completed')}
-                      className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className={`text-xs font-bold text-slate-800 leading-snug ${isCompleted(m) ? 'line-through text-slate-400' : ''}`}>{m.title}</p>
-                      {hasContract && (
-                        <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border whitespace-nowrap ${
-                          milestonePaid
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                            : m.status === 'Under Review'
-                              ? 'bg-amber-50 text-amber-700 border-amber-100'
-                              : m.status === 'Revision Requested'
-                                ? 'bg-rose-50 text-rose-700 border-rose-100'
-                                : 'bg-slate-50 text-slate-500 border-slate-100'
-                        }`}>
-                          {milestonePaid ? 'Paid' : (m.status || 'Pending')}
-                        </span>
+          <div className="flex flex-col">
+            {(() => {
+              const isOrderPaid = application.payment_status === "Paid" || Boolean(application.contract_id) || application.status === "Completed";
+              const cStatus = application.contract_status || application.status;
+
+              const timelineSteps: any[] = [
+                {
+                  label: "Hired & Payment",
+                  sub: isOrderPaid ? `You locked $${totalAmount.toLocaleString()} into escrow` : "Awaiting checkout payment",
+                  amount: `$${totalAmount.toLocaleString()}`,
+                  date: application.paid_at || application.created_at,
+                  done: isOrderPaid
+                },
+                {
+                  label: "Work Started",
+                  sub: (isOrderPaid || ["In Progress", "Work Started", "Under Review", "Completed", "Disputed"].includes(cStatus)) ? "Freelancer began work on contract" : "Awaiting work start",
+                  date: (isOrderPaid || ["In Progress", "Work Started", "Under Review", "Completed", "Disputed"].includes(cStatus)) ? (application.work_started_at || application.paid_at || application.accepted_at || application.created_at) : null,
+                  done: isOrderPaid || ["In Progress", "Work Started", "Under Review", "Completed", "Disputed"].includes(cStatus)
+                },
+                ...milestoneList.map((m: any, idx: number) => {
+                  const mPaid = isPaid(m);
+                  const mRev = m.status === 'Under Review';
+                  const mComp = isCompleted(m);
+
+                  return {
+                    label: `Milestone ${idx + 1}: ${m.title}`,
+                    sub: mPaid
+                      ? "Payment released from escrow"
+                      : mRev
+                      ? "Work submitted for client review"
+                      : mComp
+                      ? "Work completed"
+                      : "Awaiting completion & approval",
+                    amount: `$${parseFloat(m.amount || 0).toLocaleString()}`,
+                    date: (mPaid || mComp || mRev) ? (m.updated_at || application.paid_at || application.created_at) : null,
+                    done: mPaid,
+                    isReview: mRev && !mPaid
+                  };
+                }),
+                (() => {
+                  const allPaid = milestoneList.length > 0 && milestoneList.every((m: any) => isPaid(m));
+                  const anySubmitted = cStatus === "Under Review" || milestoneList.some((m: any) => m.status === "Under Review" || isPaid(m));
+                  return {
+                    label: "Work Submitted",
+                    sub: allPaid
+                      ? "All deliverables completed & approved"
+                      : anySubmitted
+                      ? "Work submitted - Awaiting client approval"
+                      : "Pending work submission",
+                    date: anySubmitted ? (application.submitted_at || application.paid_at || application.created_at) : null,
+                    done: allPaid,
+                    isReview: anySubmitted && !allPaid
+                  };
+                })()
+              ];
+
+              if (cStatus === "Disputed" || application.dispute_status === "Open") {
+                timelineSteps.push({
+                  label: "Disputed",
+                  sub: "Under admin arbitration",
+                  date: application.disputed_at || application.updated_at || application.created_at,
+                  done: true,
+                  isDispute: true
+                });
+              }
+
+              return timelineSteps.map((step: any, idx: number, arr: any[]) => {
+                const done = step.done;
+                const isLast = idx === arr.length - 1;
+                const circleStyle = step.isDispute
+                  ? "bg-rose-600 border-rose-600 text-white shadow-rose-100"
+                  : done
+                  ? "bg-teal-600 border-teal-600 text-white shadow-teal-100"
+                  : step.isReview
+                  ? "bg-amber-50 border-amber-500 text-amber-700 shadow-amber-100 font-black"
+                  : "bg-white border-slate-300 text-slate-400";
+
+                const circleIcon = step.isDispute
+                  ? "⚠️"
+                  : done
+                  ? "✓"
+                  : step.isReview
+                  ? "⏳"
+                  : idx + 1;
+
+                return (
+                  <div key={idx} className="flex gap-3 text-left">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shrink-0 border-2 transition-all ${circleStyle}`}>
+                        {circleIcon}
+                      </div>
+                      {!isLast && (
+                        <div className={`w-0.5 flex-1 min-h-[22px] my-1 ${done ? (step.isDispute ? "bg-rose-300" : "bg-teal-300") : step.isReview ? "bg-amber-300" : "bg-slate-200"}`} />
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <span className="text-[10px] font-black text-primary whitespace-nowrap">${parseFloat(m.amount).toLocaleString()}</span>
-                      {m.paid_at && (
-                        <span className="text-[9px] font-bold text-emerald-600 whitespace-nowrap">
-                          • Paid on {new Date(m.paid_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}
-                        </span>
-                      )}
-                      {!m.paid_at && (m.start_date || m.end_date) && (
-                        <span className="text-[9px] font-semibold text-slate-400 whitespace-nowrap">
-                          • {m.start_date ? new Date(m.start_date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : 'N/A'} - {m.end_date ? new Date(m.end_date).toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) : 'N/A'}
-                        </span>
-                      )}
-                    </div>
-                    {m.description && (
-                      <p className="text-[10px] text-slate-500 font-medium mt-1.5 bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 whitespace-pre-wrap leading-relaxed">
-                        {m.description}
-                      </p>
-                    )}
-                    {hasContract && m.status === 'Revision Requested' && m.feedback && (
-                      <p className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-150 rounded-lg p-2 mt-2 leading-relaxed">
-                        ⚠ Feedback: {m.feedback}
-                      </p>
-                    )}
-                    {hasContract && m.submitted_files && (() => {
-                      let filesList = [];
-                      try {
-                        filesList = JSON.parse(m.submitted_files);
-                      } catch (e) {
-                        if (m.submitted_files.includes("http")) {
-                          filesList = m.submitted_files.split(",").map((url: string) => ({ name: "Submitted Deliverable", url }));
-                        }
-                      }
-                      if (!Array.isArray(filesList) || filesList.length === 0) return null;
-                      return (
-                        <div className="mt-2.5 bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-left">
-                          <span className="text-[9px] font-black text-slate-405 uppercase tracking-widest block mb-2">Submitted Deliverables</span>
-                          <div className="flex flex-col gap-1.5">
-                            {filesList.map((file: any, idx: number) => (
-                              <a
-                                key={idx}
-                                href={file.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-900 transition hover:underline"
-                              >
-                                <FiExternalLink className="w-3.5 h-3.5" />
-                                <span className="truncate max-w-[250px]">{file.name || "View Deliverable"}</span>
-                              </a>
-                            ))}
-                          </div>
+
+                    <div className={`flex-1 ${isLast ? "pb-0" : "pb-3.5"}`}>
+                      <div className="flex items-start justify-between gap-1">
+                        <div>
+                          <p className={`text-xs font-extrabold leading-snug ${step.isDispute ? "text-rose-700" : done ? "text-slate-850" : "text-slate-400"}`}>{step.label}</p>
+                          <p className={`text-[10px] font-semibold mt-0.5 leading-snug ${step.isDispute ? "text-rose-600" : done ? "text-teal-700" : "text-slate-400"}`}>{step.sub}</p>
                         </div>
-                      );
+                        {step.amount && (
+                          <span className="text-[9.5px] font-black text-slate-700 bg-white border border-slate-200 px-1.5 py-0.5 rounded shrink-0 shadow-2xs">
+                            {step.amount}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-400 block mt-1">
+                        {step.date ? new Date(step.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Pending"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+
+        {/* Right Column: ORDER SCOPE & FEATURES CHECKLIST */}
+        <div className="md:col-span-2 flex flex-col gap-2">
+          <h4 className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wider mb-1">Order Scope & Features Checklist</h4>
+          {milestoneList.map((m: any, idx: number) => {
+            const mIdentifier = (m.milestone_id || m.id || m.title || idx).toString();
+            const milestonePaid = isPaid(m);
+            const hasContract = !!application.contract_id;
+
+            return (
+              <div key={idx} className="flex flex-col gap-3">
+                <div className="bg-white border border-slate-200 p-3.5 sm:p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shadow-xxs hover:border-slate-350 transition-all text-left">
+                  <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 flex-1">
+                    <div className="flex items-center h-5 mt-0.5 shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={isCompleted(m)}
+                        disabled={hasContract}
+                        onChange={() => !hasContract && handleToggleMilestone(mIdentifier, 'completed')}
+                        className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className={`text-xs font-bold text-slate-800 leading-snug ${isCompleted(m) ? 'line-through text-slate-400' : ''}`}>{m.title}</p>
+                        {hasContract && (
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border whitespace-nowrap ${
+                            milestonePaid
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                              : m.status === 'Under Review'
+                                ? 'bg-amber-50 text-amber-700 border-amber-100'
+                                : m.status === 'Revision Requested'
+                                  ? 'bg-rose-50 text-rose-700 border-rose-100'
+                                  : 'bg-slate-50 text-slate-500 border-slate-100'
+                          }`}>
+                            {milestonePaid ? 'Paid' : (m.status || 'Pending')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className="text-[10px] font-black text-primary whitespace-nowrap">${parseFloat(m.amount).toLocaleString()}</span>
+                        <span className="text-[9px] bg-slate-50 text-slate-500 px-1.5 py-0.5 rounded-md font-bold border border-slate-200/50 flex items-center gap-1 select-none">
+                          Revisions: 0/3
+                        </span>
+                        {milestonePaid && userRole === "freelancer" && (
+                          <span className="text-[9px] text-slate-400 font-bold flex items-center gap-1 select-none">
+                            <span>•</span>
+                            <span>Platform service fee was deducted</span>
+                          </span>
+                        )}
+                        {m.paid_at && (
+                          <span className="text-[9px] font-bold text-emerald-600 whitespace-nowrap">
+                            • Paid on {new Date(m.paid_at).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}
+                          </span>
+                        )}
+                      </div>
+                      {m.description && (
+                        <p className="text-[10px] text-slate-500 font-medium mt-1.5 bg-slate-50 border border-slate-100 rounded-lg px-2.5 py-1.5 whitespace-pre-wrap leading-relaxed">
+                          {m.description}
+                        </p>
+                      )}
+                      {hasContract && m.status === 'Revision Requested' && m.feedback && (
+                        <p className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-150 rounded-lg p-2 mt-2 leading-relaxed">
+                          ⚠ Feedback: {m.feedback}
+                        </p>
+                      )}
+                      {hasContract && m.submitted_files && (() => {
+                        let filesList = [];
+                        try {
+                          filesList = JSON.parse(m.submitted_files);
+                        } catch (e) {
+                          if (m.submitted_files.includes("http")) {
+                            filesList = m.submitted_files.split(",").map((url: string) => ({ name: "Submitted Deliverable", url }));
+                          }
+                        }
+                        if (!Array.isArray(filesList) || filesList.length === 0) return null;
+                        return (
+                          <div className="mt-2.5 bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-left">
+                            <span className="text-[9px] font-black text-slate-405 uppercase tracking-widest block mb-2">Submitted Deliverables</span>
+                            <div className="flex flex-col gap-1.5">
+                              {filesList.map((file: any, idx: number) => (
+                                <a
+                                  key={idx}
+                                  href={file.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-900 transition hover:underline"
+                                >
+                                  <FiExternalLink className="w-3.5 h-3.5" />
+                                  <span className="truncate max-w-[250px]">{file.name || "View Deliverable"}</span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100/80">
+                    {(() => {
+                      const isDisputedOrder = application.contract_status === "Disputed" || application.dispute_status === "Open" || application.dispute_status === "Escalated";
+
+                      if (isDisputedOrder) {
+                        return milestonePaid ? (
+                          <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-150 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                            <FiCheck className="w-3.5 h-3.5 text-emerald-600" /> Paid
+                          </span>
+                        ) : (
+                          <span className="text-[9.5px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider flex items-center gap-1 select-none">
+                            🔒 Frozen - Under Dispute
+                          </span>
+                        );
+                      }
+
+                      if (!hasContract) {
+                        return (
+                          <button
+                            onClick={() => handleToggleMilestone(mIdentifier, 'paid')}
+                            className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider cursor-pointer transition-all ${
+                              milestonePaid
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-slate-355 hover:text-slate-600'
+                            }`}
+                          >
+                            {milestonePaid ? (
+                              <span className="flex items-center gap-0.5">
+                                <FiCheck className="w-2.5 h-2.5 text-emerald-600" /> Paid
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-0.5">
+                                <FiDollarSign className="w-2.5 h-2.5" /> Pay
+                              </span>
+                            )}
+                          </button>
+                        );
+                      }
+
+                      if (milestonePaid) {
+                        return (
+                          <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-150 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                            <FiCheck className="w-3.5 h-3.5 text-emerald-600" /> Paid
+                          </span>
+                        );
+                      }
+
+                      if (userRole === "freelancer") {
+                        return m.status === "Under Review" ? (
+                          <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider">
+                            ⏳ Under Review
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setSubmittingMilestoneId(m.milestone_id || m.id || mIdentifier);
+                              setMilestoneFiles([]);
+                            }}
+                            disabled={milestoneActionLoading}
+                            className="bg-primary hover:bg-primary-hover text-white text-[10px] font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
+                          >
+                            Submit Work
+                          </button>
+                        );
+                      }
+
+                      if (userRole === "client") {
+                        return m.status === "Under Review" ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleReleaseMilestone(m.milestone_id, m.title, parseFloat(m.amount))}
+                              className="bg-emerald-600 hover:bg-emerald-750 text-white text-[10px] font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer shadow-sm"
+                            >
+                              Approve & Pay
+                            </button>
+                            <button
+                              onClick={() => {
+                                setActiveRevisionId(m.milestone_id);
+                                setMilestoneFeedback("");
+                              }}
+                              className="bg-rose-50 hover:bg-rose-100 text-rose-605 border border-rose-200 text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer"
+                            >
+                              Request Revision
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-black text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider">
+                            ⏳ Awaiting Work
+                          </span>
+                        );
+                      }
+
+                      return null;
                     })()}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100/80">
-                  {hasContract ? (
-                    milestonePaid ? (
-                      <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-150 px-2.5 py-1 rounded-lg uppercase tracking-wider">
-                        <FiCheck className="w-3.5 h-3.5 text-emerald-600" /> Paid
-                      </span>
-                    ) : userRole === "freelancer" ? (
-                      m.status === "Under Review" ? (
-                        <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider">
-                          ⏳ Under Review
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setSubmittingMilestoneId(m.milestone_id);
-                            setMilestoneFiles([]);
-                          }}
-                          disabled={milestoneActionLoading}
-                          className="bg-primary hover:bg-primary-hover text-white text-[10px] font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
-                        >
-                          Submit Work
-                        </button>
-                      )
-                    ) : userRole === "client" ? (
-                      m.status === "Under Review" ? (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleReleaseMilestone(m.milestone_id, m.title, parseFloat(m.amount))}
-                            className="bg-emerald-600 hover:bg-emerald-750 text-white text-[10px] font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer shadow-sm"
-                          >
-                            Approve & Pay
-                          </button>
-                          <button
-                            onClick={() => {
-                              setActiveRevisionId(m.milestone_id);
-                              setMilestoneFeedback("");
-                            }}
-                            className="bg-rose-50 hover:bg-rose-100 text-rose-605 border border-rose-200 text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer"
-                          >
-                            Request Revision
-                          </button>
-                        </div>
-                      ) : (
-                        <span className="text-[10px] font-black text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider">
-                          ⏳ Awaiting Work
-                        </span>
-                      )
-                    ) : null
-                  ) : (
-                    <button
-                      onClick={() => handleToggleMilestone(mIdentifier, 'paid')}
-                      className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider cursor-pointer transition-all ${
-                        milestonePaid
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : 'bg-slate-50 text-slate-400 border-slate-200 hover:border-slate-355 hover:text-slate-600'
-                      }`}
-                    >
-                      {milestonePaid ? (
-                        <span className="flex items-center gap-0.5">
-                          <FiCheck className="w-2.5 h-2.5 text-emerald-600" /> Paid
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-0.5">
-                          <FiDollarSign className="w-2.5 h-2.5" /> Pay
-                        </span>
-                      )}
-                    </button>
-                  )}
-                </div>
+                {/* Revision Request Form */}
+                {activeRevisionId === m.milestone_id && (
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 animate-fadeIn">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Describe Revision Requirements *</label>
+                      <textarea
+                        rows={2}
+                        placeholder="e.g. Please update the wireframe styling and align colors with branding..."
+                        value={milestoneFeedback}
+                        onChange={(e) => setMilestoneFeedback(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:border-primary focus:outline-none mt-1.5"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveRevisionId(null)}
+                        className="px-3 py-1.5 bg-white border border-slate-250 rounded-lg text-[10px] font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        disabled={milestoneActionLoading || !milestoneFeedback.trim()}
+                        onClick={() => handleRejectMilestone(m.milestone_id)}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-750 text-white rounded-lg text-[10px] font-black border-0 cursor-pointer disabled:opacity-50"
+                      >
+                        Submit Request
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Revision Request Form */}
-              {activeRevisionId === m.milestone_id && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 animate-fadeIn">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Describe Revision Requirements *</label>
-                    <textarea
-                      rows={2}
-                      placeholder="e.g. Please update the wireframe styling and align colors with branding..."
-                      value={milestoneFeedback}
-                      onChange={(e) => setMilestoneFeedback(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:border-primary focus:outline-none mt-1.5"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveRevisionId(null)}
-                      className="px-3 py-1.5 bg-white border border-slate-250 rounded-lg text-[10px] font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      disabled={milestoneActionLoading || !milestoneFeedback.trim()}
-                      onClick={() => handleRejectMilestone(m.milestone_id)}
-                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-750 text-white rounded-lg text-[10px] font-black border-0 cursor-pointer disabled:opacity-50"
-                    >
-                      Submit Request
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
       {/* Submit deliverables modal */}
       {submittingMilestoneId !== null && typeof document !== "undefined" && createPortal(

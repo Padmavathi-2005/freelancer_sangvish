@@ -30,7 +30,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
     adminWalletStats = null,
     pendingVettingCount = 0,
     activeDisputesCount = 0,
-    userCounts = { total: 0, freelancers: 0, clients: 0 },
+    userCounts = { total: 0, freelancers: 0, clients: 0, dualRole: 0 },
     platformFee = 5,
     setProjectsSubTab,
     setTransactionsSubTab,

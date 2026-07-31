@@ -678,19 +678,30 @@ export const getPublicFreelancerProfile = async (req, res) => {
         let userId;
 
         if (isNumeric) {
-            userId = parseInt(id);
+            userId = parseInt(id, 10);
         } else {
-            const nameSearch = id.replace(/-/g, ' ');
-            let userLookup = await pool.query("SELECT user_id FROM users WHERE slug = $1", [id]);
-            
-            if (userLookup.rows.length === 0) {
+            // Check if slug has trailing user ID (e.g. sarah-jenkins-5)
+            const trailingIdMatch = id.match(/-(\d+)$/);
+            let userLookup;
+
+            if (trailingIdMatch) {
+                const potentialId = parseInt(trailingIdMatch[1], 10);
+                userLookup = await pool.query("SELECT user_id FROM users WHERE user_id = $1", [potentialId]);
+            }
+
+            if (!userLookup || userLookup.rows.length === 0) {
+                userLookup = await pool.query("SELECT user_id FROM users WHERE slug = $1", [id]);
+            }
+
+            if (!userLookup || userLookup.rows.length === 0) {
+                const nameSearch = id.replace(/-/g, ' ');
                 userLookup = await pool.query(
                     "SELECT user_id FROM users WHERE LOWER(display_name) = LOWER($1) OR LOWER(first_name || ' ' || last_name) = LOWER($2) OR LOWER(first_name) = LOWER($3) OR LOWER(first_name || '-' || last_name) = LOWER($4)",
                     [id, nameSearch, id, id]
                 );
             }
 
-            if (userLookup.rows.length === 0) {
+            if (!userLookup || userLookup.rows.length === 0) {
                 return res.status(404).json({ message: "User not found." });
             }
             userId = userLookup.rows[0].user_id;
@@ -891,7 +902,8 @@ export const requestContractPayment = async (req, res) => {
         if (!contract) {
             return res.status(403).json({ message: "Contract not found or not owned by you." });
         }
-        if (contract.status !== "In Progress" && contract.status !== "Work Started") {
+        const validStatuses = ["In Progress", "Work Started", "Active", "Accepted", "Pending", "Under Review"];
+        if (!validStatuses.includes(contract.status)) {
             return res.status(400).json({ message: `Contract cannot request payment in state: ${contract.status}` });
         }
 
