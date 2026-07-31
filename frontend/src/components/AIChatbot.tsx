@@ -978,13 +978,15 @@ export default function AIChatbot() {
       {/* Floating Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-[#0a5a54] hover:bg-[#07433e] text-white shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-white/20 cursor-pointer group"
+        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-white dark:bg-zinc-900 text-slate-800 dark:text-white shadow-2xl hover:shadow-teal-900/20 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-teal-600/40 p-2 cursor-pointer group"
         aria-label="Open AI Assistant"
       >
         {isOpen ? (
-          <FiX className="w-6 h-6 animate-fadeIn" />
+          <div className="w-full h-full rounded-full bg-teal-700 text-white flex items-center justify-center">
+            <FiX className="w-5 h-5 animate-fadeIn" />
+          </div>
         ) : (
-          <div className="relative flex items-center justify-center w-full h-full p-2">
+          <div className="relative flex items-center justify-center w-full h-full">
             {!btnImageFailed && (siteChatbotAvatar || siteFavicon || siteLogo || !mounted) ? (
               <img 
                 src={siteChatbotAvatar ? resolveChatLogoUrl(siteChatbotAvatar) : siteFavicon ? resolveChatLogoUrl(siteFavicon) : siteLogo ? resolveChatLogoUrl(siteLogo) : "/favicon.ico"} 
@@ -999,9 +1001,9 @@ export default function AIChatbot() {
                 className="w-8 h-8 object-contain animate-fadeIn group-hover:scale-110 transition-transform"
               />
             )}
-            <span className="absolute top-0 right-0 flex h-3.5 w-3.5">
+            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-400 border-2 border-white dark:border-zinc-900 shadow-sm"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-sm"></span>
             </span>
           </div>
         )}

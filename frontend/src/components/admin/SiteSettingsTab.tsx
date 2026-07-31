@@ -373,7 +373,7 @@ export default function SiteSettingsTab({
         <h4 className="text-sm font-extrabold text-slate-855 mb-1">Branding Assets</h4>
         <p className="text-xs text-slate-505 mb-6 font-semibold">Upload your light theme logo, dark theme logo, browser favicon, social thumbnail, and AI chatbot avatar image.</p>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           
           {/* SITE LOGO UPLOADER (LIGHT THEME) */}
           <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
