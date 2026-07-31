@@ -19,6 +19,7 @@ export default function SiteSettingsTab({
   const [siteLogoDark, setSiteLogoDark] = useState("/public/logo.png");
   const [siteFavicon, setSiteFavicon] = useState("/public/favicon.ico");
   const [siteOgImage, setSiteOgImage] = useState("/public/og-image.png");
+  const [siteChatbotAvatar, setSiteChatbotAvatar] = useState("/public/images/chatbot-avatar.png");
   const [siteDescription, setSiteDescription] = useState("LancerFlow Freelance Marketplace");
   const [siteKeywords, setSiteKeywords] = useState("freelance, marketplace, gig, order");
   const [siteShortName, setSiteShortName] = useState("Lancer");
@@ -40,9 +41,9 @@ export default function SiteSettingsTab({
   const [toastTitle, setToastTitle] = useState("Settings Saved");
   const [toastText, setToastText] = useState("Platform configuration updated successfully.");
 
-  const [uploadingField, setUploadingField] = useState<"logo" | "logo_dark" | "favicon" | "og_image" | null>(null);
+  const [uploadingField, setUploadingField] = useState<"logo" | "logo_dark" | "favicon" | "og_image" | "chatbot_avatar" | null>(null);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "logo" | "logo_dark" | "favicon" | "og_image") => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: "logo" | "logo_dark" | "favicon" | "og_image" | "chatbot_avatar") => {
     if (!e.target.files || e.target.files.length === 0) return;
     try {
       setUploadingField(target);
@@ -69,6 +70,7 @@ export default function SiteSettingsTab({
       else if (target === "logo_dark") setSiteLogoDark(data.url);
       else if (target === "favicon") setSiteFavicon(data.url);
       else if (target === "og_image") setSiteOgImage(data.url);
+      else if (target === "chatbot_avatar") setSiteChatbotAvatar(data.url);
       
       triggerToast("Upload Success", `${target.replace("_", " ").toUpperCase()} uploaded successfully!`);
     } catch (err: any) {
@@ -113,6 +115,7 @@ export default function SiteSettingsTab({
             if (site.site_logo_dark) setSiteLogoDark(site.site_logo_dark);
             if (site.site_favicon) setSiteFavicon(site.site_favicon);
             if (site.site_og_image) setSiteOgImage(site.site_og_image);
+            if (site.site_chatbot_avatar || site.chatbot_avatar) setSiteChatbotAvatar(site.site_chatbot_avatar || site.chatbot_avatar);
             if (site.site_description) setSiteDescription(site.site_description);
             if (site.site_keywords) setSiteKeywords(site.site_keywords);
             if (site.site_short_name) setSiteShortName(site.site_short_name);
@@ -233,10 +236,15 @@ export default function SiteSettingsTab({
         site_logo_dark: cleanToRelative(siteLogoDark),
         site_favicon: cleanToRelative(siteFavicon),
         site_og_image: cleanToRelative(siteOgImage),
+        site_chatbot_avatar: cleanToRelative(siteChatbotAvatar),
         site_description: siteDescription,
         site_keywords: siteKeywords,
         site_short_name: siteShortName
       }, "site_settings");
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("cached_site_chatbot_avatar", siteChatbotAvatar);
+      }
 
       await handleSaveSetting("app_store_url", appStoreUrl, "site_settings");
       await handleSaveSetting("google_play_url", googlePlayUrl, "site_settings");
@@ -363,9 +371,9 @@ export default function SiteSettingsTab({
       {/* BRANDING ASSETS SECTION */}
       <div className="border-b border-slate-100 pb-8">
         <h4 className="text-sm font-extrabold text-slate-855 mb-1">Branding Assets</h4>
-        <p className="text-xs text-slate-505 mb-6 font-semibold">Upload your light theme logo, dark theme logo, browser favicon, and default sharing thumbnail.</p>
+        <p className="text-xs text-slate-505 mb-6 font-semibold">Upload your light theme logo, dark theme logo, browser favicon, social thumbnail, and AI chatbot avatar image.</p>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
           
           {/* SITE LOGO UPLOADER (LIGHT THEME) */}
           <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
@@ -544,6 +552,51 @@ export default function SiteSettingsTab({
               value={siteOgImage}
               onChange={(e) => setSiteOgImage(e.target.value)}
               placeholder="/public/og-image.png"
+              className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-500 focus:outline-none focus:border-teal-700 transition"
+            />
+          </div>
+
+          {/* CHATBOT AVATAR IMAGE UPLOADER */}
+          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Chatbot Avatar Image</span>
+            
+            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-36 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
+              {siteChatbotAvatar ? (
+                <div className="w-full h-full p-4 flex items-center justify-center relative">
+                  <img 
+                    src={formatImgSrc(siteChatbotAvatar)} 
+                    className="h-14 w-14 object-contain rounded-full border border-slate-200 shadow-xs transition group-hover:scale-105"
+                    alt="Chatbot Avatar Preview" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://cdn-icons-png.flaticon.com/512/8943/8943377.png";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
+                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
+                      {uploadingField === "chatbot_avatar" ? "Uploading..." : "Change Avatar"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-slate-400">
+                  <FiUploadCloud className="w-8 h-8 text-slate-350" />
+                  <span className="text-[10px] font-bold">Upload Chatbot Avatar</span>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploadingField !== null}
+                onChange={(e) => handleImageUpload(e, "chatbot_avatar")}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </div>
+
+            <input
+              type="text"
+              value={siteChatbotAvatar}
+              onChange={(e) => setSiteChatbotAvatar(e.target.value)}
+              placeholder="/public/images/chatbot-avatar.png"
               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-500 focus:outline-none focus:border-teal-700 transition"
             />
           </div>

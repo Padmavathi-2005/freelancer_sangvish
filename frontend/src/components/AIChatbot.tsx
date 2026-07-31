@@ -246,6 +246,7 @@ export default function AIChatbot() {
   const [siteLogo, setSiteLogo] = useState("");
   const [siteName, setSiteName] = useState("");
   const [siteFavicon, setSiteFavicon] = useState("");
+  const [siteChatbotAvatar, setSiteChatbotAvatar] = useState("");
   const [faviconFailed, setFaviconFailed] = useState(false);
   const [btnImageFailed, setBtnImageFailed] = useState(false);
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string }>>([]);
@@ -271,6 +272,7 @@ export default function AIChatbot() {
       setSiteLogo(localStorage.getItem("cached_site_logo") || "");
       setSiteName(localStorage.getItem("cached_site_name") || "");
       setSiteFavicon(localStorage.getItem("cached_site_favicon") || "");
+      setSiteChatbotAvatar(localStorage.getItem("cached_site_chatbot_avatar") || "");
     }
     const fetchBrand = async () => {
       try {
@@ -297,6 +299,11 @@ export default function AIChatbot() {
               if (val?.site_favicon) {
                 setSiteFavicon(val.site_favicon);
                 localStorage.setItem("cached_site_favicon", val.site_favicon);
+              }
+              if (val?.site_chatbot_avatar || val?.chatbot_avatar) {
+                const botAvatar = val.site_chatbot_avatar || val.chatbot_avatar;
+                setSiteChatbotAvatar(botAvatar);
+                localStorage.setItem("cached_site_chatbot_avatar", botAvatar);
               }
             }
           });
@@ -977,10 +984,10 @@ export default function AIChatbot() {
         {isOpen ? (
           <FiX className="w-6 h-6 animate-fadeIn" />
         ) : (
-          <div className="relative flex items-center justify-center w-full h-full p-2.5">
-            {!btnImageFailed && (siteFavicon || siteLogo || !mounted) ? (
+          <div className="relative flex items-center justify-center w-full h-full p-2">
+            {!btnImageFailed && (siteChatbotAvatar || siteFavicon || siteLogo || !mounted) ? (
               <img 
-                src={siteFavicon ? resolveChatLogoUrl(siteFavicon) : siteLogo ? resolveChatLogoUrl(siteLogo) : "/favicon.ico"} 
+                src={siteChatbotAvatar ? resolveChatLogoUrl(siteChatbotAvatar) : siteFavicon ? resolveChatLogoUrl(siteFavicon) : siteLogo ? resolveChatLogoUrl(siteLogo) : "/favicon.ico"} 
                 alt="AI Assistant" 
                 className="w-full h-full object-contain rounded-full animate-fadeIn group-hover:scale-110 transition-transform"
                 onError={() => setBtnImageFailed(true)}
