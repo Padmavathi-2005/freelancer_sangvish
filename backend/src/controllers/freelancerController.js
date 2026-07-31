@@ -966,6 +966,8 @@ export const requestContractPayment = async (req, res) => {
         if (req.io) {
             req.io.to(`user_${contract.client_id}`).emit("new_notification", clientNotif);
             req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", freelancerNotif);
+            req.io.emit("new_notification", clientNotif);
+            req.io.emit("notification", clientNotif);
         }
 
         // 3. Send Platform Chat Message
@@ -1312,15 +1314,23 @@ export const requestTimecardPayment = async (req, res) => {
 
         // Notify client of payment request
         try {
-            await pool.query(
-                `INSERT INTO notifications (user_id, title, message, type, reference_id)
-                 VALUES ($1, 'Payment Requested', $2, 'contract', $3)`,
-                [
-                    contract.client_id,
-                    `Freelancer requested payment for logged hours on contract: ${contract.title}`,
-                    id.toString()
-                ]
-            );
+            const { default: Notification } = await import("../models/notificationModel.js");
+            const freelancerUserRes = await pool.query("SELECT first_name || ' ' || COALESCE(last_name, '') as name FROM users WHERE user_id = $1", [freelancerId]);
+            const freelancerName = freelancerUserRes.rows[0]?.name || "Freelancer";
+
+            const clientNotif = await Notification.create({
+                userId: contract.client_id,
+                title: "Timecard Hours Submitted / Payment Requested 🚀",
+                message: `Freelancer ${freelancerName} requested payment for logged working hours on contract: "${contract.title}". Please review and approve.`,
+                type: "contract",
+                referenceId: id.toString()
+            });
+
+            if (req.io) {
+                req.io.to(`user_${contract.client_id}`).emit("new_notification", clientNotif);
+                req.io.emit("new_notification", clientNotif);
+                req.io.emit("notification", clientNotif);
+            }
         } catch (notifErr) {
             console.error("Failed to notify client on timecard payment request:", notifErr);
         }
@@ -1717,15 +1727,23 @@ export const submitContractCompletion = async (req, res) => {
 
         // Notify client
         try {
-            await pool.query(
-                `INSERT INTO notifications (user_id, title, message, type, reference_id)
-                 VALUES ($1, 'Project Completion Submitted', $2, 'contract', $3)`,
-                [
-                    contract.client_id,
-                    `Freelancer marked the contract "${contract.title}" as completed. Please review and approve to finalize.`,
-                    contract.contract_id.toString()
-                ]
-            );
+            const { default: Notification } = await import("../models/notificationModel.js");
+            const freelancerUserRes = await pool.query("SELECT first_name || ' ' || COALESCE(last_name, '') as name FROM users WHERE user_id = $1", [freelancerId]);
+            const freelancerName = freelancerUserRes.rows[0]?.name || "Freelancer";
+
+            const clientNotif = await Notification.create({
+                userId: contract.client_id,
+                title: "Work Submitted & Project Completed 🚀",
+                message: `Freelancer ${freelancerName} marked contract "${contract.title}" as completed. Please review work and approve to finalize.`,
+                type: "contract",
+                referenceId: contract.contract_id.toString()
+            });
+
+            if (req.io) {
+                req.io.to(`user_${contract.client_id}`).emit("new_notification", clientNotif);
+                req.io.emit("new_notification", clientNotif);
+                req.io.emit("notification", clientNotif);
+            }
         } catch (notifErr) {
             console.error("Failed to notify client on completion submission:", notifErr);
         }

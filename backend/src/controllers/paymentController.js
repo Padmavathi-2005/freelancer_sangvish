@@ -1488,10 +1488,16 @@ export const submitMilestoneWork = async (req, res) => {
         referenceId: contract.contract_id.toString(),
       });
       if (req.io) {
-        req.io.to(`user_${contract.client_id}`).emit("new_notification", {
-          title: "Milestone Work Submitted",
-          message: `${freelancerName} submitted work for "${milestone.title}".`,
-        });
+        const notifData = {
+          user_id: contract.client_id,
+          title: "Work Submitted for Milestone 🚀",
+          message: `Freelancer ${freelancerName} submitted work for milestone "${milestone.title}" (contract: "${contract.title}"). Please review and approve.`,
+          type: "contract",
+          reference_id: contract.contract_id.toString()
+        };
+        req.io.to(`user_${contract.client_id}`).emit("new_notification", notifData);
+        req.io.emit("new_notification", notifData);
+        req.io.emit("notification", notifData);
       }
     } catch (nErr) {
       console.error("Failed to notify client on milestone submit:", nErr);
