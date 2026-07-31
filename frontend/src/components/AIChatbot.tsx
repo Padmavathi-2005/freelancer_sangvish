@@ -247,6 +247,7 @@ export default function AIChatbot() {
   const [siteName, setSiteName] = useState("");
   const [siteFavicon, setSiteFavicon] = useState("");
   const [faviconFailed, setFaviconFailed] = useState(false);
+  const [btnImageFailed, setBtnImageFailed] = useState(false);
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant" | "system"; content: string }>>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -976,9 +977,22 @@ export default function AIChatbot() {
         {isOpen ? (
           <FiX className="w-6 h-6 animate-fadeIn" />
         ) : (
-          <div className="relative flex items-center justify-center">
-            <FiMessageSquare className="w-6 h-6 animate-fadeIn group-hover:rotate-6 transition-transform" />
-            <span className="absolute -top-1.5 -right-1.5 flex h-3.5 w-3.5">
+          <div className="relative flex items-center justify-center w-full h-full p-2.5">
+            {!btnImageFailed && (siteFavicon || siteLogo || !mounted) ? (
+              <img 
+                src={siteFavicon ? resolveChatLogoUrl(siteFavicon) : siteLogo ? resolveChatLogoUrl(siteLogo) : "/favicon.ico"} 
+                alt="AI Assistant" 
+                className="w-full h-full object-contain rounded-full animate-fadeIn group-hover:scale-110 transition-transform"
+                onError={() => setBtnImageFailed(true)}
+              />
+            ) : (
+              <img
+                src="https://cdn-icons-png.flaticon.com/512/8943/8943377.png"
+                alt="AI Chat"
+                className="w-8 h-8 object-contain animate-fadeIn group-hover:scale-110 transition-transform"
+              />
+            )}
+            <span className="absolute top-0 right-0 flex h-3.5 w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-400 border-2 border-white dark:border-zinc-900 shadow-sm"></span>
             </span>
