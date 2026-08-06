@@ -156,17 +156,16 @@ export default function PricingPage() {
           </div>
 
           <div className="relative max-w-3xl mx-auto" style={{ animation: "fadeUp 0.6s cubic-bezier(.22,1,.36,1) both" }}>
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/40 px-4 py-1.5 rounded-full mb-6 shadow-sm">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary bg-primary-light border border-primary/20 px-4 py-1.5 rounded-full mb-6 shadow-sm">
               <FiZap className="w-3 h-3" /> Membership Plans
             </span>
             <h1 className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               Simple,{" "}
               <span className="relative inline-block">
-                <span className="relative z-10 text-transparent bg-clip-text"
-                  style={{ backgroundImage: "linear-gradient(135deg,#2dd4bf,#0d9488)", WebkitBackgroundClip: "text" }}>
+                <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-teal-700 to-emerald-600 dark:from-teal-400 dark:to-emerald-400">
                   transparent
                 </span>
-                <span className="absolute bottom-1 left-0 right-0 h-2.5 bg-teal-100 dark:bg-teal-900/40 rounded-full z-0" />
+                <span className="absolute bottom-1 left-0 right-0 h-2.5 bg-teal-100/60 dark:bg-teal-900/40 rounded-full z-0" />
               </span>{" "}
               pricing
             </h1>
