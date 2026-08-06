@@ -31,6 +31,17 @@ export default function CustomSelect({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Filter out any options with duplicate values to prevent React duplicate keys warning
+  const uniqueOptions = React.useMemo(() => {
+    const seen = new Set();
+    return options.filter((opt) => {
+      const key = opt.isHeader ? `header-${opt.value}` : String(opt.value);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [options]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -45,13 +56,13 @@ export default function CustomSelect({
   let displayLabel = placeholder;
   if (multiple && Array.isArray(value)) {
     if (value.length > 0) {
-      const selectedLabels = options
+      const selectedLabels = uniqueOptions
         .filter((o) => !o.isHeader && value.some((v) => String(v) === String(o.value)))
         .map((o) => o.label);
       displayLabel = selectedLabels.length > 0 ? selectedLabels.join(", ") : `${value.length} selected`;
     }
   } else {
-    const selectedOption = options.find((o) => !o.isHeader && String(o.value) === String(value));
+    const selectedOption = uniqueOptions.find((o) => !o.isHeader && String(o.value) === String(value));
     if (selectedOption) {
       displayLabel = selectedOption.label;
     }
@@ -81,7 +92,7 @@ export default function CustomSelect({
   };
 
   return (
-    <div ref={containerRef} className={`relative w-full max-w-full ${className}`}>
+    <div ref={containerRef} className={`relative w-full max-w-full ${isOpen ? "z-30" : "z-0"} ${className}`}>
       <button
         type="button"
         disabled={disabled}
@@ -96,7 +107,7 @@ export default function CustomSelect({
 
       {!disabled && isOpen && (
         <div className="absolute left-0 right-0 top-full mt-1 w-full max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[100] max-h-44 sm:max-h-56 overflow-y-auto scrollbar-thin p-1 space-y-0.5 animate-fadeIn">
-          {!multiple && placeholder && !options.some((o) => String(o.value) === String(value)) && (
+          {!multiple && placeholder && !uniqueOptions.some((o) => String(o.value) === String(value)) && (
             <button
               type="button"
               onClick={() => {
@@ -108,7 +119,7 @@ export default function CustomSelect({
               {placeholder}
             </button>
           )}
-          {options.map((opt) => {
+          {uniqueOptions.map((opt) => {
             if (opt.isHeader) {
               return (
                 <div
