@@ -588,7 +588,7 @@ export default function Header() {
                             className={`px-4 py-2 rounded-xl text-[12px] font-black transition-all duration-150 cursor-pointer ${
                               isHovered
                                 ? "bg-primary text-white border border-primary/20 shadow-sm shadow-primary/5"
-                                : "text-slate-655 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 hover:text-primary border border-transparent"
+                                : "text-slate-600 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 hover:text-primary border border-transparent"
                             }`}
                           >
                             {cat.category_name}
@@ -612,7 +612,7 @@ export default function Header() {
                                 className="flex items-center gap-1.5 hover:opacity-80 transition-opacity w-fit"
                               >
                                 <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                                <h4 className="text-[13px] font-black text-slate-855 dark:text-zinc-100 uppercase tracking-widest">
+                                <h4 className="text-[13px] font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest">
                                   {activeCat?.category_name} Subcategories &rarr;
                                 </h4>
                               </a>
@@ -628,7 +628,7 @@ export default function Header() {
                                       <a
                                         key={sub.sub_category_id}
                                         href={getCategoryLink(activeCat?.category_name || "", sub.sub_category_name)}
-                                        className="px-4 py-2.5 rounded-xl text-slate-605 dark:text-zinc-300 hover:text-primary hover:bg-white dark:hover:bg-zinc-800 text-xs font-black transition-all flex items-center gap-2 border border-transparent hover:border-slate-200 dark:hover:border-zinc-700"
+                                        className="px-4 py-2.5 rounded-xl text-slate-600 dark:text-zinc-300 hover:text-primary hover:bg-white dark:hover:bg-zinc-800 text-xs font-black transition-all flex items-center gap-2 border border-transparent hover:border-slate-200 dark:hover:border-zinc-700"
                                       >
                                         <div className="w-1.5 h-1.5 rounded-full bg-primary/80 shrink-0" />
                                         <span>{sub.sub_category_name}</span>
