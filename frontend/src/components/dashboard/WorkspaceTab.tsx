@@ -341,14 +341,14 @@ export default function WorkspaceTab({
                     {/* Spending History Chart */}
                     <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4">
                       <div className="text-left">
-                        <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">Spending History</h2>
-                        <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Escrow spends & gig expenditures grouped by month</p>
+                        <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t("spending_history_header", "Spending History")}</h2>
+                        <p className="text-slate-400 text-[9px] font-semibold mt-0.5">{t("spending_history_desc", "Escrow spends & gig expenditures grouped by month")}</p>
                       </div>
 
                       <div className="relative h-32 flex items-end justify-between gap-3 pt-4 border-b border-slate-100 pb-2">
                         {dynamicMonthlyData.every(d => d.amount === 0) && (
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No activity yet</span>
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t("no_activity_yet", "No activity yet")}</span>
                           </div>
                         )}
                         {dynamicMonthlyData.map((data, idx) => {
@@ -380,14 +380,14 @@ export default function WorkspaceTab({
                     <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
-                          <h2 className="text-xs font-black text-slate-805 uppercase tracking-wide">My Posted Projects</h2>
-                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Active posted briefs</p>
+                          <h2 className="text-xs font-black text-slate-855 uppercase tracking-wide">{t("my_posted_projects_header", "My Posted Projects")}</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">{t("active_posted_briefs_desc", "Active posted briefs")}</p>
                         </div>
                         <button
                           onClick={() => setActiveTab("proposals")}
                           className="text-[9px] text-teal-755 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
                         >
-                          View All
+                          {t("btn_view_all", "View All")}
                         </button>
                       </div>
 
@@ -396,7 +396,7 @@ export default function WorkspaceTab({
                           displayClientProjects.map((job) => (
                             <div key={job.job_id} className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4">
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[8px] font-black text-teal-755 uppercase bg-teal-50 px-1 py-0.5 rounded border border-teal-100 w-max">{job.project_type}</span>
+                                <span className="text-[8px] font-black text-teal-755 uppercase bg-teal-50 px-1 py-0.5 rounded border border-teal-100 w-max">{t(job.project_type?.toLowerCase(), job.project_type)}</span>
                                 <h4 className="text-xs font-bold text-slate-800 mt-1 truncate">{job.title}</h4>
                               </div>
                               <div className="flex flex-col items-end shrink-0">
@@ -405,13 +405,13 @@ export default function WorkspaceTab({
                                   job.status === "Suspended"
                                     ? "text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200"
                                     : "text-slate-450"
-                                }`}>{job.status}</span>
+                                }`}>{t(job.status?.toLowerCase(), job.status)}</span>
                               </div>
                             </div>
                           ))
                         ) : (
                           <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No posted projects</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{t("no_posted_projects", "No posted projects")}</p>
                           </div>
                         )}
                       </div>
@@ -421,14 +421,14 @@ export default function WorkspaceTab({
                     <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
-                          <h2 className="text-xs font-black text-slate-800 uppercase tracking-wide">Purchased Gigs</h2>
-                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Ongoing service orders</p>
+                          <h2 className="text-xs font-black text-slate-800 uppercase tracking-wide">{t("purchased_gigs_header", "Purchased Gigs")}</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">{t("ongoing_service_orders_desc", "Ongoing service orders")}</p>
                         </div>
                         <button
                           onClick={() => setActiveTab("client_orders")}
                           className="text-[9px] text-teal-755 bg-teal-55 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
                         >
-                          View All
+                          {t("btn_view_all", "View All")}
                         </button>
                       </div>
 
@@ -441,8 +441,8 @@ export default function WorkspaceTab({
                               className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4 hover:border-slate-350 transition-all cursor-pointer"
                             >
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[8px] font-extrabold text-slate-450 uppercase tracking-wider">Order #{app.application_id}</span>
-                                <h4 className="text-xs font-bold text-slate-800 truncate mt-0.5">{app.gig_title || "Service Delivery"}</h4>
+                                <span className="text-[8px] font-extrabold text-slate-450 uppercase tracking-wider">{t("order_hash", "Order #")}{app.application_id}</span>
+                                <h4 className="text-xs font-bold text-slate-800 truncate mt-0.5">{app.gig_title || t("service_delivery_label", "Service Delivery")}</h4>
                               </div>
                               <div className="flex flex-col items-end shrink-0 gap-1">
                                 <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase ${
@@ -452,14 +452,14 @@ export default function WorkspaceTab({
                                       ? "bg-rose-50 text-rose-700 border-rose-100"
                                       : "bg-cyan-50 text-cyan-700 border-cyan-100"
                                 }`}>
-                                  {app.contract_status === "Completed" ? "Completed" : app.status}
+                                  {app.contract_status === "Completed" ? t("completed", "Completed") : t(app.status?.toLowerCase(), app.status)}
                                 </span>
                               </div>
                             </div>
                           ))
                         ) : (
                           <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No purchased gigs</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{t("no_purchased_gigs", "No purchased gigs")}</p>
                           </div>
                         )}
                       </div>
@@ -469,14 +469,14 @@ export default function WorkspaceTab({
                     <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
-                          <h2 className="text-xs font-black text-slate-808 uppercase tracking-wide">Active Contracts</h2>
-                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Ongoing freelancer contracts</p>
+                          <h2 className="text-xs font-black text-slate-808 uppercase tracking-wide">{t("active_contracts", "Active Contracts")}</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">{t("ongoing_freelancer_contracts_desc", "Ongoing freelancer contracts")}</p>
                         </div>
                         <button
                           onClick={() => setActiveTab("proposals")}
                           className="text-[9px] text-teal-755 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
                         >
-                          View All
+                          {t("btn_view_all", "View All")}
                         </button>
                       </div>
 
@@ -489,19 +489,19 @@ export default function WorkspaceTab({
                               className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4 hover:border-slate-350 transition-all cursor-pointer"
                             >
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[8px] font-bold text-slate-450 uppercase tracking-wider truncate">{c.freelancer_name || "Contractor Partner"}</span>
+                                <span className="text-[8px] font-bold text-slate-450 uppercase tracking-wider truncate">{c.freelancer_name || t("contractor_partner_label", "Contractor Partner")}</span>
                                 <h4 className="text-xs font-bold text-slate-800 truncate mt-0.5">{c.title}</h4>
-                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Escrow: ${parseFloat(c.budget).toLocaleString()}</span>
+                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5">{t("escrow_label", "Escrow: ")}${parseFloat(c.budget).toLocaleString()}</span>
                               </div>
                               <div className="flex flex-col items-end shrink-0 gap-1">
-                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-cyan-50 text-cyan-700 border-cyan-150 uppercase">{c.status}</span>
-                                <span className="text-[9px] text-slate-450 font-bold">{c.progress || 0}% approved</span>
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-cyan-50 text-cyan-700 border-cyan-150 uppercase">{t(c.status?.toLowerCase(), c.status)}</span>
+                                <span className="text-[9px] text-slate-450 font-bold">{t("progress_approved_label", "{{progress}}% approved").replace("{{progress}}", String(c.progress || 0))}</span>
                               </div>
                             </div>
                           ))
                         ) : (
                           <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No active contracts</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{t("no_active_contracts", "No active contracts")}</p>
                           </div>
                         )}
                       </div>

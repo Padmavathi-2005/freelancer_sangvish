@@ -27,11 +27,12 @@ export default function FooterLinksTab() {
         if (res.ok) {
           const data = await res.json();
           data.forEach((s: any) => {
-            if (s.setting_key === "app_store_url") setAppStoreUrl(s.setting_value);
-            if (s.setting_key === "google_play_url") setGooglePlayUrl(s.setting_value);
-            if (s.setting_key === "instagram_url") setInstagramUrl(s.setting_value);
-            if (s.setting_key === "linkedin_url") setLinkedinUrl(s.setting_value);
-            if (s.setting_key === "app_mockup_image") setAppMockupImage(s.setting_value);
+            const cleanVal = (val: any) => typeof val === "string" ? val.replace(/"/g, "").trim() : val;
+            if (s.setting_key === "app_store_url") setAppStoreUrl(cleanVal(s.setting_value));
+            if (s.setting_key === "google_play_url") setGooglePlayUrl(cleanVal(s.setting_value));
+            if (s.setting_key === "instagram_url") setInstagramUrl(cleanVal(s.setting_value));
+            if (s.setting_key === "linkedin_url") setLinkedinUrl(cleanVal(s.setting_value));
+            if (s.setting_key === "app_mockup_image") setAppMockupImage(cleanVal(s.setting_value));
           });
         }
       } catch (err) {

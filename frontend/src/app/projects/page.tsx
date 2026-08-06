@@ -392,13 +392,13 @@ function ProjectsSearchContent() {
 
   // Active subcategories based on selected category
   const activeSubcategories = useMemo(() => {
-    if (!selectedCategory) return subcategories;
+    if (!selectedCategory) return [];
     const catObj = categories.find(
       (c) =>
         c.category_id?.toString() === selectedCategory ||
         c.category_name?.toLowerCase() === selectedCategory.toLowerCase()
     );
-    if (!catObj) return subcategories;
+    if (!catObj) return [];
     const catIdStr = String(catObj.category_id || catObj.id);
     return subcategories.filter(
       (s) => String(s.category_id || s.categoryId) === catIdStr
@@ -642,10 +642,10 @@ function ProjectsSearchContent() {
           >
             <span className="flex items-center gap-2">
               <FiSliders className="w-4 h-4 text-teal-700" />
-              <span>{t("refine_search_title", "Refine Search")} & Filters</span>
+              <span>{t("refine_search_title", "Refine Search")} & {t("filters", "Filters")}</span>
             </span>
             <span className="text-xxs font-extrabold bg-teal-50 text-teal-700 border border-teal-100 px-2.5 py-1 rounded-lg uppercase tracking-wider">
-              Filters
+              {t("filters", "Filters")}
             </span>
           </button>
         </div>
@@ -682,17 +682,20 @@ function ProjectsSearchContent() {
             </div>
 
             {/* Subcategory Filter */}
-            {activeSubcategories.length > 0 && (
-              <div className="space-y-2">
-                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("subcategory_label", "Subcategory")}</label>
-                <CustomSelect
-                  placeholder={t("all_subcategories_opt", "All Subcategories")}
-                  value={selectedSubcategory}
-                  options={activeSubcategories.map((s) => ({ value: s.sub_category_name, label: s.sub_category_name }))}
-                  onChange={(val) => setSelectedSubcategory(val)}
-                />
-              </div>
-            )}
+            <div className="space-y-2">
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("subcategory_label", "Subcategory")}</label>
+              <CustomSelect
+                placeholder={
+                  selectedCategory 
+                    ? t("all_subcategories_opt", "All Subcategories") 
+                    : t("select_category_first", "Select Category First")
+                }
+                value={selectedSubcategory}
+                options={activeSubcategories.map((s) => ({ value: s.sub_category_name, label: s.sub_category_name }))}
+                onChange={(val) => setSelectedSubcategory(val)}
+                disabled={!selectedCategory}
+              />
+            </div>
 
             {/* Budget Range */}
             <div className="space-y-2">

@@ -39,7 +39,7 @@ interface Plan {
 }
 
 export default function Pricing() {
-  const { currency } = useLanguage();
+  const { t, currency } = useLanguage();
   const [plans, setPlans] = useState<Plan[]>([
     {
       plan_id: 1,
@@ -202,7 +202,7 @@ export default function Pricing() {
       <div className="w-full py-20 flex justify-center bg-white">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-3 border-teal-700 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-xxs text-slate-400 font-extrabold uppercase tracking-widest">Loading membership tiers...</p>
+          <p className="text-xxs text-slate-400 font-extrabold uppercase tracking-widest">{t("loading_membership_tiers", "Loading membership tiers...")}</p>
         </div>
       </div>
     );
@@ -221,13 +221,13 @@ export default function Pricing() {
         {/* Header Section */}
         <div className="text-center mb-12">
           <span className="bg-teal-50 border border-teal-100 text-teal-800 text-[10px] font-black tracking-widest uppercase py-1.5 px-4 rounded-full shadow-sm shrink-0 inline-block mb-3">
-            LancerFlow SaaS Memberships
+            {t("membership_badge", "LancerFlow SaaS Memberships")}
           </span>
           <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none">
-            Maximize Earnings & Savings
+            {t("membership_title", "Maximize Earnings & Savings")}
           </h2>
           <p className="text-sm text-slate-500 mt-4 max-w-xl mx-auto font-semibold leading-relaxed">
-            Choose a plan tailored to your volume. Reduce platform fees, secure dynamic gig discounts, and boost visibility.
+            {t("membership_desc", "Choose a plan tailored to your volume. Reduce platform fees, secure dynamic gig discounts, and boost visibility.")}
           </p>
         </div>
 
@@ -243,7 +243,7 @@ export default function Pricing() {
                 : "bg-transparent text-slate-500 hover:text-primary"
             }`}
           >
-            Freelancer Plans
+            {t("freelancer_plans_tab", "Freelancer Plans")}
           </button>
           <button
             onClick={() => setSelectedRole("buyer")}
@@ -253,7 +253,7 @@ export default function Pricing() {
                 : "bg-transparent text-slate-500 hover:text-primary"
             }`}
           >
-            Client Plans
+            {t("client_plans_tab", "Client Plans")}
           </button>
         </div>
 
@@ -272,12 +272,34 @@ export default function Pricing() {
             // Build real feature highlights from plan fields — skip negatives
             const realFeatures: string[] = [];
             const credits = dbPlan.credits ?? 0;
-            if (credits > 0) realFeatures.push(credits >= 9999 ? "Unlimited bids / month" : `${credits} bids / month`);
-            if (jobLimit > 0) realFeatures.push(jobLimit >= 9999 ? "Unlimited job postings / month" : `${jobLimit} job postings / month`);
-            if (discountValue > 0) realFeatures.push(`${discountValue}% gig order discount`);
-            if (featuredAllowance) realFeatures.push("Featured job badge");
+            if (credits > 0) {
+              realFeatures.push(
+                credits >= 9999 
+                  ? t("unlimited_bids_month", "Unlimited bids / month") 
+                  : t("bids_per_month_count", "{{count}} bids / month").replace("{{count}}", String(credits))
+              );
+            }
+            if (jobLimit > 0) {
+              realFeatures.push(
+                jobLimit >= 9999 
+                  ? t("unlimited_job_postings_month", "Unlimited job postings / month") 
+                  : t("job_postings_per_month_count", "{{count}} job postings / month").replace("{{count}}", String(jobLimit))
+              );
+            }
+            if (discountValue > 0) {
+              realFeatures.push(
+                t("gig_order_discount_percent", "{{percent}}% gig order discount").replace("{{percent}}", String(discountValue))
+              );
+            }
+            if (featuredAllowance) {
+              realFeatures.push(t("featured_job_badge_feature", "Featured job badge"));
+            }
             const fee = dbPlan.transaction_fee_percent;
-            if (fee != null && fee !== "") realFeatures.push(`${fee}% transaction fee`);
+            if (fee != null && fee !== "") {
+              realFeatures.push(
+                t("transaction_fee_percent_feature", "{{fee}}% transaction fee").replace("{{fee}}", String(fee))
+              );
+            }
 
             return (
               <div 
@@ -290,7 +312,7 @@ export default function Pricing() {
               >
                 {isPopular && (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-primary-hover text-white font-extrabold text-[10px] tracking-wider uppercase py-1.5 px-5 rounded-full shadow-md">
-                    Most Popular
+                    {t("most_popular_badge", "Most Popular")}
                   </div>
                 )}
 
@@ -298,7 +320,7 @@ export default function Pricing() {
                   {/* Card Header */}
                   <div className="mb-6">
                     <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-white/90" : "text-primary"}`}>
-                      {dbPlan.name} Plan
+                      {t("plan_name_label", "{{name}} Plan").replace("{{name}}", dbPlan.name)}
                     </span>
                     <p className={`text-xxs mt-1 font-semibold leading-relaxed ${isPopular ? "text-slate-200" : "text-slate-405"}`}>
                       {dbPlan.description}
@@ -309,12 +331,12 @@ export default function Pricing() {
                   <div className="flex items-baseline gap-1.5 mb-8">
                     <span className="text-4xl font-black tracking-tight">
                       {parseFloat((dbPlan.price || 0).toString()) === 0 
-                        ? "Free" 
+                        ? t("plan_free", "Free") 
                         : convertPrice(parseFloat((dbPlan.price || 0).toString().replace(/[^0-9.]/g, "") || "0"), currency).formatted
                       }
                     </span>
                     <span className={`text-xxs font-black uppercase tracking-wider ${isPopular ? "text-slate-350" : "text-slate-400"}`}>
-                      {dbPlan.plan_duration ? `/${dbPlan.plan_duration} DAYS` : ""}
+                      {dbPlan.plan_duration ? `/${dbPlan.plan_duration} ${t("plan_duration_days", "DAYS")}` : ""}
                     </span>
                   </div>
 
@@ -338,7 +360,7 @@ export default function Pricing() {
                       disabled
                       className="w-full bg-slate-100 border border-slate-200/50 text-slate-400 font-black text-xs py-3.5 rounded-xl cursor-default"
                     >
-                      Active Plan
+                      {t("active_plan_btn", "Active Plan")}
                     </button>
                   ) : (
                     <Link 
@@ -349,7 +371,7 @@ export default function Pricing() {
                           : "bg-teal-700 text-white hover:bg-teal-800"
                       }`}
                     >
-                      {parseFloat((dbPlan.price || 0).toString()) === 0 ? "Get Started Free" : "Buy Plan"}
+                      {t("choose_plan_btn", "Choose Plan")}
                     </Link>
                   )}
                 </div>

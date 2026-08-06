@@ -57,7 +57,9 @@ import {
     replyContactInquiry,
     getNewsletterSubscribers,
     updateNewsletterSubscriberStatus,
-    deleteNewsletterSubscriber
+    deleteNewsletterSubscriber,
+    getCareerApplications,
+    deleteCareerApplication
 } from "../controllers/adminController.js";
 import {
     getSettings,
@@ -213,5 +215,9 @@ router.delete("/contact-inquiries/:id", adminAuth, deleteContactInquiry);
 router.get("/newsletter-subscribers", adminAuth, getNewsletterSubscribers);
 router.patch("/newsletter-subscribers/:id/status", adminAuth, updateNewsletterSubscriberStatus);
 router.delete("/newsletter-subscribers/:id", adminAuth, deleteNewsletterSubscriber);
+
+// Admin Career Applications routes
+router.get("/careers/applications", adminAuth, getCareerApplications);
+router.delete("/careers/applications/:id", adminAuth, deleteCareerApplication);
 
 export default router;

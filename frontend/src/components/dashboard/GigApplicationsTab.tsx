@@ -447,7 +447,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
             </div>
           </div>
 
-          {renderOrderBreakdown(app)}
+          {renderOrderBreakdown(app, t)}
         </div>
 
 
@@ -826,7 +826,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
 
               {/* Requirements & Breakdown */}
               <div className="mt-2">
-                {renderOrderBreakdown(app)}
+                {renderOrderBreakdown(app, t)}
               </div>
 
               {/* Actions for Pending */}

@@ -2,9 +2,11 @@
 
 import React, { useMemo, useState } from "react";
 import { useDashboard } from "../DashboardContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { FiTrendingUp, FiArrowUpRight, FiArrowDownRight, FiClock, FiLayers, FiFileText, FiDownload, FiDollarSign } from "react-icons/fi";
 
 export default function ReportsPage() {
+  const { t } = useLanguage();
   const {
     userRole,
     walletInfo,
@@ -165,13 +167,56 @@ export default function ReportsPage() {
     }
   };
 
+  const translateTxDescription = (desc: string) => {
+    if (!desc) return "";
+    
+    if (desc === "Simulated account deposit") {
+      return t("simulated_account_deposit", "Simulated account deposit");
+    }
+    if (desc === "PayPal Deposit (Simulated)") {
+      return t("paypal_deposit_simulated", "PayPal Deposit (Simulated)");
+    }
+    if (desc.startsWith("Stripe Deposit (Session:")) {
+      const sessionId = desc.replace("Stripe Deposit (Session: ", "").replace(")", "");
+      return t("stripe_deposit_session", "Stripe Deposit (Session: {{session_id}})").replace("{{session_id}}", sessionId);
+    }
+    if (desc.startsWith("Escrow refund due to freelancer cancelling work:")) {
+      const projectName = desc.replace("Escrow refund due to freelancer cancelling work:", "").trim();
+      return t("escrow_refund_cancelled_work", "Escrow refund due to freelancer cancelling work: {{projectName}}").replace("{{projectName}}", projectName);
+    }
+    if (desc.startsWith("Escrow payment for contract milestones:")) {
+      const projectName = desc.replace("Escrow payment for contract milestones:", "").trim();
+      return t("escrow_payment_milestones", "Escrow payment for contract milestones: {{projectName}}").replace("{{projectName}}", projectName);
+    }
+    if (desc.startsWith("Withdrawal request via")) {
+      const method = desc.replace("Withdrawal request via", "").trim();
+      return t("withdrawal_request_via", "Withdrawal request via {{method}}").replace("{{method}}", method);
+    }
+    if (desc === "Manual platform wallet release payout") {
+      return t("manual_platform_payout", "Manual platform wallet release payout");
+    }
+    if (desc === "Referral sign-up bonus reward") {
+      return t("referral_signup_bonus", "Referral sign-up bonus reward");
+    }
+    if (desc.startsWith("Referral reward for user_id =")) {
+      const userId = desc.replace("Referral reward for user_id =", "").trim();
+      return t("referral_reward_for", "Referral reward for user_id = {{userId}}").replace("{{userId}}", userId);
+    }
+    if (desc.startsWith("Affiliate commission reward for commission_id =")) {
+      const commissionId = desc.replace("Affiliate commission reward for commission_id =", "").trim();
+      return t("affiliate_commission_reward", "Affiliate commission reward for commission_id = {{commissionId}}").replace("{{commissionId}}", commissionId);
+    }
+
+    return desc;
+  };
+
   return (
     <div className="space-y-8 text-left animate-fadeIn print:bg-white print:p-0 print:space-y-4 print:w-full">
       {/* PDF Statement Document Branding Header */}
       <div className="hidden print:flex items-center justify-between border-b-2 border-teal-700 pb-4 mb-6">
         <div>
           <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-            {siteName || "Buy2Lancer"} — {userRole === "client" ? "Expenditures & Financial Report" : "Earnings & Financial Report"}
+            {siteName || "Buy2Lancer"} — {userRole === "client" ? t("expenditures_financial_report_header", "Expenditures & Financial Report") : t("earnings_financial_report_header", "Earnings & Financial Report")}
           </h1>
           <p className="text-xs text-slate-500 font-semibold mt-1">
             Generated on {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -179,7 +224,7 @@ export default function ReportsPage() {
         </div>
         <div className="text-right">
           <span className="text-[10px] font-black uppercase tracking-widest text-teal-800 bg-teal-50 px-3 py-1 rounded-md border border-teal-200">
-            Official Ledger Statement
+            {t("official_ledger_statement", "Official Ledger Statement")}
           </span>
         </div>
       </div>
@@ -187,12 +232,12 @@ export default function ReportsPage() {
       {/* Screen Header Panel */}
       <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
-          <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase mb-1 block">Financial Analytics</span>
+          <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase mb-1 block">{t("financial_analytics_label", "Financial Analytics")}</span>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
-            {userRole === "client" ? "Expenditures & Financial Report" : "Earnings & Financial Report"}
+            {userRole === "client" ? t("expenditures_financial_report_header", "Expenditures & Financial Report") : t("earnings_financial_report_header", "Earnings & Financial Report")}
           </h1>
           <p className="text-slate-500 text-xs mt-1 font-medium leading-relaxed">
-            Real-time cashflow analytics, project milestone funding states, and detailed ledger statements.
+            {t("reports_header_desc", "Real-time cashflow analytics, project milestone funding states, and detailed ledger statements.")}
           </p>
         </div>
         <button
@@ -200,7 +245,7 @@ export default function ReportsPage() {
           className="flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer shrink-0"
         >
           <FiDownload className="w-4 h-4 shrink-0" />
-          <span>Export PDF Report</span>
+          <span>{t("btn_export_pdf_report", "Export PDF Report")}</span>
         </button>
       </div>
 
@@ -211,7 +256,7 @@ export default function ReportsPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.04] rounded-full filter blur-xl print:hidden"></div>
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/95 print:text-white">
-              {userRole === "client" ? "Total Expenditures" : "Total Net Earnings"}
+              {userRole === "client" ? t("total_expenditures", "Total Expenditures") : t("total_net_earnings", "Total Net Earnings")}
             </span>
             <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center text-white shrink-0">
               <FiTrendingUp className="w-4 h-4" />
@@ -222,7 +267,7 @@ export default function ReportsPage() {
               ${(userRole === "client" ? clientStats.spent : freelancerStats.released).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </h2>
             <p className="text-white/85 text-[10px] font-bold mt-1 print:text-white">
-              Confirmed cash released from completed contracts & services
+              {t("total_expenditures_desc", "Confirmed cash released from completed contracts & services")}
             </p>
           </div>
         </div>
@@ -231,7 +276,7 @@ export default function ReportsPage() {
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] print:border-2 print:border-slate-300 print:shadow-none print:break-inside-avoid">
           <div className="flex justify-between items-start">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest print:text-slate-900">
-              {userRole === "client" ? "Escrow Payments" : "Pending Escrow"}
+              {userRole === "client" ? t("escrow_payments_label", "Escrow Payments") : t("pending_escrow_label", "Pending Escrow")}
             </span>
             <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center">
               <FiClock className="w-4 h-4" />
@@ -243,8 +288,8 @@ export default function ReportsPage() {
             </h2>
             <p className="text-slate-500 text-[10px] font-bold mt-1 print:text-slate-700">
               {userRole === "client"
-                ? "Funds locked securely in active contracts and project milestones"
-                : "Awaiting milestone release request approval"}
+                ? t("escrow_payments_desc", "Funds locked securely in active contracts and project milestones")
+                : t("pending_escrow_desc", "Awaiting milestone release request approval")}
             </p>
           </div>
         </div>
@@ -252,7 +297,7 @@ export default function ReportsPage() {
         {/* Wallet Balance Card */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] print:border-2 print:border-slate-300 print:shadow-none print:break-inside-avoid">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest print:text-slate-900">Available Wallet Balance</span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest print:text-slate-900">{t("available_wallet_balance_label", "Available Wallet Balance")}</span>
             <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 border border-teal-100 flex items-center justify-center">
               <FiDollarSign className="w-4 h-4" />
             </div>
@@ -262,7 +307,7 @@ export default function ReportsPage() {
               ${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </h2>
             <p className="text-slate-500 text-[10px] font-bold mt-1 print:text-slate-700">
-              Withdrawable balance or funds ready for deployment
+              {t("available_wallet_balance_desc", "Withdrawable balance or funds ready for deployment")}
             </p>
           </div>
         </div>
@@ -270,30 +315,30 @@ export default function ReportsPage() {
 
       {/* Workspace Activity Breakdown */}
       <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm print:border-2 print:border-slate-300 print:shadow-none print:p-4 print:mb-6 print:break-inside-avoid">
-        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-6 print:text-slate-900">Contract & Service Volume</h3>
+        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-6 print:text-slate-900">{t("contract_service_volume_header", "Contract & Service Volume")}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 print:grid-cols-4 print:gap-3">
           <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl print:bg-slate-100 print:border-slate-200">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block print:text-slate-900">Active Contracts</span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block print:text-slate-900">{t("active_contracts", "Active Contracts")}</span>
             <span className="text-lg font-black text-slate-900 mt-1 block print:text-slate-900">
-              {userRole === "client" ? clientStats.activeProjectsCount : freelancerStats.activeProjectsCount} Projects
+              {userRole === "client" ? clientStats.activeProjectsCount : freelancerStats.activeProjectsCount} {t("projects_unit", "Projects")}
             </span>
           </div>
           <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl print:bg-slate-100 print:border-slate-200">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block print:text-slate-900">Completed Contracts</span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block print:text-slate-900">{t("completed_contracts_label", "Completed Contracts")}</span>
             <span className="text-lg font-black text-slate-900 mt-1 block print:text-slate-900">
-              {userRole === "client" ? clientStats.completedProjectsCount : freelancerStats.completedProjectsCount} Projects
+              {userRole === "client" ? clientStats.completedProjectsCount : freelancerStats.completedProjectsCount} {t("projects_unit", "Projects")}
             </span>
           </div>
           <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl print:bg-slate-100 print:border-slate-200">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block print:text-slate-900">Ongoing Gig Orders</span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block print:text-slate-900">{t("ongoing_gig_orders_label", "Ongoing Gig Orders")}</span>
             <span className="text-lg font-black text-slate-900 mt-1 block print:text-slate-900">
-              {userRole === "client" ? clientStats.activeGigsCount : freelancerStats.activeGigsCount} Gigs
+              {userRole === "client" ? clientStats.activeGigsCount : freelancerStats.activeGigsCount} {t("gigs_unit", "Gigs")}
             </span>
           </div>
           <div className="bg-slate-50 border border-slate-100 p-4 rounded-xl print:bg-slate-100 print:border-slate-200">
-            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block print:text-slate-900">Completed Gigs</span>
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block print:text-slate-900">{t("completed_gigs_label", "Completed Gigs")}</span>
             <span className="text-lg font-black text-slate-900 mt-1 block print:text-slate-900">
-              {userRole === "client" ? clientStats.completedGigsCount : freelancerStats.completedGigsCount} Gigs
+              {userRole === "client" ? clientStats.completedGigsCount : freelancerStats.completedGigsCount} {t("gigs_unit", "Gigs")}
             </span>
           </div>
         </div>
@@ -303,8 +348,8 @@ export default function ReportsPage() {
       <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm print:border print:border-slate-200 print:rounded-xl print:shadow-none print:p-6 print:mt-4 print:break-inside-auto">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-5 print:mb-4 print:pb-3">
           <div>
-            <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider print:text-slate-900">Ledger Statement</h3>
-            <p className="text-slate-400 text-xxs font-bold mt-0.5 print:text-slate-700">Filter and review transaction logs</p>
+            <h3 className="text-sm font-black text-slate-850 uppercase tracking-wider print:text-slate-900">{t("ledger_statement_header", "Ledger Statement")}</h3>
+            <p className="text-slate-400 text-xxs font-bold mt-0.5 print:text-slate-700">{t("ledger_statement_desc", "Filter and review transaction logs")}</p>
           </div>
           <div className="flex gap-1.5 select-none print:hidden">
             <button
@@ -313,7 +358,7 @@ export default function ReportsPage() {
                 filterType === "all" ? "bg-teal-700 text-white border-teal-700" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
               }`}
             >
-              All Logs
+              {t("all_logs_filter", "All Logs")}
             </button>
             <button
               onClick={() => setFilterType("credit")}
@@ -321,7 +366,7 @@ export default function ReportsPage() {
                 filterType === "credit" ? "bg-teal-700 text-white border-teal-700" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
               }`}
             >
-              Credits Only
+              {t("credits_only_filter", "Credits Only")}
             </button>
             <button
               onClick={() => setFilterType("debit")}
@@ -329,7 +374,7 @@ export default function ReportsPage() {
                 filterType === "debit" ? "bg-teal-700 text-white border-teal-700" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
               }`}
             >
-              Debits Only
+              {t("debits_only_filter", "Debits Only")}
             </button>
           </div>
         </div>
@@ -339,11 +384,11 @@ export default function ReportsPage() {
             <table className="w-full text-xs font-bold text-slate-600 min-w-[550px]">
               <thead>
                 <tr className="border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 text-left">
-                  <th className="pb-3.5 pl-3 pr-2 whitespace-nowrap">Transaction ID</th>
-                  <th className="pb-3.5 px-2 whitespace-nowrap">Details</th>
-                  <th className="pb-3.5 px-2 whitespace-nowrap">Date</th>
-                  <th className="pb-3.5 px-2 whitespace-nowrap">Status</th>
-                  <th className="pb-3.5 text-right pr-3 pl-2 whitespace-nowrap">Amount</th>
+                  <th className="pb-3.5 pl-3 pr-2 whitespace-nowrap">{t("transaction_id_col", "Transaction ID")}</th>
+                  <th className="pb-3.5 px-2 whitespace-nowrap">{t("details_col", "Details")}</th>
+                  <th className="pb-3.5 px-2 whitespace-nowrap">{t("date_col", "Date")}</th>
+                  <th className="pb-3.5 px-2 whitespace-nowrap">{t("status_col", "Status")}</th>
+                  <th className="pb-3.5 text-right pr-3 pl-2 whitespace-nowrap">{t("amount_col", "Amount")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -357,7 +402,7 @@ export default function ReportsPage() {
 
                   return (
                     <tr key={tx.key} className="hover:bg-slate-50/50 transition-colors print:break-inside-avoid">
-                      <td className="py-4 pl-3 pr-2 font-mono text-xxs text-slate-400 whitespace-nowrap">
+                       <td className="py-4 pl-3 pr-2 font-mono text-xxs text-slate-400 whitespace-nowrap">
                         {tx.displayId}
                       </td>
                       <td className="py-4 px-2">
@@ -368,7 +413,7 @@ export default function ReportsPage() {
                             {isCredit ? <FiArrowUpRight className="w-4 h-4" /> : <FiArrowDownRight className="w-4 h-4" />}
                           </div>
                           <div>
-                            <span className="text-slate-850 font-black block">{tx.description}</span>
+                            <span className="text-slate-855 font-black block">{translateTxDescription(tx.description)}</span>
                             <span className="text-[10px] text-slate-400 font-bold block mt-0.5">{tx.subtext}</span>
                           </div>
                         </div>
@@ -399,7 +444,7 @@ export default function ReportsPage() {
         ) : (
           <div className="py-12 text-center text-slate-400">
             <FiFileText className="w-12 h-12 mx-auto text-slate-200 mb-3" />
-            <p className="text-xs font-bold">No financial logs match the current filters.</p>
+            <p className="text-xs font-bold">{t("no_financial_logs_msg", "No financial logs match the current filters.")}</p>
           </div>
         )}
       </div>

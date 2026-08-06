@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { FaStripe, FaPaypal, FaWallet } from "react-icons/fa";
+import { API_URL } from "@/config/api";
 
 export default function WalletTab() {
+  const { t } = useLanguage();
   const {
     walletInfo,
     loadingWallet,
@@ -16,8 +20,14 @@ export default function WalletTab() {
     handleWithdrawSubmit,
     handleDepositSubmit,
     userRole,
-    siteName
+    siteName,
+    triggerToast,
+    fetchWalletInfo
   } = useDashboard();
+
+  const [depositMethod, setDepositMethod] = useState<"stripe" | "paypal" | "simulated">("stripe");
+  const [depositLoading, setDepositLoading] = useState(false);
+  const [stripeReturnHandled, setStripeReturnHandled] = useState(false);
 
   const [holderName, setHolderName] = useState("");
   const [bankName, setBankName] = useState("");
@@ -31,6 +41,151 @@ export default function WalletTab() {
       setWithdrawMethod("Bank Transfer");
     }
   }, [setWithdrawMethod]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || stripeReturnHandled) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("stripe_deposit_success") === "1") {
+      setStripeReturnHandled(true);
+      const sessionId = params.get("session_id");
+      const amount = params.get("amount");
+      if (sessionId && amount) {
+        const confirmStripeDeposit = async () => {
+          try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(`${API_URL}/wallet/deposit/stripe/confirm`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`
+              },
+              body: JSON.stringify({ session_id: sessionId, amount })
+            });
+            const data = await res.json();
+            if (res.ok) {
+              triggerToast("success", `Stripe deposit of $${parseFloat(amount).toFixed(2)} confirmed!`);
+              // Clear search params
+              window.history.replaceState({}, document.title, window.location.pathname + "?tab=wallet");
+              if (fetchWalletInfo) fetchWalletInfo();
+            } else {
+              triggerToast("error", data.message || "Failed to confirm Stripe deposit.");
+            }
+          } catch (e) {
+            triggerToast("error", "Network error confirming Stripe deposit.");
+          }
+        };
+        confirmStripeDeposit();
+      }
+    } else if (params.get("stripe_deposit_cancel") === "1") {
+      setStripeReturnHandled(true);
+      triggerToast("warning", "Stripe deposit cancelled.");
+      window.history.replaceState({}, document.title, window.location.pathname + "?tab=wallet");
+    }
+  }, [stripeReturnHandled, triggerToast, fetchWalletInfo]);
+
+  const handleDepositClick = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!depositAmount || parseFloat(depositAmount) <= 0) {
+      triggerToast("error", "Please provide a valid deposit amount.");
+      return;
+    }
+
+    setDepositLoading(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      if (depositMethod === "stripe") {
+        const res = await fetch(`${API_URL}/wallet/deposit/stripe/create-session`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ amount: parseFloat(depositAmount) })
+        });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          window.location.href = data.url;
+          return; // Redirecting
+        } else {
+          triggerToast("error", data.message || "Failed to initiate Stripe deposit.");
+        }
+      } else {
+        // PayPal (simulated) or test simulated deposit
+        const res = await fetch(`${API_URL}/wallet/deposit`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            amount: parseFloat(depositAmount),
+            method: depositMethod
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (depositMethod === "paypal") {
+            triggerToast("success", `PayPal deposit of $${parseFloat(depositAmount).toFixed(2)} confirmed!`);
+          } else {
+            triggerToast("success", "Funds added successfully (Test Simulation)!");
+          }
+          setDepositAmount("");
+          if (fetchWalletInfo) fetchWalletInfo();
+        } else {
+          triggerToast("error", data.message || "Failed to deposit funds.");
+        }
+      }
+    } catch (err) {
+      triggerToast("error", "Network error. Failed to deposit funds.");
+    } finally {
+      setDepositLoading(false);
+    }
+  };
+
+  const translateTxDescription = (desc: string) => {
+    if (!desc) return "";
+    
+    if (desc === "Simulated account deposit") {
+      return t("simulated_account_deposit", "Simulated account deposit");
+    }
+    if (desc === "PayPal Deposit (Simulated)") {
+      return t("paypal_deposit_simulated", "PayPal Deposit (Simulated)");
+    }
+    if (desc.startsWith("Stripe Deposit (Session:")) {
+      const sessionId = desc.replace("Stripe Deposit (Session: ", "").replace(")", "");
+      return t("stripe_deposit_session", "Stripe Deposit (Session: {{session_id}})").replace("{{session_id}}", sessionId);
+    }
+    if (desc.startsWith("Escrow refund due to freelancer cancelling work:")) {
+      const projectName = desc.replace("Escrow refund due to freelancer cancelling work:", "").trim();
+      return t("escrow_refund_cancelled_work", "Escrow refund due to freelancer cancelling work: {{projectName}}").replace("{{projectName}}", projectName);
+    }
+    if (desc.startsWith("Escrow payment for contract milestones:")) {
+      const projectName = desc.replace("Escrow payment for contract milestones:", "").trim();
+      return t("escrow_payment_milestones", "Escrow payment for contract milestones: {{projectName}}").replace("{{projectName}}", projectName);
+    }
+    if (desc.startsWith("Withdrawal request via")) {
+      const method = desc.replace("Withdrawal request via", "").trim();
+      return t("withdrawal_request_via", "Withdrawal request via {{method}}").replace("{{method}}", method);
+    }
+    if (desc === "Manual platform wallet release payout") {
+      return t("manual_platform_payout", "Manual platform wallet release payout");
+    }
+    if (desc === "Referral sign-up bonus reward") {
+      return t("referral_signup_bonus", "Referral sign-up bonus reward");
+    }
+    if (desc.startsWith("Referral reward for user_id =")) {
+      const userId = desc.replace("Referral reward for user_id =", "").trim();
+      return t("referral_reward_for", "Referral reward for user_id = {{userId}}").replace("{{userId}}", userId);
+    }
+    if (desc.startsWith("Affiliate commission reward for commission_id =")) {
+      const commissionId = desc.replace("Affiliate commission reward for commission_id =", "").trim();
+      return t("affiliate_commission_reward", "Affiliate commission reward for commission_id = {{commissionId}}").replace("{{commissionId}}", commissionId);
+    }
+
+    return desc;
+  };
 
   useEffect(() => {
     if (holderName || bankName || branchName || ifsc || accNum) {
@@ -70,10 +225,10 @@ export default function WalletTab() {
       {/* HEADER SECTION */}
       <div className="flex flex-col gap-1.5">
         <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-          <i className="fa-solid fa-credit-card text-teal-700"></i> My Digital Wallet
+          <i className="fa-solid fa-credit-card text-teal-700"></i> {t("my_digital_wallet_header", "My Digital Wallet")}
         </h1>
         <p className="text-slate-500 text-xs font-semibold">
-          Manage your virtual funds, payouts, and deposit records.
+          {t("my_digital_wallet_desc", "Manage your virtual funds, payouts, and deposit records.")}
         </p>
       </div>
 
@@ -91,10 +246,10 @@ export default function WalletTab() {
             <div className="flex justify-between items-start z-10">
               <div>
                 <p className="text-[10px] uppercase font-black tracking-widest text-white/95">
-                  {siteName || "Buy2Lancer"} Wallet
+                  {t("wallet_card_title", "{{siteName}} Wallet").replace("{{siteName}}", siteName || "Buy2Lancer")}
                 </p>
                 <h3 className="text-lg font-black tracking-tight text-white mt-1">
-                  {userRole === "client" ? "Client Ledger" : "Freelancer Earnings"}
+                  {userRole === "client" ? t("client_ledger_label", "Client Ledger") : t("freelancer_earnings_label", "Freelancer Earnings")}
                 </h3>
               </div>
               <span className="text-xl font-black tracking-tight text-white/90">VISA</span>
@@ -106,11 +261,11 @@ export default function WalletTab() {
               </p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-[10px] text-white/85 font-black uppercase tracking-wider">
-                  Active Virtual Balance (USD)
+                  {t("active_virtual_balance_label", "Active Virtual Balance (USD)")}
                 </span>
                 {pendingTotal > 0 && (
                   <span className="text-[9px] font-black bg-amber-400/20 text-amber-200 px-2 py-0.5 rounded border border-amber-300/30">
-                    ${pendingTotal.toFixed(2)} Pending Review
+                    ${pendingTotal.toFixed(2)} {t("pending_review_label", "Pending Review")}
                   </span>
                 )}
               </div>
@@ -120,7 +275,7 @@ export default function WalletTab() {
               <span>ACC #### #### {wallet?.wallet_id || "0"}</span>
               <span className="inline-flex items-center gap-1.5 uppercase bg-white text-teal-900 px-2.5 py-0.5 rounded-md text-[9px] font-black tracking-wider shadow-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                STATUS: ACTIVE
+                {t("wallet_status_active", "STATUS: ACTIVE")}
               </span>
             </div>
           </div>
@@ -129,28 +284,76 @@ export default function WalletTab() {
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4">
             <div>
               <h3 className="text-sm font-extrabold text-slate-800 flex items-center gap-2">
-                <i className="fa-solid fa-bolt text-teal-600"></i> Add Funds
+                <i className="fa-solid fa-bolt text-teal-600"></i> {t("add_funds_header", "Add Funds")}
               </h3>
               <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                Add virtual funds to your wallet instantly.
+                {t("add_funds_desc", "Add virtual funds to your wallet instantly.")}
               </p>
             </div>
 
-            <form onSubmit={handleDepositSubmit} className="flex gap-2">
-              <input
-                type="number"
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                placeholder="Amount (e.g. 500)"
-                min="1"
-                step="0.01"
-                className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700 transition"
-              />
+            <form onSubmit={handleDepositClick} className="space-y-4">
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  value={depositAmount}
+                  onChange={(e) => setDepositAmount(e.target.value)}
+                  placeholder={t("amount_placeholder_eg", "Amount (e.g. 500)")}
+                  min="1"
+                  step="0.01"
+                  className="flex-grow bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700 transition"
+                />
+              </div>
+
+              {/* Payment Method Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">
+                  {t("select_payment_method", "Select Deposit Method")}
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["stripe", "paypal", "simulated"] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => setDepositMethod(m)}
+                      className={`flex flex-col items-center justify-center py-2.5 px-1.5 rounded-xl border-2 transition-all cursor-pointer ${
+                        depositMethod === m
+                          ? "border-teal-700 bg-teal-50/20 text-teal-700 shadow-xs"
+                          : "border-slate-150 hover:border-slate-200 bg-white text-slate-500"
+                      }`}
+                    >
+                      {m === "stripe" && <FaStripe className={`w-8 h-4 ${depositMethod === "stripe" ? "text-teal-700" : "text-slate-400"}`} />}
+                      {m === "paypal" && <FaPaypal className={`w-4 h-4 mb-0.5 ${depositMethod === "paypal" ? "text-teal-700" : "text-slate-400"}`} />}
+                      {m === "simulated" && <FaWallet className={`w-4 h-4 mb-0.5 ${depositMethod === "simulated" ? "text-teal-700" : "text-slate-400"}`} />}
+                      <span className="text-[9px] font-black mt-0.5 capitalize">
+                        {m === "simulated" ? t("simulated_method", "Simulated") : m}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <button
                 type="submit"
-                className="bg-teal-700 hover:bg-teal-800 text-white rounded-xl px-4 py-2 text-xs font-bold transition shadow-md shadow-teal-700/10 cursor-pointer"
+                disabled={depositLoading || !depositAmount || parseFloat(depositAmount) <= 0}
+                className="w-full bg-teal-700 hover:bg-teal-800 text-white rounded-xl py-2.5 text-xs font-bold transition shadow-md shadow-teal-700/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
               >
-                Add Funds
+                {depositLoading ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span>{t("processing", "Processing...")}</span>
+                  </>
+                ) : (
+                  <>
+                    <i className="fa-solid fa-plus-circle"></i>
+                    <span>
+                      {depositMethod === "stripe"
+                        ? t("btn_deposit_stripe", "Pay with Stripe")
+                        : depositMethod === "paypal"
+                        ? t("btn_deposit_paypal", "Pay with PayPal")
+                        : t("btn_add_funds", "Add Funds")}
+                    </span>
+                  </>
+                )}
               </button>
             </form>
           </div>
@@ -162,10 +365,10 @@ export default function WalletTab() {
           <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm h-full space-y-6">
             <div>
               <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
-                <i className="fa-solid fa-money-bill-transfer text-slate-700"></i> Request Fund Withdrawal / Payout
+                <i className="fa-solid fa-money-bill-transfer text-slate-700"></i> {t("request_withdrawal_header", "Request Fund Withdrawal / Payout")}
               </h2>
               <p className="text-xs text-slate-500 font-semibold mt-1">
-                Enter bank account details and payout amount. Admin will review the request and process it.
+                {t("request_withdrawal_desc", "Enter bank account details and payout amount. Admin will review the request and process it.")}
               </p>
             </div>
 
@@ -236,7 +439,7 @@ export default function WalletTab() {
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                    Amount to Withdraw (USD)
+                    {t("amount_to_withdraw_label", "Amount to Withdraw (USD)")}
                   </label>
                   {availableBalance > 0 && (
                     <button
@@ -247,7 +450,7 @@ export default function WalletTab() {
                       }}
                       className="text-[10px] font-extrabold text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2 py-0.5 rounded-md border border-teal-200 transition cursor-pointer flex items-center gap-1"
                     >
-                      <i className="fa-solid fa-wallet text-[9px]"></i> Use Max (${availableBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                      <i className="fa-solid fa-wallet text-[9px]"></i> {t("use_max_label", "Use Max")} (${availableBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                     </button>
                   )}
                 </div>
@@ -271,7 +474,7 @@ export default function WalletTab() {
                       setFormErrors((prev) => ({ ...prev, withdrawAmount: "" }));
                     }
                   }}
-                  placeholder="Enter amount"
+                  placeholder={t("enter_amount_placeholder", "Enter amount")}
                   min="10"
                   max={availableBalance > 0 ? availableBalance : 0}
                   step="0.01"
@@ -297,7 +500,7 @@ export default function WalletTab() {
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                      Account Holder Name
+                      {t("account_holder_name_label", "Account Holder Name")}
                     </label>
                     <span className="text-[9px] font-bold text-slate-400">
                       {holderName.length}/50
@@ -320,7 +523,7 @@ export default function WalletTab() {
                         setFormErrors((prev) => ({ ...prev, holderName: "" }));
                       }
                     }}
-                    placeholder="Enter full name"
+                    placeholder={t("enter_full_name_placeholder", "Enter full name")}
                     required
                     className={`w-full bg-slate-50 border rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none transition ${
                       formErrors.holderName ? "border-rose-500 bg-rose-50/40" : "border-slate-200 focus:border-teal-700"
@@ -332,11 +535,11 @@ export default function WalletTab() {
                     </p>
                   )}
                 </div>
-
+ 
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                      Bank Name
+                      {t("bank_name_label", "Bank Name")}
                     </label>
                     <span className="text-[9px] font-bold text-slate-400">
                       {bankName.length}/50
@@ -357,7 +560,7 @@ export default function WalletTab() {
                         setFormErrors((prev) => ({ ...prev, bankName: "" }));
                       }
                     }}
-                    placeholder="e.g. HDFC Bank, Chase"
+                    placeholder={t("bank_name_placeholder_eg", "e.g. HDFC Bank, Chase")}
                     required
                     className={`w-full bg-slate-50 border rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none transition ${
                       formErrors.bankName ? "border-rose-500 bg-rose-50/40" : "border-slate-200 focus:border-teal-700"
@@ -370,12 +573,12 @@ export default function WalletTab() {
                   )}
                 </div>
               </div>
-
+ 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                      Account Number
+                      {t("account_number_label", "Account Number")}
                     </label>
                     <span className="text-[9px] font-bold text-slate-400">
                       {accNum.length}/30
@@ -395,7 +598,7 @@ export default function WalletTab() {
                         setFormErrors((prev) => ({ ...prev, accNum: "" }));
                       }
                     }}
-                    placeholder="Enter account number (digits only)"
+                    placeholder={t("enter_account_number_placeholder", "Enter account number (digits only)")}
                     required
                     className={`w-full bg-slate-50 border rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none transition ${
                       formErrors.accNum ? "border-rose-500 bg-rose-50/40" : "border-slate-200 focus:border-teal-700"
@@ -407,11 +610,11 @@ export default function WalletTab() {
                     </p>
                   )}
                 </div>
-
+ 
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                      IFSC / SWIFT Code
+                      {t("ifsc_swift_code_label", "IFSC / SWIFT Code")}
                     </label>
                     <span className="text-[9px] font-bold text-slate-400">
                       {ifsc.length}/11
@@ -430,7 +633,7 @@ export default function WalletTab() {
                         setFormErrors((prev) => ({ ...prev, ifsc: "" }));
                       }
                     }}
-                    placeholder="Enter code"
+                    placeholder={t("enter_code_placeholder", "Enter code")}
                     required
                     className={`w-full bg-slate-50 border rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none transition uppercase ${
                       formErrors.ifsc ? "border-rose-500 bg-rose-50/40" : "border-slate-200 focus:border-teal-700"
@@ -442,11 +645,11 @@ export default function WalletTab() {
                     </p>
                   )}
                 </div>
-
+ 
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                      Branch Name
+                      {t("branch_name_label", "Branch Name")}
                     </label>
                     <span className="text-[9px] font-bold text-slate-400">
                       {branchName.length}/50
@@ -467,7 +670,7 @@ export default function WalletTab() {
                         setFormErrors((prev) => ({ ...prev, branchName: "" }));
                       }
                     }}
-                    placeholder="Enter branch name"
+                    placeholder={t("enter_branch_name_placeholder", "Enter branch name")}
                     required
                     className={`w-full bg-slate-50 border rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 placeholder-slate-400 focus:outline-none transition ${
                       formErrors.branchName ? "border-rose-500 bg-rose-50/40" : "border-slate-200 focus:border-teal-700"
@@ -480,7 +683,7 @@ export default function WalletTab() {
                   )}
                 </div>
               </div>
-
+ 
               <button
                 type="submit"
                 disabled={
@@ -503,7 +706,7 @@ export default function WalletTab() {
                 }
                 className="w-full md:w-auto bg-slate-800 hover:bg-slate-900 text-white rounded-xl px-6 py-2.5 text-xs font-bold transition shadow-md shadow-slate-900/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
               >
-                <i className="fa-solid fa-paper-plane"></i> Submit Withdrawal Request
+                <i className="fa-solid fa-paper-plane"></i> {t("btn_submit_withdrawal_request", "Submit Withdrawal Request")}
               </button>
             </form>
           </div>
@@ -514,40 +717,40 @@ export default function WalletTab() {
       {/* WITHDRAWAL REQUESTS LOG */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-4">
-          <i className="fa-solid fa-clock-rotate-left text-slate-700"></i> Payout Withdrawal Requests
+          <i className="fa-solid fa-clock-rotate-left text-slate-700"></i> {t("payout_withdrawal_requests_header", "Payout Withdrawal Requests")}
         </h2>
         {withdrawals.length === 0 ? (
           <p className="text-xs text-slate-400 font-semibold text-center py-6">
-            No withdrawal requests submitted yet.
+            {t("no_withdrawal_requests_msg", "No withdrawal requests submitted yet.")}
           </p>
         ) : (
           <div className="overflow-x-auto scrollbar-thin">
-            <table className="w-full text-left text-xs border-collapse min-w-[550px]">
+            <table className="w-full text-start text-xs border-collapse min-w-[550px]">
               <thead>
                 <tr className="border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider text-[9px]">
-                  <th className="py-2.5 pr-3 whitespace-nowrap">Req ID</th>
-                  <th className="py-2.5 pr-3 whitespace-nowrap">Date</th>
-                  <th className="py-2.5 pr-3 whitespace-nowrap">Method</th>
-                  <th className="py-2.5 pr-3 whitespace-nowrap">Payout Target</th>
-                  <th className="py-2.5 text-right px-3 whitespace-nowrap">Amount</th>
-                  <th className="py-2.5 text-right pl-3 whitespace-nowrap">Status</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-start">{t("req_id_col", "Req ID")}</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-start">{t("date_col", "Date")}</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-start">{t("method_col", "Method")}</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-start">{t("payout_target_col", "Payout Target")}</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-end">{t("amount_col", "Amount")}</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-end">{t("status_col", "Status")}</th>
                 </tr>
               </thead>
               <tbody className="font-bold text-slate-700">
                 {withdrawals.map((w: any) => (
                   <tr key={w.request_id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                    <td className="py-3 pr-3 text-slate-400 whitespace-nowrap">#{w.request_id}</td>
-                    <td className="py-3 pr-3 text-[10px] text-slate-500 whitespace-nowrap">
+                    <td className="py-3 px-3 text-slate-400 whitespace-nowrap text-start">#{w.request_id}</td>
+                    <td className="py-3 px-3 text-[10px] text-slate-500 whitespace-nowrap text-start">
                       {new Date(w.created_at).toLocaleDateString()}
                     </td>
-                    <td className="py-3 pr-3 text-slate-600 whitespace-nowrap">{w.payment_method}</td>
-                    <td className="py-3 pr-3 max-w-[200px] truncate text-slate-500" title={w.account_details}>
+                    <td className="py-3 px-3 text-slate-600 whitespace-nowrap text-start">{w.payment_method}</td>
+                    <td className="py-3 px-3 max-w-[200px] truncate text-slate-500 text-start" title={w.account_details}>
                       {w.account_details}
                     </td>
-                    <td className="py-3 text-right px-3 text-slate-850 whitespace-nowrap">
+                    <td className="py-3 px-3 text-slate-855 whitespace-nowrap text-end">
                       ${parseFloat(w.amount).toFixed(2)}
                     </td>
-                    <td className="py-3 text-right pl-3 whitespace-nowrap">
+                    <td className="py-3 px-3 whitespace-nowrap text-end">
                       <span
                         className={`text-[9px] px-2 py-0.5 rounded-full inline-block ${
                           w.status === "Approved"
@@ -557,7 +760,7 @@ export default function WalletTab() {
                             : "bg-amber-50 text-amber-600 border border-amber-100 animate-pulse"
                         }`}
                       >
-                        {w.status}
+                        {t(w.status.toLowerCase(), w.status)}
                       </span>
                     </td>
                   </tr>
@@ -571,22 +774,22 @@ export default function WalletTab() {
       {/* TRANSACTION HISTORY */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-sm">
         <h2 className="text-base font-extrabold text-slate-800 flex items-center gap-2 mb-4">
-          <i className="fa-solid fa-receipt text-slate-700"></i> Wallet Transactions Log
+          <i className="fa-solid fa-receipt text-slate-700"></i> {t("wallet_transactions_log_header", "Wallet Transactions Log")}
         </h2>
         {transactions.length === 0 ? (
           <p className="text-xs text-slate-400 font-semibold text-center py-6">
-            No transaction records found.
+            {t("no_transaction_records_msg", "No transaction records found.")}
           </p>
         ) : (
           <div className="overflow-x-auto scrollbar-thin">
-            <table className="w-full text-left text-xs border-collapse min-w-[640px]">
+            <table className="w-full text-start text-xs border-collapse min-w-[640px]">
               <thead>
                 <tr className="border-b border-slate-100 text-slate-400 uppercase font-black tracking-wider text-[9px]">
-                  <th className="py-2.5 pr-3 whitespace-nowrap">Tx ID</th>
-                  <th className="py-2.5 pr-3 whitespace-nowrap">Date</th>
-                  <th className="py-2.5 pr-3 whitespace-nowrap">Type</th>
-                  <th className="py-2.5 pr-3 whitespace-nowrap min-w-[220px]">Description</th>
-                  <th className="py-2.5 text-right pl-3 whitespace-nowrap">Amount</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-start">{t("tx_id_col", "Tx ID")}</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-start">{t("date_col", "Date")}</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-start">{t("type_col", "Type")}</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-start min-w-[220px]">{t("description_col", "Description")}</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap text-end">{t("amount_col", "Amount")}</th>
                 </tr>
               </thead>
               <tbody className="font-bold text-slate-700">
@@ -607,28 +810,28 @@ export default function WalletTab() {
 
                   return (
                     <tr key={tx.transaction_id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                      <td className="py-3 pr-3 text-slate-400 whitespace-nowrap">TX-{tx.transaction_id}</td>
-                      <td className="py-3 pr-3 text-[10px] text-slate-500 whitespace-nowrap">
+                      <td className="py-3 px-3 text-slate-400 whitespace-nowrap text-start">TX-{tx.transaction_id}</td>
+                      <td className="py-3 px-3 text-[10px] text-slate-500 whitespace-nowrap text-start">
                         {new Date(tx.created_at).toLocaleDateString()}
                       </td>
-                      <td className="py-3 pr-3 text-[10px] whitespace-nowrap">
+                      <td className="py-3 px-3 text-[10px] whitespace-nowrap text-start">
                         <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-bold capitalize">
-                          {String(tx.type || "").replace(/_/g, " ")}
+                          {t(String(tx.type || "").toLowerCase(), String(tx.type || "").replace(/_/g, " "))}
                         </span>
                       </td>
-                      <td className="py-3 pr-3 text-slate-500 font-semibold min-w-[220px] max-w-[360px]" title={tx.description}>
-                        <div className="leading-snug">{tx.description}</div>
+                      <td className="py-3 px-3 text-slate-500 font-semibold min-w-[220px] max-w-[360px] text-start" title={translateTxDescription(tx.description)}>
+                        <div className="leading-snug">{translateTxDescription(tx.description)}</div>
                         {parseFloat(tx.commission_amount || "0") > 0 && (() => {
                           const origAmt = parseFloat(tx.amount) + parseFloat(tx.commission_amount);
                           const commPercent = Math.round((parseFloat(tx.commission_amount) / origAmt) * 1000) / 10;
                           return (
                             <div className="text-[9px] text-slate-400 font-bold mt-0.5">
-                              ⚠️ Platform service commission of {commPercent}% (${parseFloat(tx.commission_amount).toFixed(2)}) was deducted.
+                              ⚠️ {t("platform_commission_deduction_msg", "Platform service commission of {{percent}}% ({{amount}}) was deducted.").replace("{{percent}}", String(commPercent)).replace("{{amount}}", `$${parseFloat(tx.commission_amount).toFixed(2)}`)}
                             </div>
                           );
                         })()}
                       </td>
-                      <td className={`py-3 text-right pl-3 font-black whitespace-nowrap ${amtStyle}`}>
+                      <td className={`py-3 px-3 text-end font-black whitespace-nowrap ${amtStyle}`}>
                         {displayAmt}
                       </td>
                     </tr>

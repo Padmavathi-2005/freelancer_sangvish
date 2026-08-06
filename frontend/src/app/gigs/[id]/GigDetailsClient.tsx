@@ -1897,8 +1897,8 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                       Enter your budget offer below (minimum allowed is 50% off original package price):
                     </p>
                     <div className="flex flex-col gap-1.5 mt-0.5">
-                      <div className="relative flex items-center max-w-xs">
-                        <span className="absolute left-3 text-xs text-slate-500 font-bold">{gig.currency_symbol || "$"}</span>
+                      <div className="flex items-center gap-1.5 w-full bg-slate-50 border border-slate-200 focus-within:bg-white focus-within:border-teal-600 rounded-xl px-3 py-2 max-w-xs transition-all">
+                        <span className="text-xs text-slate-500 font-bold shrink-0">{gig.currency_symbol || "$"}</span>
                         <input
                           type="number"
                           placeholder={`e.g. ${(getDiscountedPackagePrice(getPackagePrice()) * 0.8).toFixed(0)}`}
@@ -1908,7 +1908,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                             if (val.includes("-")) return; // Disallow negative typing
                             setCustomProposedPrice(val);
                           }}
-                          className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-teal-600 rounded-xl pl-7 pr-3 py-2 text-xs text-slate-800 focus:outline-none font-bold"
+                          className="w-full bg-transparent border-0 p-0 text-xs text-slate-800 focus:outline-none font-bold"
                         />
                       </div>
                       

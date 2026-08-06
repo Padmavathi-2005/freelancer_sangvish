@@ -3487,19 +3487,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               }}
               className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-500 hover:text-slate-850 cursor-pointer"
             >
-              Close
+              {t("btn_close", "Close")}
             </button>
 
             <div className="border-b border-slate-100 pb-4 pr-16 text-slate-800">
-              <span className="text-[10px] font-bold text-teal-700 tracking-widest uppercase mb-1">Submit Project Proposal</span>
-              <h2 className="text-base font-black text-slate-850 line-clamp-1">{applyingJob.title}</h2>
-              <p className="text-slate-400 text-[10px] font-semibold mt-1">Client: {applyingJob.company_name || applyingJob.client_name}</p>
+              <span className="text-[10px] font-bold text-teal-700 tracking-widest uppercase mb-1">{t("submit_project_proposal", "Submit Project Proposal")}</span>
+              <h2 className="text-base font-black text-slate-855 line-clamp-1">{applyingJob.title}</h2>
+              <p className="text-slate-400 text-[10px] font-semibold mt-1">{t("client_prefix", "Client:")} {applyingJob.company_name || applyingJob.client_name}</p>
 
               {/* Added Project Details Summary */}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 pt-3 border-t border-slate-100 text-[10px] font-semibold text-slate-450 uppercase tracking-wide">
                 <div className="flex items-center gap-1.5">
                   <i className="fa-solid fa-wallet text-slate-400"></i>
-                  <span>Budget: <strong className="text-slate-700">
+                  <span>{t("budget_label", "Budget")}: <strong className="text-slate-700">
                     {applyingJob.min_budget && applyingJob.max_budget 
                       ? `$${parseFloat(applyingJob.min_budget).toLocaleString()} - $${parseFloat(applyingJob.max_budget).toLocaleString()}`
                       : `$${parseFloat(applyingJob.budget).toLocaleString()}`}
@@ -3508,24 +3508,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <i className="fa-solid fa-graduation-cap text-slate-400"></i>
-                  <span>Exp: <strong className="text-slate-700">{applyingJob.experience_level && applyingJob.experience_level !== "null" ? applyingJob.experience_level : "Intermediate"}</strong></span>
+                  <span>{t("exp_level", "Exp")}: <strong className="text-slate-700">{applyingJob.experience_level && applyingJob.experience_level !== "null" ? applyingJob.experience_level : "Intermediate"}</strong></span>
                 </div>
                 {applyingJob.sub_category_name && (
                   <div className="flex items-center gap-1.5">
                     <i className="fa-solid fa-tags text-slate-400"></i>
-                    <span>Subcategory: <strong className="text-slate-700">{applyingJob.sub_category_name}</strong></span>
+                    <span>{t("subcategory_label", "Subcategory:")} <strong className="text-slate-700">{applyingJob.sub_category_name}</strong></span>
                   </div>
                 )}
                 {applyingJob.duration && (
                   <div className="flex items-center gap-1.5">
                     <i className="fa-solid fa-calendar text-slate-400"></i>
-                    <span>Duration: <strong className="text-slate-700">{applyingJob.duration}</strong></span>
+                    <span>{t("duration_label", "Duration:")} <strong className="text-slate-700">{applyingJob.duration}</strong></span>
                   </div>
                 )}
                 {applyingJob.num_freelancers && (
                   <div className="flex items-center gap-1.5">
                     <i className="fa-solid fa-users text-slate-400"></i>
-                    <span>Freelancers: <strong className="text-slate-700">{applyingJob.num_freelancers}</strong></span>
+                    <span>{t("freelancers_label", "Freelancers:")} <strong className="text-slate-700">{applyingJob.num_freelancers}</strong></span>
                   </div>
                 )}
               </div>
@@ -3536,7 +3536,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Your Bid (USD) *</label>
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("your_bid_usd_required", "Your Bid (USD) *")}</label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 font-bold text-xs">
                       $
@@ -3548,19 +3548,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       placeholder="e.g. 1500"
                       value={proposalBidAmount || ""}
                       onChange={(e) => setProposalBidAmount(Number(e.target.value))}
-                      className="w-full bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl py-2.5 pl-7 pr-4 text-xs focus:outline-none focus:border-teal-750 focus:bg-white transition-all text-slate-850 font-bold"
+                      className="w-full bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl py-2.5 pl-7 pr-4 text-xs focus:outline-none focus:border-teal-750 focus:bg-white transition-all text-slate-855 font-bold"
                     />
                   </div>
-                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Project budget: ${parseFloat(applyingJob.budget || applyingJob.max_budget || 0).toLocaleString()}</span>
+                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5">{t("project_budget_label", "Project budget")}: ${parseFloat(applyingJob.budget || applyingJob.max_budget || 0).toLocaleString()}</span>
                   {proposalBidAmount > 0 && parseFloat(applyingJob.budget || applyingJob.max_budget || 0) > 0 && proposalBidAmount > parseFloat(applyingJob.budget || applyingJob.max_budget || 0) && (
                     <span className="text-[10px] text-rose-600 font-extrabold mt-1 block animate-fadeIn">
-                      ⚠️ Your bid (${proposalBidAmount.toLocaleString()}) cannot exceed the project budget (${parseFloat(applyingJob.budget || applyingJob.max_budget || 0).toLocaleString()}).
+                      ⚠️ {t("bid_exceed_budget_warning", "Your bid cannot exceed the project budget")} (${parseFloat(applyingJob.budget || applyingJob.max_budget || 0).toLocaleString()}).
                     </span>
                   )}
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Delivery Time (Days) *</label>
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("delivery_time_days_required", "Delivery Time (Days) *")}</label>
                   <input
                     type="number"
                     required
@@ -3568,9 +3568,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     placeholder="e.g. 7"
                     value={proposalDeliveryDays || ""}
                     onChange={(e) => setProposalDeliveryDays(Number(e.target.value))}
-                    className="w-full bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl py-2.5 px-4 text-xs focus:outline-none focus:border-teal-750 focus:bg-white transition-all text-slate-850 font-bold"
+                    className="w-full bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl py-2.5 px-4 text-xs focus:outline-none focus:border-teal-750 focus:bg-white transition-all text-slate-855 font-bold"
                   />
-                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Estimated time to complete the work</span>
+                  <span className="text-[9px] text-slate-400 font-semibold mt-0.5">{t("delivery_time_desc", "Estimated time to complete the work")}</span>
                 </div>
               </div>
 
@@ -3579,7 +3579,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   {applyingJob.milestone_type === "Milestone" && (
                     <div className="p-2.5 bg-teal-50 border border-teal-100 rounded-xl text-slate-700 text-[10px] font-bold uppercase tracking-wider flex items-center gap-2">
                       <i className="fa-solid fa-circle-info text-teal-700 text-xs"></i>
-                      <span>This project requires defining Milestones structure</span>
+                      <span>{t("project_requires_milestones", "This project requires defining Milestones structure")}</span>
                     </div>
                   )}
 
@@ -3596,14 +3596,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         className="w-4 h-4 rounded border-slate-300 text-teal-700 focus:ring-teal-700 cursor-pointer accent-teal-700"
                       />
                       <label htmlFor="proposalUseMilestones" className="text-xs font-bold text-slate-700 cursor-pointer select-none">
-                        Propose milestone-based payment structure for this bid
+                        {t("propose_milestone_structure", "Propose milestone-based payment structure for this bid")}
                       </label>
                     </div>
                   )}
 
                   {(applyingJob.milestone_type === "Milestone" || (applyingJob.milestone_type === "Both" && proposalUseMilestones)) && (
                     <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200 p-4 rounded-xl">
-                      <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Define Milestones ({proposalMilestones.length})</h4>
+                      <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">{t("define_milestones", "Define Milestones")} ({proposalMilestones.length})</h4>
                       
                       {proposalMilestones.length > 0 && (
                         <div className="flex flex-col gap-2">
@@ -3623,7 +3623,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   type="button"
                                   onClick={() => handleRemoveProposalMilestone(idx)}
                                   className="text-rose-500 hover:text-rose-700 font-bold hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-100 transition-all cursor-pointer"
-                                  title="Remove Milestone"
+                                  title={t("remove_milestone_tooltip", "Remove Milestone")}
                                 >
                                   <i className="fa-solid fa-trash-can text-xs"></i>
                                 </button>
@@ -3635,31 +3635,31 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end border-t border-slate-100 pt-3 mt-1">
                         <div className="sm:col-span-7 flex flex-col gap-1">
-                          <label className="text-[9px] font-bold text-slate-400 uppercase">Milestone Description *</label>
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">{t("milestone_desc_required", "Milestone Description *")}</label>
                           <input
                             type="text"
-                            placeholder={isMilestoneLimitReached ? "Bid total limit reached" : "e.g. Design Figma layouts and style guide"}
+                            placeholder={isMilestoneLimitReached ? t("bid_limit_reached", "Bid total limit reached") : t("milestone_desc_placeholder", "e.g. Design Figma layouts and style guide")}
                             value={newMilestoneTitle}
                             onChange={(e) => setNewMilestoneTitle(e.target.value)}
                             disabled={isMilestoneLimitReached}
-                            className={`w-full border rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold ${
+                            className={`w-full border rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-teal-700/50 text-slate-855 font-bold ${
                               isMilestoneLimitReached
-                                ? "bg-slate-100/80 border-slate-200 text-slate-450 cursor-not-allowed"
+                                ? "bg-slate-100/80 border-slate-200 text-slate-455 cursor-not-allowed"
                                 : "bg-white border-slate-250 hover:border-slate-350"
                             }`}
                           />
                         </div>
                         <div className="sm:col-span-3 flex flex-col gap-1">
-                          <label className="text-[9px] font-bold text-slate-400 uppercase">Amount (USD) *</label>
+                          <label className="text-[9px] font-bold text-slate-400 uppercase">{t("amount_usd_required", "Amount (USD) *")}</label>
                           <input
                             type="number"
-                            placeholder="Amount"
+                            placeholder={t("amount_placeholder", "Amount")}
                             value={newMilestoneAmount}
                             onChange={(e) => setNewMilestoneAmount(e.target.value !== "" ? Number(e.target.value) : "")}
                             disabled={isMilestoneLimitReached}
-                            className={`w-full border rounded-lg py-2 px-2.5 text-xs focus:outline-none focus:border-teal-700/50 text-slate-850 font-bold ${
+                            className={`w-full border rounded-lg py-2 px-2.5 text-xs focus:outline-none focus:border-teal-700/50 text-slate-855 font-bold ${
                               isMilestoneLimitReached
-                                ? "bg-slate-100/80 border-slate-200 text-slate-450 cursor-not-allowed"
+                                ? "bg-slate-100/80 border-slate-200 text-slate-455 cursor-not-allowed"
                                 : "bg-white border-slate-250 hover:border-slate-350"
                             }`}
                           />
@@ -3674,15 +3674,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 ? "bg-slate-200 border border-slate-300 text-slate-400 cursor-not-allowed opacity-60"
                                 : "bg-teal-700 hover:bg-teal-800 text-white cursor-pointer hover:scale-[1.02]"
                             }`}
-                            title={isMilestoneLimitReached ? "Offered Bid Amount Reached" : "Add Milestone"}
+                            title={isMilestoneLimitReached ? t("bid_amount_reached", "Offered Bid Amount Reached") : t("add_milestone_btn", "Add Milestone")}
                           >
-                            Add
+                            {t("btn_add", "Add")}
                           </button>
                         </div>
                       </div>
 
                       <div className="flex justify-between items-center text-[10px] font-extrabold uppercase mt-2 pt-2 border-t border-slate-100">
-                        <span className="text-slate-400">Total Milestones sum:</span>
+                        <span className="text-slate-400">{t("total_milestones_sum", "Total Milestones sum:")}</span>
                         <span className={`text-xs ${
                           proposalMilestones.reduce((sum, m) => sum + m.amount, 0) > proposalBidAmount
                             ? "text-rose-600 font-black"
@@ -3704,14 +3704,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               )}
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Cover Letter / Pitch *</label>
+                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("cover_letter_pitch_required", "Cover Letter / Pitch *")}</label>
                 <textarea
                   required
                   rows={6}
-                  placeholder="Introduce yourself, describe your approach to this project, and detail why you're the perfect fit..."
+                  placeholder={t("cover_letter_placeholder", "Introduce yourself, describe your approach to this project, and detail why you're the perfect fit...")}
                   value={proposalCoverLetter}
                   onChange={(e) => setProposalCoverLetter(e.target.value)}
-                  className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-850 font-medium resize-none"
+                  className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-855 font-medium resize-none"
                 />
               </div>
 
@@ -3732,7 +3732,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   }}
                   className="px-5 py-2.5 rounded-xl font-bold text-xs border border-slate-200 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/60 transition-all cursor-pointer"
                 >
-                  Cancel
+                  {t("btn_cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
@@ -3740,10 +3740,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
                 >
                   {proposalSubmitting ? (
-                    "Submitting..."
+                    t("submitting_status", "Submitting...")
                   ) : (
                     <>
-                      <span>Submit Proposal</span>
+                      <span>{t("submit_proposal_btn", "Submit Proposal")}</span>
                       <FiCheck className="w-3.5 h-3.5" />
                     </>
                   )}
@@ -3763,7 +3763,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 setShowHireWizard(false);
                 setDirectHireError("");
               }}
-              className="absolute top-4 sm:top-6 right-4 sm:right-6 font-black text-xs px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 hover:text-slate-950 transition-all cursor-pointer z-10 shadow-xs"
+              className="absolute top-6 sm:top-8 right-6 sm:right-8 font-black text-xs px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 hover:text-slate-950 transition-all cursor-pointer z-10 shadow-xs"
             >
               Close
             </button>

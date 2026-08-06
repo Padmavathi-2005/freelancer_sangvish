@@ -1001,9 +1001,9 @@ export default function AIChatbot() {
                 className="w-full h-full object-contain animate-fadeIn group-hover:scale-105 transition-transform"
               />
             )}
-            <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 z-10">
+            <span className="absolute -top-1.5 -right-1.5 flex h-2.5 w-2.5 z-10">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-sm"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white shadow-sm"></span>
             </span>
           </div>
         )}

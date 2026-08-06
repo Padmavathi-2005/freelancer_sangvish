@@ -228,13 +228,13 @@ function GigsSearchContent() {
 
   // Active subcategories based on selected category
   const activeSubcategories = useMemo(() => {
-    if (!selectedCategory) return subcategories;
+    if (!selectedCategory) return [];
     const catObj = categories.find(
       (c) =>
         c.category_id?.toString() === selectedCategory ||
         c.category_name?.toLowerCase() === selectedCategory.toLowerCase()
     );
-    if (!catObj) return subcategories;
+    if (!catObj) return [];
     const catIdStr = String(catObj.category_id || catObj.id);
     return subcategories.filter(
       (s) => String(s.category_id || s.categoryId) === catIdStr
@@ -546,28 +546,31 @@ function GigsSearchContent() {
               />
             </div>
 
-            {/* Subcategory Filter (Displays only if a category is selected or is filtered) */}
-            {selectedCategory && activeSubcategories.length > 0 && (
-              <div className="space-y-2 animate-fadeIn">
-                <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("subcategory", "Subcategory")}</label>
-                <CustomSelect
-                  placeholder={t("all_subcategories", "All Subcategories")}
-                  value={selectedSubcategory}
-                  options={activeSubcategories.map((s) => ({ value: s.sub_category_name, label: s.sub_category_name }))}
-                  onChange={(val) => setSelectedSubcategory(val)}
-                />
-              </div>
-            )}
+            {/* Subcategory Filter */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("subcategory", "Subcategory")}</label>
+              <CustomSelect
+                placeholder={
+                  selectedCategory 
+                    ? t("all_subcategories", "All Subcategories") 
+                    : t("select_category_first", "Select Category First")
+                }
+                value={selectedSubcategory}
+                options={activeSubcategories.map((s) => ({ value: s.sub_category_name, label: s.sub_category_name }))}
+                onChange={(val) => setSelectedSubcategory(val)}
+                disabled={!selectedCategory}
+              />
+            </div>
 
             {/* Price Filter */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Budget (USD)</label>
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("budget_usd", "Budget (USD)")}</label>
               <div className="grid grid-cols-2 gap-2">
                 <div className="relative">
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xxs font-bold text-slate-400">$</span>
                   <input
                     type="number"
-                    placeholder="Min"
+                    placeholder={t("min", "Min")}
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl pl-5 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none transition-all"
@@ -577,7 +580,7 @@ function GigsSearchContent() {
                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xxs font-bold text-slate-400">$</span>
                   <input
                     type="number"
-                    placeholder="Max"
+                    placeholder={t("max", "Max")}
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl pl-5 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none transition-all"
@@ -588,15 +591,15 @@ function GigsSearchContent() {
 
             {/* Delivery Days Filter */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Delivery Speed</label>
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("delivery_speed", "Delivery Speed")}</label>
               <CustomSelect
-                placeholder="Any time duration"
+                placeholder={t("any_time_duration", "Any time duration")}
                 value={maxDeliveryDays}
                 options={[
-                  { value: "1", label: "Up to 24 hours" },
-                  { value: "3", label: "Up to 3 days" },
-                  { value: "7", label: "Up to 7 days" },
-                  { value: "14", label: "Up to 14 days" },
+                  { value: "1", label: t("up_to_24_hours", "Up to 24 hours") },
+                  { value: "3", label: t("up_to_3_days", "Up to 3 days") },
+                  { value: "7", label: t("up_to_7_days", "Up to 7 days") },
+                  { value: "14", label: t("up_to_14_days", "Up to 14 days") },
                 ]}
                 onChange={(val) => setMaxDeliveryDays(val)}
               />
@@ -604,14 +607,14 @@ function GigsSearchContent() {
 
             {/* Rating Filter */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Minimum Rating</label>
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("minimum_rating", "Minimum Rating")}</label>
               <CustomSelect
-                placeholder="Any Rating"
+                placeholder={t("any_rating", "Any Rating")}
                 value={filterRating}
                 options={[
-                  { value: "4.5", label: "4.5 Stars & Up" },
-                  { value: "4.0", label: "4.0 Stars & Up" },
-                  { value: "3.5", label: "3.5 Stars & Up" },
+                  { value: "4.5", label: t("stars_and_up_45", "4.5 Stars & Up") },
+                  { value: "4.0", label: t("stars_and_up_40", "4.0 Stars & Up") },
+                  { value: "3.5", label: t("stars_and_up_35", "3.5 Stars & Up") },
                 ]}
                 onChange={(val) => setFilterRating(val)}
               />
@@ -619,14 +622,14 @@ function GigsSearchContent() {
 
             {/* Experience Level */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Contractor Level</label>
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("contractor_level", "Contractor Level")}</label>
               <CustomSelect
-                placeholder="Any Level"
+                placeholder={t("any_level", "Any Level")}
                 value={experienceLevel}
                 options={[
-                  { value: "Beginner", label: "Entry Level" },
-                  { value: "Intermediate", label: "Intermediate" },
-                  { value: "Expert", label: "Expert" },
+                  { value: "Beginner", label: t("entry_level", "Entry Level") },
+                  { value: "Intermediate", label: t("intermediate", "Intermediate") },
+                  { value: "Expert", label: t("expert", "Expert") },
                 ]}
                 onChange={(val) => setExperienceLevel(val)}
               />

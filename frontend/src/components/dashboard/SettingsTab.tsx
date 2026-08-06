@@ -3,6 +3,7 @@ import React, { useState, useMemo } from "react";
 import CustomSelect from "../CustomSelect";
 import { FiSettings, FiUser, FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiTrash2, FiPlus, FiCircle, FiFileText, FiUpload, FiShield, FiPhone, FiMail, FiSend, FiKey, FiLoader } from "react-icons/fi";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface SettingsTabProps {
   userRole: string | null;
@@ -117,6 +118,7 @@ export default function SettingsTab({
   setSelectedFreelancerProfile,
   userEmail: propUserEmail,
 }: SettingsTabProps) {
+  const { t } = useLanguage();
   const dashboardContext = useDashboard();
   const {
     userEmail = propUserEmail || "",
@@ -340,22 +342,22 @@ export default function SettingsTab({
   const settingsSteps = useMemo(() => {
     if (userRole === "client") {
       return [
-        { number: 1, label: "Company Basics", done: Boolean(clientBasics?.company_name) },
-        { number: 2, label: "Company Details", done: Boolean(clientBasics?.company_website || clientBasics?.company_description) },
-        { number: 3, label: "Hiring Contact Info", done: Boolean(clientBasics?.hiring_contact_name) },
-        { number: 4, label: "Contact Verification", done: emailVerified && phoneVerified }
+        { number: 1, label: t("company_basics_label", "Company Basics"), done: Boolean(clientBasics?.company_name) },
+        { number: 2, label: t("company_details_label", "Company Details"), done: Boolean(clientBasics?.company_website || clientBasics?.company_description) },
+        { number: 3, label: t("hiring_contact_info_label", "Hiring Contact Info"), done: Boolean(clientBasics?.hiring_contact_name) },
+        { number: 4, label: t("contact_verification_label", "Contact Verification"), done: emailVerified && phoneVerified }
       ];
     } else {
       return [
-        { number: 1, label: "Professional Basics", done: Boolean(profileBasics?.professional_title) },
-        { number: 2, label: "Work Experience", done: experiences.length > 0 },
-        { number: 3, label: "Education History", done: education.length > 0 },
-        { number: 4, label: "Certifications", done: certifications.length > 0 },
-        { number: 5, label: "Skills Selector", done: selectedSkills.length > 0 },
-        { number: 6, label: "Contact Verification", done: emailVerified && phoneVerified }
+        { number: 1, label: t("professional_basics_label", "Professional Basics"), done: Boolean(profileBasics?.professional_title) },
+        { number: 2, label: t("work_experience_label", "Work Experience"), done: experiences.length > 0 },
+        { number: 3, label: t("education_history_label", "Education History"), done: education.length > 0 },
+        { number: 4, label: t("certifications_label", "Certifications"), done: certifications.length > 0 },
+        { number: 5, label: t("skills_selector_label", "Skills Selector"), done: selectedSkills.length > 0 },
+        { number: 6, label: t("contact_verification_label", "Contact Verification"), done: emailVerified && phoneVerified }
       ];
     }
-  }, [userRole, clientBasics, profileBasics, experiences, education, certifications, selectedSkills, emailVerified, phoneVerified]);
+  }, [userRole, clientBasics, profileBasics, experiences, education, certifications, selectedSkills, emailVerified, phoneVerified, t]);
 
   const settingsProgress = useMemo(() => {
     if (settingsSteps.length === 0) return 0;
@@ -606,8 +608,8 @@ export default function SettingsTab({
     return (
       <div className="relative z-10 w-full animate-fadeIn flex flex-col gap-6 text-left">
         <div>
-          <h2 className="text-xl font-black text-slate-800">Settings Hub</h2>
-          <p className="text-xs text-slate-400">Configure your professional identity, view platform details, and manage subscriptions.</p>
+          <h2 className="text-xl font-black text-slate-800 dark:text-white">{t("settings_hub_header", "Settings Hub")}</h2>
+          <p className="text-xs text-slate-400 dark:text-slate-400">{t("settings_hub_desc", "Configure your professional identity, view platform details, and manage subscriptions.")}</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
@@ -629,14 +631,14 @@ export default function SettingsTab({
                   <FiUser className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] bg-slate-100 dark:bg-zinc-800 text-slate-650 dark:text-slate-300 font-black px-3 py-1 rounded-full uppercase tracking-wider">
-                  {settingsProgress}% Complete
+                  {t("percent_complete_label", "{{percent}}% Complete").replace("{{percent}}", String(settingsProgress))}
                 </span>
               </div>
               <h3 className="text-base font-extrabold text-slate-850 dark:text-white mt-4 group-hover:text-teal-750 transition-colors">
-                {userRole === "client" ? "Company Profile" : "Professional Profile"}
+                {userRole === "client" ? t("company_profile_label", "Company Profile") : t("professional_profile_label", "Professional Profile")}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-normal max-w-sm">
-                Set up your professional title, availability rates, experiences, educations, and showcase skills.
+                {t("profile_card_desc", "Set up your professional title, availability rates, experiences, educations, and showcase skills.")}
               </p>
             </div>
           </div>
@@ -659,14 +661,14 @@ export default function SettingsTab({
                   <FiCheckCircle className="w-5 h-5" />
                 </div>
                 <span className="text-[10px] bg-teal-55 dark:bg-teal-950/40 text-teal-800 dark:text-teal-400 font-black px-3 py-1 rounded-full uppercase tracking-wider">
-                  {userSubscription?.plan_name || "Starter"} Plan
+                  {t("plan_name_label", "{{name}} Plan").replace("{{name}}", userSubscription?.plan_name || "Starter")}
                 </span>
               </div>
               <h3 className="text-base font-extrabold text-slate-850 dark:text-white mt-4 group-hover:text-teal-755 transition-colors">
-                Membership Plan
+                {t("membership_plan_label", "Membership Plan")}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-normal max-w-sm">
-                View current active membership details, check platform allowances, and upgrade subscription tiers.
+                {t("membership_plan_card_desc", "View current active membership details, check platform allowances, and upgrade subscription tiers.")}
               </p>
             </div>
           </div>
@@ -684,14 +686,14 @@ export default function SettingsTab({
                   <FiShield className="w-5 h-5" />
                 </div>
                 <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider ${emailVerified && phoneVerified ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" : "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"}`}>
-                  {emailVerified && phoneVerified ? "100% Verified" : "Pending Verification"}
+                  {emailVerified && phoneVerified ? t("percent_verified_label", "100% Verified") : t("pending_verification_label", "Pending Verification")}
                 </span>
               </div>
               <h3 className="text-base font-extrabold text-slate-850 dark:text-white mt-4 group-hover:text-teal-750 transition-colors">
-                Account & Contact Verification
+                {t("account_contact_verification_label", "Account & Contact Verification")}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold mt-1 leading-normal max-w-sm">
-                Verify your registered Email Address and Mobile Number with 6-digit OTP codes to build trust and unlock platform features.
+                {t("verification_card_desc", "Verify your registered Email Address and Mobile Number with 6-digit OTP codes to build trust and unlock platform features.")}
               </p>
             </div>
           </div>
@@ -701,7 +703,7 @@ export default function SettingsTab({
           onClick={() => setActiveTab("workspace")}
           className="w-full text-center py-3.5 text-xs font-black text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white bg-slate-50 dark:bg-zinc-900 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 rounded-xl transition-all cursor-pointer mt-4"
         >
-          ← Back to Workspace Hub
+          {t("btn_back_workspace_hub", "← Back to Workspace Hub")}
         </button>
       </div>
     );
@@ -715,15 +717,15 @@ export default function SettingsTab({
           <div>
             <div className="flex items-center gap-2">
               <FiShield className="w-5 h-5 text-teal-600 dark:text-teal-400" />
-              <h2 className="text-xl font-black text-slate-800 dark:text-white">Account & Contact Verification</h2>
+              <h2 className="text-xl font-black text-slate-800 dark:text-white">{t("account_contact_verification_label", "Account & Contact Verification")}</h2>
             </div>
-            <p className="text-xs text-slate-400 dark:text-slate-400 mt-1">Verify your email address and mobile number with 6-digit OTP security codes.</p>
+            <p className="text-xs text-slate-400 dark:text-slate-400 mt-1">{t("verification_card_desc", "Verify your registered Email Address and Mobile Number with 6-digit OTP codes to build trust and unlock platform features.")}</p>
           </div>
           <button
             onClick={() => setSettingsTabMode("hub")}
             className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all border border-slate-200/60 dark:border-zinc-700 shrink-0 cursor-pointer"
           >
-            ← Back to Settings Hub
+            {t("btn_back_to_settings_hub", "← Back to Settings Hub")}
           </button>
         </div>
 
@@ -751,24 +753,24 @@ export default function SettingsTab({
                     <FiMail className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Email Verification</h3>
-                    <p className="text-[11px] text-slate-400">Registered platform email address</p>
+                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">{t("email_verification_header", "Email Verification")}</h3>
+                    <p className="text-[11px] text-slate-400">{t("registered_email_desc", "Registered platform email address")}</p>
                   </div>
                 </div>
                 {emailVerified ? (
                   <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
-                    <FiCheck className="w-3 h-3" /> Verified
+                    <FiCheck className="w-3 h-3" /> {t("verified_status_label", "Verified")}
                   </span>
                 ) : (
                   <span className="text-[10px] font-black text-amber-600 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-1 rounded-full uppercase tracking-wider">
-                    Unverified
+                    {t("unverified_status_label", "Unverified")}
                   </span>
                 )}
               </div>
 
               <div className="mt-5 space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Email Address</label>
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("email_address_label", "Email Address")}</label>
                   <input
                     type="email"
                     value={userEmail}
@@ -785,7 +787,7 @@ export default function SettingsTab({
                         className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
                         <FiSend className="w-3.5 h-3.5" />
-                        <span>Send Email OTP</span>
+                        <span>{t("btn_send_email_otp", "Send Email OTP")}</span>
                       </button>
                     ) : (
                       <div className="flex flex-col gap-3">
@@ -793,7 +795,7 @@ export default function SettingsTab({
                           <input
                             type="text"
                             maxLength={6}
-                            placeholder="Enter 6-digit Email OTP"
+                            placeholder={t("enter_email_otp_placeholder", "Enter 6-digit Email OTP")}
                             value={emailOtp}
                             onChange={(e) => setEmailOtp(e.target.value)}
                             className="flex-1 bg-slate-50 dark:bg-zinc-800 border border-slate-250 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-white font-mono font-bold text-center tracking-widest focus:outline-none focus:border-primary/50"
@@ -802,14 +804,14 @@ export default function SettingsTab({
                             onClick={handleVerifyEmailOtp}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer whitespace-nowrap"
                           >
-                            Verify Email
+                            {t("btn_verify_email", "Verify Email")}
                           </button>
                         </div>
                         <button
                           onClick={handleSendEmailOtp}
                           className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-left border-none bg-transparent cursor-pointer"
                         >
-                          Didn't get code? Resend OTP
+                          {t("resend_otp_prompt", "Didn't get code? Resend OTP")}
                         </button>
                       </div>
                     )}
@@ -828,24 +830,24 @@ export default function SettingsTab({
                     <FiPhone className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Mobile Number Verification</h3>
-                    <p className="text-[11px] text-slate-400">Mobile OTP Authentication</p>
+                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">{t("mobile_verification_header", "Mobile Number Verification")}</h3>
+                    <p className="text-[11px] text-slate-400">{t("mobile_otp_auth_desc", "Mobile OTP Authentication")}</p>
                   </div>
                 </div>
                 {phoneVerified ? (
                   <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1">
-                    <FiCheck className="w-3 h-3" /> Verified
+                    <FiCheck className="w-3 h-3" /> {t("verified_status_label", "Verified")}
                   </span>
                 ) : (
                   <span className="text-[10px] font-black text-amber-600 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-1 rounded-full uppercase tracking-wider">
-                    Unverified
+                    {t("unverified_status_label", "Unverified")}
                   </span>
                 )}
               </div>
 
               <div className="mt-5 space-y-4">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Mobile Phone Number</label>
+                  <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("mobile_phone_number_label", "Mobile Phone Number")}</label>
                   <input
                     type="tel"
                     placeholder="+1 (555) 123-4567 or +91 9876543210"
@@ -877,7 +879,7 @@ export default function SettingsTab({
                         className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <FiSend className="w-3.5 h-3.5" />
-                        <span>Send Mobile OTP</span>
+                        <span>{t("btn_send_mobile_otp", "Send Mobile OTP")}</span>
                       </button>
                     ) : (
                       <div className="flex flex-col gap-3">
@@ -885,7 +887,7 @@ export default function SettingsTab({
                           <input
                             type="text"
                             maxLength={6}
-                            placeholder="Enter 6-digit OTP"
+                            placeholder={t("enter_mobile_otp_placeholder", "Enter 6-digit OTP")}
                             value={phoneOtp}
                             onChange={(e) => setPhoneOtp(e.target.value)}
                             className="flex-1 bg-slate-50 dark:bg-zinc-800 border border-slate-250 dark:border-zinc-700 rounded-xl px-4 py-2.5 text-xs text-slate-800 dark:text-white font-mono font-bold text-center tracking-widest focus:outline-none focus:border-primary/50"
@@ -894,14 +896,14 @@ export default function SettingsTab({
                             onClick={handleVerifyPhoneOtp}
                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer whitespace-nowrap"
                           >
-                            Verify Phone
+                            {t("btn_verify_phone", "Verify Phone")}
                           </button>
                         </div>
                         <button
                           onClick={handleSendPhoneOtp}
                           className="text-[11px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-left border-none bg-transparent cursor-pointer"
                         >
-                          Didn't get code? Resend OTP
+                          {t("resend_otp_prompt", "Didn't get code? Resend OTP")}
                         </button>
                       </div>
                     )}
@@ -922,8 +924,8 @@ export default function SettingsTab({
         {/* LEFT CHECKLIST SIDEBAR */}
         <div className="xl:col-span-4 bg-white border border-slate-200/85 rounded-xl p-6 shadow-sm flex flex-col gap-6 order-last xl:order-first">
           <div>
-            <h2 className="text-base font-extrabold text-slate-800">Profile Setup Checklist</h2>
-            <p className="text-slate-400 text-xs mt-1">Complete each section to activate and publish your profile.</p>
+            <h2 className="text-base font-extrabold text-slate-800">{t("profile_setup_checklist_header", "Profile Setup Checklist")}</h2>
+            <p className="text-slate-400 text-xs mt-1">{t("profile_setup_checklist_desc", "Complete each section to activate and publish your profile.")}</p>
           </div>
 
           <div className="flex items-center gap-4 bg-slate-50 border border-slate-150 rounded-xl p-4.5">
@@ -939,9 +941,9 @@ export default function SettingsTab({
               </span>
             </div>
             <div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Status</span>
-              <span className="text-sm font-extrabold text-slate-850">
-                {settingsProgress === 100 ? "Ready to Publish! 🎉" : "In Progress"}
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t("status_label", "Status")}</span>
+              <span className="text-sm font-extrabold text-slate-855">
+                {settingsProgress === 100 ? t("ready_to_publish_label", "Ready to Publish! 🎉") : t("in_progress_label", "In Progress")}
               </span>
             </div>
           </div>
@@ -1004,7 +1006,7 @@ export default function SettingsTab({
                   }`}>
                     ★
                   </span>
-                  <span>Membership Plan</span>
+                  <span>{t("membership_plan_label", "Membership Plan")}</span>
                 </div>
                 <FiCheckCircle className={`w-4 h-4 shrink-0 ${profileStep === 99 ? "text-white" : "text-teal-650"}`} />
               </button>
@@ -1015,7 +1017,7 @@ export default function SettingsTab({
             onClick={() => setSettingsTabMode("hub")}
             className="w-full text-center py-3 text-xs font-bold text-slate-500 hover:text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all cursor-pointer font-sans"
           >
-            ← Back to Settings Hub
+            {t("btn_back_to_settings_hub", "← Back to Settings Hub")}
           </button>
         </div>
 
@@ -1025,23 +1027,23 @@ export default function SettingsTab({
             <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
                 <span className="text-[10px] font-black text-teal-700 uppercase tracking-wider block">
-                  {profileStep === 99 ? "Premium Perks" : `Step ${profileStep} of ${userRole === "client" ? "3" : "5"}`}
+                  {profileStep === 99 ? t("premium_perks_label", "Premium Perks") : t("step_indicator_label", "Step {{step}} of {{total}}").replace("{{step}}", String(profileStep)).replace("{{total}}", userRole === "client" ? "3" : "5")}
                 </span>
                 <h1 className="text-lg font-black text-slate-900 leading-tight">
-                  {profileStep === 99 ? "Membership & Subscription" : (
+                  {profileStep === 99 ? t("membership_subscription_header", "Membership & Subscription") : (
                     userRole === "client" ? (
                       <>
-                        {profileStep === 1 && "Company Basics"}
-                        {profileStep === 2 && "Company Presence & Details"}
-                        {profileStep === 3 && "Hiring Contact Info"}
+                        {profileStep === 1 && t("company_basics_label", "Company Basics")}
+                        {profileStep === 2 && t("company_presence_details_label", "Company Presence & Details")}
+                        {profileStep === 3 && t("hiring_contact_info_label", "Hiring Contact Info")}
                       </>
                     ) : (
                       <>
-                        {profileStep === 1 && "Core Professional Profile"}
-                        {profileStep === 2 && "Work Experience History"}
-                        {profileStep === 3 && "Education History"}
-                        {profileStep === 4 && "Professional Certifications"}
-                        {profileStep === 5 && "Skills Selector"}
+                        {profileStep === 1 && t("core_professional_profile_label", "Core Professional Profile")}
+                        {profileStep === 2 && t("work_experience_history_label", "Work Experience History")}
+                        {profileStep === 3 && t("education_history_label", "Education History")}
+                        {profileStep === 4 && t("professional_certifications_label", "Professional Certifications")}
+                        {profileStep === 5 && t("skills_selector_label", "Skills Selector")}
                       </>
                     )
                   )}
@@ -1055,24 +1057,24 @@ export default function SettingsTab({
                 <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4.5 shadow-xs text-left">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Current Plan:</span>
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t("current_plan_label", "Current Plan:")}</span>
                       <span className="text-xs bg-teal-50 border border-teal-100 text-teal-850 px-2.5 py-0.5 rounded-full font-black tracking-wider uppercase">
-                        {userSubscription?.plan_name || "Starter"}
+                        {t("plan_name_label", "{{name}} Plan").replace("{{name}}", userSubscription?.plan_name || "Starter").replace(" Plan", "").replace("Forfait", "").replace("Plan", "").trim()}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 font-semibold mt-1 leading-normal max-w-md">
-                      {userSubscription?.description || "Basic membership tier with standard platform limits."}
+                      {userSubscription?.description ? t(userSubscription.description.toLowerCase().replace(/[\s\-\.\,\!\?\(\)]+/g, "_"), userSubscription.description) : t("starter_plan_desc", "Basic membership tier with standard platform limits.")}
                     </p>
                   </div>
 
                   <div className="text-right sm:text-left shrink-0">
                     <span className="text-lg font-black text-slate-900 leading-tight font-sans">
                       {!userSubscription?.price || parseFloat(String(userSubscription.price).replace(/[^0-9.]/g, "")) === 0 || String(userSubscription.price).trim() === "0.00" || String(userSubscription.price).trim() === "0"
-                        ? "Free"
+                        ? t("free_price_label", "Free")
                         : userSubscription.price}
                     </span>
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mt-0.5">
-                      {userSubscription?.period || ""}
+                      {userSubscription?.period ? t(userSubscription.period.toLowerCase(), userSubscription.period) : ""}
                     </span>
                   </div>
                 </div>
@@ -1086,12 +1088,12 @@ export default function SettingsTab({
                       </div>
                       <div>
                         <h5 className="font-black text-slate-850 text-xs">
-                          Next Level Upgrade: {(userSubscription?.active_plan_id === 2 || userSubscription?.active_plan_id === 6) ? "Enterprise Plan" : "Professional Plan"}
+                          {t("next_level_upgrade_label", "Next Level Upgrade:")} {(userSubscription?.active_plan_id === 2 || userSubscription?.active_plan_id === 6) ? t("enterprise_plan", "Enterprise Plan") : t("professional_plan", "Professional Plan")}
                         </h5>
                         <p className="text-slate-500 font-semibold mt-1 max-w-sm leading-normal">
                           {(userSubscription?.active_plan_id === 2 || userSubscription?.active_plan_id === 6) 
-                            ? "Gain unlimited active job posts, unlimited bid proposals, and custom enterprise support options."
-                            : "Unlock advanced matching algorithms, priority support channels, and reduced transaction fees."}
+                            ? t("enterprise_upgrade_desc", "Gain unlimited active job posts, unlimited bid proposals, and custom enterprise support options.")
+                            : t("professional_upgrade_desc", "Unlock advanced matching algorithms, priority support channels, and reduced transaction fees.")}
                         </p>
                       </div>
                     </div>
@@ -1108,7 +1110,7 @@ export default function SettingsTab({
                       }}
                       className="w-full sm:w-auto bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer text-center shrink-0"
                     >
-                      Upgrade Now
+                      {t("upgrade_now_btn", "Upgrade Now")}
                     </button>
                   </div>
                 )}

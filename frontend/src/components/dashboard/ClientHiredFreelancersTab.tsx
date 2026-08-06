@@ -174,7 +174,7 @@ export default function ClientHiredFreelancersTab({
                               
                               <div className="flex items-center gap-1 shrink-0 select-none">
                                 <span className={`text-[7px] font-black uppercase tracking-wider px-1 py-0.5 rounded border ${statusColor}`}>
-                                  {c.status}
+                                  {t(c.status?.toLowerCase(), c.status)}
                                 </span>
                                 <span className="text-[8px] font-bold text-slate-600 tabular-nums">
                                   ${parseFloat(c.budget || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}

@@ -1210,16 +1210,16 @@ export default function ProjectMilestoneTracker({
                         key={m}
                         type="button"
                         onClick={() => { setPayMethod(m); setPayError(""); }}
-                        className={`flex flex-col items-center justify-center py-3.5 px-2 rounded-xl border-2 transition-all cursor-pointer ${
+                        className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border-2 transition-all cursor-pointer ${
                           payMethod === m
                             ? "border-primary bg-primary/[0.04] text-primary shadow-sm"
                             : "border-slate-150 hover:border-slate-250 bg-white text-slate-500"
                         }`}
                       >
-                        {m === "stripe" && <FaCreditCard className={`w-5 h-5 mb-0.5 ${payMethod === "stripe" ? "text-primary" : "text-slate-400"}`} />}
-                        {m === "paypal" && <FaPaypal className={`w-5 h-5 mb-0.5 ${payMethod === "paypal" ? "text-primary" : "text-slate-400"}`} />}
-                        {m === "wallet" && <FaWallet className={`w-5 h-5 mb-0.5 ${payMethod === "wallet" ? "text-primary" : "text-slate-400"}`} />}
-                        <span className="text-[10px] font-black mt-0.5 capitalize">{m === "stripe" ? "Card" : m}</span>
+                        {m === "stripe" && <FaCreditCard className={`w-4 h-4 ${payMethod === "stripe" ? "text-primary" : "text-slate-400"}`} />}
+                        {m === "paypal" && <FaPaypal className={`w-4 h-4 ${payMethod === "paypal" ? "text-primary" : "text-slate-400"}`} />}
+                        {m === "wallet" && <FaWallet className={`w-4 h-4 ${payMethod === "wallet" ? "text-primary" : "text-slate-400"}`} />}
+                        <span className="text-[10px] font-black capitalize">{m === "stripe" ? "Card" : m}</span>
                       </button>
                     ))}
                   </div>
@@ -3766,17 +3766,18 @@ export default function ProjectMilestoneTracker({
                   </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 w-full mt-2">
-                  <div className="w-full sm:w-auto">
-                    {!isHired && !canSubmitCompletion && (
-                      <span className="block text-[10px] text-rose-600 font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-100 leading-normal">
-                        {isHourly 
-                          ? `Requires min ${minHoursRequired} hours logged to submit.` 
-                          : "Please submit and complete all milestones before marking the entire project as completed."
-                        }
-                      </span>
-                    )}
+                {!isHired && !canSubmitCompletion && (
+                  <div className="w-full text-left mt-2">
+                    <span className="inline-block text-[10px] text-rose-600 font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-100 leading-normal">
+                      {isHourly 
+                        ? `Requires min ${minHoursRequired} hours logged to submit.` 
+                        : "Please submit and complete all milestones before marking the entire project as completed."
+                      }
+                    </span>
                   </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row justify-end items-center gap-3 w-full mt-2">
 
                   <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full sm:w-auto">
                     <button
@@ -3956,16 +3957,16 @@ export default function ProjectMilestoneTracker({
                       key={m}
                       type="button"
                       onClick={() => { setPayTimecardMethod(m); setPayTimecardError(""); }}
-                      className={`flex flex-col items-center justify-center py-3.5 px-2 rounded-xl border-2 transition-all cursor-pointer ${
+                      className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border-2 transition-all cursor-pointer ${
                         payTimecardMethod === m
                           ? "border-primary bg-primary/[0.04] text-primary shadow-sm"
                           : "border-slate-150 hover:border-slate-250 bg-white text-slate-500"
                       }`}
                     >
-                      {m === "stripe" && <FaCreditCard className={`w-5 h-5 mb-0.5 ${payTimecardMethod === m ? "text-primary" : "text-slate-400"}`} />}
-                      {m === "paypal" && <FaPaypal className={`w-5 h-5 mb-0.5 ${payTimecardMethod === m ? "text-primary" : "text-slate-400"}`} />}
-                      {m === "wallet" && <FaWallet className={`w-5 h-5 mb-0.5 ${payTimecardMethod === m ? "text-primary" : "text-slate-400"}`} />}
-                      <span className="text-[10px] font-black mt-0.5 capitalize">{m === "stripe" ? "Card" : m}</span>
+                      {m === "stripe" && <FaCreditCard className={`w-4 h-4 ${payTimecardMethod === m ? "text-primary" : "text-slate-400"}`} />}
+                      {m === "paypal" && <FaPaypal className={`w-4 h-4 ${payTimecardMethod === m ? "text-primary" : "text-slate-400"}`} />}
+                      {m === "wallet" && <FaWallet className={`w-4 h-4 ${payTimecardMethod === m ? "text-primary" : "text-slate-400"}`} />}
+                      <span className="text-[10px] font-black capitalize">{m === "stripe" ? "Card" : m}</span>
                     </button>
                   ))}
                 </div>
@@ -4535,14 +4536,16 @@ export default function ProjectMilestoneTracker({
           <div 
             className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] border border-slate-200/80 shadow-2xl flex flex-col relative overflow-hidden animate-fadeIn print:shadow-none print:border-none print:max-w-none print:max-h-none"
           >
-            {/* Close Button Icon */}
-            <button
-              onClick={() => setShowInvoiceModal(false)}
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-650 hover:bg-slate-100 rounded-lg p-1.5 cursor-pointer transition-all z-50 border-0 print:hidden flex items-center justify-center"
-              title="Close"
-            >
-              <i className="fa-solid fa-xmark text-xs"></i>
-            </button>
+            {/* Non-scrollable Header Bar */}
+            <div className="flex justify-end p-2 border-b border-slate-100 shrink-0 print:hidden bg-slate-50/50">
+              <button
+                onClick={() => setShowInvoiceModal(false)}
+                className="text-slate-400 hover:text-slate-650 hover:bg-slate-100 rounded-lg p-1.5 cursor-pointer transition-all border-0 flex items-center justify-center"
+                title="Close"
+              >
+                <i className="fa-solid fa-xmark text-sm"></i>
+              </button>
+            </div>
 
             {/* Scrollable Container Wrapper */}
             <div className="flex-grow overflow-y-auto scrollbar-thin max-h-[calc(90vh-60px)] print:max-h-none print:overflow-visible">

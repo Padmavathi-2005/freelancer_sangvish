@@ -1,5 +1,6 @@
 import React from "react";
 import { FiBell, FiCheck, FiMessageSquare, FiFileText, FiBriefcase } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface NotificationsTabProps {
   notifications: any[];
@@ -32,6 +33,8 @@ export default function NotificationsTab({
   handleMarkAllRead,
   handleMarkSingleRead,
 }: NotificationsTabProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-800">
       {/* Header */}
@@ -40,25 +43,25 @@ export default function NotificationsTab({
           <div className="flex items-center justify-between gap-3 w-full sm:w-auto">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
               <FiBell className="w-5 h-5 text-primary shrink-0" />
-              <span>Notifications & Activity Log</span>
+              <span>{t("notifications_activity_log", "Notifications & Activity Log")}</span>
             </h2>
             {unreadNotificationsCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
                 className="sm:hidden bg-teal-700 hover:bg-teal-800 text-white px-3 py-1.5 rounded-xl text-[11px] font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap"
               >
-                <span>Mark Read</span>
+                <span>{t("mark_read", "Mark Read")}</span>
                 <FiCheck className="w-3 h-3" />
               </button>
             )}
           </div>
-          <p className="text-slate-400 text-xs font-semibold leading-relaxed">Stay updated on your proposal status, gig orders, and profile alerts.</p>
+          <p className="text-slate-400 text-xs font-semibold leading-relaxed">{t("notifications_subtitle", "Stay updated on your proposal status, gig orders, and profile alerts.")}</p>
           {unreadNotificationsCount > 0 && (
             <button
               onClick={handleMarkAllRead}
               className="hidden sm:flex bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition-all cursor-pointer items-center gap-1.5 shrink-0 whitespace-nowrap"
             >
-              <span>Mark All as Read</span>
+              <span>{t("mark_all_as_read", "Mark All as Read")}</span>
               <FiCheck className="w-3.5 h-3.5" />
             </button>
           )}
@@ -73,8 +76,8 @@ export default function NotificationsTab({
               <FiBell className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-slate-800 mb-1">All caught up!</h3>
-              <p className="text-slate-400 text-xs font-semibold">You have no new or past notifications at the moment.</p>
+              <h3 className="text-sm font-extrabold text-slate-800 mb-1">{t("notifications_all_caught_up", "All caught up!")}</h3>
+              <p className="text-slate-400 text-xs font-semibold">{t("notifications_empty_desc", "You have no new or past notifications at the moment.")}</p>
             </div>
           </div>
         ) : (
@@ -106,7 +109,7 @@ export default function NotificationsTab({
                 <div className="min-w-0 flex-1 flex flex-col gap-0.5">
                   <div className="flex items-center justify-between gap-4">
                     <h4 className={`text-xs ${!n.is_read ? "font-black text-slate-900" : "font-extrabold text-slate-700"}`}>
-                      {n.title}
+                      {t(n.title)}
                     </h4>
                     <span className="text-[10px] font-bold text-slate-400 shrink-0">
                       {n.created_at && !isNaN(new Date(n.created_at).getTime())

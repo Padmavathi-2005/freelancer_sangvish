@@ -1588,15 +1588,15 @@ export default function ProposalsTab({
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <i className="fa-solid fa-folder-open text-primary"></i> My Posted Projects
+              <i className="fa-solid fa-folder-open text-primary"></i> {t("my_posted_projects_title", "My Posted Projects")}
             </h2>
-            <p className="text-slate-400 text-xs mt-1 font-semibold">Track and manage the project proposals you posted for bidding.</p>
+            <p className="text-slate-400 text-xs mt-1 font-semibold">{t("my_posted_projects_subtitle", "Track and manage the project proposals you posted for bidding.")}</p>
           </div>
           <button
             onClick={() => setIsCreatingJob(true)}
             className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2 animate-pulse"
           >
-            <i className="fa-solid fa-plus"></i> Post a New Project
+            <i className="fa-solid fa-plus"></i> {t("btn_post_new_project", "Post a New Project")}
           </button>
         </div>
 
@@ -1605,16 +1605,16 @@ export default function ProposalsTab({
           <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-4">
             <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-1.5 flex flex-wrap gap-1 shadow-xs flex-1">
               {[
-                { id: "all", label: "All Projects", icon: "fa-solid fa-list-check" },
-                { id: "pending", label: "Pending", icon: "fa-solid fa-clock text-amber-500" },
-                { id: "hired", label: "Hired Projects", icon: "fa-solid fa-user-check text-teal-650" },
-                { id: "proposals_arrived", label: "Proposals Arrived", icon: "fa-solid fa-envelope-open text-primary" },
-                { id: "proposals_not_arrived", label: "Proposals Not Arrived", icon: "fa-solid fa-envelope text-slate-400" },
-                { id: "ongoing", label: "Ongoing", icon: "fa-solid fa-spinner text-emerald-600 animate-spin-slow" },
-                { id: "dispute", label: "Disputed", icon: "fa-solid fa-triangle-exclamation text-rose-500" },
-                { id: "suspended", label: "Suspended", icon: "fa-solid fa-ban text-rose-500" },
-                { id: "completed", label: "Completed", icon: "fa-solid fa-circle-check text-teal-600" },
-                { id: "draft", label: "Drafts", icon: "fa-solid fa-file-signature text-slate-555" }
+                { id: "all", label: t("all_projects_tab_filter", "All Projects"), icon: "fa-solid fa-list-check" },
+                { id: "pending", label: t("pending_tab_filter", "Pending"), icon: "fa-solid fa-clock text-amber-500" },
+                { id: "hired", label: t("hired_projects_tab_filter", "Hired Projects"), icon: "fa-solid fa-user-check text-teal-650" },
+                { id: "proposals_arrived", label: t("proposals_arrived_tab_filter", "Proposals Arrived"), icon: "fa-solid fa-envelope-open text-primary" },
+                { id: "proposals_not_arrived", label: t("proposals_not_arrived_tab_filter", "Proposals Not Arrived"), icon: "fa-solid fa-envelope text-slate-400" },
+                { id: "ongoing", label: t("ongoing_tab_filter", "Ongoing"), icon: "fa-solid fa-spinner text-emerald-600 animate-spin-slow" },
+                { id: "dispute", label: t("disputed_tab_filter", "Disputed"), icon: "fa-solid fa-triangle-exclamation text-rose-500" },
+                { id: "suspended", label: t("suspended_tab_filter", "Suspended"), icon: "fa-solid fa-ban text-rose-500" },
+                { id: "completed", label: t("completed_tab_filter", "Completed"), icon: "fa-solid fa-circle-check text-teal-600" },
+                { id: "draft", label: t("drafts_tab_filter", "Drafts"), icon: "fa-solid fa-file-signature text-slate-555" }
               ].map((tab) => {
                 const count = clientJobs.filter(j => {
                   const cStatus = j.contract_status?.toLowerCase();
@@ -1724,7 +1724,7 @@ export default function ProposalsTab({
                         )}
                       </div>
                       <span className="text-slate-400 text-[10px] font-bold">
-                        Posted on {new Date(job.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                        {t("posted_on_prefix", "Posted on")} {new Date(job.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -1733,7 +1733,7 @@ export default function ProposalsTab({
                       </span>
                       {job.project_type && (
                         <span className="text-[10px] font-black bg-blue-50 text-blue-700 border border-blue-150 px-2 py-0.5 rounded uppercase tracking-wider">
-                          {job.project_type}
+                          {t(job.project_type?.toLowerCase(), job.project_type)}
                         </span>
                       )}
                       {job.location && (
@@ -1748,7 +1748,7 @@ export default function ProposalsTab({
                           ? "bg-rose-50 text-rose-700 border border-rose-200"
                           : "bg-emerald-50 text-emerald-700 border border-emerald-150"
                       }`}>
-                        {job.status}
+                        {t(job.status?.toLowerCase(), job.status)}
                       </span>
                     </div>
                   </div>
@@ -1833,7 +1833,7 @@ export default function ProposalsTab({
                       <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 space-y-2.5">
                         <div className="flex justify-between items-center">
                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                            Project Status
+                            {t("project_status_label", "Project Status")}
                           </span>
                           {(() => {
                             const status = job.contract_status?.toLowerCase();
@@ -1841,7 +1841,7 @@ export default function ProposalsTab({
                               return (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-150 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                  Ongoing
+                                  {t("ongoing", "Ongoing")}
                                 </span>
                               );
                             }
@@ -1849,7 +1849,7 @@ export default function ProposalsTab({
                               return (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-150 px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">
                                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                                  Under Review
+                                  {t("under_review", "Under Review")}
                                 </span>
                               );
                             }
@@ -1857,7 +1857,7 @@ export default function ProposalsTab({
                               return (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-rose-50 text-rose-700 border border-rose-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
                                   <i className="fa-solid fa-triangle-exclamation text-rose-500 animate-bounce"></i>
-                                  Disputed
+                                  {t("disputed", "Disputed")}
                                 </span>
                               );
                             }
@@ -1865,7 +1865,7 @@ export default function ProposalsTab({
                               return (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-amber-50 text-amber-700 border border-amber-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
                                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                  Hired
+                                  {t("hired", "Hired")}
                                 </span>
                               );
                             }
@@ -1873,7 +1873,7 @@ export default function ProposalsTab({
                               return (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-slate-50 text-slate-700 border border-slate-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
                                   <i className="fa-solid fa-ban text-slate-500"></i>
-                                  Cancelled
+                                  {t("cancelled", "Cancelled")}
                                 </span>
                               );
                             }
@@ -1881,7 +1881,7 @@ export default function ProposalsTab({
                             return (
                               <span className="inline-flex items-center gap-1 text-[9px] font-extrabold bg-teal-50 text-teal-700 border border-teal-150 px-2 py-0.5 rounded-full uppercase tracking-wider">
                                 <i className="fa-solid fa-circle-check text-teal-600"></i>
-                                Completed
+                                {t("completed", "Completed")}
                               </span>
                             );
                           })()}
@@ -1890,7 +1890,7 @@ export default function ProposalsTab({
                         {/* Progress Bar */}
                         <div className="space-y-1">
                           <div className="flex justify-between text-[9px] font-extrabold text-slate-500 uppercase">
-                            <span>Contract Progress</span>
+                            <span>{t("contract_progress_label", "Contract Progress")}</span>
                             <span>{job.contract_progress || 0}%</span>
                           </div>
                           <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
@@ -1911,7 +1911,7 @@ export default function ProposalsTab({
                         className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border-0"
                       >
                         <i className="fa-solid fa-bars-progress"></i>
-                        <span>Milestones & Payments</span>
+                        <span>{t("milestones_payments_btn", "Milestones & Payments")}</span>
                       </button>
                       {/* Feature Project Action Button */}
                       {clientSubscription && clientSubscription.featured_project_limit > 0 && (
@@ -1936,7 +1936,7 @@ export default function ProposalsTab({
 
                       {/* Relist Project Action Button */}
                       {(job.status === "Cancelled" || job.status === "Completed" || 
-                        job.contract_status === "Cancelled" || job.contract_status === "Disputed" || job.contract_status === "Completed") && (
+                        job.contract_status === "Cancelled" || job.contract_status === "Completed") && (
                         <button
                           type="button"
                           disabled={relistingJobId !== null}
@@ -1944,7 +1944,7 @@ export default function ProposalsTab({
                           className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border border-slate-200 mt-2"
                         >
                           <i className="fa-solid fa-arrows-rotate"></i>
-                          <span>{relistingJobId === job.job_id ? "Relisting..." : "Relist Project"}</span>
+                          <span>{relistingJobId === job.job_id ? t("relisting_status", "Relisting...") : t("relist_project_btn", "Relist Project")}</span>
                         </button>
                       )}
                     </>
@@ -2020,7 +2020,10 @@ export default function ProposalsTab({
         {totalProjectPages > 1 && (
           <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 text-xs font-bold select-none">
             <span className="text-slate-400">
-              Showing {(projectPage - 1) * projectsPerPage + 1} - {Math.min(projectPage * projectsPerPage, filteredJobs.length)} of {filteredJobs.length} projects
+              {t("showing_projects_count", "Showing {{start}} - {{end}} of {{total}} projects")
+                .replace("{{start}}", String((projectPage - 1) * projectsPerPage + 1))
+                .replace("{{end}}", String(Math.min(projectPage * projectsPerPage, filteredJobs.length)))
+                .replace("{{total}}", String(filteredJobs.length))}
             </span>
             <div className="flex gap-2">
               <button
@@ -2028,14 +2031,14 @@ export default function ProposalsTab({
                 disabled={projectPage === 1}
                 className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
               >
-                Previous
+                {t("btn_previous", "Previous")}
               </button>
               <button
                 onClick={() => setProjectPage(p => Math.min(totalProjectPages, p + 1))}
                 disabled={projectPage === totalProjectPages}
                 className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
               >
-                Next
+                {t("btn_next", "Next")}
               </button>
             </div>
           </div>

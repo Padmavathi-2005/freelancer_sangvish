@@ -1,5 +1,6 @@
 "use client";
 import { API_URL } from "@/config/api";
+import Link from "next/link";
 
 
 import React, { useState, useEffect, Suspense, useMemo } from "react";
@@ -614,9 +615,10 @@ function TalentSearchContent() {
                   : "FL";
 
                 return (
-                  <div
+                  <Link
                     key={f.user_id}
-                    className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start gap-5 relative group"
+                    href={`/freelancer/${f.slug || f.user_id}`}
+                    className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start gap-5 relative group hover:cursor-pointer select-none text-inherit no-underline"
                   >
                     {/* Avatar */}
                     <div
@@ -689,11 +691,11 @@ function TalentSearchContent() {
                     {/* Right / Pricing Action */}
                     <div className="sm:border-l sm:border-slate-100 sm:pl-6 flex flex-col justify-between items-start sm:items-end gap-4 self-stretch min-w-[160px]">
                       <div className="text-left sm:text-right">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Hourly Rate</span>
+                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("hourly_rate", "Hourly Rate")}</span>
                         <div className="flex items-baseline gap-0.5 text-slate-850 font-black text-lg mt-0.5">
                           <FiDollarSign className="w-3.5 h-3.5 text-slate-400 self-center" />
                           <span>{hourlyRate.toFixed(0)}</span>
-                          <span className="text-slate-450 text-[10px] font-bold">/hr</span>
+                          <span className="text-slate-450 text-[10px] font-bold">/{t("hr_short", "hr")}</span>
                         </div>
                       </div>
 
@@ -701,35 +703,38 @@ function TalentSearchContent() {
                         {!Boolean(currentUserId && Number(f.user_id) === currentUserId) && (
                           <button
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               handleToggleWishlist(f);
                             }}
-                            className="w-9 h-9 rounded-xl bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0"
+                            className="w-9 h-9 rounded-xl bg-slate-100/90 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center border border-slate-200 dark:border-slate-700 transition-all cursor-pointer shrink-0 z-10"
                             title="Save to wishlist"
                           >
                             <FiHeart className={`w-4 h-4 transition-colors ${isInWishlist(f.user_id) ? "text-rose-500 fill-rose-500" : "text-slate-500 dark:text-slate-300"}`} />
                           </button>
                         )}
-                        <button
-                          onClick={() => router.push(`/freelancer/${f.slug || f.user_id}`)}
-                          className="flex-1 text-white text-[11px] font-extrabold py-2.5 rounded-xl shadow-md transition-all duration-300 cursor-pointer text-center border-none hover:shadow-lg hover:brightness-110 active:scale-95"
+                        <span
+                          className="flex-1 text-white text-[11px] font-extrabold py-2.5 rounded-xl shadow-md transition-all duration-300 cursor-pointer text-center border-none hover:shadow-lg hover:brightness-110 active:scale-95 flex items-center justify-center"
                           style={{
                             background: `linear-gradient(135deg, var(--color-primary, #10b981) 0%, var(--color-secondary, #06b6d4) 100%)`
                           }}
                         >
-                          View Profile
-                        </button>
+                          {t("btn_view_profile", "View Profile")}
+                        </span>
                       </div>
                     </div>
 
-                  </div>
+                  </Link>
                 );
               })}
 
               {totalPages > 1 && (
                 <div className="flex justify-between items-center mt-8 pt-4 border-t border-slate-100 text-xs font-bold select-none text-slate-805">
                   <span className="text-slate-400">
-                    Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedFreelancers.length)} of {sortedFreelancers.length} professionals
+                    {t("showing_professionals_count", "Showing {{start}} - {{end}} of {{total}} professionals")
+                      .replace("{{start}}", String((currentPage - 1) * itemsPerPage + 1))
+                      .replace("{{end}}", String(Math.min(currentPage * itemsPerPage, sortedFreelancers.length)))
+                      .replace("{{total}}", String(sortedFreelancers.length))}
                   </span>
                   <div className="flex gap-2">
                     <button
@@ -737,14 +742,14 @@ function TalentSearchContent() {
                       disabled={currentPage === 1}
                       className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     >
-                      Previous
+                      {t("btn_previous", "Previous")}
                     </button>
                     <button
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                       className="px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
                     >
-                      Next
+                      {t("btn_next", "Next")}
                     </button>
                   </div>
                 </div>

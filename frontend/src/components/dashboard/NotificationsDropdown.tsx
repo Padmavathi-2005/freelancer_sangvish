@@ -39,6 +39,19 @@ export default function NotificationsDropdown({
   setActiveTab,
 }: NotificationsDropdownProps) {
   const lastFiveNotifications = notifications.slice(0, 5);
+  const [isRtl, setIsRtl] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof document !== "undefined") {
+      setIsRtl(document.documentElement.dir === "rtl");
+      
+      const observer = new MutationObserver(() => {
+        setIsRtl(document.documentElement.dir === "rtl");
+      });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["dir"] });
+      return () => observer.disconnect();
+    }
+  }, []);
 
   return (
     <div 
@@ -69,7 +82,14 @@ export default function NotificationsDropdown({
           <div className="fixed inset-0 z-40 cursor-default" onClick={() => setIsNotificationsOpen(false)}></div>
           
           {/* Dropdown panel */}
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-slate-200/80 shadow-lg py-2 z-50 animate-fadeIn text-left text-slate-800">
+          <div 
+            className="absolute mt-2 w-80 bg-white rounded-xl border border-slate-200/80 shadow-lg py-2 z-50 animate-fadeIn text-slate-800"
+            style={{
+              left: isRtl ? "0" : "auto",
+              right: isRtl ? "auto" : "0",
+              textAlign: isRtl ? "right" : "left"
+            }}
+          >
             <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 rounded-t-2xl">
               <span className="text-xs font-black text-slate-800">Recent Notifications</span>
               {unreadNotificationsCount > 0 && (

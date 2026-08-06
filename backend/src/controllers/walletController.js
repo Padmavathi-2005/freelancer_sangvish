@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import Stripe from "stripe";
 
 // Helper to get or create a user's wallet on the fly
 export const getOrCreateWallet = async (userId) => {
@@ -117,6 +118,58 @@ export const requestWithdrawal = async (req, res) => {
     const description = `Withdrawal request via ${paymentMethod}`;
     await pool.query(transactionQuery, [wallet.wallet_id, withdrawAmt, description]);
 
+    // Send notifications to freelancer and admins
+    try {
+      const userRes = await pool.query("SELECT first_name, last_name FROM users WHERE user_id = $1", [userId]);
+      const userName = userRes.rows[0] ? `${userRes.rows[0].first_name} ${userRes.rows[0].last_name || ""}`.trim() : "A freelancer";
+
+      // Freelancer notification
+      const freeNotif = await pool.query(
+        `INSERT INTO notifications (user_id, title, message, type, reference_id)
+         VALUES ($1, 'Withdrawal Submitted 💸', $2, 'withdrawal_request', $3) RETURNING *`,
+        [
+          userId,
+          `Your withdrawal request of $${withdrawAmt.toFixed(2)} has been submitted for review.`,
+          requestRes.rows[0].request_id.toString()
+        ]
+      );
+      if (req.io && freeNotif.rows.length > 0) {
+        req.io.to(`user_${userId}`).emit("new_notification", freeNotif.rows[0]);
+      }
+
+      // Admin notifications
+      const adminQuery = await pool.query("SELECT admin_id, email, full_name FROM admins");
+      for (const adminRow of adminQuery.rows) {
+        const userCheck = await pool.query("SELECT user_id FROM users WHERE email = $1", [adminRow.email]);
+        let adminUserId;
+        if (userCheck.rows.length > 0) {
+          adminUserId = userCheck.rows[0].user_id;
+        } else {
+          const insertUser = await pool.query(
+            "INSERT INTO users (first_name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id",
+            [adminRow.full_name || "Admin", adminRow.email, "ADMIN_VIRTUAL_HASH"]
+          );
+          adminUserId = insertUser.rows[0].user_id;
+        }
+
+        const adminNotif = await pool.query(
+          `INSERT INTO notifications (user_id, title, message, type, reference_id, target_tab)
+           VALUES ($1, 'New Withdrawal Request 💰', $2, 'withdrawal_request', $3, 'wallet_management') RETURNING *`,
+          [
+            adminUserId,
+            `A new withdrawal request of $${withdrawAmt.toFixed(2)} was submitted by ${userName}.`,
+            requestRes.rows[0].request_id.toString()
+          ]
+        );
+
+        if (req.io && adminNotif.rows.length > 0) {
+          req.io.to(`user_${adminUserId}`).emit("new_notification", adminNotif.rows[0]);
+        }
+      }
+    } catch (notifErr) {
+      console.error("Error creating notifications for withdrawal request:", notifErr);
+    }
+
     return res.status(201).json({
       message: "Withdrawal request submitted successfully. Awaiting Admin review.",
       wallet,
@@ -131,7 +184,7 @@ export const requestWithdrawal = async (req, res) => {
 export const depositFunds = async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const { amount } = req.body;
+    const { amount, method } = req.body;
 
     if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
       return res.status(400).json({ message: "Please provide a valid deposit amount." });
@@ -152,9 +205,10 @@ export const depositFunds = async (req, res) => {
     // Record wallet transaction
     const transactionQuery = `
       INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
-      VALUES (NULL, $1, $2, 'Deposit', 'Completed', 'Simulated account deposit')
+      VALUES (NULL, $1, $2, 'Deposit', 'Completed', $3)
     `;
-    await pool.query(transactionQuery, [wallet.wallet_id, depositAmt]);
+    const description = method === "paypal" ? "PayPal Deposit (Simulated)" : "Simulated account deposit";
+    await pool.query(transactionQuery, [wallet.wallet_id, depositAmt, description]);
 
     return res.status(200).json({
       message: "Funds deposited successfully.",
@@ -163,5 +217,150 @@ export const depositFunds = async (req, res) => {
   } catch (error) {
     console.error("Error in depositFunds:", error);
     return res.status(500).json({ message: "Failed to deposit funds." });
+  }
+};
+
+export const createStripeDepositSession = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { amount } = req.body;
+
+    if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+      return res.status(400).json({ message: "Please provide a valid deposit amount." });
+    }
+
+    const amountCents = Math.round(parseFloat(amount) * 100);
+    if (amountCents < 50) {
+      return res.status(400).json({ message: "Minimum Stripe charge is $0.50." });
+    }
+
+    // Fetch Stripe secret key from Settings
+    let stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripeKeysRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'stripe_keys'");
+    if (stripeKeysRes.rows.length > 0) {
+      let keys = stripeKeysRes.rows[0].setting_value;
+      if (typeof keys === "string") {
+        try { keys = JSON.parse(keys); } catch {}
+      }
+      if (keys?.secret_key) {
+        stripeSecretKey = keys.secret_key;
+      }
+    }
+
+    if (!stripeSecretKey) {
+      return res.status(400).json({ message: "Stripe is not configured. Please add Stripe Secret Key in Admin Payment Settings." });
+    }
+
+    const localStripe = new Stripe(stripeSecretKey);
+    const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
+    const session = await localStripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Wallet Deposit",
+              description: "Funding your platform virtual wallet",
+            },
+            unit_amount: amountCents,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      success_url: `${FRONTEND_URL}/dashboard?tab=wallet&stripe_deposit_success=1&session_id={CHECKOUT_SESSION_ID}&amount=${amount}`,
+      cancel_url:  `${FRONTEND_URL}/dashboard?tab=wallet&stripe_deposit_cancel=1`,
+      metadata: {
+        user_id: userId.toString(),
+        amount: amount.toString(),
+        type: "wallet_deposit",
+      },
+    });
+
+    return res.status(200).json({ url: session.url, session_id: session.id });
+  } catch (error) {
+    console.error("Error in createStripeDepositSession:", error);
+    return res.status(500).json({ message: "Failed to initiate Stripe session." });
+  }
+};
+
+export const confirmStripeDepositPayment = async (req, res) => {
+  try {
+    const userId = req.user.user_id;
+    const { session_id, amount } = req.body;
+
+    if (!session_id || !amount) {
+      return res.status(400).json({ message: "session_id and amount are required." });
+    }
+
+    const depositAmt = parseFloat(amount);
+
+    // Fetch Stripe secret key from Settings
+    let stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripeKeysRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'stripe_keys'");
+    if (stripeKeysRes.rows.length > 0) {
+      let keys = stripeKeysRes.rows[0].setting_value;
+      if (typeof keys === "string") {
+        try { keys = JSON.parse(keys); } catch {}
+      }
+      if (keys?.secret_key) {
+        stripeSecretKey = keys.secret_key;
+      }
+    }
+
+    if (!stripeSecretKey) {
+      return res.status(400).json({ message: "Stripe is not configured." });
+    }
+
+    // Verify session in Stripe
+    const localStripe = new Stripe(stripeSecretKey);
+    const stripeSession = await localStripe.checkout.sessions.retrieve(session_id);
+    if (stripeSession.payment_status !== "paid") {
+      return res.status(400).json({ message: "Stripe payment has not been completed." });
+    }
+
+    // Check if this session was already processed to prevent duplicate deposit
+    const checkTx = await pool.query(
+      "SELECT * FROM wallet_transactions WHERE description = $1",
+      [`Stripe Deposit (Session: ${session_id})`]
+    );
+    if (checkTx.rows.length > 0) {
+      return res.status(400).json({ message: "This deposit has already been processed." });
+    }
+
+    const wallet = await getOrCreateWallet(userId);
+
+    await pool.query("BEGIN");
+    try {
+      // Update user wallet balance
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [depositAmt, wallet.wallet_id]
+      );
+
+      // Record transaction
+      await pool.query(
+        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+         VALUES (NULL, $1, $2, 'Deposit', 'Completed', $3)`,
+        [wallet.wallet_id, depositAmt, `Stripe Deposit (Session: ${session_id})`]
+      );
+
+      await pool.query("COMMIT");
+    } catch (err) {
+      await pool.query("ROLLBACK");
+      throw err;
+    }
+
+    const updatedWallet = await getOrCreateWallet(userId);
+
+    return res.status(200).json({
+      message: "Stripe deposit confirmed successfully.",
+      wallet: updatedWallet
+    });
+  } catch (error) {
+    console.error("Error in confirmStripeDepositPayment:", error);
+    return res.status(500).json({ message: "Failed to confirm Stripe deposit." });
   }
 };

@@ -70,12 +70,12 @@ export default function HowItWorks() {
             </h2>
 
             {/* Timeline Wrapper */}
-            <div className="relative max-w-5xl mx-auto">
+            <div className="relative max-w-md lg:max-w-5xl mx-auto px-6 lg:px-0">
               {/* Desktop Horizontal Line */}
               <div className="absolute top-[22px] left-[10%] right-[10%] h-[2px] bg-slate-200/80 z-0 hidden lg:block" />
 
               {/* Mobile Vertical Line */}
-              <div className="absolute left-[22px] top-6 bottom-6 w-[2px] bg-slate-200/80 z-0 lg:hidden" />
+              <div className="absolute left-[46px] top-6 bottom-6 w-[2px] bg-slate-200/80 z-0 lg:hidden" />
 
               {/* Steps Container */}
               <div className="flex flex-col lg:flex-row justify-between gap-10 lg:gap-4 relative z-10">

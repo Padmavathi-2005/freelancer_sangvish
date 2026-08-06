@@ -33,6 +33,8 @@ interface ReferralPayout {
   referred_phone_verified: boolean;
   duplicate_phone_count: number;
   has_completed_order: boolean;
+  is_onboarded: boolean;
+  referral_stage: "pending" | "onboarding_completed" | "purchased" | "completed" | "approved" | "rejected";
   details?: string | any;
 }
 
@@ -366,6 +368,14 @@ export default function AdminReferralsPage() {
                             )}
                             <span>Phone Verified</span>
                           </span>
+                          <span className="flex items-center gap-1.5">
+                            {p.is_onboarded ? (
+                              <FiCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                            ) : (
+                              <FiXCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                            )}
+                            <span>Profile Onboarded</span>
+                          </span>
                         </div>
                       </td>
 
@@ -407,32 +417,59 @@ export default function AdminReferralsPage() {
                             ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
                             : p.status === "rejected"
                             ? "bg-rose-50 text-rose-750 border border-rose-100"
-                            : "bg-slate-100 text-slate-700 border border-slate-200"
+                            : p.referral_stage === "completed"
+                            ? "bg-sky-50 text-sky-700 border border-sky-100"
+                            : p.referral_stage === "purchased"
+                            ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
+                            : p.referral_stage === "onboarding_completed"
+                            ? "bg-blue-50 text-blue-700 border border-blue-100"
+                            : "bg-amber-50 text-amber-700 border border-amber-100"
                         }`}>
-                          {p.status}
+                          {p.status === "pending" 
+                            ? (p.referral_stage === "completed" ? "Awaiting Audit" : `Incomplete (${p.referral_stage.replace('_', ' ')})`)
+                            : p.status}
                         </span>
                       </td>
 
                       {/* Actions */}
                       <td className="px-6 py-4.5 text-right">
                         {p.status === "pending" ? (
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleApprove(p)}
-                              className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-white bg-emerald-650 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-600/15 transition-all cursor-pointer ${
-                                !isLegit ? "opacity-75" : ""
-                              }`}
-                              title={!isLegit ? "Warning: Payout failed safety audits" : "Audit looks clean"}
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleReject(p.payout_id)}
-                              className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-rose-650 hover:bg-rose-50 border border-rose-200/60 hover:text-rose-700 transition-all cursor-pointer"
-                            >
-                              Reject
-                            </button>
-                          </div>
+                          (() => {
+                            let detailsObj: any = {};
+                            try {
+                              detailsObj = typeof p.details === "string" ? JSON.parse(p.details) : (p.details || {});
+                            } catch (e) {}
+                            const isSignup = detailsObj.type === "signup_bonus";
+                            
+                            // Enable approve/reject only if:
+                            // - For promoter reward: stage is 'completed'
+                            // - For signup reward: onboarding is complete
+                            const isEligible = isSignup ? p.is_onboarded : (p.referral_stage === "completed");
+
+                            return isEligible ? (
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleApprove(p)}
+                                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-white bg-emerald-650 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-600/15 transition-all cursor-pointer ${
+                                    !isLegit ? "opacity-75" : ""
+                                  }`}
+                                  title={!isLegit ? "Warning: Payout failed safety audits" : "Audit looks clean"}
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(p.payout_id)}
+                                  className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-rose-650 hover:bg-rose-50 border border-rose-200/60 hover:text-rose-700 transition-all cursor-pointer"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] font-extrabold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md uppercase tracking-wider select-none cursor-help" title={isSignup ? "Waiting for referred user to complete profile onboarding" : "Waiting for referred user to complete onboarding & first purchase"}>
+                                Incomplete Stage
+                              </span>
+                            );
+                          })()
                         ) : (
                           <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest select-none">
                             Audited

@@ -127,11 +127,11 @@ export default function SiteSettingsTab({
             const rawDefaultHome = data.find((s: any) => s.setting_key === "default_home_page")?.setting_value;
             const rawHero3Slides = data.find((s: any) => s.setting_key === "home3_hero_slides")?.setting_value;
 
-            if (rawAppStore) setAppStoreUrl(rawAppStore);
-            if (rawGooglePlay) setGooglePlayUrl(rawGooglePlay);
-            if (rawInstagram) setInstagramUrl(rawInstagram);
-            if (rawLinkedin) setLinkedinUrl(rawLinkedin);
-            if (rawDefaultHome) setDefaultHomePage(typeof rawDefaultHome === "string" ? rawDefaultHome.replace(/"/g, "") : rawDefaultHome);
+            if (rawAppStore) setAppStoreUrl(typeof rawAppStore === "string" ? rawAppStore.replace(/"/g, "").trim() : rawAppStore);
+            if (rawGooglePlay) setGooglePlayUrl(typeof rawGooglePlay === "string" ? rawGooglePlay.replace(/"/g, "").trim() : rawGooglePlay);
+            if (rawInstagram) setInstagramUrl(typeof rawInstagram === "string" ? rawInstagram.replace(/"/g, "").trim() : rawInstagram);
+            if (rawLinkedin) setLinkedinUrl(typeof rawLinkedin === "string" ? rawLinkedin.replace(/"/g, "").trim() : rawLinkedin);
+            if (rawDefaultHome) setDefaultHomePage(typeof rawDefaultHome === "string" ? rawDefaultHome.replace(/"/g, "").trim() : rawDefaultHome);
             if (rawHero3Slides) {
               try {
                 let parsed = rawHero3Slides;

@@ -610,6 +610,16 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </Link>
 
+          <Link
+            href="/admin/careers"
+            className={navBtnClass("careers", [], pathname === "/admin/careers")}
+          >
+            <div className="flex items-center gap-3 w-full">
+              <FiFileText className="w-4 h-4 shrink-0" />
+              <span>Career Applications</span>
+            </div>
+          </Link>
+
           {/* Group 3.5: Marketing & Discovery */}
           <div className="text-[9px] font-black tracking-widest uppercase text-slate-450 dark:text-slate-500 mt-4 mb-2 px-2.5 select-none">
             Marketing & SEO

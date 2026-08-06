@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { FiChevronLeft, FiChevronRight, FiAlertTriangle, FiX, FiCpu } from "react-icons/fi";
 import UpgradeOverlay from "./UpgradeOverlay";
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface FindWorkTabProps {
   userRole: string | null;
@@ -58,6 +59,7 @@ export default function FindWorkTab({
   setShowProposalModal,
   setSelectedFreelancerProfile,
 }: FindWorkTabProps) {
+  const { t } = useLanguage();
   const catScrollRef = useRef<HTMLDivElement>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(false);
@@ -309,8 +311,8 @@ export default function FindWorkTab({
         {/* Search and Header */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-left w-full sm:w-auto">
-            <h2 className="text-lg font-bold text-slate-900">Explore Top Freelancers</h2>
-            <p className="text-slate-400 text-xs mt-1 font-semibold">Review credentials, skills, and client ratings to choose the best fit.</p>
+            <h2 className="text-lg font-bold text-slate-900">{t("explore_top_freelancers", "Explore Top Freelancers")}</h2>
+            <p className="text-slate-400 text-xs mt-1 font-semibold">{t("explore_top_freelancers_desc", "Review credentials, skills, and client ratings to choose the best fit.")}</p>
           </div>
           
           {/* Search Bar */}
@@ -322,7 +324,7 @@ export default function FindWorkTab({
             </span>
             <input
               type="text"
-              placeholder="Search skills, names, roles..."
+              placeholder={t("search_skills_placeholder", "Search skills, names, roles...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value.replace(/\d{3,}/g, ""))}
               className="w-full bg-slate-50 border border-slate-250 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all font-medium"
@@ -409,7 +411,7 @@ export default function FindWorkTab({
                     }}
                     className="text-[10px] font-bold text-primary hover:text-primary-hover border border-primary/20 hover:bg-primary/5 py-1.5 px-3 rounded-xl transition-all flex items-center gap-1 cursor-pointer"
                   >
-                    View Profile
+                    {t("btn_view_profile", "View Profile")}
                     <span className="text-[8px] font-bold">→</span>
                   </button>
                 </div>
@@ -430,14 +432,13 @@ export default function FindWorkTab({
   }
 
   return (
-    <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-800">
-      {/* Search and Header */}
+    <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-800">      {/* Search and Header */}
       <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="text-left w-full sm:w-auto">
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <i className="fa-solid fa-magnifying-glass text-primary"></i> Find Projects & Bids
+            <i className="fa-solid fa-magnifying-glass text-primary"></i> {t("find_projects_header", "Find Projects & Bids")}
           </h2>
-          <p className="text-slate-400 text-xs mt-1 font-semibold">Browse active projects posted by clients and submit your proposals.</p>
+          <p className="text-slate-400 text-xs mt-1 font-semibold">{t("find_projects_desc", "Browse active projects posted by clients and submit your proposals.")}</p>
         </div>
         
         {/* Search Input & AI Matches Toggle */}
@@ -448,13 +449,13 @@ export default function FindWorkTab({
             </span>
             <input
               type="text"
-              placeholder="Search jobs, categories..."
+              placeholder={t("search_jobs_placeholder", "Search jobs, categories...")}
               value={jobSearchQuery}
               onChange={(e) => {
                 setJobSearchQuery(e.target.value.replace(/\d{3,}/g, ""));
                 if (showAiMatches) setShowAiMatches(false); // turn off AI matches when search is used
               }}
-              className="w-full bg-slate-50 border border-slate-250 rounded-xl py-2.5 pl-10 pr-4 text-slate-850 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all font-semibold"
+              className="w-full bg-slate-50 border border-slate-250 rounded-xl py-2.5 pl-10 pr-4 text-slate-855 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all font-semibold"
             />
           </div>
 
@@ -472,7 +473,7 @@ export default function FindWorkTab({
             ) : (
               <FiCpu className="w-3.5 h-3.5 shrink-0" />
             )}
-            <span>{showAiMatches ? "Show All" : "AI Matches"}</span>
+            <span>{showAiMatches ? t("show_all_btn", "Show All") : t("ai_matches_btn", "AI Matches")}</span>
           </button>
         </div>
       </div>
@@ -690,7 +691,7 @@ export default function FindWorkTab({
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-slate-500 text-xxs font-semibold">
                     <div className="flex items-center gap-1.5">
                       <i className="fa-solid fa-wallet text-slate-400"></i>
-                      <span>Budget: <strong className="text-slate-700">
+                      <span>{t("budget_label", "Budget")}: <strong className="text-slate-700">
                         {job.min_budget && job.max_budget 
                           ? `$${parseFloat(job.min_budget).toLocaleString()} - $${parseFloat(job.max_budget).toLocaleString()}`
                           : `$${parseFloat(job.budget).toLocaleString()}`}
@@ -699,36 +700,36 @@ export default function FindWorkTab({
                     </div>
                     <div className="flex items-center gap-1.5">
                       <i className="fa-solid fa-graduation-cap text-slate-400"></i>
-                      <span>Experience Required: <strong className="text-slate-700">{job.experience_level && job.experience_level !== "null" ? job.experience_level : "Any Experience"}</strong></span>
+                      <span>{t("experience_required_label", "Experience Required:")} <strong className="text-slate-700">{job.experience_level && job.experience_level !== "null" ? job.experience_level : t("any_experience", "Any Experience")}</strong></span>
                     </div>
                     {job.sub_category_name && (
                       <div className="flex items-center gap-1.5">
                         <i className="fa-solid fa-tags text-slate-400"></i>
-                        <span>Subcategory: <strong className="text-slate-700">{job.sub_category_name}</strong></span>
+                        <span>{t("subcategory_label", "Subcategory:")} <strong className="text-slate-700">{job.sub_category_name}</strong></span>
                       </div>
                     )}
                     {job.duration && (
                       <div className="flex items-center gap-1.5">
                         <i className="fa-solid fa-calendar text-slate-400"></i>
-                        <span>Duration: <strong className="text-slate-700">{job.duration}</strong></span>
+                        <span>{t("duration_label", "Duration:")} <strong className="text-slate-700">{job.duration}</strong></span>
                       </div>
                     )}
                     {job.num_freelancers && (
                       <div className="flex items-center gap-1.5">
                         <i className="fa-solid fa-users text-slate-400"></i>
-                        <span>Freelancers: <strong className="text-slate-700">{job.num_freelancers}</strong></span>
+                        <span>{t("freelancers_label", "Freelancers:")} <strong className="text-slate-700">{job.num_freelancers}</strong></span>
                       </div>
                     )}
                     {job.project_type === "Hourly" && job.max_hours && (
                       <div className="flex items-center gap-1.5">
                         <i className="fa-solid fa-clock text-slate-400"></i>
-                        <span>Hours Limit: <strong className="text-slate-700">{job.max_hours} hrs/week</strong></span>
+                        <span>{t("hours_limit_label", "Hours Limit:")} <strong className="text-slate-700">{job.max_hours} hrs/week</strong></span>
                       </div>
                     )}
                     {job.project_type === "Hourly" && job.payment_mode && (
                       <div className="flex items-center gap-1.5">
                         <i className="fa-solid fa-money-check text-slate-400"></i>
-                        <span>Payout: <strong className="text-slate-700">{job.payment_mode}</strong></span>
+                        <span>{t("payout_label", "Payout:")} <strong className="text-slate-700">{job.payment_mode}</strong></span>
                       </div>
                     )}
                   </div>
@@ -737,7 +738,7 @@ export default function FindWorkTab({
                       disabled
                       className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 py-2 px-4 rounded-xl cursor-not-allowed flex items-center gap-1.5 select-none"
                     >
-                      <i className="fa-solid fa-circle-check text-emerald-600"></i> Proposal Submitted
+                      <i className="fa-solid fa-circle-check text-emerald-600"></i> {t("proposal_submitted_badge", "Proposal Submitted")}
                     </button>
                   ) : (
                     <button
@@ -745,7 +746,7 @@ export default function FindWorkTab({
                       onClick={(e) => handleBidClick(e, job)}
                       className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-2 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
                     >
-                      <i className="fa-solid fa-paper-plane"></i> {onboardingCheckLoading ? "Checking..." : "Submit Proposal"}
+                      <i className="fa-solid fa-paper-plane"></i> {onboardingCheckLoading ? t("checking_btn", "Checking...") : t("submit_proposal_btn", "Submit Proposal")}
                     </button>
                   )}
                   </div>

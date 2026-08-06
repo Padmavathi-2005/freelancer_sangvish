@@ -797,11 +797,33 @@ export const getReferrals = async (req, res) => {
                 u.first_name || ' ' || COALESCE(u.last_name, '') as name,
                 u.email,
                 u.created_at,
+                (
+                  COALESCE((SELECT onboarding_completed FROM freelancer_profiles WHERE user_id = u.user_id), false)
+                  OR
+                  COALESCE((SELECT onboarding_completed FROM client_profiles WHERE user_id = u.user_id), false)
+                ) as is_onboarded,
+                EXISTS (
+                  SELECT 1 
+                  FROM wallet_transactions wt
+                  JOIN wallets w ON (w.wallet_id = wt.sender_wallet_id OR w.wallet_id = wt.receiver_wallet_id)
+                  WHERE w.user_id = u.user_id AND wt.status = 'completed'
+                ) as has_purchased,
                 CASE 
-                    WHEN rp.status = 'pending' THEN 'pending_approval'
                     WHEN rp.status = 'approved' THEN 'approved'
                     WHEN rp.status = 'rejected' THEN 'rejected'
-                    ELSE 'pending_order'
+                    WHEN rp.status = 'pending' THEN 'completed'
+                    WHEN EXISTS (
+                      SELECT 1 
+                      FROM wallet_transactions wt
+                      JOIN wallets w ON (w.wallet_id = wt.sender_wallet_id OR w.wallet_id = wt.receiver_wallet_id)
+                      WHERE w.user_id = u.user_id AND wt.status = 'completed'
+                    ) THEN 'purchased'
+                    WHEN (
+                      COALESCE((SELECT onboarding_completed FROM freelancer_profiles WHERE user_id = u.user_id), false)
+                      OR
+                      COALESCE((SELECT onboarding_completed FROM client_profiles WHERE user_id = u.user_id), false)
+                    ) THEN 'onboarding_completed'
+                    ELSE 'pending'
                 END as status
             FROM users u
             LEFT JOIN referral_payouts rp 

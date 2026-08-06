@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiX, FiFileText, FiHeart } from "react-icons/fi";
 import { FaWallet, FaStripe, FaPaypal } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ExploreGigsTabProps {
   triggerToast: any;
@@ -16,6 +17,7 @@ const stripHtml = (html: string) => {
 };
 
 const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClientApplications }) => {
+  const { t } = useLanguage();
   const router = useRouter();
   const [clientGigs, setClientGigs] = useState<any[]>([]);
   const [loadingClientGigs, setLoadingClientGigs] = useState(false);
@@ -393,9 +395,9 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <FiBriefcase className="w-5 h-5 text-primary shrink-0" />
-            <span>Explore Services</span>
+            <span>{t("explore_services_header", "Explore Services")}</span>
           </h2>
-          <p className="text-slate-404 text-xs mt-1 font-semibold">Browse packaged services and gigs published by elite freelancers.</p>
+          <p className="text-slate-404 text-xs mt-1 font-semibold">{t("explore_services_desc", "Browse packaged services and gigs published by elite freelancers.")}</p>
         </div>
         {/* Search Bar */}
         <div className="relative w-full sm:w-80 shrink-0">
@@ -406,7 +408,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
           </span>
           <input
             type="text"
-            placeholder="Search gigs, skills, categories..."
+            placeholder={t("search_gigs_placeholder", "Search gigs, skills, categories...")}
             value={gigSearchQuery}
             onChange={(e) => setGigSearchQuery(e.target.value)}
             className="w-full bg-slate-50 border border-slate-250 rounded-xl py-2.5 pl-10 pr-4 text-slate-800 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all font-medium"
@@ -509,7 +511,9 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
               </div>
 
               <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
-                <span className="text-slate-404 text-xxs font-semibold">Delivery: {g.delivery_days} days</span>
+                <span className="text-slate-404 text-xxs font-semibold">
+                  {t("delivery_days_count", "Delivery: {{days}} days").replace("{{days}}", String(g.delivery_days))}
+                </span>
                 <button
                   disabled={onboardingCheckLoading !== null}
                   onClick={(e) => {
@@ -518,7 +522,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                   }}
                   className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-1.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  {onboardingCheckLoading === g.gig_id ? "Checking..." : "Order Service →"}
+                  {onboardingCheckLoading === g.gig_id ? t("checking_status", "Checking...") : t("order_service_btn", "Order Service →")}
                 </button>
               </div>
             </div>
@@ -671,8 +675,8 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                     Enter your budget offer below (minimum allowed is 50% off original package price):
                   </p>
                   <div className="flex flex-col gap-1.5 mt-0.5">
-                    <div className="relative flex items-center max-w-xs">
-                      <span className="absolute left-3 text-xs text-slate-500 font-bold">{applyingGig.currency_symbol || "$"}</span>
+                    <div className="flex items-center gap-1.5 w-full bg-slate-50 border border-slate-200 focus-within:bg-white focus-within:border-teal-600 rounded-xl px-3 py-2 max-w-xs transition-all">
+                      <span className="text-xs text-slate-500 font-bold shrink-0">{applyingGig.currency_symbol || "$"}</span>
                       <input
                         type="number"
                         placeholder="e.g. 120"
@@ -682,7 +686,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                           if (val.includes("-")) return; // Disallow negative numbers
                           setCustomProposedPrice(val);
                         }}
-                        className="w-full bg-slate-50 border border-slate-200 focus:bg-white focus:border-teal-600 rounded-xl pl-7 pr-3 py-2 text-xs text-slate-800 focus:outline-none font-bold"
+                        className="w-full bg-transparent border-0 p-0 text-xs text-slate-800 focus:outline-none font-bold"
                       />
                     </div>
 

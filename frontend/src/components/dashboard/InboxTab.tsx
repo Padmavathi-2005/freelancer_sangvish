@@ -37,6 +37,15 @@ const getInitials = (name: string) => {
   return parts[0].substring(0, 2).toUpperCase();
 };
 
+const formatGroupName = (name: string, t: any) => {
+  if (!name) return "";
+  if (name.startsWith("Project Group: ")) {
+    const rest = name.substring("Project Group: ".length);
+    return `${t("project_group_prefix", "Project Group")}: ${rest}`;
+  }
+  return name;
+};
+
 export default function InboxTab({
   conversations,
   selectedConvId,
@@ -407,7 +416,9 @@ export default function InboxTab({
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-baseline">
-                      <h4 className="text-[11.5px] font-black text-slate-800 truncate capitalize">{conv.recipient_name || "Unknown Candidate"}</h4>
+                      <h4 className="text-[11.5px] font-black text-slate-800 truncate capitalize">
+                        {formatGroupName(conv.recipient_name || t("unknown_candidate", "Unknown Candidate"), t)}
+                      </h4>
                     </div>
                     {conv.is_group && conv.group_participants ? (
                       <p className="text-[9px] text-slate-455 font-extrabold truncate mt-0.5 leading-none">
@@ -464,10 +475,10 @@ export default function InboxTab({
                 </div>
                 <div className="text-left">
                   <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">
-                    {activeConv?.recipient_name || "Chat Room"}
+                    {formatGroupName(activeConv?.recipient_name || t("chat_room_label", "Chat Room"), t)}
                   </h4>
                   <p className="text-[10px] text-slate-400 font-bold capitalize mt-0.5">
-                    {activeConv?.is_group ? "Project Group Chat" : (activeConv?.recipient_role || "User")}
+                    {activeConv?.is_group ? t("project_group_chat", "Project Group Chat") : (activeConv?.recipient_role || t("user_role_label", "User"))}
                   </p>
                 </div>
               </div>
@@ -527,7 +538,7 @@ export default function InboxTab({
                     return (
                       <div
                         key={idx}
-                        className="flex flex-col items-center my-3 w-full select-none"
+                        className="flex justify-center my-3.5 w-full select-none"
                       >
                         <div className={`border rounded-xl p-4 shadow-sm text-left max-w-md w-full bg-slate-50/50 ${
                           disputeData.type === "dispute_resolved"
@@ -721,10 +732,11 @@ export default function InboxTab({
                               <p className="text-[9.5px] font-semibold text-slate-650 mt-1">{cleanDetails}</p>
                             </div>
                           )}
+
+                          <span className="block text-[8px] font-bold text-slate-400 mt-3 text-left select-none">
+                            {new Date(msg.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                          </span>
                         </div>
-                        <span className="text-[8px] font-bold text-slate-400 mt-1 select-none">
-                          {new Date(msg.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
-                        </span>
                       </div>
                     );
                   }

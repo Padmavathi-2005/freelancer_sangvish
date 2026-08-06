@@ -528,7 +528,7 @@ export default function BlogsTab() {
                   <tbody>
                     {filteredBlogs.map((blog) => (
                       <tr key={blog.blog_id} className={tableRowClass}>
-                        <td className="px-6 py-4 text-xs font-bold text-slate-450">
+                        <td className="px-6 py-4 text-xs font-bold text-slate-450 align-middle">
                           {blog.cover_image ? (
                             <img
                               src={blog.cover_image}
@@ -536,24 +536,24 @@ export default function BlogsTab() {
                               className="w-12 h-8 rounded object-cover border border-slate-200 dark:border-slate-800"
                             />
                           ) : (
-                            <div className="w-12 h-8 rounded bg-slate-200 dark:bg-slate-850 flex items-center justify-center text-slate-400 text-[10px]">
+                            <div className="w-12 h-8 rounded bg-slate-200 dark:bg-slate-855 flex items-center justify-center text-slate-400 text-[10px]">
                               N/A
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 align-middle">
                           <div className="text-sm font-extrabold">{blog.title}</div>
                           <div className="text-xs text-slate-455 flex items-center gap-1 mt-0.5">
                             <FiGlobe className="w-3 h-3 text-slate-400" /> /blogs/{blog.slug}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-xs font-bold text-teal-600 dark:text-teal-400">
+                        <td className="px-6 py-4 text-xs font-bold text-teal-600 dark:text-teal-400 align-middle">
                           <span className="flex items-center gap-1.5">
                             <FiFolder className="w-3.5 h-3.5 text-teal-600/70 dark:text-teal-400/80" />
                             {blog.category || "General"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-xs font-bold">
+                        <td className="px-6 py-4 text-xs font-bold align-middle">
                           <span
                             className={`px-2 py-0.5 rounded-full ${
                               blog.is_published
@@ -564,50 +564,52 @@ export default function BlogsTab() {
                             {blog.is_published ? "Published" : "Draft"}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-xs font-bold text-slate-450">
+                        <td className="px-6 py-4 text-xs font-bold text-slate-450 align-middle">
                           {blog.author_name || "Administrator"}
                         </td>
-                        <td className="px-6 py-4 text-xs text-slate-450">
+                        <td className="px-6 py-4 text-xs text-slate-450 align-middle">
                           {new Date(blog.updated_at).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-sm flex items-center gap-3">
-                          <button
-                            onClick={() => openEditMode(blog)}
-                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                              isDark
-                                ? "border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900"
-                                : "border-slate-200 text-slate-555 hover:text-slate-800 hover:bg-slate-100"
-                            }`}
-                            title="Edit Post"
-                          >
-                            <FiEdit2 className="w-3.5 h-3.5" />
-                          </button>
-                          {blog.is_published && (
-                            <a
-                              href={`/blogs/${blog.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                        <td className="px-6 py-4 text-sm align-middle">
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() => openEditMode(blog)}
                               className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
                                 isDark
-                                  ? "border-slate-800 text-teal-400 hover:bg-slate-900"
-                                  : "border-slate-200 text-teal-600 hover:bg-slate-100"
+                                  ? "border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900"
+                                  : "border-slate-200 text-slate-555 hover:text-slate-800 hover:bg-slate-100"
                               }`}
-                              title="View Article"
+                              title="Edit Post"
                             >
-                              <FiGlobe className="w-3.5 h-3.5" />
-                            </a>
-                          )}
-                          <button
-                            onClick={() => confirmDelete(blog.blog_id)}
-                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
-                              isDark
-                                ? "border-rose-955 text-rose-400 hover:text-white hover:bg-rose-950"
-                                : "border-slate-200 text-rose-600 hover:text-white hover:bg-rose-500"
-                            }`}
-                            title="Delete Post"
-                          >
-                            <FiTrash2 className="w-3.5 h-3.5" />
-                          </button>
+                              <FiEdit2 className="w-3.5 h-3.5" />
+                            </button>
+                            {blog.is_published && (
+                              <a
+                                href={`/blogs/${blog.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                  isDark
+                                    ? "border-slate-800 text-teal-400 hover:bg-slate-900"
+                                    : "border-slate-200 text-teal-600 hover:bg-slate-100"
+                                }`}
+                                title="View Article"
+                              >
+                                <FiGlobe className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            <button
+                              onClick={() => confirmDelete(blog.blog_id)}
+                              className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+                                isDark
+                                  ? "border-rose-955 text-rose-400 hover:text-white hover:bg-rose-950"
+                                  : "border-slate-200 text-rose-600 hover:text-white hover:bg-rose-500"
+                              }`}
+                              title="Delete Post"
+                            >
+                              <FiTrash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

@@ -218,7 +218,7 @@ export default function WishlistPage() {
                             </div>
                           )}
                           <span className="text-[10px] text-slate-500 font-bold hover:text-teal-750 group-hover/author:text-teal-700 transition-colors">
-                            By {gig.freelancer_name}
+                            {t("by", "By")} {gig.freelancer_name}
                           </span>
                         </div>
                       )}
@@ -231,7 +231,7 @@ export default function WishlistPage() {
                         </div>
                         <div className="flex items-center gap-1">
                           <FiClock className="w-3 h-3 shrink-0" />
-                          <span>{gig.delivery_days || 3}d delivery</span>
+                          <span>{gig.delivery_days || 3}d {t("delivery", "delivery")}</span>
                         </div>
                       </div>
                     </div>

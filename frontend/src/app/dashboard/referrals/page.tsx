@@ -10,6 +10,9 @@ interface ReferredUser {
   email: string;
   created_at: string;
   is_active: boolean;
+  is_onboarded: boolean;
+  has_purchased: boolean;
+  status: "pending" | "onboarding_completed" | "purchased" | "completed" | "approved" | "rejected";
 }
 
 interface ReferralData {
@@ -101,8 +104,8 @@ export default function ReferralsPage() {
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/register?ref=${data.referral_code}`
     : "";
 
-  const pendingCount = data?.referred_users.filter((u) => !u.is_active).length || 0;
-  const activeCount = data?.referred_users.filter((u) => u.is_active).length || 0;
+  const pendingCount = data?.referred_users.filter((u) => u.status !== "approved").length || 0;
+  const activeCount = data?.referred_users.filter((u) => u.status === "approved").length || 0;
 
   return (
     <div className="flex-1 max-w-5xl mx-auto w-full px-3 sm:px-4 py-2 sm:py-8 flex flex-col gap-5 sm:gap-8">
@@ -254,13 +257,76 @@ export default function ReferralsPage() {
                       })}
                     </td>
                     <td className="px-6 py-4.5 text-center">
-                      <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-full ${
-                        ref.is_active
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                          : "bg-amber-50 text-amber-700 border border-amber-100"
-                      }`}>
-                        {ref.is_active ? "Active (Reward Paid)" : "Pending First Payment"}
-                      </span>
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
+                        {/* Status Badge */}
+                        {(() => {
+                          let badgeClass = "";
+                          let label = "";
+                          switch (ref.status) {
+                            case "approved":
+                              badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-100";
+                              label = "Approved & Paid";
+                              break;
+                            case "rejected":
+                              badgeClass = "bg-rose-50 text-rose-700 border-rose-100";
+                              label = "Audit Rejected";
+                              break;
+                            case "completed":
+                              badgeClass = "bg-sky-50 text-sky-700 border-sky-100";
+                              label = "Awaiting Audit";
+                              break;
+                            case "purchased":
+                              badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-100";
+                              label = "Gig/Project Purchased";
+                              break;
+                            case "onboarding_completed":
+                              badgeClass = "bg-blue-50 text-blue-700 border-blue-100";
+                              label = "Profile Onboarded";
+                              break;
+                            default:
+                              badgeClass = "bg-amber-50 text-amber-700 border-amber-100";
+                              label = "Registered";
+                          }
+                          return (
+                            <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border shrink-0 ${badgeClass}`}>
+                              {label}
+                            </span>
+                          );
+                        })()}
+
+                        {/* Visual Step Tracker */}
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 select-none shrink-0">
+                          {/* Step 1: Registered */}
+                          <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50/60 border border-emerald-200/80 px-1.5 py-0.5 rounded-md" title="Registration Complete">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            <span>Signed Up</span>
+                          </div>
+
+                          <span className="text-slate-300">→</span>
+
+                          {/* Step 2: Onboarded */}
+                          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${
+                            ref.is_onboarded 
+                              ? "text-emerald-600 bg-emerald-50/60 border-emerald-200/80" 
+                              : "text-slate-400 bg-slate-50 border-slate-200"
+                          }`} title="Profile Onboarding">
+                            <span className={`w-1.5 h-1.5 rounded-full ${ref.is_onboarded ? "bg-emerald-500" : "bg-slate-300"}`}></span>
+                            <span>Onboarded</span>
+                          </div>
+
+                          <span className="text-slate-300">→</span>
+
+                          {/* Step 3: First Purchase */}
+                          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${
+                            ref.has_purchased 
+                              ? "text-emerald-600 bg-emerald-50/60 border-emerald-200/80" 
+                              : "text-slate-400 bg-slate-50 border-slate-200"
+                          }`} title="First Purchase/Order Complete">
+                            <span className={`w-1.5 h-1.5 rounded-full ${ref.has_purchased ? "bg-emerald-500" : "bg-slate-300"}`}></span>
+                            <span>Purchased</span>
+                          </div>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ))}

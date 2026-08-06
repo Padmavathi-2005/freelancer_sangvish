@@ -233,10 +233,19 @@ export const updateDocumentStatus = async (req, res) => {
             return res.status(400).json({ message: "Valid status is required." });
         }
 
-        const checkExist = await pool.query("SELECT * FROM freelancer_documents WHERE document_id = $1", [documentId]);
+        const checkExist = await pool.query(
+            `SELECT fd.*, df.field_name 
+             FROM freelancer_documents fd
+             JOIN document_fields df ON fd.field_id = df.field_id
+             WHERE fd.document_id = $1`, 
+            [documentId]
+        );
         if (checkExist.rows.length === 0) {
             return res.status(404).json({ message: "Document record not found." });
         }
+
+        const docRecord = checkExist.rows[0];
+        const docName = docRecord.field_name || "Verification Document";
 
         const result = await pool.query(
             `UPDATE freelancer_documents 
@@ -245,6 +254,27 @@ export const updateDocumentStatus = async (req, res) => {
              RETURNING *`,
             [status, status === "Rejected" ? (rejection_reason || "") : null, documentId]
         );
+
+        // Create and send notification to freelancer
+        try {
+            const { default: Notification } = await import("../models/notificationModel.js");
+            const notif = await Notification.create({
+                userId: docRecord.user_id,
+                title: status === "Approved" ? "Document Approved ✅" : "Document Rejected ❌",
+                message: status === "Approved"
+                    ? `Your submitted verification document "${docName}" has been reviewed and approved.`
+                    : `Your submitted verification document "${docName}" has been rejected. Reason: "${rejection_reason || "Invalid document details."}"`,
+                type: "document_vetting",
+                referenceId: documentId.toString()
+            });
+
+            if (req.io) {
+                req.io.to(`user_${docRecord.user_id}`).emit("new_notification", notif);
+                req.io.to(`user_${docRecord.user_id}`).emit("document_status_updated", { documentId, status });
+            }
+        } catch (notifErr) {
+            console.error("Failed to generate document vetting notification:", notifErr);
+        }
 
         res.status(200).json({
             message: `Document status updated to ${status} successfully.`,

@@ -141,6 +141,24 @@ export const approveWithdrawal = async (req, res) => {
       [request.wallet_id, amount]
     );
 
+    // Notify freelancer of approval
+    try {
+      const freeNotif = await pool.query(
+        `INSERT INTO notifications (user_id, title, message, type, reference_id)
+         VALUES ($1, 'Withdrawal Approved ✅', $2, 'withdrawal_approval', $3) RETURNING *`,
+        [
+          request.user_id,
+          `Your withdrawal request of $${amount.toFixed(2)} has been approved and completed.`,
+          requestId.toString()
+        ]
+      );
+      if (req.io && freeNotif.rows.length > 0) {
+        req.io.to(`user_${request.user_id}`).emit("new_notification", freeNotif.rows[0]);
+      }
+    } catch (notifErr) {
+      console.error("Error creating approval notification:", notifErr);
+    }
+
     return res.status(200).json({ message: "Withdrawal request approved and funds debited successfully." });
   } catch (error) {
     console.error("Error in approveWithdrawal:", error);
@@ -178,6 +196,24 @@ export const rejectWithdrawal = async (req, res) => {
        WHERE sender_wallet_id = $1 AND amount = $2 AND type = 'Withdrawal_Request' AND status = 'Pending'`,
       [request.wallet_id, amount]
     );
+
+    // Notify freelancer of rejection
+    try {
+      const freeNotif = await pool.query(
+        `INSERT INTO notifications (user_id, title, message, type, reference_id)
+         VALUES ($1, 'Withdrawal Rejected ❌', $2, 'withdrawal_rejection', $3) RETURNING *`,
+        [
+          request.user_id,
+          `Your withdrawal request of $${amount.toFixed(2)} has been rejected.`,
+          requestId.toString()
+        ]
+      );
+      if (req.io && freeNotif.rows.length > 0) {
+        req.io.to(`user_${request.user_id}`).emit("new_notification", freeNotif.rows[0]);
+      }
+    } catch (notifErr) {
+      console.error("Error creating rejection notification:", notifErr);
+    }
 
     return res.status(200).json({ message: "Withdrawal request rejected." });
   } catch (error) {
@@ -284,13 +320,46 @@ export const getReferralPayouts = async (req, res) => {
           FROM users u2 
           WHERE u2.phone = referred.phone AND u2.user_id <> referred.user_id AND referred.phone IS NOT NULL AND referred.phone <> ''
         ) as duplicate_phone_count,
-        -- Check if they completed at least one order
+        -- Check if onboarding completed (freelancer or client)
+        (
+          COALESCE((SELECT onboarding_completed FROM freelancer_profiles WHERE user_id = referred.user_id), false)
+          OR
+          COALESCE((SELECT onboarding_completed FROM client_profiles WHERE user_id = referred.user_id), false)
+        ) as is_onboarded,
+        -- Check if they completed at least one order (as sender or receiver)
         EXISTS (
             SELECT 1 
             FROM wallet_transactions wt
-            JOIN wallets w ON w.wallet_id = wt.sender_wallet_id
+            JOIN wallets w ON (w.wallet_id = wt.sender_wallet_id OR w.wallet_id = wt.receiver_wallet_id)
             WHERE w.user_id = referred.user_id AND wt.status = 'completed'
-        ) as has_completed_order
+        ) as has_completed_order,
+        -- Check dynamic referral stage
+        CASE
+          WHEN rp.status = 'approved' THEN 'approved'
+          WHEN rp.status = 'rejected' THEN 'rejected'
+          WHEN (
+            (COALESCE((SELECT onboarding_completed FROM freelancer_profiles WHERE user_id = referred.user_id), false) OR COALESCE((SELECT onboarding_completed FROM client_profiles WHERE user_id = referred.user_id), false))
+            AND
+            EXISTS (
+              SELECT 1 
+              FROM wallet_transactions wt
+              JOIN wallets w ON (w.wallet_id = wt.sender_wallet_id OR w.wallet_id = wt.receiver_wallet_id)
+              WHERE w.user_id = referred.user_id AND wt.status = 'completed'
+            )
+          ) THEN 'completed'
+          WHEN EXISTS (
+            SELECT 1 
+            FROM wallet_transactions wt
+            JOIN wallets w ON (w.wallet_id = wt.sender_wallet_id OR w.wallet_id = wt.receiver_wallet_id)
+            WHERE w.user_id = referred.user_id AND wt.status = 'completed'
+          ) THEN 'purchased'
+          WHEN (
+            COALESCE((SELECT onboarding_completed FROM freelancer_profiles WHERE user_id = referred.user_id), false)
+            OR
+            COALESCE((SELECT onboarding_completed FROM client_profiles WHERE user_id = referred.user_id), false)
+          ) THEN 'onboarding_completed'
+          ELSE 'pending'
+        END as referral_stage
       FROM referral_payouts rp
       JOIN users referrer ON rp.referrer_id = referrer.user_id
       JOIN users referred ON rp.referred_id = referred.user_id
@@ -333,6 +402,33 @@ export const approveReferralPayout = async (req, res) => {
         isSignupBonus = true;
       }
     } catch (e) {}
+
+    // Enforce eligibility criteria before approval
+    const eligibilityQuery = await pool.query(`
+      SELECT 
+        (COALESCE((SELECT onboarding_completed FROM freelancer_profiles WHERE user_id = $1), false) OR COALESCE((SELECT onboarding_completed FROM client_profiles WHERE user_id = $1), false)) as is_onboarded,
+        EXISTS (
+          SELECT 1 FROM wallet_transactions wt
+          JOIN wallets w ON (w.wallet_id = wt.sender_wallet_id OR w.wallet_id = wt.receiver_wallet_id)
+          WHERE w.user_id = $1 AND wt.status = 'completed'
+        ) as has_purchased
+    `, [referredUserId]);
+
+    const { is_onboarded, has_purchased } = eligibilityQuery.rows[0];
+
+    if (isSignupBonus) {
+      if (!is_onboarded) {
+        return res.status(400).json({ 
+          message: "Cannot approve. Referred user must complete their profile onboarding first." 
+        });
+      }
+    } else {
+      if (!is_onboarded || !has_purchased) {
+        return res.status(400).json({ 
+          message: `Cannot approve. Referred user must complete both profile onboarding and make at least one purchase. (Onboarded: ${is_onboarded ? 'Yes' : 'No'}, Purchased: ${has_purchased ? 'Yes' : 'No'})` 
+        });
+      }
+    }
 
     const recipientUserId = isSignupBonus ? referredUserId : referrerId;
 

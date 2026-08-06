@@ -3,7 +3,9 @@ import auth from "../middleware/auth.js";
 import {
   getUserWallet,
   requestWithdrawal,
-  depositFunds
+  depositFunds,
+  createStripeDepositSession,
+  confirmStripeDepositPayment
 } from "../controllers/walletController.js";
 
 const router = express.Router();
@@ -14,5 +16,7 @@ router.use(auth);
 router.get("/", getUserWallet);
 router.post("/withdraw", requestWithdrawal);
 router.post("/deposit", depositFunds);
+router.post("/deposit/stripe/create-session", createStripeDepositSession);
+router.post("/deposit/stripe/confirm", confirmStripeDepositPayment);
 
 export default router;

@@ -197,11 +197,11 @@ export default function ProjectsTab({
     {
       header: "Status",
       accessor: (row: any) => (
-        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-          row.status === "Open" ? "bg-emerald-50 text-emerald-707 border border-emerald-200/60" :
-          row.status === "Closed" ? "bg-slate-50 text-slate-400 border border-slate-200" :
-          row.status === "Pending Approval" ? "bg-amber-50 text-amber-700 border border-amber-200" :
-          "bg-rose-50 text-rose-700 border border-rose-200"
+        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap border ${
+          row.status === "Open" ? "bg-emerald-50 text-emerald-707 border-emerald-200/60" :
+          row.status === "Closed" ? "bg-slate-50 text-slate-400 border-slate-200" :
+          row.status === "Pending Approval" ? "bg-amber-50 text-amber-700 border-amber-200" :
+          "bg-rose-50 text-rose-700 border-rose-200"
         }`}>
           {row.status === "Flagged" ? "Suspended" : row.status}
         </span>

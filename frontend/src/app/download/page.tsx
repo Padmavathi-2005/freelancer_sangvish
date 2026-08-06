@@ -17,6 +17,26 @@ export default function DownloadPage() {
     app_mockup_image: "",
   });
 
+  const cleanValue = (val: any) => {
+    if (!val) return "";
+    let trimmed = String(val).trim();
+    if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+      trimmed = trimmed.slice(1, -1).trim();
+    }
+    if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
+      trimmed = trimmed.slice(1, -1).trim();
+    }
+    return trimmed;
+  };
+
+  const cleanUrl = (url: any, fallback: string) => {
+    const cleaned = cleanValue(url);
+    if (!cleaned || (!cleaned.startsWith("http://") && !cleaned.startsWith("https://"))) {
+      return fallback;
+    }
+    return cleaned;
+  };
+
   useEffect(() => {
     const fetchLinks = async () => {
       try {
@@ -25,11 +45,11 @@ export default function DownloadPage() {
           const data = await res.json();
           const storeLinks = { ...links };
           data.forEach((s: any) => {
-            if (s.setting_key === "app_store_url") storeLinks.app_store_url = s.setting_value;
-            if (s.setting_key === "google_play_url") storeLinks.google_play_url = s.setting_value;
-            if (s.setting_key === "instagram_url") storeLinks.instagram_url = s.setting_value;
-            if (s.setting_key === "linkedin_url") storeLinks.linkedin_url = s.setting_value;
-            if (s.setting_key === "app_mockup_image") storeLinks.app_mockup_image = s.setting_value;
+            if (s.setting_key === "app_store_url") storeLinks.app_store_url = cleanUrl(s.setting_value, "https://apps.apple.com");
+            if (s.setting_key === "google_play_url") storeLinks.google_play_url = cleanUrl(s.setting_value, "https://play.google.com");
+            if (s.setting_key === "instagram_url") storeLinks.instagram_url = cleanUrl(s.setting_value, "https://instagram.com");
+            if (s.setting_key === "linkedin_url") storeLinks.linkedin_url = cleanUrl(s.setting_value, "https://linkedin.com");
+            if (s.setting_key === "app_mockup_image") storeLinks.app_mockup_image = cleanValue(s.setting_value);
           });
           setLinks(storeLinks);
         }
@@ -188,10 +208,10 @@ export default function DownloadPage() {
                   href={links.instagram_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-xl hover:text-white hover:bg-gradient-to-tr hover:from-[#f9ce3f] hover:via-[#e1306c] hover:to-[#833ab4] hover:border-transparent text-slate-700 font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
+                  className="group flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-xl text-slate-700 hover:text-white hover:bg-gradient-to-tr hover:from-[#f9ce3f] hover:via-[#e1306c] hover:to-[#833ab4] hover:border-transparent font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
                 >
-                  <FiInstagram className="w-5 h-5 shrink-0" />
-                  <span>Instagram</span>
+                  <FiInstagram className="w-5 h-5 shrink-0 transition-colors" />
+                  <span className="transition-colors">Instagram</span>
                 </a>
 
                 {/* LinkedIn */}
@@ -199,10 +219,10 @@ export default function DownloadPage() {
                   href={links.linkedin_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-xl hover:text-white hover:bg-[#0077B5] hover:border-transparent text-slate-700 font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
+                  className="group flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-xl text-slate-700 hover:text-white hover:bg-gradient-to-r hover:from-[#0077B5] hover:to-[#006295] hover:border-transparent font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
                 >
-                  <FiLinkedin className="w-5 h-5 shrink-0" />
-                  <span>LinkedIn</span>
+                  <FiLinkedin className="w-5 h-5 shrink-0 transition-colors" />
+                  <span className="transition-colors">LinkedIn</span>
                 </a>
               </div>
             </div>

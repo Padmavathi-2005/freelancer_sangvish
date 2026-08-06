@@ -1589,3 +1589,41 @@ export const deleteNewsletterSubscriber = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+export const getCareerApplications = async (req, res) => {
+    try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS career_applications (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            phone VARCHAR(50),
+            role VARCHAR(255),
+            cover_letter TEXT,
+            resume_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        const result = await pool.query(`
+            SELECT id, name, email, phone, role, cover_letter, resume_url, created_at
+            FROM career_applications
+            ORDER BY created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching career applications:", err);
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const deleteCareerApplication = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await pool.query(`DELETE FROM career_applications WHERE id = $1`, [id]);
+        res.json({ message: "Career application deleted successfully." });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
