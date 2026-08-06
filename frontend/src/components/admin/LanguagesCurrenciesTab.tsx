@@ -84,7 +84,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
   const [currError, setCurrError] = useState("");
   const [currSaving, setCurrSaving] = useState(false);
 
-  const { itemsPerPage } = useAdmin();
+  const { itemsPerPage, defaultCurrency } = useAdmin();
   const [langPage, setLangPage] = useState(1);
   const [currPage, setCurrPage] = useState(1);
   const [transPage, setTransPage] = useState(1);
@@ -329,6 +329,12 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
     if (!currForm.code.trim() || !currForm.name.trim() || !currForm.symbol.trim() || !currForm.rate.trim()) {
       setCurrError("All fields are required."); return;
     }
+    const duplicate = currencies.find(
+      c => c.code.toUpperCase() === currForm.code.trim().toUpperCase() && c.currency_id !== currEditId
+    );
+    if (duplicate) {
+      setCurrError("Currency code already exists."); return;
+    }
     setCurrSaving(true); setCurrError("");
     try {
       const url = currEditId ? `${API}/currencies/${currEditId}` : `${API}/currencies`;
@@ -344,7 +350,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
         })
       });
       const data = await res.json();
-      if (!res.ok) { setCurrError(data.message || "Failed to save."); return; }
+      if (!res.ok) { setCurrError(data.message || data.error || "Failed to save."); return; }
       showToast(currEditId ? "Currency updated!" : "Currency added!");
       setCurrForm({ code: "", name: "", symbol: "", rate: "1.0" }); setCurrEditId(null);
       fetchCurrencies();
@@ -388,17 +394,6 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
   return (
     <div className="flex flex-col gap-6 animate-fadeIn">
 
-      {/* Toast */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-55 px-5 py-3 rounded-xl shadow-xl flex items-center gap-3 border text-xs font-black transition-all ${
-          toast.type === "success"
-            ? "bg-slate-900 text-white border-slate-800"
-            : "bg-rose-600 text-white border-rose-700"
-        }`}>
-          <span>{toast.type === "success" ? "✓" : "✕"}</span>
-          {toast.text}
-        </div>
-      )}
 
       {/* Sub Tab Toggle (only show if not translating and not forced) */}
       {!translatingLang && !forceTab && (
@@ -948,6 +943,17 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                   maxLength={10}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono text-slate-800 uppercase focus:outline-none focus:border-teal-700 transition"
                 />
+                {(() => {
+                  const inputCode = currForm.code.trim().toUpperCase();
+                  if (!inputCode) return null;
+                  const duplicate = currencies.find(
+                    c => c.code.toUpperCase() === inputCode && c.currency_id !== currEditId
+                  );
+                  if (duplicate) {
+                    return <p className="text-[10px] text-rose-500 font-bold -mt-2.5 select-none">⚠️ Currency code already exists.</p>;
+                  }
+                  return null;
+                })()}
                 <input
                   type="text"
                   value={currForm.name}
@@ -1032,7 +1038,16 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                               <td className="py-2.5 pr-3">
                                 <span className="font-black text-slate-800 font-mono bg-slate-100 px-2 py-0.5 rounded-lg text-[10px]">{curr.code}</span>
                               </td>
-                              <td className="py-2.5 pr-3 font-bold text-slate-700">{curr.name}</td>
+                              <td className="py-2.5 pr-3 font-bold text-slate-700">
+                                <div className="flex items-center gap-1.5">
+                                  <span>{curr.name}</span>
+                                  {curr.code === defaultCurrency && (
+                                    <span className="bg-emerald-500 text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md leading-none select-none">
+                                      Default
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
                               <td className="py-2.5 pr-3 font-black text-slate-900 text-base">{curr.symbol}</td>
                               <td className="py-2.5 pr-3 font-mono text-slate-650 font-bold text-slate-700">
                                 {curr.rate !== undefined ? curr.rate.toFixed(4) : "1.0000"}

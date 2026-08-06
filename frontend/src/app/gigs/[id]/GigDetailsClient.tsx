@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuthModal } from "@/context/AuthModalContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ShareSection from "@/components/ShareSection";
 import { 
   FiBriefcase, 
   FiAlertTriangle, 
@@ -37,7 +38,7 @@ interface GigDetailsClientProps {
 }
 
 export default function GigDetailsClient({ initialGig, initialSimilarGigs }: GigDetailsClientProps) {
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, currency } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const { openLoginModal } = useAuthModal();
@@ -687,13 +688,14 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
       setOrderSubmitting(true);
       const token = localStorage.getItem("token");
 
-      let finalPrice = getDiscountedPackagePrice(getPackagePrice()) + getAddonsPriceTotal();
-      const basePkgPrice = getDiscountedPackagePrice(getPackagePrice());
+      const basePkgPrice = getSelectedBasePrice();
+      let finalPrice = basePkgPrice + getAddonsPriceTotal();
 
       if (gig.negotiation && customProposedPrice.trim() !== "") {
         const proposedNum = parseFloat(customProposedPrice.trim());
-        const minAllowed = basePkgPrice * 0.5; // Max 50% discount allowed
-        const maxAllowed = basePkgPrice;
+        const originalBasePrice = getDiscountedPackagePrice(getPackagePrice());
+        const minAllowed = originalBasePrice * 0.5; // Max 50% discount allowed
+        const maxAllowed = originalBasePrice;
 
         if (isNaN(proposedNum) || proposedNum <= 0) {
           setOrderError("Please enter a valid positive offer amount.");
@@ -871,6 +873,19 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
     return base;
   };
 
+  const getSelectedBasePrice = () => {
+    const originalPrice = getDiscountedPackagePrice(getPackagePrice());
+    if (gig?.negotiation && customProposedPrice.trim() !== "") {
+      const num = parseFloat(customProposedPrice.trim());
+      const minAllowed = originalPrice * 0.5;
+      const maxAllowed = originalPrice;
+      if (!isNaN(num) && num >= minAllowed && num <= maxAllowed) {
+        return num;
+      }
+    }
+    return originalPrice;
+  };
+
   const getPackageDeliveryDays = () => {
     if (!gig) return 0;
     if (hasCustomPlans && activePlan) {
@@ -1011,19 +1026,19 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             {hasPlanDiscount ? (
               <>
                 <span className="text-slate-400 text-xs font-bold line-through block">
-                  {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
+                  {formatPrice(getPackagePrice())}
                 </span>
                 <span className="text-xl sm:text-2xl font-black text-slate-900 block leading-none mt-0.5">
-                  {gig.currency_symbol || "$"}{parseFloat(getDiscountedPackagePrice(getPackagePrice()).toFixed(2)).toLocaleString()}
+                  {formatPrice(getDiscountedPackagePrice(getPackagePrice()))}
                 </span>
               </>
             ) : (
               <span className="text-xl sm:text-2xl font-black text-slate-900 block leading-none">
-                {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}
+                {formatPrice(getPackagePrice())}
               </span>
             )}
             <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wide block mt-1 leading-tight">
-              {gig.currency_code} 
+              {currency} 
               {hasPlanDiscount 
                 ? ` (${planDiscountPercent}% off)` 
                 : (gig.discount_percent && parseFloat(gig.discount_percent) > 0 ? ` (${parseFloat(gig.discount_percent)}% off)` : "")
@@ -1116,7 +1131,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 {parsedAddons.map((addon: any, idx: number) => (
                   <div key={addon.id || idx} className="flex justify-between items-center bg-slate-50 border border-slate-200/50 rounded-xl px-2.5 py-1.5 text-[10px] font-bold text-slate-700">
                     <span className="truncate pr-2">{addon.title}</span>
-                    <span className="text-teal-700 shrink-0 font-extrabold">+{gig.currency_symbol || "$"}{parseFloat(addon.price).toLocaleString()}</span>
+                    <span className="text-teal-700 shrink-0 font-extrabold">+{formatPrice(parseFloat(addon.price))}</span>
                   </div>
                 ))}
               </div>
@@ -1386,7 +1401,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                                  </p>
                                  <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{fileType}</span>
                                </div>
-                               <div className="text-teal-700 hover:text-teal-800 text-[10px] font-black bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1 shrink-0 group-hover/doc:bg-teal-700 group-hover/doc:text-white group-hover/doc:border-teal-750 transition-all">
+                               <div className="text-teal-700 hover:text-white hover:bg-teal-800 text-[10px] font-black bg-white border border-slate-200/80 px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-1 shrink-0 group-hover/doc:bg-teal-700 group-hover/doc:text-white group-hover/doc:border-teal-750 transition-all">
                                  <span>{t("download", "Download")}</span>
                                </div>
                              </a>
@@ -1605,7 +1620,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
                   <span>{t("starting_rate", "Starting Rate")}</span>
                   <span className="font-extrabold text-slate-950">
-                    {gig.freelancer_hourly_rate ? `$${parseFloat(gig.freelancer_hourly_rate).toFixed(2)}/hr` : "N/A"}
+                    {gig.freelancer_hourly_rate ? `${formatPrice(parseFloat(gig.freelancer_hourly_rate))}/hr` : "N/A"}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs font-semibold text-slate-500">
@@ -1625,69 +1640,51 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             </div>
 
             {/* SHARE THIS SERVICE */}
-            <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col gap-3 text-left">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 flex items-center gap-1.5 select-none">
-                <i className="fa-solid fa-share-nodes text-teal-700"></i>
-                <span>{t("share_this_service", "Share this Service")}</span>
-              </h3>
-              
-              <div className="flex items-center gap-2">
-                {/* WhatsApp */}
-                <a
-                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent("Check out this awesome service on LancerFlow: " + (gig?.title || "") + " " + currentUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white flex items-center justify-center transition-all duration-300 border border-emerald-100/50 hover:border-emerald-500 shadow-sm hover:shadow-emerald-100 hover:-translate-y-0.5"
-                  title="Share on WhatsApp"
-                >
-                  <i className="fa-brands fa-whatsapp text-sm"></i>
-                </a>
-
-                {/* LinkedIn */}
-                <a
-                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl bg-[#0077b5]/10 hover:bg-[#0077b5] text-[#0077b5] hover:text-white flex items-center justify-center transition-all duration-300 border border-[#0077b5]/10 hover:border-[#0077b5] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5"
-                  title="Share on LinkedIn"
-                >
-                  <i className="fa-brands fa-linkedin-in text-sm"></i>
-                </a>
-
-                {/* X / Twitter */}
-                <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Check out this awesome service on LancerFlow: " + (gig?.title || ""))}&url=${encodeURIComponent(currentUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl bg-slate-900/10 hover:bg-slate-900 text-slate-900 hover:text-white flex items-center justify-center transition-all duration-300 border border-slate-900/10 hover:border-slate-900 shadow-sm hover:shadow-slate-100 hover:-translate-y-0.5"
-                  title="Share on X"
-                >
-                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                </a>
-
-                {/* Facebook */}
-                <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white flex items-center justify-center transition-all duration-300 border border-[#1877F2]/10 hover:border-[#1877F2] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5"
-                  title="Share on Facebook"
-                >
-                  <i className="fa-brands fa-facebook-f text-sm"></i>
-                </a>
-
-                {/* Copy Link */}
-                <button
-                  onClick={handleCopyLink}
-                  className="w-9 h-9 rounded-xl bg-teal-50 hover:bg-teal-700 text-teal-700 hover:text-white flex items-center justify-center transition-all duration-300 border border-teal-100 hover:border-teal-700 shadow-sm hover:shadow-teal-100 hover:-translate-y-0.5 cursor-pointer"
-                  title="Copy Link"
-                >
-                  <i className={`fa-solid ${copiedShare ? 'fa-circle-check text-emerald-500' : 'fa-copy'} text-sm`}></i>
-                </button>
-              </div>
-            </div>
+            <ShareSection
+              type="gig"
+              itemTitle={(() => {
+                let manual = "";
+                if (gig?.seo) {
+                  try {
+                    const parsed = typeof gig.seo === 'string' ? JSON.parse(gig.seo) : gig.seo;
+                    manual = parsed?.meta_title || parsed?.title || "";
+                  } catch (e) {}
+                }
+                return manual || gig?.title || "";
+              })()}
+              itemDescription={(() => {
+                let manual = "";
+                if (gig?.seo) {
+                  try {
+                    const parsed = typeof gig.seo === 'string' ? JSON.parse(gig.seo) : gig.seo;
+                    manual = parsed?.meta_description || parsed?.description || "";
+                  } catch (e) {}
+                }
+                return manual || gig?.description || "";
+              })()}
+              itemImage={(() => {
+                let manual = "";
+                if (gig?.seo) {
+                  try {
+                    const parsed = typeof gig.seo === 'string' ? JSON.parse(gig.seo) : gig.seo;
+                    manual = parsed?.image || parsed?.og_image || "";
+                  } catch (e) {}
+                }
+                let firstImg = "";
+                if (gig?.images) {
+                  try {
+                    const imgs = typeof gig.images === 'string' ? JSON.parse(gig.images) : gig.images;
+                    if (Array.isArray(imgs) && imgs.length > 0) firstImg = imgs[0];
+                  } catch (e) {}
+                }
+                return manual || firstImg || "";
+              })()}
+              priceOrBudget={gig?.price ? formatPrice(parseFloat(gig.price)) : ""}
+              customUrl={currentUrl}
+              isAffiliate={isAffiliate}
+              referralCode={userReferralCode}
+              onToast={(type, message) => setToast({ type, message })}
+            />
 
           </div>
 
@@ -1862,7 +1859,23 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                       Selected Package Price
                     </span>
                     <span className="text-sm font-black text-slate-800 mt-0.5 block">
-                      {gig.currency_symbol || "$"}{parseFloat(getPackagePrice().toFixed(2)).toLocaleString()}{" "}{gig.currency_code}
+                      {(() => {
+                        const originalPrice = getDiscountedPackagePrice(getPackagePrice());
+                        const selectedPrice = getSelectedBasePrice();
+                        if (selectedPrice !== originalPrice) {
+                          return (
+                            <>
+                              <span className="line-through text-slate-400 font-bold mr-1.5">
+                                {gig.currency_symbol || "$"}{originalPrice.toLocaleString()}
+                              </span>
+                              <span className="text-teal-700 font-black">
+                                {gig.currency_symbol || "$"}{selectedPrice.toLocaleString()} (Proposed)
+                              </span>
+                            </>
+                          );
+                        }
+                        return `${gig.currency_symbol || "$"}${originalPrice.toLocaleString()}`;
+                      })()}{" "}{gig.currency_code}
                     </span>
                   </div>
                   <div className="text-right">
@@ -2140,7 +2153,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                     <span>Base Package ({activePackageTab.toUpperCase()})</span>
                     <span className="font-extrabold text-slate-700">
                       {gig.currency_symbol || "$"}{(
-                        getPackagePrice()
+                        getSelectedBasePrice()
                       ).toLocaleString()}
                     </span>
                   </div>
@@ -2163,7 +2176,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                     <span className="text-xs font-black text-slate-800 uppercase tracking-wide">Total Estimated Cost</span>
                     <span className="text-sm font-black text-teal-700 bg-teal-50/50 border border-teal-100/60 px-3 py-1 rounded-xl">
                       {gig.currency_symbol || "$"}{(
-                        getPackagePrice() + getAddonsPriceTotal() + orderMilestones.reduce((acc, m) => acc + parseFloat(m.amount || 0), 0)
+                        getSelectedBasePrice() + getAddonsPriceTotal() + orderMilestones.reduce((acc, m) => acc + parseFloat(m.amount || 0), 0)
                       ).toLocaleString()}
                     </span>
                   </div>

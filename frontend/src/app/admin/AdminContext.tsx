@@ -644,7 +644,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
               const socket = initSocket(adminProfile.user_id);
               socket.on("new_notification", (notif: any) => {
                 const mapped = {
-                  id: notif.notification_id.toString(),
+                  id: notif.notification_id ? notif.notification_id.toString() : "notif_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
                   title: notif.title,
                   message: notif.message,
                   targetTab: notif.type === "proposal_vetting" ? "projects" : (notif.type === "vetting" ? "onboarding" : (notif.type === "dispute" ? "transactions" : "overview")),

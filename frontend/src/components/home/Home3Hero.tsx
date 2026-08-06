@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, useMotionValue, useTransform, animate, type PanInfo } from "framer-motion";
 import { API_URL, API_BASE_URL } from "@/config/api";
 import { FiChevronLeft, FiChevronRight, FiExternalLink } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
 
 export interface Home3HeroSlide {
   id: string;
@@ -83,6 +84,9 @@ const resolveImgUrl = (url: string) => {
 };
 
 export default function Home3Hero() {
+  const { direction } = useLanguage();
+  const isRtl = direction === "rtl";
+
   const [slides, setSlides] = useState<Home3HeroSlide[]>(DEFAULT_HOME3_HERO_SLIDES);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -108,27 +112,51 @@ export default function Home3Hero() {
   }, []);
 
   // CARD 1 (Active Front Card):
-  // x = dragX (moves completely off-screen to -exitDistance)
-  // scale = lerp(1, 0.98, progress)
-  // rotate = lerp(0, -1°, progress)
-  const card1Rotate = useTransform(dragX, [-exitDistance, 0, exitDistance], [-1, 0, 1]);
-  const card1Scale = useTransform(dragX, [-exitDistance, 0, exitDistance], [0.98, 1, 0.98]);
+  const card1Rotate = useTransform(dragX, (value) => {
+    const factor = isRtl ? -1 : 1;
+    const progress = value / exitDistance;
+    return progress * factor;
+  });
+
+  const card1Scale = useTransform(dragX, (value) => {
+    const progress = Math.abs(value) / exitDistance;
+    return 1 - progress * 0.02;
+  });
 
   // CARD 2 (Second Card):
-  // translateX = lerp(100px, 0px, progress)
-  // scale = lerp(0.94, 1, progress)
-  // opacity = lerp(0.85, 1, progress)
-  const card2X = useTransform(dragX, [-exitDistance, 0], [0, 100]);
-  const card2Scale = useTransform(dragX, [-exitDistance, 0], [1, 0.94]);
-  const card2Opacity = useTransform(dragX, [-exitDistance, 0], [1, 0.85]);
+  const card2X = useTransform(dragX, (value) => {
+    const progress = Math.min(Math.max(Math.abs(value) / exitDistance, 0), 1);
+    const startX = isRtl ? -100 : 100;
+    return startX * (1 - progress);
+  });
+
+  const card2Scale = useTransform(dragX, (value) => {
+    const progress = Math.min(Math.max(Math.abs(value) / exitDistance, 0), 1);
+    return 0.94 + progress * 0.06;
+  });
+
+  const card2Opacity = useTransform(dragX, (value) => {
+    const progress = Math.min(Math.max(Math.abs(value) / exitDistance, 0), 1);
+    return 0.85 + progress * 0.15;
+  });
 
   // CARD 3 (Third Card):
-  // translateX = lerp(180px, 100px, progress)
-  // scale = lerp(0.90, 0.94, progress)
-  // opacity = lerp(0.65, 0.85, progress)
-  const card3X = useTransform(dragX, [-exitDistance, 0], [100, 180]);
-  const card3Scale = useTransform(dragX, [-exitDistance, 0], [0.94, 0.90]);
-  const card3Opacity = useTransform(dragX, [-exitDistance, 0], [0.85, 0.65]);
+  const card3X = useTransform(dragX, (value) => {
+    const progress = Math.min(Math.max(Math.abs(value) / exitDistance, 0), 1);
+    const startX = isRtl ? -180 : 180;
+    const midX = isRtl ? -100 : 100;
+    return startX * (1 - progress) + midX * progress;
+  });
+
+  const card3Scale = useTransform(dragX, (value) => {
+    const progress = Math.min(Math.max(Math.abs(value) / exitDistance, 0), 1);
+    return 0.90 + progress * 0.04;
+  });
+
+  const card3Opacity = useTransform(dragX, (value) => {
+    const progress = Math.min(Math.max(Math.abs(value) / exitDistance, 0), 1);
+    return 0.65 + progress * 0.20;
+  });
 
   // Check accessibility setting prefers-reduced-motion
   useEffect(() => {
@@ -218,7 +246,7 @@ export default function Home3Hero() {
   const nextSlide = () => {
     if (isAnimating) return;
     setIsAnimating(true);
-    animate(dragX, -exitDistance, {
+    animate(dragX, isRtl ? exitDistance : -exitDistance, {
       ...LUXURY_SPRING_PHYSICS,
       onComplete: () => {
         setCurrentIndex((prev) => (prev + 1) % total);
@@ -232,7 +260,7 @@ export default function Home3Hero() {
   const prevSlide = () => {
     if (isAnimating) return;
     setIsAnimating(true);
-    animate(dragX, exitDistance, {
+    animate(dragX, isRtl ? -exitDistance : exitDistance, {
       ...LUXURY_SPRING_PHYSICS,
       onComplete: () => {
         setCurrentIndex((prev) => (prev - 1 + total) % total);
@@ -251,10 +279,17 @@ export default function Home3Hero() {
     const currentX = dragX.get();
     const velocity = info.velocity.x;
 
-    // Release behavior: if drag > 45% (or velocity threshold), continue animating to FULL EXIT DISTANCE off-screen!
-    if (currentX < -150 || velocity < -350) {
+    const shouldGoNext = isRtl
+      ? (currentX > 150 || velocity > 350)
+      : (currentX < -150 || velocity < -350);
+
+    const shouldGoPrev = isRtl
+      ? (currentX < -150 || velocity < -350)
+      : (currentX > 150 || velocity > 350);
+
+    if (shouldGoNext) {
       setIsAnimating(true);
-      animate(dragX, -exitDistance, {
+      animate(dragX, isRtl ? exitDistance : -exitDistance, {
         ...LUXURY_SPRING_PHYSICS,
         onComplete: () => {
           setCurrentIndex((prev) => (prev + 1) % total);
@@ -262,9 +297,9 @@ export default function Home3Hero() {
           setIsAnimating(false);
         }
       });
-    } else if (currentX > 150 || velocity > 350) {
+    } else if (shouldGoPrev) {
       setIsAnimating(true);
-      animate(dragX, exitDistance, {
+      animate(dragX, isRtl ? -exitDistance : exitDistance, {
         ...LUXURY_SPRING_PHYSICS,
         onComplete: () => {
           setCurrentIndex((prev) => (prev - 1 + total) % total);
@@ -361,38 +396,6 @@ export default function Home3Hero() {
         </div>
       </div>
 
-      {/* Bottom Navigation Controls: < 1 / 3 > */}
-      <div className="flex items-center gap-3 pt-4 px-2 text-xs font-mono font-bold text-slate-600 dark:text-slate-400">
-        <button
-          type="button"
-          onClick={() => {
-            triggerInteractionPause();
-            prevSlide();
-          }}
-          disabled={isAnimating}
-          className="hover:text-slate-900 dark:hover:text-white transition cursor-pointer p-1 border-none bg-transparent disabled:opacity-50"
-          aria-label="Previous Slide"
-        >
-          <FiChevronLeft className="w-5 h-5" />
-        </button>
-
-        <span className="font-extrabold tracking-widest select-none">
-          {currentIndex + 1} / {slides.length}
-        </span>
-
-        <button
-          type="button"
-          onClick={() => {
-            triggerInteractionPause();
-            nextSlide();
-          }}
-          disabled={isAnimating}
-          className="hover:text-slate-900 dark:hover:text-white transition cursor-pointer p-1 border-none bg-transparent disabled:opacity-50"
-          aria-label="Next Slide"
-        >
-          <FiChevronRight className="w-5 h-5" />
-        </button>
-      </div>
 
     </section>
   );

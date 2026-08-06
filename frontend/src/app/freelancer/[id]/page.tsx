@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import FreelancerProfileClient from "./FreelancerProfileClient";
-
 import { API_URL } from "@/config/api";
-
 
 async function getProfileData(id: string) {
   try {
@@ -72,44 +70,50 @@ export async function generateMetadata({
   const user = profileData.user;
   const profile = profileData.profile;
 
-  // 1. Check if the freelancer has manual SEO fields set in the database
-  let seoTitle = "";
-  let seoDesc = "";
-  let seoImage = "";
+  // Check manual SEO fields
+  let manualSeoTitle = "";
+  let manualSeoDesc = "";
+  let manualSeoImg = "";
 
   if (profile?.seo) {
     try {
       const parsedSeo = typeof profile.seo === "string" ? JSON.parse(profile.seo) : profile.seo;
-      seoTitle = parsedSeo?.title || "";
-      seoDesc = parsedSeo?.description || "";
-      seoImage = parsedSeo?.og_image || parsedSeo?.image || "";
+      manualSeoTitle = parsedSeo?.meta_title || parsedSeo?.title || "";
+      manualSeoDesc = parsedSeo?.meta_description || parsedSeo?.description || "";
+      manualSeoImg = parsedSeo?.image || parsedSeo?.og_image || "";
     } catch (e) {
       console.error("Failed to parse profile SEO details", e);
     }
   }
 
-  // 2. Fallbacks if manual SEO fields are not set
+  // 1. Title Fallback: SEO Title -> Freelancer Name & Professional Title
   const freelancerName = user?.name || user?.display_name || "Freelancer";
   const professionalTitle = profile?.professional_title || "Freelancer Specialist";
-  const bio = profile?.bio || `Check out ${freelancerName}'s profile on ${siteName}.`;
+  const defaultTitle = `${freelancerName} - ${professionalTitle} | ${siteName}`;
+  const finalTitle = manualSeoTitle ? `${manualSeoTitle} | ${siteName}` : defaultTitle;
 
-  const finalTitle = seoTitle || `${freelancerName} - ${professionalTitle} | ${siteName}`;
-  const finalDesc = seoDesc || (bio.length > 160 ? `${bio.substring(0, 157)}...` : bio);
-  
-  // Format profile image or custom SEO image
+  // 2. Description Fallback: SEO Desc -> Clean Profile Bio
+  const bio = profile?.bio || `Check out ${freelancerName}'s profile on ${siteName}.`;
+  const cleanBio = bio.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  const finalDesc = manualSeoDesc || (cleanBio.length > 160 ? `${cleanBio.substring(0, 157)}...` : cleanBio);
+
+  // 3. Image Fallback: SEO Image -> User Profile Image -> Default Image
   const profileImage = user?.profile_image || null;
-  const rawImage = seoImage || profileImage;
+  const rawImage = manualSeoImg || profileImage;
   const finalImage = rawImage ? formatImageUrl(rawImage, siteBaseUrl) : defaultOgImage;
 
   return {
+    metadataBase: new URL(siteBaseUrl),
     title: finalTitle,
     description: finalDesc,
     openGraph: {
       type: "profile",
+      url: `${siteBaseUrl}/freelancer/${user?.slug || id}`,
       title: finalTitle,
       description: finalDesc,
+      siteName: siteName,
       username: user?.slug || user?.name || id,
-      ...(finalImage ? { images: [{ url: finalImage }] } : {}),
+      ...(finalImage ? { images: [{ url: finalImage, width: 1200, height: 630, alt: finalTitle }] } : {}),
     },
     twitter: {
       card: "summary_large_image",

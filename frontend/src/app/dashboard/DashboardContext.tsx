@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { initSocket, disconnectSocket } from "@/utils/socket";
 
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 // Types
 interface Category {
@@ -550,6 +551,7 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   // Authentication & Onboarding States
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -1096,19 +1098,19 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const stepsStatus = useMemo(() => {
     if (userRole === "client") {
       return [
-        { number: 1, label: "Company Basics", done: Boolean(companyName?.trim()) },
-        { number: 2, label: "Company Details", done: Boolean(companyWebsite?.trim() || companyDescription?.trim()) },
-        { number: 3, label: "Hiring Contact", done: Boolean(hiringContactName?.trim() && hiringContactDesignation?.trim()) }
+        { number: 1, label: t("company_basics", "Company Basics"), done: Boolean(companyName?.trim()) },
+        { number: 2, label: t("company_details", "Company Details"), done: Boolean(companyWebsite?.trim() || companyDescription?.trim()) },
+        { number: 3, label: t("hiring_contact", "Hiring Contact"), done: Boolean(hiringContactName?.trim() && hiringContactDesignation?.trim()) }
       ];
     } else {
       return [
-        { number: 1, label: "Basics", done: Boolean(profileBasics?.professional_title) },
-        { number: 2, label: "Career", done: experiences.length > 0 || educations.length > 0 },
-        { number: 3, label: "Verification", done: emailVerified || phoneVerified },
-        { number: 4, label: "Portfolio", done: certifications.length > 0 || selectedSkills.length > 0 }
+        { number: 1, label: t("basics", "Basics"), done: Boolean(profileBasics?.professional_title) },
+        { number: 2, label: t("career", "Career"), done: experiences.length > 0 || educations.length > 0 },
+        { number: 3, label: t("verification", "Verification"), done: emailVerified || phoneVerified },
+        { number: 4, label: t("portfolio", "Portfolio"), done: certifications.length > 0 || selectedSkills.length > 0 }
       ];
     }
-  }, [userRole, companyName, companyWebsite, companyDescription, hiringContactName, hiringContactDesignation, profileBasics, experiences, educations, emailVerified, phoneVerified, certifications, selectedSkills]);
+  }, [userRole, companyName, companyWebsite, companyDescription, hiringContactName, hiringContactDesignation, profileBasics, experiences, educations, emailVerified, phoneVerified, certifications, selectedSkills, t]);
 
   const profileCompletionProgress = useMemo(() => {
     if (stepsStatus.length === 0) return 0;
@@ -2210,7 +2212,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
       // 1. Direct Chat / Message notifications
       if (type === "message" || title.includes("message") || title.includes("chat") || title.includes("new message")) {
-        setActiveTab("inbox");
         if (ref) setSelectedConvId(parseInt(ref));
         router.push("/dashboard/inbox");
       } 
@@ -2218,7 +2219,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       else if (type === "proposal" || title.includes("proposal") || title.includes("bid")) {
         const isAccepted = title.includes("accepted") || message.includes("accepted");
         if (userRole === "client") {
-          setActiveTab("proposals");
           if (ref) {
             const foundJob = clientJobs.find((j: any) => j.contract_id === parseInt(ref) || j.job_id === parseInt(ref));
             const jobId = foundJob ? foundJob.job_id : ref;
@@ -2228,14 +2228,12 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           }
         } else {
           if (isAccepted) {
-            setActiveTab("my_projects");
             if (ref) {
               router.push(`/dashboard/my-projects?contract_id=${ref}`);
             } else {
               router.push("/dashboard/my-projects");
             }
           } else {
-            setActiveTab("proposals");
             router.push("/dashboard/proposals");
           }
         }
@@ -2243,24 +2241,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       // 3. Gig & Service Order notifications
       else if (type === "gig" || title.includes("gig") || message.includes("gig order")) {
         if (userRole === "client") {
-          setActiveTab("client_orders");
           if (ref) {
-            router.push(`/dashboard/client-orders?application_id=${ref}`);
+            router.push(`/dashboard/orders?application_id=${ref}`);
           } else {
-            router.push("/dashboard/client-orders");
+            router.push("/dashboard/orders");
           }
         } else {
-          setActiveTab("gig_applications");
           if (ref) {
-            router.push(`/dashboard/gig-applications?application_id=${ref}`);
+            router.push(`/dashboard/applications?application_id=${ref}`);
           } else {
-            router.push("/dashboard/gig-applications");
+            router.push("/dashboard/applications");
           }
         }
       } 
       // 4. Wallet & Payout notifications
       else if (type === "wallet" || title.includes("wallet") || title.includes("payout") || title.includes("withdrawal")) {
-        setActiveTab("wallet");
         router.push("/dashboard/wallet");
       }
       // 5. Contract, Milestone, Dispute, Payment Released, Work Started, Review notifications
@@ -2285,8 +2280,24 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         message.includes("dispute") ||
         message.includes("working")
       ) {
+        if (ref) {
+          const refNum = parseInt(ref);
+          if (userRole === "client") {
+            const gigApp = clientApplications.find((app: any) => app.contract_id === refNum);
+            if (gigApp) {
+              router.push(`/dashboard/orders?application_id=${gigApp.application_id}`);
+              return;
+            }
+          } else {
+            const gigApp = gigApplications.find((app: any) => app.contract_id === refNum);
+            if (gigApp) {
+              router.push(`/dashboard/applications?application_id=${gigApp.application_id}`);
+              return;
+            }
+          }
+        }
+
         if (userRole === "client") {
-          setActiveTab("proposals");
           if (ref) {
             const foundJob = clientJobs.find((j: any) => j.contract_id === parseInt(ref) || j.job_id === parseInt(ref));
             const jobId = foundJob ? foundJob.job_id : ref;
@@ -2295,7 +2306,6 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             router.push("/dashboard/proposals");
           }
         } else {
-          setActiveTab("my_projects");
           if (ref) {
             router.push(`/dashboard/my-projects?contract_id=${ref}`);
           } else {
@@ -2306,10 +2316,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       // 6. Fallback redirection
       else {
         if (userRole === "client") {
-          setActiveTab("proposals");
           router.push("/dashboard/proposals");
         } else {
-          setActiveTab("my_projects");
           router.push("/dashboard/my-projects");
         }
       }

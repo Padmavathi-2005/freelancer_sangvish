@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { FiCheckCircle, FiClock, FiDollarSign, FiCalendar, FiUser, FiMessageSquare, FiX, FiMail, FiExternalLink, FiBriefcase } from "react-icons/fi";
 import ProjectMilestoneTracker from "./ProjectMilestoneTracker";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function FreelancerProjectsTab() {
   const {
@@ -20,7 +21,9 @@ export default function FreelancerProjectsTab() {
     triggerToast
   } = useDashboard();
 
-  const [activeSubTab, setActiveSubTab] = useState<"ongoing" | "completed" | "all">("ongoing");
+  const { t } = useLanguage();
+
+  const [activeSubTab, setActiveSubTab] = useState<"ongoing" | "completed" | "cancelled" | "all">("ongoing");
   const [clientSectionTab, setClientSectionTab] = useState<"my_clients" | "recommended">("my_clients");
   const [loading, setLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState<any | null>(null);
@@ -100,7 +103,9 @@ export default function FreelancerProjectsTab() {
         (c) => c.status === "Hired" || c.status === "Work Started" || c.status === "In Progress" || c.status === "Under Review" || c.status === "Disputed" || c.status === "Work Completed"
       );
     } else if (activeSubTab === "completed") {
-      list = list.filter((c) => c.status === "Completed" || c.status === "Cancelled" || c.status === "Closed");
+      list = list.filter((c) => c.status === "Completed" || c.status === "Closed");
+    } else if (activeSubTab === "cancelled") {
+      list = list.filter((c) => c.status === "Cancelled");
     }
 
     return list.sort((a: any, b: any) => {
@@ -162,9 +167,9 @@ export default function FreelancerProjectsTab() {
       
       {/* Header */}
       <div className="text-left px-4 sm:px-0">
-        <h1 className="text-xl font-black text-slate-900 tracking-tight">My Projects & Contracts</h1>
+        <h1 className="text-xl font-black text-slate-900 tracking-tight">{t("my_projects_contracts_header", "My Projects & Contracts")}</h1>
         <p className="text-slate-500 text-xs mt-1 font-semibold">
-          Manage your active freelancer assignments, track completion milestones, and view client history.
+          {t("my_projects_contracts_desc", "Manage your active freelancer assignments, track completion milestones, and view client history.")}
         </p>
       </div>
       {/* Projects List Container */}
@@ -178,7 +183,7 @@ export default function FreelancerProjectsTab() {
                   onClick={() => setSelectedContract(null)}
                   className="text-slate-500 hover:text-slate-800 text-[10px] font-bold bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-slate-200 hover:bg-slate-200/60 mb-2.5 inline-flex items-center gap-1.5"
                 >
-                  ← Back to Projects
+                  ← {t("back_to_projects_btn", "Back to Projects")}
                 </button>
                 <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
                   <FiBriefcase className="w-5 h-5 text-teal-600 shrink-0" />
@@ -191,7 +196,7 @@ export default function FreelancerProjectsTab() {
                     : selectedContract.status === "Disputed" ? "bg-orange-50 border-orange-200 text-orange-700"
                     : "bg-teal-50 border-teal-200 text-teal-700"
                   }`}>
-                    {selectedContract.status === "Under Review" ? "Awaiting Approval" : selectedContract.status}
+                    {selectedContract.status === "Under Review" ? t("awaiting_approval_status", "Awaiting Approval") : t(selectedContract.status.toLowerCase(), selectedContract.status)}
                   </span>
                   <span className="text-slate-400 text-[10px] font-bold">· Contract #{selectedContract.contract_id}</span>
                 </div>
@@ -201,7 +206,7 @@ export default function FreelancerProjectsTab() {
                   onClick={() => handleOpenChat(selectedContract.client_id)}
                   className="text-[10px] font-bold text-white bg-teal-600 hover:bg-teal-700 flex items-center gap-1.5 cursor-pointer py-2.5 px-4 rounded-xl border-0 transition-all shadow-sm"
                 >
-                  <FiMessageSquare className="w-3.5 h-3.5" /> Open Chat
+                  <FiMessageSquare className="w-3.5 h-3.5" /> {t("open_chat_btn", "Open Chat")}
                 </button>
               </div>
             </div>
@@ -210,7 +215,7 @@ export default function FreelancerProjectsTab() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border border-slate-150 rounded-xl p-4 bg-slate-50/50">
               <div className="text-center sm:text-left border-r border-slate-100 last:border-r-0">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
-                  {selectedContract.project_type === "Hourly" ? "Hourly Rate" : "Budget"}
+                  {selectedContract.project_type === "Hourly" ? t("hourly_rate_label", "Hourly Rate") : t("budget_label", "Budget")}
                 </p>
                 <p className="text-sm font-black text-slate-800 mt-0.5">
                   {selectedContract.project_type === "Hourly"
@@ -220,18 +225,18 @@ export default function FreelancerProjectsTab() {
                 </p>
                 {selectedContract.project_type === "Hourly" && (
                   <span className="text-[8px] font-bold text-slate-400 block mt-0.5">
-                    Escrow Remaining: ${parseFloat(selectedContract.budget).toLocaleString()}
+                    {t("escrow_remaining_label", "Escrow Remaining:")} ${parseFloat(selectedContract.budget).toLocaleString()}
                   </span>
                 )}
               </div>
               <div className="text-center sm:text-left border-r border-slate-100 last:border-r-0">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Progress</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{t("progress_label", "Progress")}</p>
                 <p className="text-sm font-black text-slate-800 mt-0.5">
                   {selectedContract.progress || 0}%
                 </p>
               </div>
               <div className="text-center sm:text-left">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Client Partner</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{t("client_partner_label", "Client Partner")}</p>
                 <p className="text-xs font-bold text-slate-800 mt-0.5 truncate">
                   {selectedContract.client_name}
                 </p>
@@ -241,7 +246,7 @@ export default function FreelancerProjectsTab() {
             {/* Description snippet */}
             {selectedContract.project_description && (
               <div className="bg-slate-50 border border-slate-150 rounded-xl p-4">
-                <span className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide block mb-1">Contract Scope & Description</span>
+                <span className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide block mb-1">{t("contract_scope_desc_label", "Contract Scope & Description")}</span>
                 <p className="text-slate-650 text-xs leading-relaxed font-medium whitespace-pre-wrap">{selectedContract.project_description}</p>
               </div>
             )}
@@ -251,7 +256,8 @@ export default function FreelancerProjectsTab() {
                 title: selectedContract.title,
                 project_type: selectedContract.project_type,
                 description: selectedContract.project_description,
-                budget: selectedContract.original_budget || selectedContract.budget
+                budget: selectedContract.original_budget || selectedContract.budget,
+                contract_id: selectedContract.contract_id
               }}
               onUpdateJob={(updatedJob) => {
                 setSelectedContract((prev: any) => prev ? {
@@ -271,17 +277,17 @@ export default function FreelancerProjectsTab() {
             {/* Navigation Tabs */}
             <div className="flex justify-between items-center border-b border-slate-100 pb-4">
               <div className="flex gap-2">
-                {(["ongoing", "completed", "all"] as const).map((tab) => (
+                {(["ongoing", "completed", "cancelled", "all"] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveSubTab(tab)}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer capitalize ${
                       activeSubTab === tab
                         ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                        : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                        : "text-slate-550 hover:text-slate-800 hover:bg-slate-50"
                     }`}
                   >
-                    {tab} Projects
+                    {t(`${tab}_projects_filter`, `${tab} Projects`)}
                   </button>
                 ))}
               </div>
@@ -330,7 +336,7 @@ export default function FreelancerProjectsTab() {
                                   ? "bg-cyan-50 text-cyan-700 border border-cyan-150"
                                   : "bg-teal-50 text-teal-700 border border-teal-150"
                           }`}>
-                            {c.status === "Under Review" ? "Awaiting Approval" : c.status}
+                            {c.status === "Under Review" ? t("awaiting_approval_status", "Awaiting Approval") : t(c.status.toLowerCase(), c.status)}
                           </span>
                           <span className="text-xs font-black text-slate-900 bg-white border border-slate-200/60 px-2.5 py-1 rounded-lg">
                             ${parseFloat(c.original_budget || c.budget).toLocaleString()}
@@ -350,7 +356,7 @@ export default function FreelancerProjectsTab() {
                         {/* Progress details */}
                         <div className="flex flex-col gap-1.5 mt-4">
                           <div className="flex justify-between text-[10px] font-bold text-slate-500">
-                            <span>Milestone Progress</span>
+                            <span>{t("milestone_progress_label", "Milestone Progress")}</span>
                             <span>{c.progress || 0}%</span>
                           </div>
                           <div className="w-full h-1.5 bg-slate-200/60 rounded-full overflow-hidden border border-slate-200/50">
@@ -371,7 +377,7 @@ export default function FreelancerProjectsTab() {
                             }}
                             className="w-full mt-3.5 bg-teal-600 hover:bg-teal-750 text-white font-black text-[10px] py-2.5 px-3 rounded-xl shadow-md hover:shadow-lg transition-all uppercase tracking-wider text-center cursor-pointer border-0"
                           >
-                            🚀 Start Work
+                            🚀 {t("start_work_btn", "Start Work")}
                           </button>
                         )}
                         {(c.status === "Work Started" || c.status === "In Progress") && (
@@ -384,12 +390,12 @@ export default function FreelancerProjectsTab() {
                             }}
                             className="w-full mt-3.5 bg-teal-600 hover:bg-teal-750 text-white font-black text-[10px] py-2 px-3 rounded-xl shadow-md hover:shadow-lg transition-all uppercase tracking-wider text-center cursor-pointer border-0"
                           >
-                            Submit Completed Work
+                            {t("submit_completed_work_btn", "Submit Completed Work")}
                           </button>
                         )}
                         {c.status === "Under Review" && (
                           <div className="w-full mt-3.5 bg-amber-50 text-amber-700 border border-amber-200/50 font-black text-[10px] py-2 px-3 rounded-xl uppercase tracking-wider text-center select-none">
-                            ⏳ Work Submitted / Awaiting Approval
+                            ⏳ {t("work_submitted_awaiting_approval_status", "Work Submitted / Awaiting Approval")}
                           </div>
                         )}
                       </div>
@@ -409,7 +415,7 @@ export default function FreelancerProjectsTab() {
 
                         <div className="flex items-center gap-1 shrink-0 font-extrabold uppercase text-[9px] tracking-wide text-slate-400">
                           <FiCalendar className="w-3.5 h-3.5 text-slate-355" />
-                          <span>Hired: {startDate}</span>
+                          <span>{t("hired_date_prefix", "Hired:")} {startDate}</span>
                         </div>
                       </div>
 
@@ -433,20 +439,20 @@ export default function FreelancerProjectsTab() {
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 clientSectionTab === "my_clients"
                   ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                  : "text-slate-550 hover:text-slate-800 hover:bg-slate-55"
               }`}
             >
-              My Clients
+              {t("my_clients_tab", "My Clients")}
             </button>
             <button
               onClick={() => setClientSectionTab("recommended")}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 clientSectionTab === "recommended"
                   ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                  : "text-slate-550 hover:text-slate-800 hover:bg-slate-55"
               }`}
             >
-              Recommended Clients
+              {t("recommended_clients_tab", "Recommended Clients")}
             </button>
           </div>
         </div>
@@ -456,9 +462,9 @@ export default function FreelancerProjectsTab() {
           myClients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center text-slate-400">
               <span className="text-2xl mb-2">🤝</span>
-              <h4 className="text-xs font-bold text-slate-600">No client history yet</h4>
+              <h4 className="text-xs font-bold text-slate-600">{t("no_client_history_yet", "No client history yet")}</h4>
               <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                Complete your active contracts to start building client list history.
+                {t("no_client_history_desc", "Complete your active contracts to start building client list history.")}
               </p>
             </div>
           ) : (
@@ -486,7 +492,7 @@ export default function FreelancerProjectsTab() {
                     className="w-full bg-white hover:bg-slate-100 border border-slate-200 text-teal-700 font-bold text-[10px] py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <FiMessageSquare className="w-3.5 h-3.5" />
-                    <span>Message Client</span>
+                    <span>{t("message_client_btn", "Message Client")}</span>
                   </button>
                 </div>
               ))}
@@ -497,9 +503,9 @@ export default function FreelancerProjectsTab() {
           recommendedClients.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center text-slate-400">
               <FiUser className="text-2xl mb-2 text-slate-400" />
-              <h4 className="text-xs font-bold text-slate-600">No client recommendations</h4>
+              <h4 className="text-xs font-bold text-slate-600">{t("no_client_recommendations", "No client recommendations")}</h4>
               <p className="text-[10px] text-slate-400 font-semibold mt-0.5">
-                No active hiring clients found that fit recommendations right now.
+                {t("no_client_recommendations_desc", "No active hiring clients found that fit recommendations right now.")}
               </p>
             </div>
           ) : (
@@ -517,7 +523,7 @@ export default function FreelancerProjectsTab() {
                       </div>
                       <div className="min-w-0">
                         <h4 className="text-xs font-extrabold text-slate-800 truncate">{client.name}</h4>
-                        <p className="text-[10px] font-black text-teal-600 mt-0.5 truncate uppercase tracking-wider">{client.company_name || client.industry || "Direct Hiring Client"}</p>
+                        <p className="text-[10px] font-black text-teal-600 mt-0.5 truncate uppercase tracking-wider">{client.company_name || client.industry || t("direct_hiring_client_label", "Direct Hiring Client")}</p>
                       </div>
                     </div>
 
@@ -534,7 +540,7 @@ export default function FreelancerProjectsTab() {
                       className="w-full bg-teal-700 hover:bg-teal-800 text-white font-bold text-[10px] py-2.5 rounded-xl transition-all text-center no-underline flex items-center justify-center gap-1.5 border-0 shadow-sm cursor-pointer"
                     >
                       <FiBriefcase className="w-3.5 h-3.5" />
-                      <span>View Client Profile</span>
+                      <span>{t("view_client_profile_btn", "View Client Profile")}</span>
                     </Link>
                   </div>
                 </div>

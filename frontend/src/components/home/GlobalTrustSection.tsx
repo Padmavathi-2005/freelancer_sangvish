@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { API_URL, API_BASE_URL } from "@/config/api";
 import { FiCheck, FiZap } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface FreelancerItem {
   user_id: number;
@@ -57,6 +58,9 @@ const getInitials = (name: string) => {
 
 export default function GlobalTrustSection() {
   const router = useRouter();
+  const { t, direction } = useLanguage();
+  const isRtl = direction === "rtl";
+
   const [freelancers, setFreelancers] = useState<FreelancerItem[]>(FALLBACK_CARDS);
   const [failedImages, setFailedImages] = useState<Record<number, boolean>>({});
 
@@ -121,7 +125,7 @@ export default function GlobalTrustSection() {
             {/* Card 1 (Back left) */}
             <div 
               onClick={() => handleNavigateProfile(card1)}
-              className="absolute left-0 z-10 w-48 sm:w-52 bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-slate-200 dark:border-zinc-800 shadow-lg scale-90 opacity-65 -translate-x-12 sm:-translate-x-16 transition-all duration-500 flex flex-col items-center text-center gap-2.5 cursor-pointer hover:opacity-100"
+              className={`absolute ${isRtl ? "right-0 translate-x-6 sm:translate-x-10" : "left-0 -translate-x-6 sm:-translate-x-10"} z-10 w-52 sm:w-60 bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-slate-200 dark:border-zinc-800 shadow-lg scale-90 opacity-65 transition-all duration-500 flex flex-col items-center text-center gap-2.5 cursor-pointer hover:opacity-100`}
             >
               {renderAvatar(card1, "w-16 h-16")}
               <h4 className="text-sm font-extrabold text-slate-900 dark:text-white truncate max-w-full">{card1.name}</h4>
@@ -139,14 +143,14 @@ export default function GlobalTrustSection() {
                 }}
                 className="w-full mt-1 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-bold text-xs py-2 rounded-xl border-none cursor-pointer transition"
               >
-                View Profile
+                {t("view_profile_btn", "View Profile")}
               </button>
             </div>
 
             {/* Card 2 (Middle) */}
             <div 
               onClick={() => handleNavigateProfile(card2)}
-              className="absolute left-1/4 z-20 w-52 sm:w-56 bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-slate-200 dark:border-zinc-800 shadow-xl scale-95 opacity-85 -translate-x-6 sm:-translate-x-8 transition-all duration-500 flex flex-col items-center text-center gap-2.5 cursor-pointer hover:opacity-100"
+              className={`absolute ${isRtl ? "right-1/4 translate-x-3 sm:translate-x-5" : "left-1/4 -translate-x-3 sm:-translate-x-5"} z-20 w-56 sm:w-64 bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-slate-200 dark:border-zinc-800 shadow-xl scale-95 opacity-85 transition-all duration-500 flex flex-col items-center text-center gap-2.5 cursor-pointer hover:opacity-100`}
             >
               {renderAvatar(card2, "w-16 h-16")}
               <h4 className="text-base font-extrabold text-slate-900 dark:text-white truncate max-w-full">{card2.name}</h4>
@@ -164,18 +168,18 @@ export default function GlobalTrustSection() {
                 }}
                 className="w-full mt-1 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-bold text-xs py-2 rounded-xl border-none cursor-pointer transition"
               >
-                View Profile
+                {t("view_profile_btn", "View Profile")}
               </button>
             </div>
 
             {/* Card 3 (Active Front Right - Top Featured PRO Freelancer) */}
             <div 
               onClick={() => handleNavigateProfile(card3)}
-              className="absolute right-0 sm:right-4 z-30 w-56 sm:w-64 bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-slate-200/90 dark:border-zinc-800 shadow-2xl scale-100 opacity-100 transition-all duration-500 flex flex-col items-center text-center gap-3 cursor-pointer hover:scale-[1.02]"
+              className={`absolute ${isRtl ? "left-0 sm:left-4" : "right-0 sm:right-4"} z-30 w-60 sm:w-72 bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-slate-200/90 dark:border-zinc-800 shadow-2xl scale-100 opacity-100 transition-all duration-500 flex flex-col items-center text-center gap-3 cursor-pointer hover:scale-[1.02]`}
             >
               
               {/* PRO Badge top right */}
-              <div className="absolute top-4 right-4 bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-md font-black text-[10px] flex items-center gap-1 border border-amber-300/40">
+              <div className={`absolute top-4 ${isRtl ? "left-4" : "right-4"} bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-md font-black text-[10px] flex items-center gap-1 border border-amber-300/40`}>
                 <FiZap className="w-3 h-3 fill-amber-500 text-amber-500" />
                 <span>PRO</span>
               </div>
@@ -201,7 +205,7 @@ export default function GlobalTrustSection() {
                 }}
                 className="w-full mt-1 bg-[#10b981] hover:bg-[#059669] text-white font-extrabold text-xs sm:text-sm py-2.5 rounded-xl transition duration-200 shadow-md shadow-emerald-950/20 active:scale-95 border-none flex items-center justify-center cursor-pointer"
               >
-                View Profile
+                {t("view_profile_btn", "View Profile")}
               </button>
             </div>
 
@@ -209,40 +213,40 @@ export default function GlobalTrustSection() {
         </div>
 
         {/* Right Column: Heading + Subtitle + Checklist */}
-        <div className="lg:col-span-6 flex flex-col text-left">
+        <div className="lg:col-span-6 flex flex-col text-left rtl:text-right items-start rtl:items-end">
           
           {/* Eyebrow */}
           <span className="text-[#10b981] font-bold text-sm sm:text-base mb-2.5 tracking-wide">
-            We’re expanding day by day
+            {t("global_trust_eyebrow", "We’re expanding day by day")}
           </span>
 
           {/* Title */}
           <h2 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white leading-[1.16] tracking-tight mb-5 font-display">
-            Global Trust of 1 Million Businesses and Counting
+            {t("global_trust_title", "Global Trust of 1 Million Businesses and Counting")}
           </h2>
 
           {/* Subtitle Description */}
           <p className="text-slate-600 dark:text-slate-300 text-sm sm:text-base lg:text-lg font-normal leading-relaxed mb-8 max-w-xl">
-            Connect with skilled professionals, streamline collaboration, and unlock success. Join now and redefine your work experience!.
+            {t("global_trust_desc", "Connect with skilled professionals, streamline collaboration, and unlock success. Join now and redefine your work experience!.")}
           </p>
 
           {/* Checklist Items */}
-          <div className="flex flex-col gap-4 text-slate-700 dark:text-slate-200 text-sm sm:text-base font-semibold">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-4 text-slate-700 dark:text-slate-200 text-sm sm:text-base font-semibold w-full">
+            <div className="flex items-center gap-3 rtl:flex-row-reverse">
               <FiCheck className="w-5 h-5 text-[#10b981] shrink-0 stroke-[3]" />
-              <span>Connect with pros collaborate better succeed faster</span>
+              <span>{t("global_trust_check_1", "Connect with pros collaborate better succeed faster")}</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 rtl:flex-row-reverse">
               <FiCheck className="w-5 h-5 text-[#10b981] shrink-0 stroke-[3]" />
-              <span>Redefine work Join now for a better experience</span>
+              <span>{t("global_trust_check_2", "Redefine work Join now for a better experience")}</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 rtl:flex-row-reverse">
               <FiCheck className="w-5 h-5 text-[#10b981] shrink-0 stroke-[3]" />
-              <span>Streamline collaboration unlock success</span>
+              <span>{t("global_trust_check_3", "Streamline collaboration unlock success")}</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 rtl:flex-row-reverse">
               <FiCheck className="w-5 h-5 text-[#10b981] shrink-0 stroke-[3]" />
-              <span>Join us redefine your work experience</span>
+              <span>{t("global_trust_check_4", "Join us redefine your work experience")}</span>
             </div>
           </div>
 

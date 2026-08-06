@@ -1,4 +1,4 @@
-import { API_URL } from "@/config/api";
+import { API_URL, API_BASE_URL } from "@/config/api";
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { FiCheck, FiDollarSign, FiClock, FiX, FiExternalLink, FiFileText } from "react-icons/fi";
@@ -10,6 +10,20 @@ interface GigMilestoneTrackerProps {
   triggerToast: (type: "success" | "warning" | "error", message: string, details?: string) => void;
   setSelectedFreelancerProfile: (profile: any) => void;
 }
+
+const resolveDownloadUrl = (url: string) => {
+  if (!url) return "";
+  let cleanUrl = url;
+  const publicIdx = cleanUrl.indexOf("/public/");
+  if (publicIdx !== -1) {
+    cleanUrl = cleanUrl.substring(publicIdx);
+  }
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+    return cleanUrl;
+  }
+  const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+};
 
 export default function GigMilestoneTracker({
   application,
@@ -513,7 +527,7 @@ export default function GigMilestoneTracker({
                               {filesList.map((file: any, idx: number) => (
                                 <a
                                   key={idx}
-                                  href={file.url}
+                                  href={resolveDownloadUrl(file.url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-900 transition hover:underline"

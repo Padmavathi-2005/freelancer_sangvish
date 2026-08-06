@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { FiMessageSquare, FiChevronDown } from "react-icons/fi";
 import { useDashboard } from "../../app/dashboard/DashboardContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface InboxTabProps {
   conversations: any[];
@@ -49,6 +50,7 @@ export default function InboxTab({
   handleSendChatMessage,
 }: InboxTabProps) {
   const { userRole, gigs, triggerToast, fetchChatMessages, siteName, siteLogo } = useDashboard();
+  const { t } = useLanguage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -326,20 +328,20 @@ export default function InboxTab({
       {/* CONVERSATION LIST (4 cols) */}
       <div className="md:col-span-4 bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex flex-col gap-4 overflow-hidden max-h-[580px]">
         <div className="border-b border-slate-100 pb-2">
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide">Conversations</h3>
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide">{t("conversations_sidebar_header", "Conversations")}</h3>
         </div>
 
         <div className="flex-grow overflow-y-auto flex flex-col gap-1.5 pr-1">
           {loadingConversations ? (
             <div className="flex flex-col items-center justify-center h-full p-4 gap-2">
               <div className="w-5 h-5 border-2 border-t-primary border-slate-200 rounded-full animate-spin"></div>
-              <span className="text-slate-400 text-xxs font-bold">Syncing chats...</span>
+              <span className="text-slate-400 text-xxs font-bold">{t("syncing_chats_label", "Syncing chats...")}</span>
             </div>
           ) : conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full p-6 text-center text-slate-400 gap-2 select-none">
               <FiMessageSquare className="w-6 h-6 text-slate-350" />
-              <h4 className="text-xs font-black text-slate-700 leading-none">No active chats</h4>
-              <p className="text-xxs leading-normal font-semibold max-w-[180px]">Your conversations start automatically when a proposal is accepted!</p>
+              <h4 className="text-xs font-black text-slate-700 leading-none">{t("no_active_chats_title", "No active chats")}</h4>
+              <p className="text-xxs leading-normal font-semibold max-w-[180px]">{t("no_active_chats_desc", "Your conversations start automatically when a proposal is accepted!")}</p>
             </div>
           ) : (
             conversations.map((conv) => {
@@ -408,18 +410,18 @@ export default function InboxTab({
                       <h4 className="text-[11.5px] font-black text-slate-800 truncate capitalize">{conv.recipient_name || "Unknown Candidate"}</h4>
                     </div>
                     {conv.is_group && conv.group_participants ? (
-                      <p className="text-[9px] text-slate-450 font-extrabold truncate mt-0.5 leading-none">
-                        {conv.group_participants.map((p: any) => p.user_id === currentUser?.user_id ? "You" : p.name.split(" ")[0]).join(", ")}
+                      <p className="text-[9px] text-slate-455 font-extrabold truncate mt-0.5 leading-none">
+                        {conv.group_participants.map((p: any) => p.user_id === currentUser?.user_id ? t("you_label", "You") : p.name.split(" ")[0]).join(", ")}
                       </p>
                     ) : (
-                      <p className="text-[9.5px] text-slate-400 font-semibold capitalize mt-0.5">{conv.recipient_role || "User"}</p>
+                      <p className="text-[9.5px] text-slate-400 font-semibold capitalize mt-0.5">{conv.recipient_role || t("user_role_label", "User")}</p>
                     )}
                     <p className="text-[10px] text-slate-400 font-semibold truncate mt-1 leading-normal">
                       {conv.last_message_text && conv.last_message_text.startsWith("{") && conv.last_message_text.includes('"isDispute":true')
-                        ? "⚠️ Dispute System Update"
+                        ? t("dispute_system_update_msg", "⚠️ Dispute System Update")
                         : conv.last_message_text && conv.last_message_text.startsWith("{") && conv.last_message_text.includes("isCustomOffer")
-                          ? "📩 Custom Payment Offer Received"
-                          : conv.last_message_text || "No messages yet. Say hello!"}
+                          ? t("custom_payment_offer_received_msg", "📩 Custom Payment Offer Received")
+                          : conv.last_message_text || t("no_messages_yet_msg", "No messages yet. Say hello!")}
                     </p>
                   </div>
                 </div>
@@ -738,7 +740,7 @@ export default function InboxTab({
                         <div className="bg-gradient-to-br from-amber-50 to-orange-50/30 border border-amber-200/80 rounded-xl p-4 shadow-sm text-left max-w-md">
                           <div className="flex items-center justify-between border-b border-amber-200 pb-2 mb-2">
                             <span className="text-[9px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded uppercase tracking-wider">
-                              Custom Payment Offer
+                              {t("custom_payment_offer_label", "Custom Payment Offer")}
                             </span>
                             <span className="text-xs font-black text-slate-800">
                               ${parseFloat(offerData.price).toLocaleString()}
@@ -784,16 +786,16 @@ export default function InboxTab({
                                 }}
                                 className="w-full mt-3 bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px] py-2 px-3 rounded-xl shadow-md transition-all uppercase tracking-wider text-center cursor-pointer border-0"
                               >
-                                Accept Offer & Fund Escrow
+                                {t("accept_offer_fund_escrow_btn", "Accept Offer & Fund Escrow")}
                               </button>
                             ) : (
                               <div className="mt-3 text-xxs font-bold text-amber-600 bg-amber-100/50 border border-amber-200/50 px-2 py-1 rounded text-center">
-                                Sent & Waiting for Client approval
+                                {t("sent_waiting_client_approval_label", "Sent & Waiting for Client approval")}
                               </div>
                             )
                           ) : (
                             <div className="mt-3 text-xxs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded text-center flex items-center justify-center gap-1">
-                              <i className="fa-solid fa-check-circle"></i> Offer Accepted & Order Active!
+                              <i className="fa-solid fa-check-circle"></i> {t("offer_accepted_order_active_label", "Offer Accepted & Order Active!")}
                             </div>
                           )}
                         </div>
@@ -819,7 +821,7 @@ export default function InboxTab({
                       <div key={idx} className="flex justify-center my-3.5 w-full select-none">
                         <div className="bg-slate-100/90 dark:bg-slate-900 border border-slate-300/80 dark:border-slate-800 rounded-xl px-5 py-3 text-xs font-semibold max-w-[85%] text-left shadow-sm leading-relaxed whitespace-pre-wrap">
                           <span className="system-notification-header font-black uppercase tracking-widest text-[9.5px] mb-1.5 flex items-center gap-1.5">
-                            <i className="fa-solid fa-circle-info text-primary dark:text-teal-400"></i> {isPlatformMsg ? "Platform Notification" : "System Notification"}
+                            <i className="fa-solid fa-circle-info text-primary dark:text-teal-400"></i> {isPlatformMsg ? t("platform_notification_header", "Platform Notification") : t("system_notification_header", "System Notification")}
                           </span>
                           <span className="text-slate-900 dark:text-slate-100 font-semibold">{cleanText}</span>
                           <span className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-2 text-right">
@@ -846,7 +848,7 @@ export default function InboxTab({
                   const showLogo = activeLogo && activeLogo !== "/public/logo.png" && activeLogo !== "logo.png";
                   const cleanLogoSrc = showLogo ? getAvatarSrc(activeLogo) : "";
                   const initials = isPlatformMsg ? getInitials(siteName || "Buy2Lancer") : getInitials(msg.sender_name || "User");
-                  const displayName = isPlatformMsg ? (siteName || "Buy2Lancer") : (isOwn ? "You" : msg.sender_name || "User");
+                  const displayName = isPlatformMsg ? (siteName || "Buy2Lancer") : (isOwn ? t("you_label", "You") : msg.sender_name || t("user_role_label", "User"));
                   const avatarSrc = isPlatformMsg ? cleanLogoSrc : getAvatarSrc(msg.sender_profile_image);
 
                   const getNameColor = (senderId: number) => {
@@ -1058,8 +1060,8 @@ export default function InboxTab({
               <FiMessageSquare className="w-6 h-6 text-slate-500 animate-pulse" />
             </div>
             <div>
-              <h3 className="text-sm font-extrabold text-slate-700">Select a Chat Room</h3>
-              <p className="text-xxs leading-normal font-semibold max-w-xs mt-1">Select a candidate conversation from the list to view deliverables and discuss project details.</p>
+              <h3 className="text-sm font-extrabold text-slate-700">{t("select_chat_room_title", "Select a Chat Room")}</h3>
+              <p className="text-xxs leading-normal font-semibold max-w-xs mt-1">{t("select_chat_room_desc", "Select a candidate conversation from the list to view deliverables and discuss project details.")}</p>
             </div>
           </div>
         )}

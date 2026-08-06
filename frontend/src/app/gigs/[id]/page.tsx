@@ -28,6 +28,19 @@ async function getSimilarGigs(id: string) {
   }
 }
 
+async function getSiteSettings() {
+  try {
+    const res = await fetch(`${API_URL}/settings`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data: any[] = await res.json();
+    const raw = data.find((s) => s.setting_key === "site_settings")?.setting_value;
+    if (!raw) return null;
+    return typeof raw === "string" ? JSON.parse(raw) : raw;
+  } catch {
+    return null;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -35,9 +48,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const resolvedParams = await params;
   const id = resolvedParams.id;
-  const gig = await getGigDetails(id);
+  const [gig, siteSettings] = await Promise.all([
+    getGigDetails(id),
+    getSiteSettings(),
+  ]);
 
-  const siteName = "Buy2Lancer";
+  const siteName = siteSettings?.site_name || "LancerFlow";
   const siteBaseUrl = "https://freelancer.sangvish.com";
 
   if (!gig) {
@@ -47,31 +63,40 @@ export async function generateMetadata({
     };
   }
 
-  let seoTitle = gig.title;
-  let seoDesc = gig.description ? gig.description.replace(/<[^>]*>/g, '').substring(0, 150) + "..." : "";
-  let seoImg = "";
-
-  if (gig.images) {
-    try {
-      const parsedImgs = typeof gig.images === 'string' ? JSON.parse(gig.images) : gig.images;
-      if (Array.isArray(parsedImgs) && parsedImgs.length > 0) {
-        seoImg = parsedImgs[0];
-      }
-    } catch (e) {
-      console.error("Error parsing images for SEO:", e);
-    }
-  }
+  // Check manual SEO values
+  let manualSeoTitle = "";
+  let manualSeoDesc = "";
+  let manualSeoImg = "";
 
   if (gig.seo) {
     try {
       const parsedSeo = typeof gig.seo === 'string' ? JSON.parse(gig.seo) : gig.seo;
-      if (parsedSeo.title) seoTitle = parsedSeo.title;
-      if (parsedSeo.description) seoDesc = parsedSeo.description;
-      if (parsedSeo.image) seoImg = parsedSeo.image;
+      manualSeoTitle = parsedSeo.meta_title || parsedSeo.title || "";
+      manualSeoDesc = parsedSeo.meta_description || parsedSeo.description || "";
+      manualSeoImg = parsedSeo.image || parsedSeo.og_image || "";
     } catch (e) {
       console.error("Error parsing gig SEO:", e);
     }
   }
+
+  // 1. Title Fallback: SEO Title -> Gig Title
+  const seoTitle = manualSeoTitle || gig.title || "Service Gig";
+
+  // 2. Description Fallback: SEO Desc -> Clean Gig Description
+  const rawGigDesc = gig.description ? gig.description.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim() : "";
+  const seoDesc = manualSeoDesc || (rawGigDesc.length > 160 ? rawGigDesc.substring(0, 157) + "..." : rawGigDesc);
+
+  // 3. Image Fallback: SEO Image -> Gig First Image -> Default Image
+  let gigFirstImg = "";
+  if (gig.images) {
+    try {
+      const parsedImgs = typeof gig.images === 'string' ? JSON.parse(gig.images) : gig.images;
+      if (Array.isArray(parsedImgs) && parsedImgs.length > 0) {
+        gigFirstImg = parsedImgs[0];
+      }
+    } catch (e) {}
+  }
+  const seoImg = manualSeoImg || gigFirstImg || "";
 
   const formatImageUrl = (url: string) => {
     if (!url) return `${siteBaseUrl}/tablet-work.png`;
@@ -83,13 +108,23 @@ export async function generateMetadata({
   const finalImg = formatImageUrl(seoImg);
 
   return {
-    title: seoTitle,
+    metadataBase: new URL(siteBaseUrl),
+    title: `${seoTitle} | ${siteName}`,
     description: seoDesc,
     openGraph: {
       type: "website",
+      url: `${siteBaseUrl}/gigs/${gig.gig_id}`,
       title: seoTitle,
       description: seoDesc,
-      images: [{ url: finalImg }],
+      siteName: siteName,
+      images: [
+        {
+          url: finalImg,
+          width: 1200,
+          height: 630,
+          alt: seoTitle,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",

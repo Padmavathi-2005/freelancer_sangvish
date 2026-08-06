@@ -109,7 +109,9 @@ export default function NotificationsTab({
                       {n.title}
                     </h4>
                     <span className="text-[10px] font-bold text-slate-400 shrink-0">
-                      {new Date(n.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                      {n.created_at && !isNaN(new Date(n.created_at).getTime())
+                        ? new Date(n.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+                        : new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 font-medium leading-relaxed">

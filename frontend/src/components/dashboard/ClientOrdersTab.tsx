@@ -1,4 +1,4 @@
-import { API_URL } from "@/config/api";
+import { API_URL, API_BASE_URL } from "@/config/api";
 import React, { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { FiBriefcase, FiCreditCard, FiCheckCircle, FiAlertTriangle, FiExternalLink, FiRefreshCw, FiStar, FiMessageSquare, FiX, FiUser, FiUnlock, FiClock, FiChevronDown } from "react-icons/fi";
@@ -30,16 +30,108 @@ export const getOrderStatusPill = (app: any) => {
   if (app.contract_status === "Under Review") {
     return { text: "Under Review", style: "bg-amber-50 text-amber-700 border-amber-200" };
   }
-  if (app.contract_id || app.contract_status === "In Progress" || app.contract_status === "Work Started" || app.payment_status === "Paid") {
+  if (app.status === "Rejected") {
+    return { text: "Declined", style: "bg-rose-50 text-rose-700 border-rose-200" };
+  }
+  if (app.contract_status === "Cancelled" || app.status === "Cancelled") {
+    return { text: "Cancelled", style: "bg-rose-50 text-rose-700 border-rose-200" };
+  }
+  if ((app.contract_id && app.contract_status !== "Cancelled") || app.contract_status === "In Progress" || app.contract_status === "Work Started" || app.payment_status === "Paid") {
     return { text: "Work Started", style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   }
   if (app.status === "Accepted") {
     return { text: "Accepted", style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   }
-  if (app.status === "Rejected" || app.contract_status === "Cancelled") {
-    return { text: "Cancelled", style: "bg-rose-50 text-rose-700 border-rose-200" };
-  }
   return { text: app.status || "Pending", style: "bg-amber-50 text-amber-700 border-amber-200" };
+};
+
+export const resolveDownloadUrl = (url: string) => {
+  if (!url) return "";
+  let cleanUrl = url;
+  const publicIdx = cleanUrl.indexOf("/public/");
+  if (publicIdx !== -1) {
+    cleanUrl = cleanUrl.substring(publicIdx);
+  }
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+    return cleanUrl;
+  }
+  const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+};
+
+export const getOriginalPackagePrice = (app: any) => {
+  if (!app || !app.gig_price) return null;
+  const reqText = app.requirements || "";
+
+  const planMatch = reqText.match(/\[Plan Ordered:\s*([^\]]+)\]/i);
+  const planName = planMatch ? planMatch[1].trim() : null;
+
+  let originalPrice = parseFloat(app.gig_price);
+  if (app.gig_discount_percent && parseFloat(app.gig_discount_percent) > 0) {
+    originalPrice = originalPrice * (1 - parseFloat(app.gig_discount_percent) / 100);
+  }
+
+  if (planName && app.gig_plans) {
+    try {
+      const parsedPlans = typeof app.gig_plans === "string" ? JSON.parse(app.gig_plans) : app.gig_plans;
+      if (Array.isArray(parsedPlans)) {
+        const matchingPlan = parsedPlans.find((p: any) => p.name.toLowerCase() === planName.toLowerCase());
+        if (matchingPlan && matchingPlan.price) {
+          let planPrice = parseFloat(matchingPlan.price);
+          if (app.gig_discount_percent && parseFloat(app.gig_discount_percent) > 0) {
+            planPrice = planPrice * (1 - parseFloat(app.gig_discount_percent) / 100);
+          }
+          originalPrice = planPrice;
+        }
+      }
+    } catch (e) {}
+  }
+  return originalPrice;
+};
+
+export const checkIsNegotiated = (app: any) => {
+  if (!app || !app.gig_price) return false;
+  const reqText = app.requirements || "";
+  const total = parseFloat(app.price || 0);
+
+  const extrasMatch = reqText.match(/\[Ordered Extras\s*\/\s*Add-ons:\s*([\s\S]*?)\]/i);
+  let addonsList: { title: string; price: number }[] = [];
+
+  if (extrasMatch && extrasMatch[1]) {
+    const rawExtras = extrasMatch[1].trim();
+    const lines = rawExtras.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      const priceMatch = line.match(/(.*?)\(\+\$?([\d.]+)\)/);
+      if (priceMatch) {
+        const price = parseFloat(priceMatch[2]);
+        addonsList.push({ title: "", price });
+      }
+    }
+  }
+
+  let customFeaturesList: { title: string; price: number }[] = [];
+  let rawMilestones: any[] = [];
+  try {
+    rawMilestones = typeof app.milestones === "string" ? JSON.parse(app.milestones) : (app.milestones || []);
+  } catch (e) {}
+
+  for (const m of rawMilestones) {
+    if (!m.title) continue;
+    const titleLower = m.title.toLowerCase();
+    if (titleLower.includes("primary") || titleLower.includes("base") || titleLower.includes("entire gig scope")) {
+      continue;
+    }
+    customFeaturesList.push({ title: m.title, price: parseFloat(m.amount || 0) });
+  }
+
+  const addonsSum = addonsList.reduce((sum, a) => sum + a.price, 0);
+  const featuresSum = customFeaturesList.reduce((sum, f) => sum + f.price, 0);
+  const baseCost = Math.max(0, total - (addonsSum + featuresSum));
+
+  const originalPrice = getOriginalPackagePrice(app);
+  if (originalPrice === null) return false;
+
+  return baseCost < originalPrice - 0.01;
 };
 
 export const renderOrderBreakdown = (app: any) => {
@@ -106,8 +198,20 @@ export const renderOrderBreakdown = (app: any) => {
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <div className="flex items-center gap-1.5 bg-white border border-slate-200/90 px-3 py-1.5 rounded-lg shadow-2xs">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Base Project Cost:</span>
-          <span className="font-extrabold text-slate-800">
+          <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
             {planName ? `${planName.toUpperCase()} Plan` : "Base Service"} ({app.currency_symbol || "$"}{baseCost.toLocaleString()})
+            {(() => {
+              const isNegotiated = checkIsNegotiated(app);
+              const origPrice = getOriginalPackagePrice(app);
+              if (isNegotiated && origPrice) {
+                return (
+                  <span className="text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                    Negotiated from {app.currency_symbol || "$"}{origPrice.toLocaleString()}
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </span>
         </div>
 
@@ -398,7 +502,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 {filesList.map((file: any, idx: number) => (
                   <a
                     key={idx}
-                    href={file.url}
+                    href={resolveDownloadUrl(file.url)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-900 transition hover:underline"
@@ -1005,8 +1109,20 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
             <div className="flex items-center gap-3 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Price:</span>
-                <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                   {selectedGigOrderDetails.currency_symbol || "$"}{parseFloat(selectedGigOrderDetails.price).toLocaleString()}
+                  {(() => {
+                    const isNegotiated = checkIsNegotiated(selectedGigOrderDetails);
+                    const origPrice = getOriginalPackagePrice(selectedGigOrderDetails);
+                    if (isNegotiated && origPrice) {
+                      return (
+                        <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded uppercase tracking-wider">
+                          Negotiated from {selectedGigOrderDetails.currency_symbol || "$"}{origPrice.toLocaleString()}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </span>
               </div>
               {(() => {
@@ -1070,19 +1186,21 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         {renderPaymentPanel(selectedGigOrderDetails)}
 
         {/* Milestone Tracker */}
-        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
-          <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Milestones Tracker</h3>
-          <GigMilestoneTracker
-            application={selectedGigOrderDetails}
-            onUpdateApplication={(updatedApp) => {
-              handleUpdateGigApplication(updatedApp);
-              setSelectedGigOrderDetails(updatedApp);
-            }}
-            triggerToast={triggerToast}
-            setSelectedFreelancerProfile={setSelectedFreelancerProfile}
-          />
-        </div>
+        {selectedGigOrderDetails.status !== "Rejected" && selectedGigOrderDetails.status !== "Cancelled" && selectedGigOrderDetails.contract_status !== "Cancelled" && (
+          <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
+            <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Milestones Tracker</h3>
+            <GigMilestoneTracker
+              application={selectedGigOrderDetails}
+              onUpdateApplication={(updatedApp) => {
+                handleUpdateGigApplication(updatedApp);
+                setSelectedGigOrderDetails(updatedApp);
+              }}
+              triggerToast={triggerToast}
+              setSelectedFreelancerProfile={setSelectedFreelancerProfile}
+            />
+          </div>
+        )}
         {renderDisputeModal()}
       </div>
     );
@@ -1127,7 +1245,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
           {clientApplications.map((app) => {
             const { hasMilestones, upfront, total } = getUpfront(app);
             const isPaid = Boolean(
-              app.contract_id || 
+              (app.contract_id && app.contract_status !== "Cancelled") || 
               app.payment_status === "Paid" || 
               app.contract_status === "In Progress" || 
               app.contract_status === "Under Review" || 
@@ -1158,8 +1276,20 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total:</span>
-                        <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                        <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                           {app.currency_symbol || "$"}{total.toLocaleString()}
+                          {(() => {
+                            const isNegotiated = checkIsNegotiated(app);
+                            const origPrice = getOriginalPackagePrice(app);
+                            if (isNegotiated && origPrice) {
+                              return (
+                                <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded uppercase tracking-wider">
+                                  Negotiated from {app.currency_symbol || "$"}{origPrice.toLocaleString()}
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
                         </span>
                       </div>
                       {needsPayment && (
@@ -1353,18 +1483,20 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
               {renderPaymentPanel(selectedGigOrderDetails)}
 
               {/* Milestones / Checklist Tracker */}
-              <div className="border-t border-slate-100 pt-5">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-4">Milestone Tracker & Payments</span>
-                <GigMilestoneTracker
-                  application={selectedGigOrderDetails}
-                  onUpdateApplication={(updatedApp) => {
-                    handleUpdateGigApplication(updatedApp);
-                    setSelectedGigOrderDetails(updatedApp);
-                  }}
-                  triggerToast={triggerToast}
-                  setSelectedFreelancerProfile={setSelectedFreelancerProfile}
-                />
-              </div>
+              {selectedGigOrderDetails.status !== "Rejected" && selectedGigOrderDetails.status !== "Cancelled" && selectedGigOrderDetails.contract_status !== "Cancelled" && (
+                <div className="border-t border-slate-100 pt-5">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-4">Milestone Tracker & Payments</span>
+                  <GigMilestoneTracker
+                    application={selectedGigOrderDetails}
+                    onUpdateApplication={(updatedApp) => {
+                      handleUpdateGigApplication(updatedApp);
+                      setSelectedGigOrderDetails(updatedApp);
+                    }}
+                    triggerToast={triggerToast}
+                    setSelectedFreelancerProfile={setSelectedFreelancerProfile}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>,

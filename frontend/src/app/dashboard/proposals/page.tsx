@@ -223,6 +223,15 @@ export default function ProposalsPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("action") === "create") {
+        setIsCreatingJob(true);
+      }
+    }
+  }, [setIsCreatingJob]);
+
   // Synchronize URL search params with selectedProjectDetails state
   useEffect(() => {
     if (typeof window === "undefined") return;

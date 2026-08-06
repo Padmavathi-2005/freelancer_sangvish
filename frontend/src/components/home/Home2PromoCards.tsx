@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_URL, API_BASE_URL } from "@/config/api";
 import { FiChevronRight } from "react-icons/fi";
+import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
 const resolveImageUrl = (url: string) => {
   if (!url) return "";
@@ -29,7 +30,7 @@ const DEFAULT_CARDS: PromoCard[] = [
     eyebrow: "Explore the talent pool",
     title: "Post a New Project",
     description: "Give a boost to your project with the hand picked and verified talent.",
-    link_url: "/dashboard/my-projects",
+    link_url: "/dashboard/proposals?action=create",
     image_url: "/images/promo_card_man.png",
     card_theme: "slate"
   },
@@ -72,7 +73,7 @@ export default function Home2PromoCards() {
     fetchSettings();
   }, []);
 
-  const handleCardClick = (e: React.MouseEvent, card: PromoCard, index: number) => {
+  const handleCardClick = async (e: React.MouseEvent, card: PromoCard, index: number) => {
     e.preventDefault();
     let isLoggedIn = false;
     if (typeof window !== "undefined") {
@@ -83,11 +84,17 @@ export default function Home2PromoCards() {
       }
     }
 
-    const defaultUrl = index === 0 ? "/dashboard/my-projects" : "/projects";
+    const defaultUrl = index === 0 ? "/dashboard/proposals?action=create" : "/projects";
     const targetUrl = card.link_url || defaultUrl;
 
     if (isLoggedIn) {
-      router.push(targetUrl);
+      if (index === 0) {
+        const result = await checkAndSwitchRole("client", "/dashboard/proposals?action=create");
+        router.push(result.targetUrl);
+      } else {
+        const result = await checkAndSwitchRole("freelancer", "/projects");
+        router.push(result.targetUrl);
+      }
     } else {
       router.push(`/login?redirect=${encodeURIComponent(targetUrl)}`);
     }

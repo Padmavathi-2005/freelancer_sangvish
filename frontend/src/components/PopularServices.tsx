@@ -155,7 +155,7 @@ export default function PopularServices() {
 }
 
 function GigCard({ gig, router }: { gig: any; router: any }) {
-  const { currency } = useLanguage();
+  const { currency, t } = useLanguage();
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
@@ -303,7 +303,7 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
               </div>
             )}
             <span className="text-[10px] text-slate-500 font-bold hover:text-teal-750 group-hover/author:text-teal-700 transition-colors">
-              By {gig.freelancer_name}
+              {t("by", "By")} {gig.freelancer_name}
             </span>
           </div>
         )}
@@ -316,14 +316,14 @@ function GigCard({ gig, router }: { gig: any; router: any }) {
           </div>
           <div className="flex items-center gap-1">
             <FiClock className="w-3 h-3 shrink-0" />
-            <span>{gig.delivery_days || 3}d delivery</span>
+            <span>{gig.delivery_days || 3}d {t("delivery", "delivery")}</span>
           </div>
         </div>
       </div>
 
       {/* Footer */}
       <div className="px-4 pb-4 pt-2.5 flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Starting at</span>
+        <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{t("starting_at", "Starting at")}</span>
         <span className="text-base font-extrabold text-slate-900">
           {converted.formatted}
         </span>

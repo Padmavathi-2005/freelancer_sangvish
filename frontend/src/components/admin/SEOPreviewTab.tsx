@@ -460,15 +460,17 @@ export default function SEOPreviewTab() {
           {/* High-fidelity Google Search Card */}
           <div className={`border rounded-2xl p-4.5 select-none shadow-sm font-sans text-left ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-150"}`}>
             {/* Header info */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3.5">
               {/* Simulated Favicon Bubble */}
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center border shadow-sm font-bold text-xs select-none ${isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-100 border-slate-200/60 text-slate-500"}`}>
-                {selectedRoute?.route_path === "/" ? "B" : "L"}
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center border shadow-sm select-none shrink-0 ${isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-100 border-slate-200/60 text-slate-500"}`}>
+                <FiGlobe className="w-3.5 h-3.5" />
               </div>
-              <div className="flex flex-col">
-                <span className={`text-[13px] font-medium leading-tight ${isDark ? "text-slate-200" : "text-slate-900"}`}>Buy2Lancer</span>
-                <span className={`text-[11px] leading-tight ${isDark ? "text-slate-400" : "text-slate-550"}`}>
-                  https://freelancer.sangvish.com{selectedRoute?.route_path === "/" ? "" : ` › ${selectedRoute?.route_path.replace("/", "")}`}
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded px-1.5 py-0.5 font-bold uppercase select-none leading-none flex items-center h-4.5 shrink-0">
+                  HTTPS
+                </span>
+                <span className={`text-[11px] font-medium leading-none truncate ${isDark ? "text-slate-400" : "text-slate-550"}`}>
+                  freelancer.sangvish.com{selectedRoute?.route_path === "/" ? "" : `/${selectedRoute?.route_path.replace("/", "")}`}
                 </span>
               </div>
             </div>

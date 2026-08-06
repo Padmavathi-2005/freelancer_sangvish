@@ -57,9 +57,40 @@ export const createFreelancerGig = async (req, res) => {
     if (!description || !description.trim()) {
       return res.status(400).json({ message: "Gig description is required." });
     }
-    if (price === undefined || isNaN(price) || parseFloat(price) <= 0) {
-      return res.status(400).json({ message: "A valid positive price is required." });
+
+    // Validate price based on payment structure
+    const isMilestone = payment_type === "milestone";
+    const isRange = payment_type === "fixed" && min_price !== undefined && min_price !== null && max_price !== undefined && max_price !== null;
+
+    if (isMilestone) {
+      if (!milestones || !Array.isArray(milestones) || milestones.length === 0) {
+        return res.status(400).json({ message: "At least one milestone is required for milestone-based payment." });
+      }
+      for (let i = 0; i < milestones.length; i++) {
+        const m = milestones[i];
+        if (!m.title || !m.title.trim()) {
+          return res.status(400).json({ message: `Milestone #${i + 1} must have a title.` });
+        }
+        if (m.amount === undefined || isNaN(m.amount) || parseFloat(m.amount) <= 0) {
+          return res.status(400).json({ message: `Milestone #${i + 1} must have a valid positive amount.` });
+        }
+      }
+    } else if (isRange) {
+      if (isNaN(min_price) || parseFloat(min_price) <= 0) {
+        return res.status(400).json({ message: "A valid positive minimum price is required." });
+      }
+      if (isNaN(max_price) || parseFloat(max_price) <= 0) {
+        return res.status(400).json({ message: "A valid positive maximum price is required." });
+      }
+      if (parseFloat(max_price) < parseFloat(min_price)) {
+        return res.status(400).json({ message: "Maximum price cannot be less than minimum price." });
+      }
+    } else {
+      if (price === undefined || isNaN(price) || parseFloat(price) <= 0) {
+        return res.status(400).json({ message: "A valid positive price is required." });
+      }
     }
+
     if (!delivery_days || isNaN(delivery_days) || parseInt(delivery_days) <= 0) {
       return res.status(400).json({ message: "Delivery days must be a positive integer." });
     }
@@ -960,7 +991,7 @@ export const getSimilarGigs = async (req, res) => {
     const query = `
       SELECT 
         g.*,
-        COALESCE(NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''), u.username, 'Freelancer') as freelancer_name,
+        COALESCE(NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), ''), u.display_name, 'Freelancer') as freelancer_name,
         u.slug as freelancer_slug,
         u.profile_image as freelancer_image,
         c.code as currency_code,

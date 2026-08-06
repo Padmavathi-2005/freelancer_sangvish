@@ -11,6 +11,7 @@ import CustomSelect from "@/components/CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
 import { convertPrice } from "@/utils/currencyHelper";
 import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiClock, FiActivity, FiUser, FiBriefcase, FiHeart, FiStar, FiCpu } from "react-icons/fi";
+import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
 function ProjectsSearchContent() {
   const router = useRouter();
@@ -18,11 +19,25 @@ function ProjectsSearchContent() {
   const { openLoginModal } = useAuthModal();
   const { currency, t } = useLanguage();
 
+  useEffect(() => {
+    const handleRoleVerification = async () => {
+      if (typeof window === "undefined") return;
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+      if (token && user) {
+        const result = await checkAndSwitchRole("freelancer", "/projects", false);
+        if (result.targetUrl !== "/projects") {
+          router.push(result.targetUrl);
+        }
+      }
+    };
+    handleRoleVerification();
+  }, [router]);
+
   const currencyObj = convertPrice(100, currency);
   const symbol = currencyObj.symbol;
   const rate = currencyObj.amount / 100;
 
-  // Search/Filter states
   const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get("category") || "");
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>("");
@@ -132,42 +147,52 @@ function ProjectsSearchContent() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      // Fetch user profile details
-      const profileRes = await fetch(`${API_URL}/freelancer/onboarding/details`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!profileRes.ok) {
-        throw new Error("Could not fetch user profile details for local match.");
-      }
-      const data = await profileRes.json();
-      const profile = data.profile;
-      if (!profile) {
-        throw new Error("No freelancer profile found for local match.");
+      let profile: any = null;
+      let fSkills: string[] = [];
+      let fCatId = "";
+      let fExp = "";
+
+      try {
+        const profileRes = await fetch(`${API_URL}/freelancer/onboarding/details`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (profileRes.ok) {
+          const data = await profileRes.json();
+          profile = data.profile || null;
+          fSkills = Array.isArray(data.skills)
+            ? data.skills.map((s: any) => (s.skill_name || s.name || "").toLowerCase()).filter(Boolean)
+            : [];
+          if (profile) {
+            fCatId = profile.category_id?.toString() || "";
+            fExp = profile.experience_level?.toLowerCase() || "";
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch user profile details for local match, using defaults:", err);
       }
 
-      const fSkills = Array.isArray(data.skills)
-        ? data.skills.map((s: any) => (s.skill_name || s.name || "").toLowerCase()).filter(Boolean)
-        : [];
-      
-      const fCatId = profile.category_id?.toString() || "";
-      const fExp = profile.experience_level?.toLowerCase() || "";
-
-      // Match against the active jobs list loaded in the state `jobs`
       const localMatches = jobs.map((job) => {
-        let score = 30; // base score
+        let score = 30;
         let matchedSkills: string[] = [];
 
-        // Category match (+25 points)
         if (fCatId && job.category_id?.toString() === fCatId) {
           score += 25;
         }
 
-        // Skills match (up to +35 points, +10 per matching skill)
-        const jSkills = Array.isArray(job.skills)
-          ? job.skills.map((s: any) => (typeof s === "object" ? s.skill_name || s.name : s).toLowerCase()).filter(Boolean)
-          : [];
+        let jSkills: any[] = [];
+        try {
+          jSkills = Array.isArray(job.skills)
+            ? job.skills
+            : (typeof job.skills === "string" ? JSON.parse(job.skills) : []);
+        } catch (e) {
+          jSkills = [];
+        }
         
-        jSkills.forEach((js: string) => {
+        const finalJSkills = Array.isArray(jSkills) 
+          ? jSkills.map((s: any) => (typeof s === "object" && s !== null ? s.skill_name || s.name : s).toLowerCase()).filter(Boolean)
+          : [];
+
+        finalJSkills.forEach((js: string) => {
           if (fSkills.includes(js)) {
             matchedSkills.push(js);
           }
@@ -175,12 +200,10 @@ function ProjectsSearchContent() {
 
         score += Math.min(35, matchedSkills.length * 10);
 
-        // Experience match (+10 points)
         if (fExp && job.experience_level?.toLowerCase() === fExp) {
           score += 10;
         }
 
-        // Reasoning sentence
         let reason = "";
         if (matchedSkills.length > 0) {
           const capitalizedSkills = matchedSkills.slice(0, 3).map(s => s.toUpperCase()).join(", ");
@@ -197,16 +220,16 @@ function ProjectsSearchContent() {
           reason
         };
       })
-      // Sort matches by score descending
       .sort((a: any, b: any) => b.score - a.score)
-      .slice(0, 10); // top 10 matches
+      .slice(0, 10);
 
       setAiMatches(localMatches);
       setIsLocalFallback(true);
       setAiMatchFetched(true);
       setAiMatchError("");
     } catch (err: any) {
-      setAiMatchError("AI limit exceeded and local profile matching failed. Please try again.");
+      console.error("Local matching fallback failed:", err);
+      setAiMatchError("Local matching failed. Please try again.");
     }
   };
 
@@ -789,7 +812,7 @@ function ProjectsSearchContent() {
                 }`}
               >
                 <FiCpu className="w-3.5 h-3.5 shrink-0" />
-                <span>{activeTab === "ai" ? "All Projects" : "AI Matches"}</span>
+                <span>{activeTab === "ai" ? t("show_all_btn", "Show All") : t("ai_matches_btn", "AI Matches")}</span>
               </button>
             </div>
           </div>
@@ -806,8 +829,8 @@ function ProjectsSearchContent() {
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-black leading-tight">AI Project Matching</p>
-                  <p className="text-xs text-white/75 font-semibold mt-0.5">Personalised recommendations based on your profile, skills &amp; experience</p>
+                  <p className="text-sm font-black leading-tight">{t("ai_project_matching_banner_title", "AI Project Matching")}</p>
+                  <p className="text-xs text-white/75 font-semibold mt-0.5">{t("ai_project_matching_banner_desc", "Personalised recommendations based on your profile, skills & experience")}</p>
                 </div>
                 <button
                   onClick={fetchAiMatches}
@@ -817,7 +840,7 @@ function ProjectsSearchContent() {
                   <svg className={`w-3.5 h-3.5 ${aiMatchLoading ? "animate-spin" : ""}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                   </svg>
-                  <span>Refresh</span>
+                  <span>{t("refresh_btn", "Refresh")}</span>
                 </button>
               </div>
 
@@ -833,8 +856,8 @@ function ProjectsSearchContent() {
                     </div>
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-black text-slate-800">Analysing your profile...</p>
-                    <p className="text-xs text-slate-400 font-semibold mt-1">AI is matching your skills to the best open projects</p>
+                    <p className="text-sm font-black text-slate-800">{t("analysing_profile_status", "Analysing your profile...")}</p>
+                    <p className="text-xs text-slate-404 text-slate-400 font-semibold mt-1">{t("ai_matching_skills_status", "AI is matching your skills to the best open projects")}</p>
                   </div>
                 </div>
               )}
@@ -845,7 +868,7 @@ function ProjectsSearchContent() {
                   <span className="text-lg shrink-0">⚠️</span>
                   <div>
                     <p className="text-xs font-black text-rose-700">{aiMatchError}</p>
-                    <button onClick={fetchAiMatches} className="mt-2 text-xs font-black text-rose-600 hover:underline cursor-pointer border-none bg-transparent">Try again</button>
+                    <button onClick={fetchAiMatches} className="mt-2 text-xs font-black text-rose-600 hover:underline cursor-pointer border-none bg-transparent">{t("try_again_btn", "Try again")}</button>
                   </div>
                 </div>
               )}
@@ -854,24 +877,12 @@ function ProjectsSearchContent() {
               {!aiMatchLoading && !aiMatchError && aiMatchFetched && aiMatches.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-16 bg-white border border-slate-200 rounded-xl text-center gap-3">
                   <span className="text-4xl">🔍</span>
-                  <p className="text-sm font-black text-slate-800">No strong matches found</p>
-                  <p className="text-xs text-slate-500 font-semibold max-w-xs">Try completing more of your freelancer profile so the AI can better understand your expertise.</p>
+                  <p className="text-sm font-black text-slate-800">{t("no_strong_matches_found", "No strong matches found")}</p>
+                    <p className="text-xs text-slate-505 text-slate-500 font-semibold max-w-xs">{t("no_strong_matches_desc", "Try completing more of your freelancer profile so the AI can better understand your expertise.")}</p>
                 </div>
               )}
-
               {!aiMatchLoading && !aiMatchError && aiMatches.length > 0 && (
                 <div className="space-y-4">
-                  {isLocalFallback && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-left shadow-sm">
-                      <span className="text-lg shrink-0">💡</span>
-                      <div>
-                        <p className="text-xs font-black text-amber-800 uppercase tracking-widest leading-none">AI Limits Exceeded</p>
-                        <p className="text-[11px] text-amber-700 font-semibold mt-1.5 leading-relaxed">
-                          We've switched to a local search matching algorithm. These jobs are filtered matching your profile expertise, active skills, and category domains.
-                        </p>
-                      </div>
-                    </div>
-                  )}
                   {aiMatches.map((match: any, idx: number) => {
                     const score = match.score || 0;
                     const isTop = idx === 0;
@@ -907,7 +918,7 @@ function ProjectsSearchContent() {
                               {/* Best Match Crown */}
                               {isTop && (
                                 <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-violet-700 bg-violet-100 border border-violet-200 px-2 py-0.5 rounded-full">
-                                  👑 Best Match
+                                  👑 {t("best_match_label", "Best Match")}
                                 </span>
                               )}
                               {match.category_name && (
@@ -956,7 +967,7 @@ function ProjectsSearchContent() {
                           <div className="flex flex-col items-center gap-2 shrink-0">
                             <div className={`flex flex-col items-center justify-center w-16 h-16 rounded-xl border-2 font-black ${scoreColor}`}>
                               <span className="text-xl leading-none">{score}%</span>
-                              <span className="text-[8px] uppercase tracking-wider mt-0.5">Match</span>
+                              <span className="text-[8px] uppercase tracking-wider mt-0.5">{t("match_score_label", "Match")}</span>
                             </div>
                             {/* Score progress bar */}
                             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -1003,10 +1014,10 @@ function ProjectsSearchContent() {
                                 className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-700 text-[10px] font-black py-1.5 px-3 rounded-lg shadow-sm transition cursor-pointer border-none"
                                 title="Copy Affiliate Link"
                               >
-                                Share & Earn
-                              </button>
+                                  {t("share_earn_btn", "Share & Earn")}
+                                </button>
                             )}
-                            <span className="text-[10px] font-black text-violet-600 uppercase tracking-wider group-hover:underline">View Project →</span>
+                            <span className="text-[10px] font-black text-violet-605 text-violet-600 uppercase tracking-wider group-hover:underline">{t("view_project_btn", "View Project →")}</span>
                           </div>
                         </div>
                       </div>
@@ -1170,7 +1181,7 @@ function ProjectsSearchContent() {
                               className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-700 text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
                               title="Copy Affiliate Link"
                             >
-                              Share & Earn
+                              {t("share_earn_btn", "Share & Earn")}
                             </button>
                           )}
                           {appliedJobIds.has(job.job_id) ? (

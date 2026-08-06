@@ -9,11 +9,28 @@ import Footer from "@/components/Footer";
 import CustomSelect from "@/components/CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
 import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiStar, FiCheckCircle, FiUser, FiHeart } from "react-icons/fi";
+import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
 function TalentSearchContent() {
   const { t, formatPrice } = useLanguage();
   const router = useRouter();
+  useEffect(() => {
+    const handleRoleVerification = async () => {
+      if (typeof window === "undefined") return;
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+      if (token && user) {
+        const result = await checkAndSwitchRole("client", "/talent", false);
+        if (result.targetUrl !== "/talent") {
+          router.push(result.targetUrl);
+        }
+      }
+    };
+    handleRoleVerification();
+  }, [router]);
   const searchParams = useSearchParams();
+
+
 
   // Search/Filter states
   const [searchQuery, setSearchQuery] = useState(searchParams.get("query") || "");

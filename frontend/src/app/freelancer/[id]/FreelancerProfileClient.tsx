@@ -7,6 +7,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useAuthModal } from "@/context/AuthModalContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ShareSection from "@/components/ShareSection";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   FiMail,
@@ -770,6 +771,45 @@ export default function FreelancerProfileClient() {
                 )}
               </div>
             </div>
+
+            {/* SHARE FREELANCER PROFILE */}
+            <ShareSection
+              type="freelancer"
+              itemTitle={(() => {
+                let manual = "";
+                if (profile?.seo) {
+                  try {
+                    const parsed = typeof profile.seo === 'string' ? JSON.parse(profile.seo) : profile.seo;
+                    manual = parsed?.meta_title || parsed?.title || "";
+                  } catch (e) {}
+                }
+                const defaultName = user?.first_name || user?.last_name ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : user?.display_name || user?.name || "Freelancer";
+                const profTitle = profile?.professional_title || "";
+                return manual || (profTitle ? `${defaultName} - ${profTitle}` : defaultName);
+              })()}
+              itemDescription={(() => {
+                let manual = "";
+                if (profile?.seo) {
+                  try {
+                    const parsed = typeof profile.seo === 'string' ? JSON.parse(profile.seo) : profile.seo;
+                    manual = parsed?.meta_description || parsed?.description || "";
+                  } catch (e) {}
+                }
+                return manual || profile?.bio || profile?.professional_title || "";
+              })()}
+              itemImage={(() => {
+                let manual = "";
+                if (profile?.seo) {
+                  try {
+                    const parsed = typeof profile.seo === 'string' ? JSON.parse(profile.seo) : profile.seo;
+                    manual = parsed?.image || parsed?.og_image || "";
+                  } catch (e) {}
+                }
+                return manual || user?.profile_image || "";
+              })()}
+              priceOrBudget={profile?.hourly_rate ? `$${parseFloat(profile.hourly_rate).toFixed(0)}/hr` : ""}
+              onToast={(type, message) => showToast(type, message)}
+            />
 
           </div>
 

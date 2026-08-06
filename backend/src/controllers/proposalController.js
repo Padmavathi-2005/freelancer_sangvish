@@ -840,13 +840,16 @@ export const submitContractReview = async (req, res) => {
     // 4. Create Notification
     try {
       const reviewerName = req.user.name || (reviewerRole === "client" ? "The Client" : "The Freelancer");
-      await Notification.create({
+      const notif = await Notification.create({
         userId: revieweeId,
         title: "New Review Received!",
         message: `${reviewerName} left you a ${rating}-star review for contract "${contract.title}".`,
         type: "contract",
         referenceId: contractId.toString(),
       });
+      if (req.io) {
+        req.io.to(`user_${revieweeId}`).emit("new_notification", notif);
+      }
     } catch (notifError) {
       console.error("Error creating review notification:", notifError);
     }

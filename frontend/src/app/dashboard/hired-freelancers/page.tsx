@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+// Force recompile to clear Turbopack stale cache
+import React, { useEffect } from "react";
 import ClientHiredFreelancersTab from "@/components/dashboard/ClientHiredFreelancersTab";
 import { useDashboard } from "../DashboardContext";
 
@@ -12,8 +13,13 @@ export default function ClientHiredFreelancersPage() {
     setIsCreatingJob,
     setSelectedProjectDetails,
     setSelectedGigOrderDetails,
-    setSelectedFreelancerProfile
+    setSelectedFreelancerProfile,
+    fetchHiredFreelancers
   } = useDashboard();
+
+  useEffect(() => {
+    fetchHiredFreelancers();
+  }, []);
 
   return (
     <ClientHiredFreelancersTab

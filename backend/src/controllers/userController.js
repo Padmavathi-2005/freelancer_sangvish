@@ -355,9 +355,9 @@ export const getClientHiredFreelancers = async (req, res) => {
         const { default: pool } = await import('../config/db.js');
 
         const query = `
-            SELECT DISTINCT 
+            SELECT 
               u.user_id,
-              u.first_name || ' ' || u.last_name as name,
+              COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email) as name,
               u.email,
               u.profile_image,
               fp.professional_title as title,
@@ -365,36 +365,32 @@ export const getClientHiredFreelancers = async (req, res) => {
               fp.experience_level,
               fp.availability_status,
               COALESCE(
-                (SELECT json_agg(json_build_object('project_id', j.job_id, 'title', j.title, 'type', 'project', 'status', p.status))
-                 FROM proposals p
-                 JOIN jobs j ON p.job_id = j.job_id
-                 WHERE p.freelancer_id = u.user_id AND j.client_id = $1 AND p.status = 'Accepted'),
+                (
+                  SELECT json_agg(
+                    json_build_object(
+                      'contract_id', c2.contract_id,
+                      'title', c2.title,
+                      'status', c2.status,
+                      'budget', c2.budget,
+                      'progress', c2.progress,
+                      'created_at', c2.created_at,
+                      'type', CASE WHEN c2.application_id IS NOT NULL THEN 'gig' ELSE 'project' END,
+                      'rating', COALESCE(cr.rating, gr.rating, NULL),
+                      'comment', COALESCE(cr.comment, gr.comment, NULL)
+                    ) ORDER BY c2.created_at DESC
+                  )
+                  FROM contracts c2
+                  LEFT JOIN contract_reviews cr ON c2.contract_id = cr.contract_id AND cr.reviewer_role = 'client'
+                  LEFT JOIN gig_reviews gr ON c2.application_id = gr.application_id
+                  WHERE c2.freelancer_id = u.user_id AND c2.client_id = $1
+                ),
                 '[]'::json
-              ) as projects,
-              COALESCE(
-                (SELECT json_agg(json_build_object('application_id', ga.application_id, 'title', g.title, 'type', 'gig', 'status', ga.status))
-                 FROM gig_applications ga
-                 JOIN gigs g ON ga.gig_id = g.gig_id
-                 WHERE ga.client_id = $1 AND g.freelancer_id = u.user_id AND ga.status = 'Accepted'),
-                '[]'::json
-              ) as gigs
+              ) as contracts
             FROM users u
             JOIN freelancer_profiles fp ON u.user_id = fp.user_id
-            WHERE u.user_id IN (
-              -- Freelancers with accepted proposals for client's jobs
-              SELECT p.freelancer_id 
-              FROM proposals p
-              JOIN jobs j ON p.job_id = j.job_id
-              WHERE j.client_id = $1 AND p.status = 'Accepted'
-              
-              UNION
-              
-              -- Freelancers with accepted gig orders from this client
-              SELECT g.freelancer_id
-              FROM gig_applications ga
-              JOIN gigs g ON ga.gig_id = g.gig_id
-              WHERE ga.client_id = $1 AND ga.status = 'Accepted'
-            )
+            JOIN contracts c ON u.user_id = c.freelancer_id
+            WHERE c.client_id = $1
+            GROUP BY u.user_id, fp.freelancer_profile_id
         `;
         const result = await pool.query(query, [clientId]);
         res.status(200).json(result.rows);
@@ -409,16 +405,30 @@ export const getMySubscription = async (req, res) => {
         const { default: pool } = await import('../config/db.js');
         const { checkUserSubscription } = await import('../utils/subscriptionChecker.js');
         
-        // Check for subscription expiry on the fly
-        await checkUserSubscription(userId, req.app?.get('io'));
+        // Safely check for subscription expiry on the fly
+        try {
+            await checkUserSubscription(userId, req.app?.get('io'));
+        } catch (subErr) {
+            console.error("Subscription check notice:", subErr.message);
+        }
 
-        const result = await pool.query(
-            `SELECT u.active_plan_id, u.active_plan_expires_at, u.created_at as user_created_at, sp.name as plan_name, sp.description, sp.price, sp.period, sp.gig_discount_percent, sp.features, sp.credits, sp.plan_duration, sp.plan_role
-             FROM users u
-             LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
-             WHERE u.user_id = $1`,
-            [userId]
-        );
+        let result;
+        try {
+            result = await pool.query(
+                `SELECT u.active_plan_id, u.active_plan_expires_at, u.created_at as user_created_at, sp.name as plan_name, sp.description, sp.price, sp.period, sp.gig_discount_percent, sp.features, sp.credits, sp.plan_duration, sp.plan_role
+                 FROM users u
+                 LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
+                 WHERE u.user_id = $1`,
+                [userId]
+            );
+        } catch (queryErr) {
+            console.error("getMySubscription fallback triggered:", queryErr.message);
+            result = await pool.query(
+                `SELECT u.created_at as user_created_at FROM users u WHERE u.user_id = $1`,
+                [userId]
+            );
+        }
+
         if (result.rows.length === 0) {
             return res.status(404).json({ message: "User not found." });
         }
@@ -1156,14 +1166,14 @@ export const sendPhoneOtp = async (req, res) => {
             });
         }
 
-        // Check if phone number is already verified by another user account
+        // Check if phone number is already registered with another user account
         const existingPhoneRes = await pool.query(
-            "SELECT user_id FROM users WHERE (phone = $1 OR phone = $2) AND user_id <> $3 AND phone_verified = true",
+            "SELECT user_id FROM users WHERE (phone = $1 OR phone = $2 OR REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', '') = $2) AND user_id <> $3",
             [rawPhone, cleanedPhone, userId]
         );
         if (existingPhoneRes.rows.length > 0) {
             return res.status(400).json({
-                message: "This mobile number is already registered and verified with another account. Please use a different mobile number."
+                message: "This mobile number is already registered with another account. Please use a different mobile number."
             });
         }
 

@@ -45,6 +45,34 @@ interface SettingsTabProps {
   handleProfileImageUpload?: (file: File) => Promise<void>;
   setSelectedFreelancerProfile?: (profile: any) => void;
   userEmail?: string;
+  userPhone?: string;
+  setUserPhone?: (val: string) => void;
+  phoneVerified?: boolean;
+  emailVerified?: boolean;
+  emailOtp?: string;
+  setEmailOtp?: (val: string) => void;
+  emailOtpSent?: boolean;
+  setEmailOtpSent?: (val: boolean) => void;
+  sendingEmailOtp?: boolean;
+  setSendingEmailOtp?: (val: boolean) => void;
+  verifyingEmailOtp?: boolean;
+  setVerifyingEmailOtp?: (val: boolean) => void;
+  phoneOtp?: string;
+  setPhoneOtp?: (val: string) => void;
+  phoneOtpSent?: boolean;
+  setPhoneOtpSent?: (val: boolean) => void;
+  sendingPhoneOtp?: boolean;
+  setSendingPhoneOtp?: (val: boolean) => void;
+  verifyingPhoneOtp?: boolean;
+  setVerifyingPhoneOtp?: (val: boolean) => void;
+  otpSuccess?: string;
+  setOtpSuccess?: (val: string) => void;
+  otpError?: string;
+  setOtpError?: (val: string) => void;
+  handleSendEmailOtp?: () => Promise<void>;
+  handleVerifyEmailOtp?: () => Promise<void>;
+  handleSendPhoneOtp?: () => Promise<void>;
+  handleVerifyPhoneOtp?: () => Promise<void>;
 }
 
 export default function SettingsTab({
@@ -113,6 +141,22 @@ export default function SettingsTab({
     otpError = "",
     otpSuccess = ""
   } = dashboardContext || {};
+
+  const getPhoneValidationFeedback = (phoneVal: string) => {
+    if (!phoneVal) return null;
+    const cleaned = phoneVal.replace(/[\s\-\(\)]/g, "");
+    if (cleaned.length < 7) {
+      return { isValid: false, message: "Too short. Must be at least 7 digits." };
+    }
+    if (cleaned.length > 15) {
+      return { isValid: false, message: "Too long. Maximum 15 digits allowed." };
+    }
+    // Pattern check: must start with + or a digit, and be followed by digits
+    if (!/^\+?[1-9]\d{6,14}$/.test(cleaned)) {
+      return { isValid: false, message: "Invalid format. Must include country code (e.g. +91...)." };
+    }
+    return { isValid: true, message: "Valid phone number format." };
+  };
 
   // Local state for settings subtabs
   const [settingsTabMode, setSettingsTabMode] = useState<"hub" | "profile" | "subscription" | "verification">("hub");
@@ -807,9 +851,21 @@ export default function SettingsTab({
                     placeholder="+1 (555) 123-4567 or +91 9876543210"
                     value={userPhone}
                     disabled={phoneVerified}
-                    onChange={(e) => setUserPhone(e.target.value)}
+                    onChange={(e) => {
+                      const cleanVal = e.target.value.replace(/[^0-9\s\-\+\(\)]/g, "");
+                      setUserPhone(cleanVal);
+                    }}
                     className="bg-slate-50 dark:bg-zinc-800 border border-slate-250 dark:border-zinc-700 rounded-xl px-4 py-3 text-xs text-slate-800 dark:text-white font-bold focus:outline-none focus:border-primary/50"
                   />
+                  {userPhone && !phoneVerified && (() => {
+                    const feedback = getPhoneValidationFeedback(userPhone);
+                    if (!feedback) return null;
+                    return (
+                      <p className={`text-[10px] font-bold mt-1 ${feedback.isValid ? "text-emerald-600" : "text-amber-600"}`}>
+                        {feedback.isValid ? "✓" : "⚠"} {feedback.message}
+                      </p>
+                    );
+                  })()}
                 </div>
 
                 {!phoneVerified && (
@@ -817,7 +873,8 @@ export default function SettingsTab({
                     {!phoneOtpSent ? (
                       <button
                         onClick={handleSendPhoneOtp}
-                        className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                        disabled={!getPhoneValidationFeedback(userPhone)?.isValid}
+                        className="w-full bg-primary hover:bg-primary-hover text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <FiSend className="w-3.5 h-3.5" />
                         <span>Send Mobile OTP</span>
@@ -1064,11 +1121,19 @@ export default function SettingsTab({
                 {/* Modern Circular Profile Image Uploader */}
                 <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-xl flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-4">
                   <div className="relative w-24 h-24 select-none shrink-0">
-                    <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 ${profileImage ? "bg-slate-50" : "bg-gradient-to-tr from-primary to-cyan-500"}`}>
-                      {profileImage ? (
-                        <img src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`} alt={userName} className="w-full h-full object-cover" />
-                      ) : (
-                        userName ? userName.substring(0, 2).toUpperCase() : "US"
+                    <div className="w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 bg-gradient-to-tr from-primary to-cyan-500 relative">
+                      <span className="text-2xl font-black text-white">
+                        {userName ? userName.substring(0, 2).toUpperCase() : "US"}
+                      </span>
+                      {profileImage && (
+                        <img
+                          src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`}
+                          alt={userName}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e: any) => {
+                            e.target.style.display = "none";
+                          }}
+                        />
                       )}
                     </div>
                     
@@ -1916,9 +1981,21 @@ export default function SettingsTab({
                         placeholder="+1 (555) 123-4567 or +91 9876543210"
                         value={userPhone}
                         disabled={phoneVerified}
-                        onChange={(e) => setUserPhone(e.target.value)}
+                        onChange={(e) => {
+                          const cleanVal = e.target.value.replace(/[^0-9\s\-\+\(\)]/g, "");
+                          setUserPhone(cleanVal);
+                        }}
                         className={`w-full bg-white border rounded-xl px-3.5 py-2.5 text-xs text-slate-850 font-bold transition-all ${otpError ? "border-rose-500 ring-2 ring-rose-500/20" : "border-slate-250 focus:border-primary/50"}`}
                       />
+                      {userPhone && !phoneVerified && (() => {
+                        const feedback = getPhoneValidationFeedback(userPhone);
+                        if (!feedback) return null;
+                        return (
+                          <p className={`text-[10px] font-bold mt-1 ${feedback.isValid ? "text-emerald-600" : "text-amber-600"}`}>
+                            {feedback.isValid ? "✓" : "⚠"} {feedback.message}
+                          </p>
+                        );
+                      })()}
                       {otpError && (
                         <p className="text-xs font-extrabold text-rose-600 dark:text-rose-400 mt-1 select-none flex items-center gap-1">
                           ⚠️ {otpError}
@@ -1929,7 +2006,7 @@ export default function SettingsTab({
                           {!phoneOtpSent ? (
                             <button
                               type="button"
-                              disabled={sendingPhoneOtp}
+                              disabled={sendingPhoneOtp || !getPhoneValidationFeedback(userPhone)?.isValid}
                               onClick={handleSendPhoneOtp}
                               className="w-full bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs py-2.5 rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -2028,11 +2105,19 @@ export default function SettingsTab({
                 {/* Modern Circular Profile Image Uploader */}
                 <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-xl flex flex-col sm:flex-row items-center gap-6 shadow-sm mb-4">
                   <div className="relative w-24 h-24 select-none shrink-0">
-                    <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 ${profileImage ? "bg-slate-50" : "bg-gradient-to-tr from-primary to-cyan-500"}`}>
-                      {profileImage ? (
-                        <img src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`} alt={userName} className="w-full h-full object-cover" />
-                      ) : (
-                        userName ? userName.substring(0, 2).toUpperCase() : "US"
+                    <div className="w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 bg-gradient-to-tr from-primary to-cyan-500 relative">
+                      <span className="text-2xl font-black text-white">
+                        {userName ? userName.substring(0, 2).toUpperCase() : "US"}
+                      </span>
+                      {profileImage && (
+                        <img
+                          src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`}
+                          alt={userName}
+                          className="absolute inset-0 w-full h-full object-cover"
+                          onError={(e: any) => {
+                            e.target.style.display = "none";
+                          }}
+                        />
                       )}
                     </div>
                     
@@ -2313,11 +2398,19 @@ export default function SettingsTab({
               {/* Profile Card Summary */}
               <div className="bg-slate-50 border border-slate-200/60 p-6 rounded-xl flex flex-col sm:flex-row items-center gap-6 shadow-sm">
                 <div className="relative w-24 h-24 select-none shrink-0">
-                  <div className={`w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 ${profileImage ? "bg-slate-50" : "bg-gradient-to-tr from-primary to-cyan-500"}`}>
-                    {profileImage ? (
-                      <img src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`} alt={userName} className="w-full h-full object-cover" />
-                    ) : (
-                      userName ? userName.substring(0, 2).toUpperCase() : "US"
+                  <div className="w-full h-full rounded-full flex items-center justify-center font-black text-2xl text-white shadow-md overflow-hidden border-4 border-white ring-4 ring-slate-100 bg-gradient-to-tr from-primary to-cyan-500 relative">
+                    <span className="text-2xl font-black text-white">
+                      {userName ? userName.substring(0, 2).toUpperCase() : "US"}
+                    </span>
+                    {profileImage && (
+                      <img
+                        src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`}
+                        alt={userName}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e: any) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
                     )}
                   </div>
                   

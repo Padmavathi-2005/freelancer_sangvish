@@ -3,6 +3,7 @@ import { FiCheckCircle, FiCircle, FiLock, FiAlertTriangle, FiClock } from "react
 import ProjectMilestoneTracker from "./ProjectMilestoneTracker";
 import GigMilestoneTracker from "./GigMilestoneTracker";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface Milestone {
   id: string;
@@ -87,6 +88,7 @@ export default function WorkspaceTab({
   fetchHiredFreelancers,
 }: WorkspaceTabProps) {
   const { freelancerContracts, approveContractPayment, vettingStatus, walletInfo, siteName } = useDashboard();
+  const { t, formatPrice } = useLanguage();
   const balance = parseFloat(walletInfo?.wallet?.balance || "0.00");
 
   const clientSpentAmount = useMemo(() => {
@@ -199,16 +201,18 @@ export default function WorkspaceTab({
         >
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[10px] font-black bg-primary/10 text-primary dark:bg-primary/20 dark:text-teal-300 border border-primary/20 px-2 py-0.5 rounded uppercase tracking-wider group-hover:bg-primary/20 transition-all">Profile Status</span>
-              <span className="text-xs font-black text-slate-800 dark:text-slate-200">{profileCompletionProgress}% Complete</span>
+              <span className="text-[10px] font-black bg-primary/10 text-primary dark:bg-primary/20 dark:text-teal-300 border border-primary/20 px-2 py-0.5 rounded uppercase tracking-wider group-hover:bg-primary/20 transition-all">{t("profile_status", "Profile Status")}</span>
+              <span className="text-xs font-black text-slate-800 dark:text-slate-200">{t("complete_percent", "{percent}% Complete").replace("{percent}", profileCompletionProgress.toString())}</span>
             </div>
             <h2 className="text-sm font-extrabold text-slate-900 dark:text-white group-hover:text-primary dark:group-hover:text-teal-400 transition-colors">
-              {userRole === "client" ? "Complete your Client Profile step-by-step" : "Complete your Freelancer Profile step-by-step"}
+              {userRole === "client" 
+                ? t("complete_client_profile_desc", "Complete your Client Profile step-by-step") 
+                : t("complete_freelancer_profile_desc", "Complete your Freelancer Profile step-by-step")}
             </h2>
             <p className="text-slate-600 dark:text-slate-300 text-xs mt-1 font-medium">
               {userRole === "client" 
-                ? "Filling in your company basics, online presence details, and hiring contact representative info unlocks remote talent lists."
-                : "Filling in your professional title, experience history, education, certifications, and skills unlocks direct job placement contracts."}
+                ? t("client_profile_unlock_info", "Filling in your company basics, online presence details, and hiring contact representative info unlocks remote talent lists.")
+                : t("freelancer_profile_unlock_info", "Filling in your professional title, experience history, education, certifications, and skills unlocks direct job placement contracts.")}
             </p>
             
             <div className="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden border border-slate-300 dark:border-slate-600 mt-3.5 max-w-md">
@@ -514,29 +518,29 @@ export default function WorkspaceTab({
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl -mr-6 -mt-6"></div>
                     <div className="flex justify-between items-start z-10">
                       <div>
-                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">{siteName || "Buy2Lancer"} Wallet</p>
-                        <h3 className="text-xs font-bold text-white/90 mt-0.5">Available Funds</h3>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">{t("wallet_banner_title", "{siteName} Wallet").replace("{siteName}", siteName || "Buy2Lancer")}</p>
+                        <h3 className="text-xs font-bold text-white/90 mt-0.5">{t("available_funds", "Available Funds")}</h3>
                       </div>
                       <i className="fa-solid fa-wallet text-teal-500 text-sm"></i>
                     </div>
                     <div className="z-10 mt-4">
                       <p className="text-xl font-black tracking-tight">${balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Active Virtual Balance</p>
+                      <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">{t("active_virtual_balance", "Active Virtual Balance")}</p>
                     </div>
                   </div>
 
                   {/* Workspace Metrics Card */}
                   <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4 text-slate-850">
                     <div className="border-b border-slate-100 pb-2.5">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Workspace Metrics</h3>
-                      <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Dynamic client account totals</p>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">{t("workspace_metrics", "Workspace Metrics")}</h3>
+                      <p className="text-slate-400 text-[10px] font-semibold mt-0.5">{t("dynamic_client_totals", "Dynamic client account totals")}</p>
                     </div>
                     
                     <div className="space-y-3">
                       <div className="flex items-center justify-between p-2 bg-slate-50 rounded-xl border border-slate-150/40">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-650 text-xs shrink-0"><i className="fa-solid fa-receipt"></i></div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Total Expenditures</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t("total_expenditures", "Total Expenditures")}</span>
                         </div>
                         <span className="text-xs font-black text-slate-800">${clientSpentAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
@@ -544,7 +548,7 @@ export default function WorkspaceTab({
                       <div onClick={() => setActiveTab("proposals")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 text-xs shrink-0"><i className="fa-solid fa-briefcase"></i></div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Posted Projects</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t("posted_projects", "Posted Projects")}</span>
                         </div>
                         <span className="text-xs font-black text-slate-800">{clientJobs.length}</span>
                       </div>
@@ -552,7 +556,7 @@ export default function WorkspaceTab({
                       <div onClick={() => setActiveTab("client_orders")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 text-xs shrink-0"><i className="fa-solid fa-store"></i></div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Purchased Gigs</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t("purchased_gigs", "Purchased Gigs")}</span>
                         </div>
                         <span className="text-xs font-black text-slate-800">{clientApplications.length}</span>
                       </div>
@@ -560,7 +564,7 @@ export default function WorkspaceTab({
                       <div onClick={() => setActiveTab("client_hired_freelancers")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-xs shrink-0"><i className="fa-solid fa-user-check"></i></div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Hired Partners</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t("hired_partners", "Hired Partners")}</span>
                         </div>
                         <span className="text-xs font-black text-slate-800">{hiredFreelancers.length}</span>
                       </div>
@@ -577,12 +581,12 @@ export default function WorkspaceTab({
                   <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
-                      <h3 className="text-xs font-extrabold uppercase tracking-wide">Project Milestone & Delivery</h3>
+                      <h3 className="text-xs font-extrabold uppercase tracking-wide">{t("project_milestone_delivery_title", "Project Milestone & Delivery")}</h3>
                       <button
                         onClick={() => setSelectedProjectDetails(null)}
-                        className="text-[10px] text-teal-755 bg-teal-50 hover:bg-teal-100 font-bold border border-teal-150 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
+                        className="text-[10px] text-teal-755 bg-teal-55 hover:bg-teal-100 font-bold border border-teal-150 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
                       >
-                        Back to Dashboard
+                        {t("btn_back_to_dashboard", "Back to Dashboard")}
                       </button>
                     </div>
                     <ProjectMilestoneTracker
@@ -596,12 +600,12 @@ export default function WorkspaceTab({
                   <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
-                      <h3 className="text-xs font-extrabold uppercase tracking-wide">Gig Order Delivery</h3>
+                      <h3 className="text-xs font-extrabold uppercase tracking-wide">{t("gig_order_delivery_title", "Gig Order Delivery")}</h3>
                       <button
                         onClick={() => setSelectedGigOrderDetails(null)}
-                        className="text-[10px] text-teal-755 bg-teal-50 hover:bg-teal-100 font-bold border border-teal-155 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
+                        className="text-[10px] text-teal-755 bg-teal-55 hover:bg-teal-100 font-bold border border-teal-155 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
                       >
-                        Back to Dashboard
+                        {t("btn_back_to_dashboard", "Back to Dashboard")}
                       </button>
                     </div>
                     <GigMilestoneTracker
@@ -616,14 +620,14 @@ export default function WorkspaceTab({
                     {/* Earning History Chart */}
                     <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-4">
                       <div className="text-left">
-                        <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">Earning History</h2>
-                        <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Net escrow payout releases grouped by calendar month</p>
+                        <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t("earning_history", "Earning History")}</h2>
+                        <p className="text-slate-400 text-[9px] font-semibold mt-0.5">{t("earning_history_desc", "Net escrow payout releases grouped by calendar month")}</p>
                       </div>
 
                       <div className="relative h-32 flex items-end justify-between gap-3 pt-4 border-b border-slate-100 pb-2">
                         {dynamicMonthlyData.every(d => d.amount === 0) && (
                           <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">No earnings yet</span>
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{t("no_earnings_yet", "No earnings yet")}</span>
                           </div>
                         )}
                         {dynamicMonthlyData.map((data, idx) => {
@@ -655,14 +659,14 @@ export default function WorkspaceTab({
                     <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
-                          <h2 className="text-xs font-black text-slate-800 uppercase tracking-wide">Submitted Bids</h2>
-                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Pending proposals & bids</p>
+                          <h2 className="text-xs font-black text-slate-800 uppercase tracking-wide">{t("submitted_bids", "Submitted Bids")}</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">{t("submitted_bids_desc", "Pending proposals & bids")}</p>
                         </div>
                         <button
                           onClick={() => setActiveTab("proposals")}
                           className="text-[9px] text-teal-755 bg-teal-55 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
                         >
-                          View All
+                          {t("btn_view_all", "View All")}
                         </button>
                       </div>
 
@@ -671,18 +675,18 @@ export default function WorkspaceTab({
                           displayFreelancerProposals.map((prop) => (
                             <div key={prop.proposal_id} className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4">
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[8px] font-black text-cyan-750 uppercase bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-100 w-max">{prop.project_type || "Bid"}</span>
-                                <h4 className="text-xs font-bold text-slate-800 mt-1 truncate">{prop.project_title || "Project Application"}</h4>
+                                <span className="text-[8px] font-black text-cyan-750 uppercase bg-cyan-50 px-1.5 py-0.5 rounded border border-cyan-100 w-max">{t(prop.project_type?.toLowerCase() || "bid", prop.project_type || "Bid")}</span>
+                                <h4 className="text-xs font-bold text-slate-800 mt-1 truncate">{prop.project_title || t("project_application", "Project Application")}</h4>
                               </div>
                               <div className="flex flex-col items-end shrink-0">
                                 <span className="text-xs font-black text-slate-800">${parseFloat(prop.bid_amount || 0).toLocaleString()}</span>
-                                <span className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">{prop.status}</span>
+                                <span className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">{t(prop.status?.toLowerCase(), prop.status)}</span>
                               </div>
                             </div>
                           ))
                         ) : (
                           <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No submitted bids</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{t("no_submitted_bids", "No submitted bids")}</p>
                           </div>
                         )}
                       </div>
@@ -692,14 +696,14 @@ export default function WorkspaceTab({
                     <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
-                          <h2 className="text-xs font-black text-slate-805 uppercase tracking-wide">Orders Received</h2>
-                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Ongoing service deliveries</p>
+                          <h2 className="text-xs font-black text-slate-805 uppercase tracking-wide">{t("orders_received", "Orders Received")}</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">{t("orders_received_desc", "Ongoing service deliveries")}</p>
                         </div>
                         <button
                           onClick={() => setActiveTab("gig_applications")}
                           className="text-[9px] text-teal-755 bg-teal-55 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
                         >
-                          View All
+                          {t("btn_view_all", "View All")}
                         </button>
                       </div>
 
@@ -712,8 +716,8 @@ export default function WorkspaceTab({
                               className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4 hover:border-slate-350 transition-all cursor-pointer"
                             >
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[8px] font-extrabold text-slate-450 uppercase tracking-wider">Order #{app.application_id}</span>
-                                <h4 className="text-xs font-bold text-slate-805 truncate mt-0.5">{app.gig_title || "Active Service Delivery"}</h4>
+                                <span className="text-[8px] font-extrabold text-slate-450 uppercase tracking-wider">{t("order_hash", "Order #")}{app.application_id}</span>
+                                <h4 className="text-xs font-bold text-slate-805 truncate mt-0.5">{app.gig_title || t("active_service_delivery", "Active Service Delivery")}</h4>
                               </div>
                               <div className="flex flex-col items-end shrink-0 gap-1">
                                 <span className={`text-[8px] font-black px-1.5 py-0.5 rounded border uppercase ${
@@ -723,31 +727,29 @@ export default function WorkspaceTab({
                                       ? "bg-rose-50 text-rose-700 border-rose-100"
                                       : "bg-amber-50 text-amber-700 border-amber-100"
                                 }`}>
-                                  {app.contract_status === "Completed" ? "Completed" : app.status}
+                                  {app.contract_status === "Completed" ? t("completed", "Completed") : t(app.status?.toLowerCase(), app.status)}
                                 </span>
                               </div>
                             </div>
                           ))
                         ) : (
                           <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
-                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">No gig orders received</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{t("no_gig_orders_received", "No gig orders received")}</p>
                           </div>
                         )}
                       </div>
-                    </section>
-
-                    {/* Active Contracts */}
+                    </section>                    {/* Active Contracts */}
                     <section className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col gap-3.5">
                       <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                         <div>
-                          <h2 className="text-xs font-black text-slate-808 uppercase tracking-wide">Active Contracts</h2>
-                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">Current project contracts</p>
+                          <h2 className="text-xs font-black text-slate-808 uppercase tracking-wide">{t("active_contracts", "Active Contracts")}</h2>
+                          <p className="text-slate-400 text-[9px] font-semibold mt-0.5">{t("active_contracts_desc", "Current project contracts")}</p>
                         </div>
                         <button
                           onClick={() => setActiveTab("my_projects")}
-                          className="text-[9px] text-teal-755 bg-teal-50 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
+                          className="text-[9px] text-teal-755 bg-teal-55 border border-teal-100 px-2.5 py-1 rounded-lg font-bold hover:bg-teal-100 transition-all cursor-pointer border-0"
                         >
-                          View All
+                          {t("btn_view_all", "View All")}
                         </button>
                       </div>
 
@@ -760,18 +762,18 @@ export default function WorkspaceTab({
                               className="p-2.5 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center justify-between gap-4 hover:border-slate-355 transition-all cursor-pointer"
                             >
                               <div className="flex flex-col min-w-0">
-                                <span className="text-[8px] font-bold text-slate-450 uppercase tracking-wider truncate">{c.client_name || "Client Buyer"}</span>
+                                <span className="text-[8px] font-bold text-slate-455 uppercase tracking-wider truncate">{c.client_name || "Client Buyer"}</span>
                                 <h4 className="text-xs font-bold text-slate-800 truncate mt-0.5">{c.title}</h4>
-                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5">Budget: ${parseFloat(c.budget).toLocaleString()}</span>
+                                <span className="text-[9px] text-slate-400 font-semibold mt-0.5">{t("budget_label", "Budget: ")}${parseFloat(c.budget).toLocaleString()}</span>
                               </div>
                               <div className="flex flex-col items-end shrink-0 gap-1">
-                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-cyan-50 text-cyan-700 border-cyan-155 uppercase">{c.status}</span>
+                                <span className="text-[8px] font-black px-1.5 py-0.5 rounded border bg-cyan-50 text-cyan-700 border-cyan-155 uppercase">{t(c.status?.toLowerCase(), c.status)}</span>
                               </div>
                             </div>
                           ))
                         ) : (
                           <div className="border border-dashed border-slate-200 rounded-xl p-5 text-center bg-slate-50/40">
-                            <p className="text-[9px] text-slate-450 font-bold uppercase tracking-wider">No active contracts</p>
+                            <p className="text-[9px] text-slate-455 font-bold uppercase tracking-wider">{t("no_active_contracts", "No active contracts")}</p>
                           </div>
                         )}
                       </div>
@@ -788,29 +790,29 @@ export default function WorkspaceTab({
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-xl -mr-6 -mt-6"></div>
                     <div className="flex justify-between items-start z-10">
                       <div>
-                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">{siteName || "Buy2Lancer"} Wallet</p>
-                        <h3 className="text-xs font-bold text-white/90 mt-0.5">Available Funds</h3>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">{t("wallet_banner_title", "{siteName} Wallet").replace("{siteName}", siteName || "Buy2Lancer")}</p>
+                        <h3 className="text-xs font-bold text-white/90 mt-0.5">{t("available_funds", "Available Funds")}</h3>
                       </div>
                       <i className="fa-solid fa-wallet text-teal-500 text-sm"></i>
                     </div>
                     <div className="z-10 mt-4">
                       <p className="text-xl font-black tracking-tight">${balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                      <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Active Virtual Balance</p>
+                      <p className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">{t("active_virtual_balance", "Active Virtual Balance")}</p>
                     </div>
                   </div>
 
                   {/* Workspace Metrics Card */}
                   <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm space-y-4 text-slate-850">
                     <div className="border-b border-slate-100 pb-2.5">
-                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">Workspace Metrics</h3>
-                      <p className="text-slate-400 text-[10px] font-semibold mt-0.5">Dynamic freelancer account totals</p>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-800">{t("workspace_metrics", "Workspace Metrics")}</h3>
+                      <p className="text-slate-400 text-[10px] font-semibold mt-0.5">{t("dynamic_freelancer_totals", "Dynamic freelancer account totals")}</p>
                     </div>
                     
                     <div className="space-y-3">
                       <div onClick={() => setActiveTab("wallet")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-650 text-xs shrink-0"><i className="fa-solid fa-receipt"></i></div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Net Earnings</span>
+                          <div className="w-7 h-7 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-655 text-xs shrink-0"><i className="fa-solid fa-receipt"></i></div>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t("net_earnings", "Net Earnings")}</span>
                         </div>
                         <span className="text-xs font-black text-slate-800">${freelancerEarnedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
@@ -818,7 +820,7 @@ export default function WorkspaceTab({
                       <div onClick={() => setActiveTab("proposals")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 text-xs shrink-0"><i className="fa-solid fa-paper-plane"></i></div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Active Bids</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t("active_bids", "Active Bids")}</span>
                         </div>
                         <span className="text-xs font-black text-slate-800">{freelancerProposals.length}</span>
                       </div>
@@ -826,7 +828,7 @@ export default function WorkspaceTab({
                       <div onClick={() => setActiveTab("gigs")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-650 text-xs shrink-0"><i className="fa-solid fa-store"></i></div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Active Gigs</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t("active_gigs_label", "Active Gigs")}</span>
                         </div>
                         <span className="text-xs font-black text-slate-800">{gigs.length}</span>
                       </div>
@@ -834,7 +836,7 @@ export default function WorkspaceTab({
                       <div onClick={() => setActiveTab("gig_applications")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-600 text-xs shrink-0"><i className="fa-solid fa-truck-loading"></i></div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Gig Orders</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t("gig_orders", "Gig Orders")}</span>
                         </div>
                         <span className="text-xs font-black text-slate-800">{gigApplications.length}</span>
                       </div>
@@ -842,7 +844,7 @@ export default function WorkspaceTab({
                       <div onClick={() => setActiveTab("my_projects")} className="flex items-center justify-between p-2 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-150/40 cursor-pointer transition-all">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-xs shrink-0"><i className="fa-solid fa-file-contract"></i></div>
-                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Active Contracts</span>
+                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">{t("active_contracts", "Active Contracts")}</span>
                         </div>
                         <span className="text-xs font-black text-slate-800">{(freelancerContracts || []).length}</span>
                       </div>

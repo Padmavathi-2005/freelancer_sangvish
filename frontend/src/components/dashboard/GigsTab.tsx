@@ -1,6 +1,7 @@
 import { API_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 import CustomSelect from "../CustomSelect";
+import { useLanguage } from "@/context/LanguageContext";
 import CanvasEditor from "../CanvasEditor";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { 
@@ -50,6 +51,7 @@ const handleDownloadVideo = async (url: string, filename = "showcase-video.mp4")
 };
 
 const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
+  const { formatPrice } = useLanguage();
   const { 
     isCreatingGig, 
     setIsCreatingGig,
@@ -825,14 +827,49 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
     fetchGigCategories();
   }, []);
 
+  const [defaultCurrencyCode, setDefaultCurrencyCode] = useState("USD");
+  const [defaultCurrencyId, setDefaultCurrencyId] = useState("1");
+
   useEffect(() => {
-    if (currencies && currencies.length > 0 && !gigCurrencyId) {
-      const defaultCurr = currencies.find((c: any) => c.code === "USD") || currencies[0];
-      if (defaultCurr) {
-        setGigCurrencyId(defaultCurr.currency_id.toString());
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const data = await res.json();
+          const defSetting = data.find((s: any) => s.setting_key === "default_currency");
+          if (defSetting) {
+            let val = defSetting.setting_value;
+            if (typeof val === "string") {
+              try { val = JSON.parse(val); } catch {}
+            }
+            if (val?.code) {
+              setDefaultCurrencyCode(val.code);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load settings in GigsTab:", err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    if (currencies && currencies.length > 0) {
+      const match = currencies.find((c: any) => c.code === defaultCurrencyCode);
+      if (match) {
+        setDefaultCurrencyId(match.currency_id.toString());
+        if (!gigCurrencyId) {
+          setGigCurrencyId(match.currency_id.toString());
+        }
+      } else if (!gigCurrencyId) {
+        const defaultCurr = currencies.find((c: any) => c.code === "USD") || currencies[0];
+        if (defaultCurr) {
+          setGigCurrencyId(defaultCurr.currency_id.toString());
+        }
       }
     }
-  }, [currencies, gigCurrencyId]);
+  }, [currencies, defaultCurrencyCode, gigCurrencyId]);
 
   const isStep1Valid = () => {
     return !!gigTitle.trim() && 
@@ -894,8 +931,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
     return false;
   };
 
+  const activeCurrencySymbol = "$";
+
   return (
-    isCreatingGig ? (
+    <>
+      {isCreatingGig ? (
       <div className="relative z-10 max-w-3xl mx-auto w-full animate-fadeIn text-left">
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 text-slate-800">
           
@@ -1212,14 +1252,15 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           {priceType === "single" ? (
                             <div>
                               <label className="text-xs font-bold block mb-1 text-slate-655">Fixed Price *</label>
-                              <div className="relative flex items-center">
-                                <span className="absolute left-3.5 text-xs text-slate-400 font-bold">$</span>
+                              <div className="flex items-center bg-white border border-slate-200 rounded-xl focus-within:border-primary transition duration-150 overflow-hidden">
+                                <span className="bg-slate-50 border-r border-slate-200 px-3.5 py-2.5 text-xs text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
                                 <input
+                                  id="gig-price-input"
                                   type="number"
                                   placeholder="e.g. 150"
                                   value={gigPrice}
                                   onChange={(e) => setGigPrice(e.target.value)}
-                                  className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
+                                  className="w-full bg-transparent border-none px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-0"
                                 />
                               </div>
                             </div>
@@ -1227,9 +1268,10 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                             <div className="grid grid-cols-2 gap-4">
                               <div>
                                 <label className="text-xs font-bold block mb-1 text-slate-655">Minimum Price *</label>
-                                <div className="relative flex items-center">
-                                  <span className="absolute left-3.5 text-xs text-slate-400 font-bold">$</span>
+                                <div className="flex items-center bg-white border border-slate-200 rounded-xl focus-within:border-primary transition duration-150 overflow-hidden">
+                                  <span className="bg-slate-50 border-r border-slate-200 px-3.5 py-2.5 text-xs text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
                                   <input
+                                    id="gig-minprice-input"
                                     type="number"
                                     placeholder="e.g. 100"
                                     value={gigMinPrice}
@@ -1237,20 +1279,21 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                       setGigMinPrice(e.target.value);
                                       setGigPrice(e.target.value);
                                     }}
-                                    className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
+                                    className="w-full bg-transparent border-none px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-0"
                                   />
                                 </div>
                               </div>
                               <div>
                                 <label className="text-xs font-bold block mb-1 text-slate-655">Maximum Price *</label>
-                                <div className="relative flex items-center">
-                                  <span className="absolute left-3.5 text-xs text-slate-400 font-bold">$</span>
+                                <div className="flex items-center bg-white border border-slate-200 rounded-xl focus-within:border-primary transition duration-150 overflow-hidden">
+                                  <span className="bg-slate-50 border-r border-slate-200 px-3.5 py-2.5 text-xs text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
                                   <input
+                                    id="gig-maxprice-input"
                                     type="number"
                                     placeholder="e.g. 500"
                                     value={gigMaxPrice}
                                     onChange={(e) => setGigMaxPrice(e.target.value)}
-                                    className="w-full bg-white border border-slate-200 rounded-xl pl-7 pr-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
+                                    className="w-full bg-transparent border-none px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-0"
                                   />
                                 </div>
                               </div>
@@ -1360,9 +1403,9 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                                   {/* Price */}
                                   <div>
-                                    <label className="text-xs font-bold block mb-1 text-slate-655">Package Price ($) *</label>
-                                    <div className="relative flex items-center">
-                                      <span className="absolute left-3.5 text-xs text-slate-400 font-bold">$</span>
+                                    <label className="text-xs font-bold block mb-1 text-slate-655">Package Price *</label>
+                                    <div className="flex items-center bg-slate-5 border border-slate-200 rounded-xl focus-within:border-primary transition duration-150 overflow-hidden">
+                                      <span className="bg-slate-100/80 border-r border-slate-200 px-3.5 py-2.5 text-xs text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
                                       <input
                                         id={`plan-price-${activePlanTab}`}
                                         type="number"
@@ -1375,7 +1418,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                             setGigPrice(e.target.value);
                                           }
                                         }}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-7 pr-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none font-bold"
+                                        className="w-full bg-transparent border-none px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-0 font-bold"
                                       />
                                     </div>
                                   </div>
@@ -1642,21 +1685,24 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                 />
                               </div>
                               <div>
-                                <label className="text-[10px] font-extrabold text-slate-455 uppercase block mb-1">Amount ($) *</label>
-                                <input
-                                  id={`milestone-amount-${idx}`}
-                                  type="number"
-                                  placeholder="e.g. 100"
-                                  value={m.amount}
-                                  onChange={(e) => {
-                                    const updated = [...gigMilestones];
-                                    updated[idx].amount = e.target.value;
-                                    setGigMilestones(updated);
-                                    const total = updated.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
-                                    setGigPrice(total.toString());
-                                  }}
-                                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:border-primary focus:outline-none font-bold"
-                                />
+                                <label className="text-[10px] font-extrabold text-slate-455 uppercase block mb-1">Amount *</label>
+                                <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:border-primary transition duration-150 overflow-hidden">
+                                  <span className="bg-slate-100 border-r border-slate-200 px-2.5 py-2 text-[10px] text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
+                                  <input
+                                    id={`milestone-amount-${idx}`}
+                                    type="number"
+                                    placeholder="e.g. 100"
+                                    value={m.amount}
+                                    onChange={(e) => {
+                                      const updated = [...gigMilestones];
+                                      updated[idx].amount = e.target.value;
+                                      setGigMilestones(updated);
+                                      const total = updated.reduce((acc, curr) => acc + (parseFloat(curr.amount) || 0), 0);
+                                      setGigPrice(total.toString());
+                                    }}
+                                    className="w-full bg-transparent border-none px-2.5 py-2 text-xs text-slate-800 focus:outline-none focus:ring-0 font-bold"
+                                  />
+                                </div>
                               </div>
                             </div>
 
@@ -1932,7 +1978,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                               type="button"
                               title="Download Video"
                               onClick={() => handleDownloadVideo(gigVideoUrl, "gig-showcase-video.mp4")}
-                              className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-lg text-xs transition cursor-pointer flex items-center gap-1 shadow-sm"
+                              className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition cursor-pointer flex items-center gap-1 shadow-sm"
                             >
                               <FiDownload className="w-3.5 h-3.5" />
                             </button>
@@ -1978,7 +2024,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         <button
                           type="button"
                           onClick={() => handleDownloadVideo(gigVideoUrl, "gig-showcase-video.mp4")}
-                          className="px-3.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold rounded-xl text-xs transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs"
+                          className="px-3.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs"
                         >
                           <FiDownload className="w-3.5 h-3.5 shrink-0" />
                           <span>Download Video</span>
@@ -2204,7 +2250,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 <div className="border-t border-slate-100 pt-5 mt-3 flex flex-col gap-4 text-left">
                   <div>
                     <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">SEO & Social Sharing Settings (Optional)</h4>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Customize the preview card displayed when your gig is shared on Facebook, WhatsApp, or Twitter.</p>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Customize the preview card displayed when your gig is shared on Email, Facebook, WhatsApp, LinkedIn, or Twitter.</p>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
@@ -2470,7 +2516,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     <div className="flex items-baseline gap-0.5">
                       <span className="text-[10px] font-bold text-slate-400">STARTING AT</span>
                       <span className="text-sm font-black text-slate-900">
-                        {gig.currency_symbol || "$"}{gig.price}
+                        {formatPrice(parseFloat(gig.price || 0))}
                       </span>
                     </div>
                   </div>
@@ -2520,19 +2566,23 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
             setSeoTitle={setSeoTitle}
             setSeoDescription={setSeoDescription}
             setSeoImage={setSeoImage}
+            currencies={currencies}
+            defaultCurrencyCode={defaultCurrencyCode}
           />
         )}
 
-        {showCanvasEditor && (
-          <CanvasEditor
-            onSave={handleCanvasSave}
-            onClose={() => setShowCanvasEditor(false)}
-            canvasWidth={800}
-            canvasHeight={450}
-          />
-        )}
       </div>
-    )
+      )}
+
+      {showCanvasEditor && (
+        <CanvasEditor
+          onSave={handleCanvasSave}
+          onClose={() => setShowCanvasEditor(false)}
+          canvasWidth={800}
+          canvasHeight={450}
+        />
+      )}
+    </>
   );
 };
 
@@ -2577,6 +2627,8 @@ export function GigConsoleModal({
   setSeoTitle,
   setSeoDescription,
   setSeoImage,
+  currencies,
+  defaultCurrencyCode,
 }: {
   selectedGigForDetails: any;
   setSelectedGigForDetails: (g: any) => void;
@@ -2615,7 +2667,10 @@ export function GigConsoleModal({
   setSeoTitle: (s: string) => void;
   setSeoDescription: (s: string) => void;
   setSeoImage: (s: string) => void;
+  currencies: any[];
+  defaultCurrencyCode: string;
 }) {
+  const { formatPrice } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   useEffect(() => {
@@ -2723,11 +2778,11 @@ export function GigConsoleModal({
                 ) : (
                   selectedGigForDetails.min_price || selectedGigForDetails.max_price ? (
                     <span>
-                      {selectedGigForDetails.currency_symbol || "$"}{parseFloat(selectedGigForDetails.min_price || "0").toLocaleString()} - {selectedGigForDetails.currency_symbol || "$"}{parseFloat(selectedGigForDetails.max_price || "0").toLocaleString()}
+                      {formatPrice(parseFloat(selectedGigForDetails.min_price || "0"))} - {formatPrice(parseFloat(selectedGigForDetails.max_price || "0"))}
                     </span>
                   ) : (
                     <span>
-                      {selectedGigForDetails.currency_symbol || "$"}{parseFloat(selectedGigForDetails.price || "0").toLocaleString()}
+                      {formatPrice(parseFloat(selectedGigForDetails.price || "0"))}
                     </span>
                   )
                 )}
@@ -2771,13 +2826,13 @@ export function GigConsoleModal({
                       {m.description && <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{m.description}</p>}
                     </div>
                     <span className="text-xs font-black text-slate-700">
-                      {selectedGigForDetails.currency_symbol || "$"}{parseFloat(m.amount).toLocaleString()}
+                      {formatPrice(parseFloat(m.amount))}
                     </span>
                   </div>
                 ))}
                 <div className="flex justify-between items-center border-t border-slate-200 pt-2 font-black text-xs text-slate-800">
                   <span>Total Budget:</span>
-                  <span>{selectedGigForDetails.currency_symbol || "$"}{parseFloat(selectedGigForDetails.price).toLocaleString()}</span>
+                  <span>{formatPrice(parseFloat(selectedGigForDetails.price))}</span>
                 </div>
               </div>
             </div>
@@ -2826,11 +2881,30 @@ export function GigConsoleModal({
           <button
             onClick={() => {
               const g = selectedGigForDetails;
+
+              // Find gig currency and default currency rates
+              const gigCurr = currencies.find((c: any) => c.currency_id === g.currency_id);
+              const defaultCurr = currencies.find((c: any) => c.code === defaultCurrencyCode) || currencies[0];
+
+              const gigRate = gigCurr?.rate !== undefined ? parseFloat(gigCurr.rate.toString()) : 1.0;
+              const defRate = defaultCurr?.rate !== undefined ? parseFloat(defaultCurr.rate.toString()) : 1.0;
+
+              // Convert price if gig currency is different from default currency
+              const needsConversion = gigCurr && gigCurr.code !== defaultCurrencyCode;
+
+              const convertVal = (val: any) => {
+                if (val === undefined || val === null || isNaN(parseFloat(val))) return "";
+                if (!needsConversion) return val.toString();
+                // Formula: valInDefault = valInGigCurrency * (defRate / gigRate)
+                const converted = parseFloat(val) * (defRate / gigRate);
+                return Math.round(converted).toString();
+              };
+
               setGigTitle(g.title);
               setGigSlug(g.slug || "");
               setGigDescription(g.description);
-              setGigPrice(g.price.toString());
-              setGigCurrencyId(g.currency_id ? g.currency_id.toString() : "");
+              setGigPrice(convertVal(g.price));
+              setGigCurrencyId(defaultCurr.currency_id.toString());
               setGigDeliveryDays(g.delivery_days.toString());
               setGigRevisions((g.revisions || 0).toString());
               setGigImages(g.images ? g.images.join(",") : "");
@@ -2860,24 +2934,31 @@ export function GigConsoleModal({
               setGigDiscountPercent((g.discount_percent || 0).toString());
               setGigPaymentType(g.payment_type || "fixed");
               setPriceType(g.min_price || g.max_price ? "range" : "single");
-              setGigMinPrice(g.min_price ? g.min_price.toString() : "");
-              setGigMaxPrice(g.max_price ? g.max_price.toString() : "");
-              setGigMilestones(
-                g.milestones 
-                  ? (typeof g.milestones === "string" ? JSON.parse(g.milestones) : g.milestones)
-                  : [{ title: "Milestone 1", amount: "", description: "" }]
-              );
+              setGigMinPrice(g.min_price ? convertVal(g.min_price) : "");
+              setGigMaxPrice(g.max_price ? convertVal(g.max_price) : "");
+              
+              const loadedMilestones = g.milestones 
+                ? (typeof g.milestones === "string" ? JSON.parse(g.milestones) : g.milestones)
+                : [{ title: "Milestone 1", amount: "", description: "" }];
+              setGigMilestones(loadedMilestones.map((m: any) => ({
+                ...m,
+                amount: convertVal(m.amount)
+              })));
               
               setGigFaqs(
                 g.faqs
                   ? (typeof g.faqs === "string" ? JSON.parse(g.faqs) : g.faqs)
                   : []
               );
-              setGigAddons(
-                g.addons
-                  ? (typeof g.addons === "string" ? JSON.parse(g.addons) : g.addons)
-                  : []
-              );
+              
+              const loadedAddons = g.addons
+                ? (typeof g.addons === "string" ? JSON.parse(g.addons) : g.addons)
+                : [];
+              setGigAddons(loadedAddons.map((a: any) => ({
+                ...a,
+                price: convertVal(a.price)
+              })));
+
               const loadedSeo = g.seo 
                 ? (typeof g.seo === "string" ? JSON.parse(g.seo) : g.seo)
                 : null;
@@ -2898,9 +2979,13 @@ export function GigConsoleModal({
               setUsePlans(hasPlans);
               if (hasPlans) {
                 const parsedPlans = typeof g.plans === "string" ? JSON.parse(g.plans) : g.plans;
-                const loadedBasic = parsedPlans.find((p: any) => p.name === "Basic") || parsedPlans[0];
-                const loadedStandard = parsedPlans.find((p: any) => p.name === "Standard");
-                const loadedPremium = parsedPlans.find((p: any) => p.name === "Premium");
+                const convertedPlans = parsedPlans.map((p: any) => ({
+                  ...p,
+                  price: convertVal(p.price)
+                }));
+                const loadedBasic = convertedPlans.find((p: any) => p.name === "Basic") || convertedPlans[0];
+                const loadedStandard = convertedPlans.find((p: any) => p.name === "Standard");
+                const loadedPremium = convertedPlans.find((p: any) => p.name === "Premium");
 
                 setEnabledPlans({
                   Standard: !!loadedStandard,

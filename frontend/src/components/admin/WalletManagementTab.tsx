@@ -43,17 +43,6 @@ export default function WalletManagementTab() {
     setTransactionsPage(1);
   }, [ledgerSearch, transactionsSearch, activeSubTab]);
 
-  if (loadingAdminWallet && !adminWalletStats) {
-    return (
-      <div className="flex-1 flex items-center justify-center p-8 bg-slate-50/50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 border-4 border-teal-700/30 border-t-teal-700 rounded-full animate-spin"></div>
-          <p className="text-sm font-bold text-slate-500">Loading platform wallet analytics...</p>
-        </div>
-      </div>
-    );
-  }
-
   const systemWallet = adminWalletStats?.systemWallet;
   const totalEscrow = adminWalletStats?.totalEscrow || 0;
   const totalCommissions = adminWalletStats?.totalCommissions || 0;
@@ -269,6 +258,17 @@ export default function WalletManagementTab() {
       accessor: (tx: any) => <span className="font-black text-slate-850">${parseFloat(tx.amount).toFixed(2)}</span>
     }
   ];
+
+  if (loadingAdminWallet && !adminWalletStats) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8 bg-slate-50/50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 border-4 border-teal-700/30 border-t-teal-700 rounded-full animate-spin"></div>
+          <p className="text-sm font-bold text-slate-500">Loading platform wallet analytics...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-8 bg-slate-50/50 scrollbar-thin">

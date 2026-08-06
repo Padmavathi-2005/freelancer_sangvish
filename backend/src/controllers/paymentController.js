@@ -446,7 +446,7 @@ export const confirmStripePayment = async (req, res) => {
     // Notify freelancer that payment was received
     try {
       const { default: Notification } = await import("../models/notificationModel.js");
-      await Notification.create({
+      const notif = await Notification.create({
         userId: app.freelancer_id,
         title: "Payment Received",
         message: `Client has paid for the gig order "${app.gig_title}". The contract is now active.`,
@@ -454,10 +454,7 @@ export const confirmStripePayment = async (req, res) => {
         referenceId: application_id.toString(),
       });
       if (req.io) {
-        req.io.to(`user_${app.freelancer_id}`).emit("new_notification", {
-          title: "Payment Received",
-          message: `Client paid $${upfrontAmount.toFixed(2)} for "${app.gig_title}".`,
-        });
+        req.io.to(`user_${app.freelancer_id}`).emit("new_notification", notif);
       }
     } catch (notifErr) {
       console.error("Payment notification error:", notifErr);
@@ -628,7 +625,7 @@ export const payWithWallet = async (req, res) => {
     // Notify freelancer that payment was received
     try {
       const { default: Notification } = await import("../models/notificationModel.js");
-      await Notification.create({
+      const notif = await Notification.create({
         userId: app.freelancer_id,
         title: "Payment Received",
         message: `Client has paid for the gig order "${app.gig_title}". The contract is now active.`,
@@ -636,10 +633,7 @@ export const payWithWallet = async (req, res) => {
         referenceId: application_id.toString(),
       });
       if (req.io) {
-        req.io.to(`user_${app.freelancer_id}`).emit("new_notification", {
-          title: "Payment Received",
-          message: `Client paid $${upfrontAmount.toFixed(2)} for "${app.gig_title}".`,
-        });
+        req.io.to(`user_${app.freelancer_id}`).emit("new_notification", notif);
       }
     } catch (notifErr) {
       console.error("Payment notification error:", notifErr);
@@ -1393,7 +1387,7 @@ export const releaseMilestonePayment = async (req, res) => {
       // Notify freelancer
       try {
         const { default: Notification } = await import("../models/notificationModel.js");
-        await Notification.create({
+        const notif = await Notification.create({
           userId: contract.freelancer_id,
           title: "Milestone Payment Released!",
           message: `Client approved and released $${milestoneAmount.toFixed(2)} for milestone: "${milestone.title}".`,
@@ -1401,10 +1395,7 @@ export const releaseMilestonePayment = async (req, res) => {
           referenceId: contract.contract_id.toString(),
         });
         if (req.io) {
-          req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", {
-            title: "Milestone Paid",
-            message: `Client released $${milestoneAmount.toFixed(2)} for "${milestone.title}".`,
-          });
+          req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", notif);
         }
       } catch (nErr) {
         console.error("Failed to notify freelancer on milestone release:", nErr);
@@ -1465,10 +1456,12 @@ export const submitMilestoneWork = async (req, res) => {
       [submitted_files || null, milestoneId]
     );
 
-    // Synchronize contract status to 'Under Review' if this is a single milestone contract
-    const totalMilestonesRes = await pool.query("SELECT COUNT(*) FROM contract_milestones WHERE contract_id = $1", [contract.contract_id]);
-    const totalCount = parseInt(totalMilestonesRes.rows[0].count);
-    if (totalCount === 1) {
+    // Check if all milestones are either Paid or Under Review
+    const allMilestonesRes = await pool.query("SELECT * FROM contract_milestones WHERE contract_id = $1", [contract.contract_id]);
+    const allMilestones = allMilestonesRes.rows;
+    const isAllSubmittedOrPaid = allMilestones.every(m => m.payment_status === "Paid" || m.status === "Under Review" || m.status === "Completed");
+
+    if (isAllSubmittedOrPaid) {
       await pool.query(
         "UPDATE contracts SET status = 'Under Review', progress = 100, submitted_files = $1, submitted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $2",
         [submitted_files ? (typeof submitted_files === 'string' ? submitted_files : JSON.stringify(submitted_files)) : null, contract.contract_id]
@@ -1594,12 +1587,24 @@ export const rejectMilestoneWork = async (req, res) => {
       [feedback.trim(), updatedFeedbackJson, submitted_files || null, milestoneId]
     );
 
+    // Calculate new contract progress and revert status to Work Started/In Progress
+    const allMilestones = await pool.query("SELECT * FROM contract_milestones WHERE contract_id = $1", [contract.contract_id]);
+    const completedMilestones = allMilestones.rows.filter(m => m.payment_status === "Paid");
+    const totalBudget = allMilestones.rows.reduce((sum, m) => sum + parseFloat(m.amount), 0);
+    const paidTotal = completedMilestones.reduce((sum, m) => sum + parseFloat(m.amount), 0);
+    const newProgress = totalBudget > 0 ? Math.round((paidTotal / totalBudget) * 100) : 0;
+
+    await pool.query(
+      "UPDATE contracts SET status = 'Work Started', progress = $1, updated_at = CURRENT_TIMESTAMP WHERE contract_id = $2",
+      [newProgress, contract.contract_id]
+    );
+
     try {
       const { default: Notification } = await import("../models/notificationModel.js");
       const clientUserRes = await pool.query("SELECT first_name || ' ' || COALESCE(last_name, '') as name FROM users WHERE user_id = $1", [clientId]);
       const clientName = clientUserRes.rows[0]?.name || "Client";
 
-      await Notification.create({
+      const notif = await Notification.create({
         userId: contract.freelancer_id,
         title: "Revision Requested for Milestone ⚠️",
         message: `Client ${clientName} requested revisions for milestone "${milestone.title}". Feedback: "${feedback.trim()}"`,
@@ -1607,10 +1612,7 @@ export const rejectMilestoneWork = async (req, res) => {
         referenceId: contract.contract_id.toString(),
       });
       if (req.io) {
-        req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", {
-          title: "Revision Requested",
-          message: `${clientName} requested revisions for "${milestone.title}".`,
-        });
+        req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", notif);
       }
     } catch (nErr) {
       console.error("Failed to notify freelancer on milestone revision request:", nErr);
@@ -1658,7 +1660,15 @@ export const cancelContractAndRefund = async (req, res) => {
       return res.status(400).json({ message: "Cancellation and refund is not allowed because at least one milestone has already been completed and paid." });
     }
 
-    const budget = parseFloat(contract.budget);
+    // Calculate actual funded amount to refund
+    const fundedRes = await pool.query(
+      `SELECT COALESCE(SUM(CAST(amount AS numeric)), 0) as refund_amount 
+       FROM contract_milestones 
+       WHERE contract_id = $1 
+         AND payment_status IN ('Funded', 'Escrowed', 'Escrow')`,
+      [contractId]
+    );
+    const refundAmount = parseFloat(fundedRes.rows[0]?.refund_amount || 0);
 
     // 5. Get wallets
     const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
@@ -1677,29 +1687,31 @@ export const cancelContractAndRefund = async (req, res) => {
     // 6. Process refund
     await pool.query("BEGIN");
     try {
-      // Debit system escrow
-      await pool.query(
-        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
-        [budget, sysWallet.wallet_id]
-      );
+      if (refundAmount > 0) {
+        // Debit system escrow
+        await pool.query(
+          "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+          [refundAmount, sysWallet.wallet_id]
+        );
 
-      // Credit client wallet
-      await pool.query(
-        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
-        [budget, clientWallet.wallet_id]
-      );
+        // Credit client wallet
+        await pool.query(
+          "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+          [refundAmount, clientWallet.wallet_id]
+        );
 
-      // Record refund transaction
-      await pool.query(
-        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
-         VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
-        [
-          sysWallet.wallet_id,
-          clientWallet.wallet_id,
-          budget,
-          `Escrow refund due to contract cancellation: ${contract.title}`,
-        ]
-      );
+        // Record refund transaction
+        await pool.query(
+          `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+           VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
+          [
+            sysWallet.wallet_id,
+            clientWallet.wallet_id,
+            refundAmount,
+            `Escrow refund due to contract cancellation: ${contract.title}`,
+          ]
+        );
+      }
 
       // Update contract status
       await pool.query(
@@ -1707,22 +1719,34 @@ export const cancelContractAndRefund = async (req, res) => {
         [contractId]
       );
 
-      // Update all milestones to Cancelled
+      // Update non-completed/non-paid milestones to Cancelled/Refunded
       await pool.query(
-        "UPDATE contract_milestones SET status = 'Cancelled', payment_status = 'Refunded', updated_at = CURRENT_TIMESTAMP WHERE contract_id = $1",
+        `UPDATE contract_milestones 
+         SET status = 'Cancelled', 
+             payment_status = CASE WHEN payment_status IN ('Funded', 'Escrowed', 'Escrow') THEN 'Refunded' ELSE payment_status END, 
+             updated_at = CURRENT_TIMESTAMP 
+         WHERE contract_id = $1 AND status != 'Completed' AND payment_status != 'Paid'`,
         [contractId]
       );
-
-      const proposalIdToCancel = contract.application_id || (await pool.query(
-        "SELECT proposal_id FROM proposals WHERE job_id = $1 AND freelancer_id = $2 AND status = 'Accepted'",
-        [contract.job_id, contract.freelancer_id]
-      )).rows[0]?.proposal_id;
-
-      if (proposalIdToCancel) {
+      if (contract.application_id) {
+        // This is a gig order contract! Update the gig application status to Cancelled
         await pool.query(
-          "UPDATE proposals SET status = 'Cancelled', updated_at = CURRENT_TIMESTAMP WHERE proposal_id = $1",
-          [proposalIdToCancel]
+          "UPDATE gig_applications SET status = 'Cancelled', updated_at = CURRENT_TIMESTAMP WHERE application_id = $1",
+          [contract.application_id]
         );
+      } else {
+        // This is a job contract! Update the proposal status to Cancelled
+        const proposalIdToCancel = (await pool.query(
+          "SELECT proposal_id FROM proposals WHERE job_id = $1 AND freelancer_id = $2 AND status = 'Accepted'",
+          [contract.job_id, contract.freelancer_id]
+        )).rows[0]?.proposal_id;
+
+        if (proposalIdToCancel) {
+          await pool.query(
+            "UPDATE proposals SET status = 'Cancelled', updated_at = CURRENT_TIMESTAMP WHERE proposal_id = $1",
+            [proposalIdToCancel]
+          );
+        }
       }
 
       await pool.query("COMMIT");
@@ -1733,7 +1757,7 @@ export const cancelContractAndRefund = async (req, res) => {
       // Notify freelancer
       try {
         const { default: Notification } = await import("../models/notificationModel.js");
-        await Notification.create({
+        const notif = await Notification.create({
           userId: contract.freelancer_id,
           title: "Contract Cancelled",
           message: `Client cancelled the contract "${contract.title}" and requested a full refund.`,
@@ -1741,10 +1765,7 @@ export const cancelContractAndRefund = async (req, res) => {
           referenceId: contractId.toString(),
         });
         if (req.io) {
-          req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", {
-            title: "Contract Cancelled",
-            message: `Client cancelled "${contract.title}" and requested a full refund.`,
-          });
+          req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", notif);
           if (proposalIdToCancel) {
             req.io.to(`user_${contract.freelancer_id}`).emit("proposal_status_updated", {
               proposal_id: proposalIdToCancel,
@@ -1796,7 +1817,15 @@ export const freelancerCancelContractAndRefund = async (req, res) => {
       return res.status(400).json({ message: `Cancellation is only allowed on active contracts (current status: '${contract.status}').` });
     }
 
-    const budget = parseFloat(contract.budget);
+    // Calculate actual funded amount to refund
+    const fundedRes = await pool.query(
+      `SELECT COALESCE(SUM(CAST(amount AS numeric)), 0) as refund_amount 
+       FROM contract_milestones 
+       WHERE contract_id = $1 
+         AND payment_status IN ('Funded', 'Escrowed', 'Escrow')`,
+      [contractId]
+    );
+    const refundAmount = parseFloat(fundedRes.rows[0]?.refund_amount || 0);
 
     // 4. Get wallets
     const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
@@ -1815,29 +1844,31 @@ export const freelancerCancelContractAndRefund = async (req, res) => {
     // 5. Process refund
     await pool.query("BEGIN");
     try {
-      // Debit system escrow
-      await pool.query(
-        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
-        [budget, sysWallet.wallet_id]
-      );
+      if (refundAmount > 0) {
+        // Debit system escrow
+        await pool.query(
+          "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+          [refundAmount, sysWallet.wallet_id]
+        );
 
-      // Credit client wallet
-      await pool.query(
-        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
-        [budget, clientWallet.wallet_id]
-      );
+        // Credit client wallet
+        await pool.query(
+          "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+          [refundAmount, clientWallet.wallet_id]
+        );
 
-      // Record refund transaction
-      await pool.query(
-        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
-         VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
-        [
-          sysWallet.wallet_id,
-          clientWallet.wallet_id,
-          budget,
-          `Escrow refund due to freelancer cancelling work: ${contract.title}`,
-        ]
-      );
+        // Record refund transaction
+        await pool.query(
+          `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+           VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
+          [
+            sysWallet.wallet_id,
+            clientWallet.wallet_id,
+            refundAmount,
+            `Escrow refund due to freelancer cancelling work: ${contract.title}`,
+          ]
+        );
+      }
 
       // Update contract status
       await pool.query(
@@ -1845,22 +1876,35 @@ export const freelancerCancelContractAndRefund = async (req, res) => {
         [contractId]
       );
 
-      // Update all milestones to Cancelled
+      // Update non-completed/non-paid milestones to Cancelled/Refunded
       await pool.query(
-        "UPDATE contract_milestones SET status = 'Cancelled', payment_status = 'Refunded', updated_at = CURRENT_TIMESTAMP WHERE contract_id = $1",
+        `UPDATE contract_milestones 
+         SET status = 'Cancelled', 
+             payment_status = CASE WHEN payment_status IN ('Funded', 'Escrowed', 'Escrow') THEN 'Refunded' ELSE payment_status END, 
+             updated_at = CURRENT_TIMESTAMP 
+         WHERE contract_id = $1 AND status != 'Completed' AND payment_status != 'Paid'`,
         [contractId]
       );
 
-      const proposalIdToCancel = contract.application_id || (await pool.query(
-        "SELECT proposal_id FROM proposals WHERE job_id = $1 AND freelancer_id = $2 AND status = 'Accepted'",
-        [contract.job_id, contract.freelancer_id]
-      )).rows[0]?.proposal_id;
-
-      if (proposalIdToCancel) {
+      if (contract.application_id) {
+        // This is a gig order contract! Update the gig application status to Cancelled
         await pool.query(
-          "UPDATE proposals SET status = 'Cancelled', updated_at = CURRENT_TIMESTAMP WHERE proposal_id = $1",
-          [proposalIdToCancel]
+          "UPDATE gig_applications SET status = 'Cancelled', updated_at = CURRENT_TIMESTAMP WHERE application_id = $1",
+          [contract.application_id]
         );
+      } else {
+        // This is a job contract! Update the proposal status to Cancelled
+        const proposalIdToCancel = (await pool.query(
+          "SELECT proposal_id FROM proposals WHERE job_id = $1 AND freelancer_id = $2 AND status = 'Accepted'",
+          [contract.job_id, contract.freelancer_id]
+        )).rows[0]?.proposal_id;
+
+        if (proposalIdToCancel) {
+          await pool.query(
+            "UPDATE proposals SET status = 'Cancelled', updated_at = CURRENT_TIMESTAMP WHERE proposal_id = $1",
+            [proposalIdToCancel]
+          );
+        }
       }
 
       await pool.query("COMMIT");
@@ -1871,7 +1915,7 @@ export const freelancerCancelContractAndRefund = async (req, res) => {
       // Notify client
       try {
         const { default: Notification } = await import("../models/notificationModel.js");
-        await Notification.create({
+        const notif = await Notification.create({
           userId: contract.client_id,
           title: "Project Cancelled by Freelancer",
           message: `Freelancer cancelled the contract "${contract.title}". Escrow funds have been refunded to your wallet.`,
@@ -1879,10 +1923,7 @@ export const freelancerCancelContractAndRefund = async (req, res) => {
           referenceId: contractId.toString(),
         });
         if (req.io) {
-          req.io.to(`user_${contract.client_id}`).emit("new_notification", {
-            title: "Project Cancelled by Freelancer",
-            message: `Freelancer cancelled the contract "${contract.title}". Escrow funds have been refunded to your wallet.`,
-          });
+          req.io.to(`user_${contract.client_id}`).emit("new_notification", notif);
         }
       } catch (nErr) {
         console.error("Failed to notify client on freelancer cancellation:", nErr);
@@ -1932,7 +1973,7 @@ export const startWorkContract = async (req, res) => {
     // Notify client
     try {
       const { default: Notification } = await import("../models/notificationModel.js");
-      await Notification.create({
+      const notif = await Notification.create({
         userId: contract.client_id,
         title: "Work Started! 🚀",
         message: `Freelancer started working on your contract: "${contract.title}".`,
@@ -1940,10 +1981,7 @@ export const startWorkContract = async (req, res) => {
         referenceId: contractId.toString(),
       });
       if (req.io) {
-        req.io.to(`user_${contract.client_id}`).emit("new_notification", {
-          title: "Work Started!",
-          message: `Freelancer started working on "${contract.title}".`,
-        });
+        req.io.to(`user_${contract.client_id}`).emit("new_notification", notif);
       }
     } catch (nErr) {
       console.error("Failed to notify client on start work:", nErr);
@@ -1994,6 +2032,23 @@ export const createStripeTimecardSession = async (req, res) => {
     }
 
     const amountCents = Math.round(extraPayment * 100);
+
+    // Fetch Stripe secret key from Settings
+    let stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    const stripeKeysRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'stripe_keys'");
+    if (stripeKeysRes.rows.length > 0) {
+      let keys = stripeKeysRes.rows[0].setting_value;
+      if (typeof keys === "string") {
+        try { keys = JSON.parse(keys); } catch {}
+      }
+      if (keys?.secret_key) {
+        stripeSecretKey = keys.secret_key;
+      }
+    }
+
+    if (!stripeSecretKey) {
+      return res.status(400).json({ message: "Stripe is not configured. Please add Stripe Secret Key in Admin Payment Settings." });
+    }
 
     const localStripe = new Stripe(stripeSecretKey);
     const session = await localStripe.checkout.sessions.create({
@@ -2246,13 +2301,16 @@ export const acceptRevisionRequest = async (req, res) => {
       // Notify client
       try {
         const { default: Notification } = await import("../models/notificationModel.js");
-        await Notification.create({
+        const notif = await Notification.create({
           userId: contract.client_id,
           title: "Revision Accepted (Free)!",
           message: `Freelancer started work on the revision for milestone "${milestone.title}".`,
           type: "contract",
           referenceId: contract.contract_id.toString(),
         });
+        if (req.io) {
+          req.io.to(`user_${contract.client_id}`).emit("new_notification", notif);
+        }
       } catch {}
 
       return res.status(200).json({
@@ -2269,13 +2327,16 @@ export const acceptRevisionRequest = async (req, res) => {
       // Notify client
       try {
         const { default: Notification } = await import("../models/notificationModel.js");
-        await Notification.create({
+        const notif = await Notification.create({
           userId: contract.client_id,
           title: "Extra Revision Fee Proposed",
           message: `Freelancer has accepted the revision for milestone "${milestone.title}" but proposed an extra fee of $${fee.toFixed(2)} (limit reached).`,
           type: "contract",
           referenceId: contract.contract_id.toString(),
         });
+        if (req.io) {
+          req.io.to(`user_${contract.client_id}`).emit("new_notification", notif);
+        }
       } catch {}
 
       return res.status(200).json({
@@ -2407,13 +2468,16 @@ export const fundExtraRevision = async (req, res) => {
       // Notify freelancer
       try {
         const { default: Notification } = await import("../models/notificationModel.js");
-        await Notification.create({
+        const notif = await Notification.create({
           userId: contract.freelancer_id,
           title: "Extra Revision Funded! 💰",
           message: `Client funded the extra revision fee of $${fee.toFixed(2)} for milestone "${milestone.title}". Work is started.`,
           type: "contract",
           referenceId: contract.contract_id.toString(),
         });
+        if (req.io) {
+          req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", notif);
+        }
       } catch {}
 
       return res.status(200).json({
@@ -2468,13 +2532,16 @@ export const rejectRevisionProposal = async (req, res) => {
     // Notify freelancer
     try {
       const { default: Notification } = await import("../models/notificationModel.js");
-      await Notification.create({
+      const notif = await Notification.create({
         userId: contract.freelancer_id,
         title: "Revision Fee Declined ❌",
         message: `Client declined the extra fee proposal of $${parseFloat(milestone.extra_revision_fee).toFixed(2)} for milestone "${milestone.title}". Please accept for free or propose a new fee.`,
         type: "contract",
         referenceId: contract.contract_id.toString(),
       });
+      if (req.io) {
+        req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", notif);
+      }
     } catch {}
 
     return res.status(200).json({
@@ -2621,7 +2688,7 @@ export const requestMilestoneFunding = async (req, res) => {
     // Notify client
     try {
       const { default: Notification } = await import("../models/notificationModel.js");
-      await Notification.create({
+      const notif = await Notification.create({
         userId: contract.client_id,
         title: "Milestone Funding Request! 💰",
         message: `Freelancer has requested you to fund the next milestone: "${milestone.title}" ($${parseFloat(milestone.amount).toFixed(2)}).`,
@@ -2630,10 +2697,7 @@ export const requestMilestoneFunding = async (req, res) => {
       });
 
       if (req.io) {
-        req.io.to(`user_${contract.client_id}`).emit("new_notification", {
-          title: "Milestone Funding Request!",
-          message: `Freelancer requested funding for "${milestone.title}".`,
-        });
+        req.io.to(`user_${contract.client_id}`).emit("new_notification", notif);
       }
     } catch (nErr) {
       console.error("Failed to create funding request notification:", nErr);

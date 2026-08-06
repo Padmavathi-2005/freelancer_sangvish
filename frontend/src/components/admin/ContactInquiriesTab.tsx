@@ -580,7 +580,6 @@ export default function ContactInquiriesTab({ isDark = false }: ContactInquiries
             <div className="flex items-center justify-between gap-3 border-t pt-4 border-slate-100 dark:border-slate-850 mt-2">
               <a
                 href={`mailto:${replyingInquiry.email}?subject=${encodeURIComponent(replySubject)}&body=${encodeURIComponent(replyMessage)}`}
-                target="_blank"
                 rel="noreferrer"
                 className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1.5"
               >

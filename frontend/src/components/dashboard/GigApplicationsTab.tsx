@@ -1,9 +1,10 @@
-import { API_URL } from "@/config/api";
+import { API_URL, API_BASE_URL } from "@/config/api";
 import React, { useEffect, useState } from "react";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { FiBriefcase, FiMessageSquare, FiRefreshCw, FiClock, FiCheckCircle, FiDollarSign, FiAlertTriangle, FiX } from "react-icons/fi";
 import GigMilestoneTracker from "./GigMilestoneTracker";
-import { renderOrderBreakdown, getOrderStatusPill } from "./ClientOrdersTab";
+import { renderOrderBreakdown, getOrderStatusPill, checkIsNegotiated, getOriginalPackagePrice } from "./ClientOrdersTab";
+import { useLanguage } from "@/context/LanguageContext";
 import { createPortal } from "react-dom";
 import CustomSelect from "@/components/CustomSelect";
 
@@ -13,6 +14,20 @@ interface GigApplicationsTabProps {
   fetchFreelancerApplications: () => Promise<void>;
   handleUpdateApplicationStatus: (applicationId: number, status: "Accepted" | "Rejected") => Promise<void>;
 }
+
+const resolveDownloadUrl = (url: string) => {
+  if (!url) return "";
+  let cleanUrl = url;
+  const publicIdx = cleanUrl.indexOf("/public/");
+  if (publicIdx !== -1) {
+    cleanUrl = cleanUrl.substring(publicIdx);
+  }
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+    return cleanUrl;
+  }
+  const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+};
 
 const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
   loadingApplications,
@@ -26,12 +41,27 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
     setActiveTab,
   } = useDashboard();
 
+  const { t } = useLanguage();
+
   useEffect(() => {
     fetchFreelancerApplications();
   }, []);
 
   const [activeFilterTab, setActiveFilterTab] = useState<"pending" | "active" | "completed" | "all">("all");
   const [selectedGigOrder, setSelectedGigOrder] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && gigApplications.length > 0 && !selectedGigOrder) {
+      const params = new URLSearchParams(window.location.search);
+      const appIdParam = params.get("application_id") || params.get("order_id");
+      if (appIdParam) {
+        const found = gigApplications.find((a: any) => a.application_id.toString() === appIdParam.toString());
+        if (found) {
+          setSelectedGigOrder(found);
+        }
+      }
+    }
+  }, [gigApplications, selectedGigOrder]);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submittingContractId, setSubmittingContractId] = useState<number | null>(null);
   const [deliverableFiles, setDeliverableFiles] = useState<{ name: string; url: string }[]>([]);
@@ -322,7 +352,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
     const app = selectedGigOrder;
     const hasContract = !!app.contract_id;
     const contractStatus = app.contract_status;
-    const isPaid = app.payment_status === "Paid";
+    const isPaid = app.payment_status === "Paid" && contractStatus !== "Cancelled";
     
     // Status text resolving
     let currentStatusText = app.status;
@@ -389,8 +419,20 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
             <div className="flex items-center gap-3 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Price:</span>
-                <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg">
+                <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                   {app.currency_symbol || "$"}{parseFloat(app.price).toLocaleString()}
+                  {(() => {
+                    const isNegotiated = checkIsNegotiated(app);
+                    const origPrice = getOriginalPackagePrice(app);
+                    if (isNegotiated && origPrice) {
+                      return (
+                        <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded uppercase tracking-wider">
+                          Negotiated from {app.currency_symbol || "$"}{origPrice.toLocaleString()}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </span>
               </div>
               <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap ${
@@ -411,7 +453,8 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
 
 
         {/* Action Panel */}
-        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+        {app.status !== "Rejected" && contractStatus !== "Cancelled" && (
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
           {app.status === "Pending" && (
             <>
               <div className="text-left">
@@ -528,7 +571,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                         {filesList.map((file: any, idx: number) => (
                           <a
                             key={idx}
-                            href={file.url}
+                            href={resolveDownloadUrl(file.url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-900 transition hover:underline"
@@ -577,6 +620,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
             </div>
           )}
         </div>
+        )}
 
         {/* Milestone Tracker */}
         {isPaid && (
@@ -658,9 +702,9 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
             <FiBriefcase className="w-5 h-5 text-primary shrink-0" />
-            <span>Service Orders</span>
+            <span>{t("service_orders_header", "Service Orders")}</span>
           </h2>
-          <p className="text-slate-404 text-xs mt-1 font-semibold">Review custom project requirements and accept or reject orders sent by clients.</p>
+          <p className="text-slate-404 text-xs mt-1 font-semibold">{t("service_orders_desc", "Review custom project requirements and accept or reject orders sent by clients.")}</p>
         </div>
       </div>
 
@@ -672,40 +716,40 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
             className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeFilterTab === "all"
                 ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-55"
             }`}
           >
-            All Orders ({gigApplications.length})
+            {t("all_orders_tab", "All Orders")} ({gigApplications.length})
           </button>
           <button
             onClick={() => setActiveFilterTab("pending")}
             className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeFilterTab === "pending"
                 ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-55"
             }`}
           >
-            Pending ({pendingCount})
+            {t("pending_filter_label", "Pending")} ({pendingCount})
           </button>
           <button
             onClick={() => setActiveFilterTab("active")}
             className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeFilterTab === "active"
                 ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-55"
             }`}
           >
-            Active ({activeCount})
+            {t("active_filter_label", "Active")} ({activeCount})
           </button>
           <button
             onClick={() => setActiveFilterTab("completed")}
             className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
               activeFilterTab === "completed"
                 ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                : "text-slate-500 hover:text-slate-800 hover:bg-slate-55"
             }`}
           >
-            Completed ({completedCount})
+            {t("completed_filter_label", "Completed")} ({completedCount})
           </button>
         </div>
       </div>
@@ -727,8 +771,12 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
       ) : filteredApplications.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center bg-white border border-dashed border-slate-200 rounded-xl p-8 shadow-sm">
           <FiBriefcase className="w-10 h-10 text-slate-300 mb-3" />
-          <h3 className="text-sm font-extrabold text-slate-800 mb-1">No {activeFilterTab} orders found</h3>
-          <p className="text-slate-404 text-xs max-w-sm font-semibold">You don't have any orders matching this category currently.</p>
+          <h3 className="text-sm font-extrabold text-slate-800 mb-1">
+            {t(`no_${activeFilterTab}_orders_found`, `No ${activeFilterTab} orders found`)}
+          </h3>
+          <p className="text-slate-404 text-xs max-w-sm font-semibold">
+            {t("no_orders_matching_category_desc", "You don't have any orders matching this category currently.")}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -749,8 +797,20 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                 </div>
                 
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-extrabold text-slate-800 bg-slate-100 border border-slate-200/50 px-3 py-1 rounded-xl">
+                  <span className="text-sm font-extrabold text-slate-800 bg-slate-100 border border-slate-200/50 px-3 py-1 rounded-xl flex items-center gap-1.5">
                     {app.currency_symbol || "$"}{parseFloat(app.price).toLocaleString()}
+                    {(() => {
+                      const isNegotiated = checkIsNegotiated(app);
+                      const origPrice = getOriginalPackagePrice(app);
+                      if (isNegotiated && origPrice) {
+                        return (
+                          <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded uppercase tracking-wider">
+                            Negotiated from {app.currency_symbol || "$"}{origPrice.toLocaleString()}
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
                   </span>
                   
                   {(() => {

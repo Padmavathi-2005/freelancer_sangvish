@@ -102,7 +102,7 @@ export default function GeneralSettingsTab({
         const langRes = await fetch(`${API_URL}/languages/active`);
         if (langRes.ok) setAvailLanguages(await langRes.json());
         
-        const currRes = await fetch(`${API_URL}/admin/currencies`);
+        const currRes = await fetch(`${API_URL}/freelancer/currencies`);
         if (currRes.ok) setAvailCurrencies(await currRes.json());
       } catch (e) {
         console.error("Failed to load settings options", e);

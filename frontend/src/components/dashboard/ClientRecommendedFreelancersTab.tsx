@@ -203,18 +203,19 @@ export default function ClientRecommendedFreelancersTab({
               <div className="flex flex-col gap-4">
                 {/* Avatar & Header */}
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${freelancer.avatarColor} flex items-center justify-center font-black text-white shadow-sm shrink-0 overflow-hidden`}>
-                    {freelancer.profileImage ? (
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${freelancer.avatarColor} flex items-center justify-center font-black text-white shadow-sm shrink-0 overflow-hidden relative`}>
+                    <span className="text-sm font-black">
+                      {freelancer.name ? freelancer.name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase() : ""}
+                    </span>
+                    {freelancer.profileImage && (
                       <img
                         src={`https://freelancer.sangvish.com${freelancer.profileImage}`}
                         alt={freelancer.name}
-                        className="w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                         onError={(e: any) => {
                           e.target.style.display = "none";
                         }}
                       />
-                    ) : (
-                      freelancer.name.split(" ").map((n) => n[0]).join("")
                     )}
                   </div>
                   <div className="min-w-0">

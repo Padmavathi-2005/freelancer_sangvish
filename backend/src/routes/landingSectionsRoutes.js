@@ -39,7 +39,7 @@ router.get('/categories-stats', async (req, res) => {
                 ON fp.category_id = c.category_id
                 AND fp.onboarding_completed = true
                 AND fp.vetting_status = 'Approved'
-            WHERE (c.status = true OR c.status = 1 OR c.status IS NULL OR LOWER(CAST(c.status AS VARCHAR)) IN ('active', 'true'))
+            WHERE (c.status = true OR c.status IS NULL)
             GROUP BY c.category_id, c.category_name, c.category_image, c.description, c.category_video
             ORDER BY freelancer_count DESC
         `);

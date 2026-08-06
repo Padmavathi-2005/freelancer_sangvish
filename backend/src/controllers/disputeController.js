@@ -162,13 +162,16 @@ export const openDispute = async (req, res) => {
 
       // Notify opponent
       try {
-        await Notification.create({
+        const notif = await Notification.create({
           userId: opponentId,
           title: "Contract Disputed",
           message: `${isClient ? "Client" : "Freelancer"} has raised a dispute on contract "${contract.title}". Check your chat for details.`,
           type: "system",
           referenceId: contractId.toString()
         });
+        if (req.io) {
+          req.io.to(`user_${opponentId}`).emit("new_notification", notif);
+        }
       } catch (nErr) {}
 
       return res.status(201).json({ message: "Dispute opened successfully.", dispute });
@@ -294,7 +297,7 @@ export const respondToDispute = async (req, res) => {
 
           // Dispatch in-app notification to client
           try {
-            await Notification.create({
+            const notif = await Notification.create({
               userId: dispute.client_id,
               title: "Dispute Resolved - Refund Issued",
               message: detailsText,
@@ -302,10 +305,7 @@ export const respondToDispute = async (req, res) => {
               referenceId: contract.contract_id.toString()
             });
             if (req.io) {
-              req.io.to(`user_${dispute.client_id}`).emit("notification", {
-                title: "Dispute Resolved - Refund Issued",
-                message: detailsText
-              });
+              req.io.to(`user_${dispute.client_id}`).emit("new_notification", notif);
             }
           } catch (nErr) {}
 
@@ -349,7 +349,7 @@ export const respondToDispute = async (req, res) => {
 
           // Dispatch in-app notification to freelancer
           try {
-            await Notification.create({
+            const notif = await Notification.create({
               userId: dispute.freelancer_id,
               title: "Dispute Resolved - Payout Released",
               message: `Client accepted payout release for contract "${contract.title}". Escrow budget of $${budget.toFixed(2)} transferred to your wallet.`,
@@ -357,10 +357,7 @@ export const respondToDispute = async (req, res) => {
               referenceId: contract.contract_id.toString()
             });
             if (req.io) {
-              req.io.to(`user_${dispute.freelancer_id}`).emit("notification", {
-                title: "Dispute Resolved - Payout Released",
-                message: `Client accepted payout release for contract "${contract.title}".`
-              });
+              req.io.to(`user_${dispute.freelancer_id}`).emit("new_notification", notif);
             }
           } catch (nErr) {}
 
@@ -394,7 +391,7 @@ export const respondToDispute = async (req, res) => {
       // Dispatch in-app notification to opponent
       try {
         const opponentId = dispute.client_id === userId ? dispute.freelancer_id : dispute.client_id;
-        await Notification.create({
+        const notif = await Notification.create({
           userId: opponentId,
           title: "Dispute Contested",
           message: `The dispute on contract "${contract.title}" has been contested. View chat for details.`,
@@ -402,10 +399,7 @@ export const respondToDispute = async (req, res) => {
           referenceId: contract.contract_id.toString()
         });
         if (req.io) {
-          req.io.to(`user_${opponentId}`).emit("notification", {
-            title: "Dispute Contested",
-            message: `The dispute on contract "${contract.title}" has been contested.`
-          });
+          req.io.to(`user_${opponentId}`).emit("new_notification", notif);
         }
       } catch (nErr) {}
 
@@ -457,7 +451,7 @@ export const proposeSettlement = async (req, res) => {
     try {
       const opponentId = dispute.client_id === userId ? dispute.freelancer_id : dispute.client_id;
       const isClient = dispute.client_id === userId;
-      await Notification.create({
+      const notif = await Notification.create({
         userId: opponentId,
         title: "Settlement Proposal Offered",
         message: `${isClient ? "Client" : "Freelancer"} proposed a ${client_refund_percent}% client / ${100 - client_refund_percent}% freelancer split settlement.`,
@@ -465,10 +459,7 @@ export const proposeSettlement = async (req, res) => {
         referenceId: dispute.contract_id.toString()
       });
       if (req.io) {
-        req.io.to(`user_${opponentId}`).emit("notification", {
-          title: "Settlement Proposal Offered",
-          message: `Settlement split proposed: ${client_refund_percent}% client / ${100 - client_refund_percent}% freelancer.`
-        });
+        req.io.to(`user_${opponentId}`).emit("new_notification", notif);
       }
     } catch (nErr) {}
 
@@ -576,14 +567,14 @@ export const acceptSettlement = async (req, res) => {
 
       // Dispatch in-app notification to both parties
       try {
-        await Notification.create({
+        const clientNotif = await Notification.create({
           userId: dispute.client_id,
           title: "Dispute Settlement Agreed",
           message: `Dispute on contract "${contract.title}" resolved via agreed split: $${clientRefund.toFixed(2)} refunded to your wallet.`,
           type: "dispute_resolved",
           referenceId: contract.contract_id.toString()
         });
-        await Notification.create({
+        const freelancerNotif = await Notification.create({
           userId: dispute.freelancer_id,
           title: "Dispute Settlement Agreed",
           message: `Dispute on contract "${contract.title}" resolved via agreed split: $${freelancerPayout.toFixed(2)} paid to your wallet.`,
@@ -591,14 +582,8 @@ export const acceptSettlement = async (req, res) => {
           referenceId: contract.contract_id.toString()
         });
         if (req.io) {
-          req.io.to(`user_${dispute.client_id}`).emit("notification", {
-            title: "Dispute Settlement Agreed",
-            message: `$${clientRefund.toFixed(2)} refunded to your wallet.`
-          });
-          req.io.to(`user_${dispute.freelancer_id}`).emit("notification", {
-            title: "Dispute Settlement Agreed",
-            message: `$${freelancerPayout.toFixed(2)} paid to your wallet.`
-          });
+          req.io.to(`user_${dispute.client_id}`).emit("new_notification", clientNotif);
+          req.io.to(`user_${dispute.freelancer_id}`).emit("new_notification", freelancerNotif);
         }
       } catch (nErr) {}
 

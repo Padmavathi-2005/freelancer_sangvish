@@ -179,6 +179,9 @@ export const Gig = {
       SELECT 
         ga.*,
         g.title as gig_title,
+        g.price as gig_price,
+        g.plans as gig_plans,
+        g.discount_percent as gig_discount_percent,
         u.first_name || ' ' || u.last_name as client_name,
         u.email as client_email,
         c.code as currency_code,
@@ -212,6 +215,9 @@ export const Gig = {
       SELECT 
         ga.*,
         g.title as gig_title,
+        g.price as gig_price,
+        g.plans as gig_plans,
+        g.discount_percent as gig_discount_percent,
         g.freelancer_id,
         u.first_name || COALESCE(' ' || u.last_name, '') as freelancer_name,
         u.email as freelancer_email,

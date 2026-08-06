@@ -839,6 +839,12 @@ export const updateCurrency = async (req, res) => {
         const { code, name, symbol, rate } = req.body;
         if (!code?.trim() || !name?.trim() || !symbol?.trim()) return res.status(400).json({ message: 'code, name and symbol are required.' });
         
+        // Check uniqueness of code for other currencies
+        const check = await pool.query('SELECT 1 FROM currencies WHERE UPPER(code) = UPPER($1) AND currency_id != $2', [code.trim(), id]);
+        if (check.rows.length > 0) {
+            return res.status(409).json({ message: 'Currency code already exists.' });
+        }
+        
         const rateVal = rate !== undefined ? parseFloat(rate) : 1.0;
         const result = await pool.query(
             'UPDATE currencies SET code = $1, name = $2, symbol = $3, rate = $4, updated_at = NOW() WHERE currency_id = $5 RETURNING *',

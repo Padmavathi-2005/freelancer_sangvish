@@ -296,9 +296,9 @@ export default function Hero() {
                     <span className="hidden md:inline text-slate-900 dark:text-slate-100 font-extrabold shrink-0">{t("hero_search_placeholder", heroContent.hero_search_placeholder)}&nbsp;</span>
                     <span className="md:hidden text-slate-900 dark:text-slate-100 font-extrabold shrink-0">{t("search_talent", "Search talent")}&nbsp;</span>
                     <span className="text-slate-700 dark:text-slate-300 font-bold shrink-0">e.g.&nbsp;</span>
-                    <span style={{ color: "#0a5a54" }} className="font-extrabold dark:!text-teal-300 relative shrink-0 whitespace-nowrap">
+                    <span style={{ color: siteTheme === "dark" ? "#ffffff" : "#0a5a54" }} className="font-extrabold relative shrink-0 whitespace-nowrap">
                       {currentText}
-                      <span style={{ backgroundColor: "#0a5a54" }} className="absolute -right-[3px] top-[1.5px] bottom-[1.5px] w-[1.5px] dark:!bg-white animate-blink"></span>
+                      <span style={{ backgroundColor: siteTheme === "dark" ? "#ffffff" : "#0a5a54" }} className="absolute -right-[3px] top-[1.5px] bottom-[1.5px] w-[1.5px] animate-blink"></span>
                     </span>
                   </div>
                 )}
@@ -321,7 +321,7 @@ export default function Hero() {
                 <button
                   key={skill}
                   onClick={() => handleQuickTagClick(skill)}
-                  className="border border-teal-700/20 dark:border-zinc-700 bg-teal-50 dark:bg-zinc-800/80 text-[#0a5a54] dark:text-teal-300 hover:bg-[#0a5a54] hover:text-white dark:hover:bg-teal-400 dark:hover:text-zinc-950 px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer text-xs font-extrabold"
+                  className="border border-teal-700/20 dark:border-zinc-700 bg-teal-50 dark:bg-zinc-800/80 text-[#0a5a54] dark:text-white hover:bg-[#0a5a54] hover:text-white dark:hover:bg-white dark:hover:text-slate-900 px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer text-xs font-extrabold"
                 >
                   {skill}
                 </button>
@@ -331,15 +331,15 @@ export default function Hero() {
 
           {/* Right Column: Visual Mockup */}
           <div className="lg:col-span-5 relative w-full flex justify-center items-center py-2 lg:py-0">
-            <div className="hero-mockup-container relative w-full aspect-[1.12] max-w-[290px] sm:max-w-[360px] xl:max-w-[395px] bg-[#042e2a] rounded-xl p-4 sm:p-6 flex items-center justify-center shadow-xl overflow-visible border border-transparent">
-              <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:16px_16px] rounded-xl"></div>
+            <div style={{ borderRadius: "12px" }} className="hero-mockup-container relative w-full aspect-[1.12] max-w-[290px] sm:max-w-[360px] xl:max-w-[395px] bg-[#042e2a] p-4 sm:p-6 flex items-center justify-center shadow-xl overflow-visible border border-transparent">
+              <div style={{ borderRadius: "12px" }} className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:16px_16px]"></div>
               <div className="absolute -top-6 -right-6 w-32 h-32 bg-teal-400/20 rounded-full filter blur-2xl pointer-events-none"></div>
               <div className="absolute -bottom-6 -left-6 w-36 h-36 bg-emerald-400/20 rounded-full filter blur-2xl pointer-events-none"></div>
 
               {/* Tablet Mockup */}
-              <div className="relative w-[92%] aspect-[1.28] bg-slate-900 rounded-xl p-1 border-4 border-slate-950 shadow-xl overflow-hidden flex items-center justify-center">
+              <div style={{ borderRadius: "12px" }} className="relative w-[92%] aspect-[1.28] bg-slate-950 border-4 border-slate-950 shadow-xl overflow-hidden flex items-center justify-center">
                 <div className="relative w-full h-full rounded overflow-hidden bg-slate-950">
-                  <img src="/tablet-work.png" alt="Mockup Screen" className="w-full h-full object-cover opacity-90 transition-transform duration-700 hover:scale-105" />
+                  <img src="/tablet-work.png" alt="Mockup Screen" className="w-full h-full object-cover scale-[1.06] opacity-90 transition-transform duration-700 hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#042e2a]/40 via-transparent to-transparent"></div>
                 </div>
               </div>

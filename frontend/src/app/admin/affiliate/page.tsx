@@ -248,7 +248,7 @@ export default function AdminAffiliatePage() {
             placeholder="Search email, name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent text-xs font-semibold outline-none w-full"
+            className="bg-transparent text-xs font-semibold border-none outline-none focus:outline-none focus:ring-0 focus:border-none shadow-none w-full"
           />
         </div>
       </div>

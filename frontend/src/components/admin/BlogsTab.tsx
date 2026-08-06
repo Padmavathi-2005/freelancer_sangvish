@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAdmin } from "../../app/admin/AdminContext";
 import { API_URL } from "@/config/api";
+import CustomSelect from "@/components/CustomSelect";
 import { 
   FiPlus, FiTrash2, FiGlobe, FiFolder, FiCheck, FiX, 
   FiChevronUp, FiChevronDown, FiType, FiImage, FiFileText, 
@@ -481,23 +482,15 @@ export default function BlogsTab() {
                 className={textInputClass}
               />
             </div>
-            <div className="flex items-center gap-3">
-              <select
+            <div className="flex items-center gap-3 w-full md:w-56 shrink-0">
+              <CustomSelect
+                options={[
+                  { value: "all", label: "All Categories" },
+                  ...categories.map((cat: any) => ({ value: cat, label: cat }))
+                ]}
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className={`rounded-xl px-4 py-2 text-sm transition-all focus:outline-none border ${
-                  isDark
-                    ? "bg-slate-900 border-slate-800 text-white focus:border-teal-500"
-                    : "bg-white border-slate-200 text-slate-800 focus:border-teal-650"
-                }`}
-              >
-                <option value="all">All Categories</option>
-                {categories.map((cat: any) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setCategoryFilter(val)}
+              />
             </div>
           </div>
 

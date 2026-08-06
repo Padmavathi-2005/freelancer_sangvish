@@ -16,6 +16,20 @@ const getAvatarSrc = (imagePath: string | null) => {
   return `${API_BASE_URL}/${imagePath}`;
 };
 
+const resolveDownloadUrl = (url: string) => {
+  if (!url) return "";
+  let cleanUrl = url;
+  const publicIdx = cleanUrl.indexOf("/public/");
+  if (publicIdx !== -1) {
+    cleanUrl = cleanUrl.substring(publicIdx);
+  }
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+    return cleanUrl;
+  }
+  const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+};
+
 interface ProjectMilestoneTrackerProps {
   job: any;
   onUpdateJob: (updatedJob: any) => void;
@@ -132,7 +146,13 @@ export default function ProjectMilestoneTracker({
 
   const jobContracts = useMemo(() => {
     if (!Array.isArray(contracts)) return [];
-    return contracts.filter((c: any) => c && (Number(c.job_id) === Number(job?.job_id)));
+    if (job?.job_id) {
+      return contracts.filter((c: any) => c && (Number(c.job_id) === Number(job.job_id)));
+    }
+    if (job?.contract_id) {
+      return contracts.filter((c: any) => c && (Number(c.contract_id) === Number(job.contract_id)));
+    }
+    return [];
   }, [contracts, job]);
 
   const acceptedProposal = useMemo(() => {
@@ -147,6 +167,9 @@ export default function ProjectMilestoneTracker({
     }
     if (jobContracts.length > 0) return jobContracts[0];
     if (Array.isArray(contracts)) {
+      if (job?.contract_id) {
+        return contracts.find((c: any) => c && Number(c.contract_id) === Number(job.contract_id)) || null;
+      }
       return contracts.find((c: any) => c && Number(c.job_id) === Number(job?.job_id)) || null;
     }
     return null;
@@ -200,7 +223,7 @@ export default function ProjectMilestoneTracker({
     setMilestoneActionLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/proposals/contracts/${activeContract.contract_id}/cancel`, {
+      const res = await fetch(`${API_URL}/payments/contract/${activeContract.contract_id}/cancel`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -226,7 +249,7 @@ export default function ProjectMilestoneTracker({
     setMilestoneActionLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_URL}/proposals/contracts/${activeContract.contract_id}/cancel-freelancer`, {
+      const res = await fetch(`${API_URL}/payments/contract/${activeContract.contract_id}/freelancer-cancel`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -293,7 +316,6 @@ export default function ProjectMilestoneTracker({
 
   useEffect(() => {
     const checkUserReview = async () => {
-      const activeContract = contracts.find(c => c.job_id === job.job_id);
       if (activeContract && activeContract.status === "Completed") {
         try {
           const token = localStorage.getItem("token");
@@ -314,11 +336,10 @@ export default function ProjectMilestoneTracker({
       }
     };
     checkUserReview();
-  }, [contracts, job.job_id]);
+  }, [activeContract]);
 
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
-    const activeContract = contracts.find(c => c.job_id === job.job_id);
     if (!activeContract) return;
 
     setReviewLoading(true);
@@ -450,7 +471,7 @@ export default function ProjectMilestoneTracker({
   useEffect(() => {
     fetchProposals();
     fetchContracts();
-  }, [job.job_id]);
+  }, [job.job_id, job.contract_id]);
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -461,16 +482,22 @@ export default function ProjectMilestoneTracker({
     return () => {
       window.removeEventListener("refresh-milestones", handleRefresh);
     };
-  }, [job.job_id]);
+  }, [job.job_id, job.contract_id]);
 
   useEffect(() => {
-    const activeContract = contracts.find(c => c.job_id === job.job_id);
+    if (!Array.isArray(contracts)) return;
+    const activeContract = contracts.find(c => {
+      if (job?.contract_id) {
+        return c && Number(c.contract_id) === Number(job.contract_id);
+      }
+      return c && Number(c.job_id) === Number(job?.job_id);
+    });
     if (activeContract) {
       if (job.project_type === "Hourly") {
         fetchTimecards(activeContract.contract_id);
       }
     }
-  }, [contracts, job.job_id, job.project_type]);
+  }, [contracts, job.job_id, job.contract_id, job.project_type]);
 
   useEffect(() => {
     if (chatEndRef.current) {
@@ -557,7 +584,6 @@ export default function ProjectMilestoneTracker({
 
   const handleSubmitTimecard = async (e: React.FormEvent) => {
     e.preventDefault();
-    const activeContract = contracts.find(c => c.job_id === job.job_id);
     if (!activeContract) return;
 
     const hrs = parseInt(newTimecardHours) || 0;
@@ -607,7 +633,6 @@ export default function ProjectMilestoneTracker({
   };
 
   const handleApproveTimecard = async (timecardId: number, amount: number) => {
-    const activeContract = contracts.find(c => c.job_id === job.job_id);
     if (!activeContract) return;
 
     setTimecardActionLoadingId(timecardId);
@@ -636,7 +661,6 @@ export default function ProjectMilestoneTracker({
   };
 
   const handleRequestPayment = async () => {
-    const activeContract = contracts.find(c => c.job_id === job.job_id);
     if (!activeContract || selectedPendingTimecards.length === 0) return;
 
     setTimecardActionLoadingId(-1);
@@ -669,7 +693,6 @@ export default function ProjectMilestoneTracker({
   };
 
   const handleDeclineTimecard = async (timecardId: number) => {
-    const activeContract = contracts.find(c => c.job_id === job.job_id);
     if (!activeContract) return;
 
     setTimecardActionLoadingId(timecardId);
@@ -702,7 +725,6 @@ export default function ProjectMilestoneTracker({
     setPayTimecardLoading(true);
 
     const token = localStorage.getItem("token");
-    const activeContract = contracts.find(c => c.job_id === job.job_id);
     if (!activeContract) return;
 
     try {
@@ -770,7 +792,6 @@ export default function ProjectMilestoneTracker({
   };
 
   const initContractChat = async () => {
-    const activeContract = contracts.find(c => c.job_id === job.job_id);
     if (!activeContract) return;
     const recId = userRole === "freelancer" ? activeContract.client_id : activeContract.freelancer_id;
     try {
@@ -829,9 +850,10 @@ export default function ProjectMilestoneTracker({
   // Keep selected contract and tab in sync
   useEffect(() => {
     if (jobContracts.length > 0 && !selectedContractId) {
-      setSelectedContractId(jobContracts[0].contract_id);
+      const preferred = jobContracts.find((c: any) => Number(c.contract_id) === Number(job?.contract_id));
+      setSelectedContractId(preferred ? preferred.contract_id : jobContracts[0].contract_id);
     }
-  }, [contracts]);
+  }, [contracts, job]);
 
   useEffect(() => {
     if (jobContracts.length === 0 && !acceptedProposal) {
@@ -938,13 +960,15 @@ export default function ProjectMilestoneTracker({
                       href={`/freelancer/${proposal.freelancer_id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex gap-2.5 items-center group/fl cursor-pointer min-w-0 flex-1"
+                      className="flex gap-2.5 items-center group cursor-pointer min-w-0 flex-1"
                     >
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-xs group-hover/fl:bg-primary group-hover/fl:text-white transition-all select-none shrink-0">
-                        {proposal.freelancer_name ? proposal.freelancer_name.split(" ").map((n: string) => n[0]).join("") : "FL"}
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-bold text-xs group-hover:bg-primary transition-all select-none shrink-0">
+                        <span className="text-primary group-hover:text-white transition-colors">
+                          {proposal.freelancer_name ? proposal.freelancer_name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase() : "FL"}
+                        </span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h5 className="font-extrabold text-slate-800 text-xs truncate leading-none group-hover/fl:text-primary transition-colors">{proposal.freelancer_name}</h5>
+                        <h5 className="font-extrabold text-slate-800 text-xs truncate leading-none group-hover:text-primary transition-colors">{proposal.freelancer_name}</h5>
                         <span className="text-slate-400 text-[10px] font-bold block mt-1 truncate">{proposal.freelancer_title || "Freelancer"} • {proposal.freelancer_email}</span>
                       </div>
                     </a>
@@ -1309,27 +1333,38 @@ export default function ProjectMilestoneTracker({
     }
   }
 
+  const totalExtraRevisionPaid = activeContract
+    ? milestoneList.reduce((sum: number, m: any) => sum + (parseFloat(m.extra_revision_fee || 0) > 0 && m.revision_status !== 'Awaiting Funding' ? parseFloat(m.extra_revision_fee) : 0), 0)
+    : 0;
+
   const totalAmount = activeContract
-    ? parseFloat(activeContract.budget)
+    ? parseFloat(activeContract.budget) + totalExtraRevisionPaid
     : milestoneList.reduce((sum: number, m: any) => sum + parseFloat(m.amount), 0);
 
   const completedAmount = activeContract
-    ? milestoneList.reduce((sum: number, m: any) => sum + (m.status === 'Completed' || m.payment_status === 'Paid' ? parseFloat(m.amount) : 0), 0)
+    ? milestoneList.reduce((sum: number, m: any) => sum + (m.status === 'Completed' || m.payment_status === 'Paid' ? parseFloat(m.amount) + (parseFloat(m.extra_revision_fee || 0) > 0 && m.revision_status !== 'Awaiting Funding' ? parseFloat(m.extra_revision_fee) : 0) : 0), 0)
     : milestoneList.reduce((sum: number, m: any) => sum + (m.completed ? parseFloat(m.amount) : 0), 0);
 
   const progressPercent = activeContract
     ? (activeContract.progress || 0)
     : (totalAmount > 0 ? Math.round((completedAmount / totalAmount) * 100) : 0);
 
-  const paidAmount = activeContract
+  const paidAmountBase = activeContract
     ? (isDisputeSplit 
         ? totalAmount * (freelancerPayoutPercent / 100)
         : milestoneList.reduce((sum: number, m: any) => sum + (m.payment_status === 'Paid' ? parseFloat(m.amount) : 0), 0))
     : milestoneList.reduce((sum: number, m: any) => sum + (m.paid ? parseFloat(m.amount) : 0), 0);
 
-  const clientPaidAmount = activeContract
+  const paidAmount = paidAmountBase + totalExtraRevisionPaid;
+
+  const clientPaidAmountBase = activeContract
     ? milestoneList.reduce((sum: number, m: any) => sum + (m.payment_status === 'Paid' || m.payment_status === 'Funded' ? parseFloat(m.amount) : 0), 0)
     : milestoneList.reduce((sum: number, m: any) => sum + (m.paid ? parseFloat(m.amount) : 0), 0);
+
+  const clientPaidAmount = clientPaidAmountBase + totalExtraRevisionPaid;
+
+  const platformFee = paidAmount * 0.05;
+  const netFreelancerPayout = paidAmount - platformFee;
 
   const returnedAmount = isDisputeSplit ? totalAmount - paidAmount : 0;
 
@@ -2116,6 +2151,7 @@ export default function ProjectMilestoneTracker({
             style.textContent = `
               #printable-invoice-area {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+                font-size: 10px !important;
                 color: #1e293b !important;
                 background-color: #ffffff !important;
                 padding: 16px !important;
@@ -2126,60 +2162,81 @@ export default function ProjectMilestoneTracker({
               }
               #printable-invoice-area * { box-sizing: border-box !important; }
 
+              /* Explicitly define Tailwind font sizes since external stylesheets are disabled in clone */
+              #printable-invoice-area .text-xxs { font-size: 8px !important; }
+              #printable-invoice-area .text-\[8px\] { font-size: 8px !important; }
+              #printable-invoice-area .text-\[9px\] { font-size: 9px !important; }
+              #printable-invoice-area .text-\[10px\] { font-size: 10px !important; }
+              #printable-invoice-area .text-xs { font-size: 11px !important; }
+              #printable-invoice-area .text-\[11px\] { font-size: 11px !important; }
+              #printable-invoice-area .text-sm { font-size: 12px !important; }
+              #printable-invoice-area .text-md { font-size: 13px !important; }
+              #printable-invoice-area .text-lg { font-size: 14px !important; }
+              #printable-invoice-area h4 { font-size: 11px !important; }
+              #printable-invoice-area p { font-size: 9px !important; }
+
+              /* Clear browser user-agent margins and paddings for all text elements to keep styling neat */
+              #printable-invoice-area h1,
+              #printable-invoice-area h2,
+              #printable-invoice-area h3,
+              #printable-invoice-area h4,
+              #printable-invoice-area h5,
+              #printable-invoice-area h6,
+              #printable-invoice-area p,
+              #printable-invoice-area ul,
+              #printable-invoice-area ol {
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+
+              /* Prevent page breaks inside any layout containers, tables, row items, or cards */
+              #printable-invoice-area table,
+              #printable-invoice-area tr,
+              #printable-invoice-area div,
+              #printable-invoice-area section,
+              #printable-invoice-area .bg-slate-50 {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
               /* Explicit compact centered badge classes for html2canvas */
-              #printable-invoice-area .invoice-badge-green,
-              #printable-invoice-area .invoice-badge-gray,
-              #printable-invoice-area .invoice-badge-teal,
-              #printable-invoice-area .invoice-badge-amber,
-              #printable-invoice-area .invoice-badge-rose {
+              #printable-invoice-area span.invoice-badge-green,
+              #printable-invoice-area span.invoice-badge-gray,
+              #printable-invoice-area span.invoice-badge-teal,
+              #printable-invoice-area span.invoice-badge-amber,
+              #printable-invoice-area span.invoice-badge-rose {
                 display: inline-block !important;
-                text-align: center !important;
-                vertical-align: sub !important;
-                margin-top: 5px !important;
+                vertical-align: middle !important;
+                margin-top: 4px !important;
                 white-space: nowrap !important;
                 font-size: 8px !important;
-                font-weight: 700 !important;
+                font-weight: 800 !important;
                 text-transform: uppercase !important;
                 letter-spacing: 0.05em !important;
-                height: 18px !important;
-                line-height: 18px !important;
-                padding: 0px 7px !important;
-                box-sizing: border-box !important;
+                line-height: 1.2 !important;
+                background: none !important;
+                border: none !important;
+                padding: 0 !important;
               }
 
-              #printable-invoice-area .invoice-badge-green {
-                background-color: #ecfdf5 !important;
-                color: #047857 !important;
-                border: 1px solid #a7f3d0 !important;
-                border-radius: 9999px !important;
+              #printable-invoice-area span.invoice-badge-green {
+                color: #059669 !important;
               }
 
-              #printable-invoice-area .invoice-badge-gray {
-                background-color: #f1f5f9 !important;
-                color: #475569 !important;
-                border: 1px solid #cbd5e1 !important;
-                border-radius: 4px !important;
+              #printable-invoice-area span.invoice-badge-gray {
+                color: #64748b !important;
               }
 
-              #printable-invoice-area .invoice-badge-teal {
-                background-color: #f0fdfa !important;
-                color: #0f766e !important;
-                border: 1px solid #99f6e4 !important;
-                border-radius: 4px !important;
+              #printable-invoice-area span.invoice-badge-teal {
+                color: #0d9488 !important;
               }
 
-              #printable-invoice-area .invoice-badge-amber {
-                background-color: #fffbeb !important;
-                color: #b45309 !important;
-                border: 1px solid #fde68a !important;
-                border-radius: 4px !important;
+              #printable-invoice-area span.invoice-badge-amber {
+                color: #d97706 !important;
               }
 
-              #printable-invoice-area .invoice-badge-rose {
-                background-color: #fff1f2 !important;
-                color: #be123c !important;
-                border: 1px solid #fecdd3 !important;
-                border-radius: 4px !important;
+              #printable-invoice-area span.invoice-badge-rose {
+                color: #e11d48 !important;
               }
 
               /* Prevent vertical text clipping & squashing */
@@ -2204,6 +2261,10 @@ export default function ProjectMilestoneTracker({
                 overflow: visible !important;
                 white-space: normal !important;
                 text-overflow: clip !important;
+              }
+
+              #printable-invoice-area .overflow-hidden {
+                overflow: hidden !important;
               }
 
               #printable-invoice-area .flex { display: flex !important; }
@@ -2301,7 +2362,8 @@ export default function ProjectMilestoneTracker({
             }
           }
         },
-        jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
+        jsPDF:        { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const },
+        pagebreak:    { mode: ['avoid-all', 'css'] }
       };
       
       // Wait for the browser to recalculate layout
@@ -2479,7 +2541,7 @@ export default function ProjectMilestoneTracker({
             >
               <i className="fa-solid fa-file-invoice-dollar"></i> View Invoice
             </button>
-            {userRole === "client" && activeContract.status !== "Completed" && activeContract.status !== "Cancelled" && activeContract.status !== "CANCELLED" && (
+            {userRole === "client" && activeContract.status === "Hired" && (
               <button
                 onClick={handleCancelContract}
                 disabled={milestoneActionLoading}
@@ -2540,12 +2602,13 @@ export default function ProjectMilestoneTracker({
                 amount: `$${parseFloat(activeContract.budget || 0).toLocaleString()}`,
               });
 
+              const isHourlyWorkStarted = !!activeContract.work_started_at || activeContract.status !== "Hired";
               events.push({
                 label: "Work Started",
-                sub: activeContract.work_started_at ? "Freelancer began work on contract" : "Awaiting starting action",
-                date: activeContract.work_started_at,
-                done: !!activeContract.work_started_at,
-                color: activeContract.work_started_at ? "teal" : "slate",
+                sub: isHourlyWorkStarted ? "Freelancer began work on contract" : "Awaiting starting action",
+                date: activeContract.work_started_at || (isHourlyWorkStarted ? activeContract.created_at : undefined),
+                done: isHourlyWorkStarted,
+                color: isHourlyWorkStarted ? "teal" : "slate",
               });
 
               events.push({
@@ -2578,12 +2641,13 @@ export default function ProjectMilestoneTracker({
                 amount: `$${firstMilestoneAmt.toLocaleString()}`,
               });
 
+              const isMilestoneWorkStarted = !!activeContract.work_started_at || activeContract.status !== "Hired";
               events.push({
                 label: "Work Started",
-                sub: activeContract.work_started_at ? "Freelancer began work on contract" : "Awaiting starting action",
-                date: activeContract.work_started_at,
-                done: !!activeContract.work_started_at,
-                color: activeContract.work_started_at ? "teal" : "slate",
+                sub: isMilestoneWorkStarted ? "Freelancer began work on contract" : "Awaiting starting action",
+                date: activeContract.work_started_at || (isMilestoneWorkStarted ? activeContract.created_at : undefined),
+                done: isMilestoneWorkStarted,
+                color: isMilestoneWorkStarted ? "teal" : "slate",
               });
 
               milestones.forEach((m: any, i: number) => {
@@ -2630,41 +2694,79 @@ export default function ProjectMilestoneTracker({
             }
 
             const colorMap: Record<string, { dot: string; line: string; sub: string; badge: string }> = {
-              teal:    { dot: "bg-teal-600 border-teal-600 text-white shadow-teal-100",    line: "bg-teal-350",    sub: "text-teal-600",    badge: "bg-teal-50 border-teal-200 text-teal-700" },
-              emerald: { dot: "bg-emerald-600 border-emerald-600 text-white shadow-emerald-100", line: "bg-emerald-355", sub: "text-emerald-600", badge: "bg-emerald-50 border-emerald-200 text-emerald-700" },
-              amber:   { dot: "bg-amber-500 border-amber-500 text-white shadow-amber-100",   line: "bg-amber-350",   sub: "text-amber-600",   badge: "bg-amber-50 border-amber-200 text-amber-700" },
-              rose:    { dot: "bg-rose-600 border-rose-600 text-white shadow-rose-100",     line: "bg-rose-350",    sub: "text-rose-600",    badge: "bg-rose-50 border-rose-200 text-rose-700" },
-              orange:  { dot: "bg-orange-500 border-orange-500 text-white shadow-orange-100", line: "bg-orange-355", sub: "text-orange-600",  badge: "bg-orange-50 border-orange-200 text-orange-700" },
-              slate:   { dot: "bg-slate-205 border-slate-300 text-slate-400 shadow-none",       line: "bg-slate-200",   sub: "text-slate-400",   badge: "bg-slate-100 border-slate-200 text-slate-500" },
+              teal:    { dot: "bg-teal-600 border-teal-600 text-white shadow-teal-100",    line: "bg-teal-500",    sub: "text-teal-655",    badge: "bg-teal-50 border-teal-200 text-teal-700" },
+              emerald: { dot: "bg-emerald-600 border-emerald-600 text-white shadow-emerald-100", line: "bg-emerald-500", sub: "text-emerald-655", badge: "bg-emerald-50 border-emerald-200 text-emerald-700" },
+              amber:   { dot: "bg-amber-500 border-amber-500 text-white shadow-amber-100",   line: "bg-amber-500",   sub: "text-amber-600",   badge: "bg-amber-50 border-amber-200 text-amber-700" },
+              rose:    { dot: "bg-rose-600 border-rose-600 text-white shadow-rose-100",     line: "bg-rose-500",    sub: "text-rose-600",    badge: "bg-rose-50 border-rose-200 text-rose-700" },
+              orange:  { dot: "bg-orange-500 border-orange-500 text-white shadow-orange-100", line: "bg-orange-500", sub: "text-orange-600",  badge: "bg-orange-50 border-orange-200 text-orange-700" },
+              slate:   { dot: "bg-slate-200 border-slate-300 text-slate-400 shadow-none",       line: "bg-slate-200",   sub: "text-slate-400",   badge: "bg-slate-100 border-slate-200 text-slate-500" },
             };
 
+            const firstPendingIdx = events.findIndex(ev => !ev.done);
+
             return (
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-1">
                 {events.map((ev, idx) => {
                   const c = colorMap[ev.color] || colorMap.slate;
                   const isLast = idx === events.length - 1;
+                  const isNextStage = idx === firstPendingIdx;
+                  const lineActive = ev.done && !isLast && events[idx + 1].done;
+
                   return (
-                    <div key={idx} className="flex gap-4">
+                    <div key={idx} className="flex gap-4 group/step hover:translate-x-1 transition-all duration-200">
                       <div className="flex flex-col items-center self-stretch">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border-2 transition-all ${ev.done ? c.dot : "bg-slate-50 border-slate-200 text-slate-400"}`}>
-                          {ev.done ? "✓" : idx + 1}
+                        <div className="relative flex items-center justify-center shrink-0">
+                          {isNextStage && (
+                            <span className="absolute inline-flex h-8 w-8 rounded-full bg-teal-500/20 border border-teal-500/30 animate-ping opacity-75"></span>
+                          )}
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 border-2 transition-all duration-300 relative z-10 ${
+                            ev.done 
+                              ? c.dot 
+                              : isNextStage
+                                ? "bg-teal-50/50 border-teal-500 text-teal-600 shadow-sm shadow-teal-50 animate-pulse"
+                                : "bg-slate-50 border-slate-200 text-slate-400"
+                          }`}>
+                            {ev.done ? "✓" : idx + 1}
+                          </div>
                         </div>
                         {!isLast && (
-                          <div className={`w-[2px] flex-grow mt-1 mb-1 ${ev.done ? c.line : "bg-slate-200"}`} />
+                          <div className={`w-[2px] flex-grow mt-1 mb-1 transition-all duration-300 ${lineActive ? c.line : "bg-slate-200"}`} />
                         )}
                       </div>
 
                       <div className={`flex-1 ${isLast ? "pb-0" : "pb-5"}`}>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-left">
                           <div>
-                            <p className={`text-xs font-extrabold ${ev.done ? "text-slate-800" : "text-slate-400"}`}>{ev.label}</p>
-                            {ev.sub && <p className={`text-[10px] font-semibold mt-0.5 ${ev.done ? c.sub : "text-slate-400"}`}>{ev.sub}</p>}
+                            <p className={`text-xs font-extrabold transition-colors duration-200 ${
+                              ev.done 
+                                ? "text-slate-800" 
+                                : isNextStage 
+                                  ? "text-teal-700 font-black" 
+                                  : "text-slate-400"
+                            }`}>{ev.label}</p>
+                            {ev.sub && (
+                              <p className={`text-[10px] font-semibold mt-0.5 transition-colors duration-200 ${
+                                ev.done 
+                                  ? c.sub 
+                                  : isNextStage 
+                                    ? "text-teal-600/80" 
+                                    : "text-slate-400"
+                              }`}>{ev.sub}</p>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {ev.amount && (
-                              <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-lg border ${ev.done ? c.badge : "bg-slate-50 border-slate-200 text-slate-400"}`}>{ev.amount}</span>
+                              <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-lg border transition-all duration-200 ${
+                                ev.done 
+                                  ? c.badge 
+                                  : isNextStage 
+                                    ? "bg-teal-50/40 border-teal-150 text-teal-600" 
+                                    : "bg-slate-50 border-slate-200 text-slate-400"
+                              }`}>{ev.amount}</span>
                             )}
-                            <span className="text-[10px] font-semibold text-slate-400 whitespace-nowrap">
+                            <span className={`text-[10px] font-semibold whitespace-nowrap transition-colors duration-200 ${
+                              isNextStage ? "text-teal-600 font-bold" : "text-slate-400"
+                            }`}>
                               {ev.date ? new Date(ev.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Pending"}
                             </span>
                           </div>
@@ -2727,7 +2829,7 @@ export default function ProjectMilestoneTracker({
             {activeTimecardTab === "activities" && (
               <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap gap-2.5 items-center">
-                  {userRole === "freelancer" && activeContract?.status !== "Completed" && (
+                  {userRole === "freelancer" && activeContract?.status !== "Completed" && activeContract?.status !== "Cancelled" && activeContract?.status !== "CANCELLED" && (
                     <button
                       onClick={() => {
                         setNewTimecardDate(new Date().toISOString().substring(0, 10));
@@ -2742,7 +2844,7 @@ export default function ProjectMilestoneTracker({
                     </button>
                   )}
 
-                  {userRole === "freelancer" && selectedPendingTimecards.length > 0 && (
+                  {userRole === "freelancer" && selectedPendingTimecards.length > 0 && activeContract?.status !== "Completed" && activeContract?.status !== "Cancelled" && activeContract?.status !== "CANCELLED" && (
                     <button
                       onClick={handleRequestPayment}
                       disabled={timecardActionLoadingId === -1}
@@ -2784,7 +2886,7 @@ export default function ProjectMilestoneTracker({
                       return (
                         <div key={idx} className="bg-white border border-slate-205/85 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-350 transition-all text-left">
                           <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                            {userRole === "freelancer" && isPending && (
+                            {userRole === "freelancer" && isPending && activeContract?.status !== "Completed" && activeContract?.status !== "Cancelled" && activeContract?.status !== "CANCELLED" && (
                               <input
                                 type="checkbox"
                                 checked={isSelected}
@@ -2824,7 +2926,7 @@ export default function ProjectMilestoneTracker({
                               <span className="text-[9px] font-black text-slate-400 uppercase block tracking-wider">Amount</span>
                               <span className="text-xs font-black text-slate-808">${parseFloat(tc.amount).toFixed(2)}</span>
                             </div>
-                            {userRole === "client" && tc.status === "Requested" && (
+                            {userRole === "client" && tc.status === "Requested" && activeContract?.status !== "Completed" && activeContract?.status !== "Cancelled" && activeContract?.status !== "CANCELLED" && (
                               <div className="flex flex-col gap-1.5 items-end">
                                 <div className="flex gap-2">
                                   <button
@@ -3043,7 +3145,7 @@ export default function ProjectMilestoneTracker({
                                   <div key={fIdx} className="flex justify-between items-center bg-white border border-emerald-100/30 rounded p-1.5 text-[10px] font-semibold">
                                     <span className="text-slate-700 truncate max-w-[200px]">{file.name}</span>
                                     <a 
-                                      href={file.url} 
+                                      href={resolveDownloadUrl(file.url)} 
                                       target="_blank" 
                                       rel="noreferrer"
                                       className="text-primary hover:underline hover:text-primary-dark font-bold ml-2 text-[9px]"
@@ -3094,7 +3196,7 @@ export default function ProjectMilestoneTracker({
                                 {filesList.length > 0 && (
                                   <div className="mt-1 flex flex-col gap-1">
                                     {filesList.map((file, fIdx) => (
-                                      <a key={fIdx} href={file.url} target="_blank" rel="noreferrer" className="text-[9px] text-primary font-bold hover:underline">
+                                      <a key={fIdx} href={resolveDownloadUrl(file.url)} target="_blank" rel="noreferrer" className="text-[9px] text-primary font-bold hover:underline">
                                         📎 {file.name}
                                       </a>
                                     ))}
@@ -3199,7 +3301,7 @@ export default function ProjectMilestoneTracker({
                                 )}
                               </div>
                             ) : (
-                              activeContract.status === "Work Started" && (
+                              (activeContract.status === "Work Started" || activeContract.status === "In Progress") && (
                                 <button
                                   onClick={() => {
                                     setSubmittingMilestoneId(m.milestone_id);
@@ -3272,7 +3374,7 @@ export default function ProjectMilestoneTracker({
                                 {filesList.length > 0 && (
                                   <div className="mt-1 flex flex-col gap-1">
                                     {filesList.map((file, fIdx) => (
-                                      <a key={fIdx} href={file.url} target="_blank" rel="noreferrer" className="text-[9px] text-primary font-bold hover:underline">
+                                      <a key={fIdx} href={resolveDownloadUrl(file.url)} target="_blank" rel="noreferrer" className="text-[9px] text-primary font-bold hover:underline">
                                         📎 {file.name}
                                       </a>
                                     ))}
@@ -3328,7 +3430,7 @@ export default function ProjectMilestoneTracker({
                                 {filesList.length > 0 && (
                                   <div className="mt-1 flex flex-col gap-1">
                                     {filesList.map((file, fIdx) => (
-                                      <a key={fIdx} href={file.url} target="_blank" rel="noreferrer" className="text-[9px] text-primary font-bold hover:underline">
+                                      <a key={fIdx} href={resolveDownloadUrl(file.url)} target="_blank" rel="noreferrer" className="text-[9px] text-primary font-bold hover:underline">
                                         📎 {file.name}
                                       </a>
                                     ))}
@@ -3498,7 +3600,7 @@ export default function ProjectMilestoneTracker({
                                             {hist.files.map((file: any, fIdx: number) => (
                                               <a 
                                                 key={fIdx} 
-                                                href={file.url} 
+                                                href={resolveDownloadUrl(file.url)} 
                                                 target="_blank" 
                                                 rel="noreferrer" 
                                                 className="inline-flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[10px] font-extrabold text-primary px-3 py-1.5 rounded-lg transition-all no-underline shadow-xxs cursor-pointer"
@@ -3549,7 +3651,7 @@ export default function ProjectMilestoneTracker({
                 <div key={idx} className="flex items-center justify-between bg-white border border-emerald-100 rounded-lg p-2 text-xs">
                   <span className="font-semibold text-slate-700 truncate max-w-[250px]">{file.name}</span>
                   <a 
-                    href={file.url} 
+                    href={resolveDownloadUrl(file.url)} 
                     target="_blank" 
                     rel="noreferrer"
                     className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[10px] rounded shadow-sm hover:shadow transition-all no-underline"
@@ -3605,7 +3707,7 @@ export default function ProjectMilestoneTracker({
             
             const isHourly = job.project_type === "Hourly";
             const canSubmitCompletion = isHourly
-              ? (isHoursReqMet && allMilestonesCompleted)
+              ? isHoursReqMet
               : (isSingleMilestone || allMilestonesCompleted);
 
             const showUploadSection = isHourly || isSingleMilestone || allMilestonesCompleted || isHired;
@@ -3669,7 +3771,7 @@ export default function ProjectMilestoneTracker({
                     {!isHired && !canSubmitCompletion && (
                       <span className="block text-[10px] text-rose-600 font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-100 leading-normal">
                         {isHourly 
-                          ? `Requires min ${minHoursRequired} hours logged AND all milestones completed to submit.` 
+                          ? `Requires min ${minHoursRequired} hours logged to submit.` 
                           : "Please submit and complete all milestones before marking the entire project as completed."
                         }
                       </span>
@@ -4596,11 +4698,11 @@ export default function ProjectMilestoneTracker({
                             </td>
                             <td className="p-2.5">
                               {selectedInvoiceItem.type === "timecard" ? (
-                                <span className="inline-block bg-primary/5 text-primary text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                <span className="inline-block text-primary text-[8px] font-black uppercase tracking-wider">
                                   Hourly ({selectedInvoiceItem.hours}h {selectedInvoiceItem.minutes}m @ ${hourlyRate.toFixed(2)}/hr)
                                 </span>
                               ) : (
-                                <span className="inline-block bg-teal-50 text-teal-700 text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                <span className="inline-block text-teal-700 text-[8px] font-black uppercase tracking-wider">
                                   Fixed Price Milestone
                                 </span>
                               )}
@@ -4650,38 +4752,59 @@ export default function ProjectMilestoneTracker({
                               const paidVal = isDisputeSplit 
                                 ? totalAmount * (freelancerPayoutPercent / 100)
                                 : (mPaid || mFunded ? parseFloat(m.amount) : 0);
+                              
+                              const hasExtraRevision = parseFloat(m.extra_revision_fee || 0) > 0 && m.revision_status !== "Awaiting Funding";
 
                               return (
-                                <tr key={idx} className="hover:bg-slate-50/50">
-                                  <td className="p-2.5">
-                                    <span className="font-bold text-slate-800 block truncate max-w-[200px]">{m.title}</span>
-                                    <span className="text-[8px] text-slate-400 block">Phase {idx + 1}</span>
-                                    {(mPaid || mFunded) && (
-                                      <span className="text-[8px] text-slate-450 block mt-0.5 font-semibold">
-                                        Paid on {new Date(m.updated_at || activeContract.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                <React.Fragment key={idx}>
+                                  <tr className="hover:bg-slate-50/50">
+                                    <td className="p-2.5">
+                                      <span className="font-bold text-slate-800 block truncate max-w-[200px]">{m.title}</span>
+                                      <span className="text-[8px] text-slate-400 block">Phase {idx + 1}</span>
+                                      {(mPaid || mFunded) && (
+                                        <span className="text-[8px] text-slate-450 block mt-0.5 font-semibold">
+                                          Paid on {new Date(m.updated_at || activeContract.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="p-2.5 text-center">
+                                      <span className={
+                                        mPaid
+                                          ? (isDisputeSplit ? "invoice-badge-amber" : "invoice-badge-green")
+                                          : mFunded
+                                            ? "invoice-badge-teal"
+                                            : activeContract.status === "Cancelled"
+                                              ? "invoice-badge-rose"
+                                              : "invoice-badge-gray"
+                                      }>
+                                        {mPaid ? (isDisputeSplit ? "Split" : "Released") : mFunded ? "Escrow (Funded)" : activeContract.status === "Cancelled" ? "Refunded" : "Escrow"}
                                       </span>
-                                    )}
-                                  </td>
-                                  <td className="p-2.5 text-center">
-                                    <span className={
-                                      mPaid
-                                        ? (isDisputeSplit ? "invoice-badge-amber" : "invoice-badge-green")
-                                        : mFunded
-                                          ? "invoice-badge-teal"
-                                          : activeContract.status === "Cancelled"
-                                            ? "invoice-badge-rose"
-                                            : "invoice-badge-gray"
-                                    }>
-                                      {mPaid ? (isDisputeSplit ? "Split" : "Released") : mFunded ? "Escrow (Funded)" : activeContract.status === "Cancelled" ? "Refunded" : "Escrow"}
-                                    </span>
-                                  </td>
-                                  <td className="p-2.5 text-right font-bold text-slate-700">
-                                    ${parseFloat(m.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </td>
-                                  <td className="p-2.5 text-right font-bold text-slate-700">
-                                    ${paidVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </td>
-                                </tr>
+                                    </td>
+                                    <td className="p-2.5 text-right font-bold text-slate-700">
+                                      ${parseFloat(m.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </td>
+                                    <td className="p-2.5 text-right font-bold text-slate-700">
+                                      ${paidVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </td>
+                                  </tr>
+                                  {hasExtraRevision && (
+                                    <tr className="hover:bg-slate-50/50 bg-slate-50/20 text-[9px] text-slate-500">
+                                      <td className="p-2.5 pl-6">
+                                        <span className="font-semibold text-slate-700 block">↳ Extra Revision Charge</span>
+                                        <span className="text-[7.5px] text-slate-400 block">Milestone: {m.title}</span>
+                                      </td>
+                                      <td className="p-2.5 text-center">
+                                        <span className="invoice-badge-green">Released</span>
+                                      </td>
+                                      <td className="p-2.5 text-right font-bold text-slate-500">
+                                        ${parseFloat(m.extra_revision_fee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </td>
+                                      <td className="p-2.5 text-right font-bold text-slate-500">
+                                        ${parseFloat(m.extra_revision_fee).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
                               );
                             })
                           )}
@@ -4723,7 +4846,7 @@ export default function ProjectMilestoneTracker({
                             <tr>
                               <td className="text-left align-top" style={{ width: "50%" }}>
                                 <span className="block text-[8px] uppercase tracking-wider text-slate-400">Total Funded Escrow</span>
-                                <strong className="text-slate-800 text-[10px]">${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                                <strong className="text-slate-800 text-[10px]">${clientPaidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
                               </td>
                               <td className="text-left align-top" style={{ width: "50%" }}>
                                 <span className="block text-[8px] uppercase tracking-wider text-slate-400">Primary Payment Gateway</span>
@@ -4772,9 +4895,15 @@ export default function ProjectMilestoneTracker({
                         <td className="py-1 text-left">Total Amount:</td>
                         <td className="py-1 text-right text-slate-700">${(selectedInvoiceItem ? selectedInvoiceItem.amount : totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                       </tr>
+                      {!selectedInvoiceItem && (
+                        <tr>
+                          <td className="py-1 text-left">Platform Service Fee (5%):</td>
+                          <td className="py-1 text-right text-slate-400">-${platformFee.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      )}
                       <tr>
                         <td className="py-1 text-left">Net Released Payout:</td>
-                        <td className="py-1 text-right text-emerald-600">${(selectedInvoiceItem ? selectedInvoiceItem.amount : paidAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td className="py-1 text-right text-emerald-600">${(selectedInvoiceItem ? selectedInvoiceItem.amount : netFreelancerPayout).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                       </tr>
                       {!selectedInvoiceItem && isDisputeSplit && (
                         <tr className="text-rose-650">

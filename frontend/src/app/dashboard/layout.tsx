@@ -1461,11 +1461,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-slate-200 bg-slate-50 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0 overflow-hidden ${profileImage ? "bg-slate-100" : "bg-gradient-to-tr from-teal-700 to-cyan-500"}`}>
-                {profileImage ? (
-                  <img src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`} alt={userName} className="w-full h-full object-cover" />
-                ) : (
-                  userName ? userName.substring(0, 2).toUpperCase() : "US"
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0 overflow-hidden relative bg-gradient-to-tr from-teal-700 to-cyan-500">
+                <span className="font-extrabold text-white">
+                  {userName ? userName.substring(0, 2).toUpperCase() : "US"}
+                </span>
+                {profileImage && (
+                  <img
+                    src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`}
+                    alt={userName}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    onError={(e: any) => {
+                      e.target.style.display = "none";
+                    }}
+                  />
                 )}
               </div>
               <div className="min-w-0">
@@ -2870,7 +2878,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             setWizardStep(3);
                             await updateOnboardingStep(3);
                           }}
-                          className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-955"
+                          className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-white"
                         >
                           Next Step →
                         </button>
@@ -2926,7 +2934,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <button
                               type="button"
                               onClick={handleSendEmailOtp}
-                              className="bg-emerald-500 hover:bg-emerald-600 text-slate-955 font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
                             >
                               Send OTP Code
                             </button>
@@ -2944,7 +2952,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                               <button
                                 type="button"
                                 onClick={handleVerifyEmailOtp}
-                                className="bg-emerald-500 hover:bg-emerald-600 text-slate-955 font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
                               >
                                 Verify
                               </button>
@@ -3020,7 +3028,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 <button
                                   type="button"
                                   onClick={handleVerifyPhoneOtp}
-                                  className="bg-emerald-500 hover:bg-emerald-600 text-slate-955 font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
                                 >
                                   Verify
                                 </button>
@@ -3764,7 +3772,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="flex-1 flex flex-col overflow-y-auto pr-1">
                 {/* 1. Header Profile details */}
                 <div className="flex flex-col sm:flex-row gap-5 border-b border-slate-100 pb-5">
-                  <div className="w-20 h-20 bg-teal-50 border border-teal-100 text-teal-700 rounded-full flex items-center justify-center text-3xl font-black shrink-0 shadow-sm">
+                  <div className="w-24 h-24 bg-teal-50 border border-teal-100 text-teal-700 rounded-full flex items-center justify-center text-4xl font-black shrink-0 shadow-sm">
                     {selectedFreelancerProfile.profile_image ? (
                       <img
                         src={selectedFreelancerProfile.profile_image}
@@ -3782,13 +3790,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     </h2>
                     <p className="text-slate-500 font-bold text-sm mt-0.5">{selectedFreelancerProfile.role || "Professional Freelancer"}</p>
                     
-                    <div className="flex flex-wrap gap-4 mt-3 text-xxs font-extrabold text-slate-450 uppercase tracking-wider">
-                      <div className="flex items-center gap-1.5">
-                        <i className="fa-solid fa-dollar-sign text-teal-600 text-xs"></i>
+                    <div className="flex flex-wrap gap-3 mt-2 text-[10px] font-bold text-slate-450 uppercase tracking-wider">
+                      <div className="flex items-center gap-1">
+                        <i className="fa-solid fa-dollar-sign text-teal-600 text-[10px]"></i>
                         <span>Rate: <strong className="text-slate-700">${selectedFreelancerProfile.hourlyRate || selectedFreelancerProfile.hourly_rate || "45"}/hr</strong></span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <i className="fa-solid fa-star text-amber-500 text-xs"></i>
+                      <div className="flex items-center gap-1">
+                        <i className="fa-solid fa-star text-amber-500 text-[10px]"></i>
                         <span>Rating: <strong className="text-slate-700">5.0 (14 completed jobs)</strong></span>
                       </div>
                     </div>
@@ -3912,6 +3920,65 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         )}
                       </div>
                     </div>
+
+                    {/* Engagements / Projects with You */}
+                    {selectedFreelancerFullProfile?.clientContracts && selectedFreelancerFullProfile.clientContracts.length > 0 && (
+                      <div className="pt-6 border-t border-slate-150">
+                        <h4 className="text-[10px] font-extrabold text-slate-450 uppercase tracking-widest mb-3.5 flex items-center gap-1.5">
+                          <i className="fa-solid fa-handshake text-teal-600 text-xs"></i>
+                          <span>Engagements with You</span>
+                        </h4>
+                        <div className="grid grid-cols-1 gap-3.5">
+                          {selectedFreelancerFullProfile.clientContracts.map((c: any, idx: number) => {
+                            const isGig = c.type === "gig";
+                            let statusColor = "bg-slate-100 text-slate-700 border-slate-200";
+                            if (c.status === "Completed") statusColor = "bg-emerald-50 text-emerald-700 border-emerald-150/70";
+                            else if (c.status === "In Progress" || c.status === "Work Started") statusColor = "bg-blue-50 text-blue-700 border-blue-150/70";
+                            else if (c.status === "Disputed") statusColor = "bg-amber-50 text-amber-700 border-amber-150/70";
+                            else if (c.status === "Cancelled") statusColor = "bg-rose-50 text-rose-700 border-rose-150/70";
+
+                            return (
+                              <div key={idx} className="flex flex-col gap-2 p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all text-left">
+                                <div className="flex justify-between items-start gap-3">
+                                  <div className="flex items-start gap-2 min-w-0">
+                                    {isGig ? (
+                                      <i className="fa-solid fa-store text-slate-400 mt-1 text-[11px] shrink-0"></i>
+                                    ) : (
+                                      <i className="fa-solid fa-briefcase text-slate-400 mt-1 text-[11px] shrink-0"></i>
+                                    )}
+                                    <div>
+                                      <h5 className="text-xs font-black text-slate-800 line-clamp-1">{c.title}</h5>
+                                      <p className="text-[9px] font-bold text-slate-450 uppercase mt-0.5">{isGig ? "Gig Order" : "Project Contract"}</p>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2 shrink-0 select-none">
+                                    <span className={`text-[8.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${statusColor}`}>
+                                      {c.status}
+                                    </span>
+                                    <span className="text-xs font-black text-slate-700">
+                                      ${parseFloat(c.budget || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Review Section */}
+                                {c.rating !== null && (
+                                  <div className="text-[10px] text-slate-600 font-semibold bg-white border border-slate-100 rounded-lg p-2.5 flex flex-col gap-1 mt-1">
+                                    <div className="flex items-center gap-1.5 text-amber-500 font-bold">
+                                      <span>Your Review:</span>
+                                      <span>{"★".repeat(c.rating)}{"☆".repeat(5 - c.rating)}</span>
+                                      <span className="text-slate-400">({c.rating}.0)</span>
+                                    </div>
+                                    {c.comment && <p className="italic text-slate-500 font-medium">"{c.comment}"</p>}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 

@@ -240,7 +240,7 @@ export default function Home1Freelancers() {
                     {/* Bottom Footer: Rate on left + Hire Now CTA button on right */}
                     <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-zinc-800">
                       <span className="text-base font-extrabold text-slate-900 dark:text-white">
-                        {freelancer.hourly_rate ? `$${parseFloat(freelancer.hourly_rate).toLocaleString()}/hr` : "Request Quote"}
+                        {freelancer.hourly_rate ? `$${parseFloat(freelancer.hourly_rate).toLocaleString()}/hr` : t("request_quote", "Request Quote")}
                       </span>
                       <button
                         onClick={(e) => {
@@ -249,7 +249,7 @@ export default function Home1Freelancers() {
                         }}
                         className="bg-[#0a5a54] hover:bg-[#073f3a] text-white font-bold text-xs px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.97] hover:shadow-md cursor-pointer border-none"
                       >
-                        Hire Now
+                        {t("btn_hire_now", "Hire Now")}
                       </button>
                     </div>
                   </div>

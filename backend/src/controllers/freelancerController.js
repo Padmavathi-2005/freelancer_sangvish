@@ -727,7 +727,7 @@ export const getPublicFreelancerProfile = async (req, res) => {
         );
 
         const userRes = await pool.query(
-            `SELECT u.user_id, CONCAT_WS(' ', u.first_name, u.last_name) as name, u.email, u.profile_image, u.slug, u.display_name,
+            `SELECT u.user_id, COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email) as name, u.email, u.profile_image, u.slug, u.display_name,
                     COALESCE(u.active_plan_subscribed_at + (sp.profile_featured_duration * INTERVAL '1 day') >= CURRENT_TIMESTAMP AND sp.profile_featured_duration > 0, false) as is_featured
              FROM users u
              LEFT JOIN subscription_plans sp ON u.active_plan_id = sp.plan_id
@@ -794,6 +794,53 @@ export const getPublicFreelancerProfile = async (req, res) => {
         );
         const completedJobs = parseInt(completedJobsRes.rows[0].count) || 0;
 
+        let loggedInUserId = null;
+        if (req.headers.authorization) {
+            try {
+                const token = req.headers.authorization.split(" ")[1];
+                const jwt = await import('jsonwebtoken');
+                const decoded = jwt.default.verify(token, process.env.JWT_SECRET || 'your_jwt_secret');
+                loggedInUserId = decoded.user_id;
+            } catch (err) {
+                // Ignore and proceed
+            }
+        }
+
+        let clientContracts = [];
+        if (loggedInUserId) {
+            const contractsQuery = `
+                SELECT 
+                  c.contract_id,
+                  c.title,
+                  c.status,
+                  c.budget,
+                  c.progress,
+                  c.created_at,
+                  CASE WHEN c.application_id IS NOT NULL THEN 'gig' ELSE 'project' END as type,
+                  cr.rating as contract_rating,
+                  cr.comment as contract_comment,
+                  gr.rating as gig_rating,
+                  gr.comment as gig_comment
+                FROM contracts c
+                LEFT JOIN contract_reviews cr ON c.contract_id = cr.contract_id AND cr.reviewer_role = 'client'
+                LEFT JOIN gig_reviews gr ON c.application_id = gr.application_id
+                WHERE c.freelancer_id = $1 AND c.client_id = $2
+                ORDER BY c.created_at DESC
+            `;
+            const contractsRes = await pool.query(contractsQuery, [userId, loggedInUserId]);
+            clientContracts = contractsRes.rows.map(row => ({
+                contract_id: row.contract_id,
+                title: row.title,
+                status: row.status,
+                budget: row.budget,
+                progress: row.progress,
+                created_at: row.created_at,
+                type: row.type,
+                rating: row.contract_rating || row.gig_rating || null,
+                comment: row.contract_comment || row.gig_comment || null
+            }));
+        }
+
         res.status(200).json({
             user,
             profile: profile ? {
@@ -809,7 +856,8 @@ export const getPublicFreelancerProfile = async (req, res) => {
             projects: projectsRes.rows,
             reviews: reviewsRes.rows,
             gigs: gigsRes.rows,
-            completedJobs
+            completedJobs,
+            clientContracts
         });
     } catch (error) {
         console.error("Error fetching public freelancer profile:", error);

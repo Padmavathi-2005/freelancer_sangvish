@@ -235,6 +235,20 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var tMode = localStorage.getItem("siteTheme");
+                  if (tMode === 'dark') {
+                    document.body.classList.add('dark');
+                  }
+                } catch(e) {}
+              })();
+            `
+          }}
+        />
         <Suspense fallback={null}>
           <ReferralTracker />
           <ScrollToTop />

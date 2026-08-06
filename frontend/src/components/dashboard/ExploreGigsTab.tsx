@@ -116,7 +116,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
   const [customProposedPrice, setCustomProposedPrice] = useState("");
   const [orderMilestones, setOrderMilestones] = useState<any[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("wallet");
-  const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(false);
+  const [onboardingCheckLoading, setOnboardingCheckLoading] = useState<any | null>(null);
 
   const handleOrderClick = async (gig: any) => {
     const token = localStorage.getItem("token");
@@ -126,7 +126,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
     }
 
     try {
-      setOnboardingCheckLoading(true);
+      setOnboardingCheckLoading(gig.gig_id);
       const res = await fetch(`${API_URL}/users/onboarding-check`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -168,7 +168,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
     } catch (err) {
       triggerToast("error", "Error checking profile status.");
     } finally {
-      setOnboardingCheckLoading(false);
+      setOnboardingCheckLoading(null);
     }
   };
 
@@ -212,6 +212,23 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
     }
   };
 
+  const getSelectedBasePrice = () => {
+    if (!applyingGig) return 0;
+    let base = parseFloat(applyingGig.price);
+    if (applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0) {
+      base = base * (1 - parseFloat(applyingGig.discount_percent) / 100);
+    }
+    if (applyingGig.negotiation && customProposedPrice.trim() !== "") {
+      const num = parseFloat(customProposedPrice.trim());
+      const minAllowed = base * 0.5;
+      const maxAllowed = base;
+      if (!isNaN(num) && num >= minAllowed && num <= maxAllowed) {
+        return num;
+      }
+    }
+    return base;
+  };
+
   const handleApplyGigSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setOrderError("");
@@ -226,16 +243,20 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
       setOrderSubmitting(true);
       const token = localStorage.getItem("token");
 
-      let finalPrice = parseFloat(applyingGig.price);
-      if (applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0) {
-        finalPrice = finalPrice * (1 - parseFloat(applyingGig.discount_percent) / 100);
-      }
-      const basePkgPrice = finalPrice;
+      const basePkgPrice = getSelectedBasePrice();
+      const originalBasePrice = (() => {
+        let base = parseFloat(applyingGig.price);
+        if (applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0) {
+          base = base * (1 - parseFloat(applyingGig.discount_percent) / 100);
+        }
+        return base;
+      })();
+      let finalPrice = basePkgPrice;
 
       if (applyingGig.negotiation && customProposedPrice.trim() !== "") {
         const proposedNum = parseFloat(customProposedPrice.trim());
-        const minAllowed = basePkgPrice * 0.5; // Max 50% discount allowed
-        const maxAllowed = basePkgPrice;
+        const minAllowed = originalBasePrice * 0.5; // Max 50% discount allowed
+        const maxAllowed = originalBasePrice;
 
         if (isNaN(proposedNum) || proposedNum <= 0) {
           setOrderError("Please enter a valid positive offer amount.");
@@ -254,6 +275,10 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
         }
         finalPrice = proposedNum;
       }
+
+      // Add the extra milestone features to finalPrice so the backend receives the correct total price!
+      const extraMilestonesTotal = orderMilestones.reduce((acc, m) => acc + parseFloat(m.amount || 0), 0);
+      finalPrice = finalPrice + extraMilestonesTotal;
 
       if (isNaN(finalPrice) || finalPrice <= 0) {
         setOrderError("Please enter a valid price greater than 0.");
@@ -486,14 +511,14 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
               <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-auto">
                 <span className="text-slate-404 text-xxs font-semibold">Delivery: {g.delivery_days} days</span>
                 <button
-                  disabled={onboardingCheckLoading}
+                  disabled={onboardingCheckLoading !== null}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleOrderClick(g);
                   }}
                   className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-1.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  {onboardingCheckLoading ? "Checking..." : "Order Service →"}
+                  {onboardingCheckLoading === g.gig_id ? "Checking..." : "Order Service →"}
                 </button>
               </div>
             </div>
@@ -590,22 +615,42 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                 <div className="border-b border-slate-200/80 pb-3.5 px-1 flex justify-between items-center text-xs shrink-0 text-left">
                   <div>
                     <span className="text-slate-400 block font-bold uppercase tracking-wider text-[9px]">
-                    {applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0 ? "Discounted Price" : "Fixed Package Price"}
-                  </span>
-                  <span className="text-sm font-black text-slate-800 mt-0.5 block">
-                    {applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0 ? (
-                      <>
-                        <span className="line-through text-slate-400 font-bold mr-1.5">
-                          {applyingGig.currency_symbol || "$"}{parseFloat(applyingGig.price).toLocaleString()}
-                        </span>
-                        <span className="text-rose-500 font-black">
-                          {applyingGig.currency_symbol || "$"}{(parseFloat(applyingGig.price) * (1 - parseFloat(applyingGig.discount_percent) / 100)).toLocaleString()}
-                        </span>
-                      </>
-                    ) : (
-                      `${applyingGig.currency_symbol || "$"}${parseFloat(applyingGig.price).toLocaleString()}`
-                    )}{" "}{applyingGig.currency_code}
-                  </span>
+                      Selected Package Price
+                    </span>
+                    <span className="text-sm font-black text-slate-800 mt-0.5 block">
+                      {(() => {
+                        let originalBase = parseFloat(applyingGig.price);
+                        if (applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0) {
+                          originalBase = originalBase * (1 - parseFloat(applyingGig.discount_percent) / 100);
+                        }
+                        const selectedPrice = getSelectedBasePrice();
+                        if (selectedPrice !== originalBase) {
+                          return (
+                            <>
+                              <span className="line-through text-slate-400 font-bold mr-1.5">
+                                {applyingGig.currency_symbol || "$"}{originalBase.toLocaleString()}
+                              </span>
+                              <span className="text-amber-600 font-black">
+                                {applyingGig.currency_symbol || "$"}{selectedPrice.toLocaleString()} (Proposed)
+                              </span>
+                            </>
+                          );
+                        }
+                        
+                        return applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0 ? (
+                          <>
+                            <span className="line-through text-slate-400 font-bold mr-1.5">
+                              {applyingGig.currency_symbol || "$"}{parseFloat(applyingGig.price).toLocaleString()}
+                            </span>
+                            <span className="text-rose-500 font-black">
+                              {applyingGig.currency_symbol || "$"}{originalBase.toLocaleString()}
+                            </span>
+                          </>
+                        ) : (
+                          `${applyingGig.currency_symbol || "$"}${originalBase.toLocaleString()}`
+                        );
+                      })()}{" "}{applyingGig.currency_code}
+                    </span>
                 </div>
                 <div className="text-right">
                   <span className="text-slate-400 block font-bold uppercase tracking-wider text-[9px]">Delivery Timeline</span>
@@ -822,17 +867,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                       <div className="flex justify-between items-center text-[10px] text-slate-500 font-semibold">
                         <span>Base Package</span>
                         <span className="font-bold text-slate-700">
-                          {applyingGig.currency_symbol || "$"}{(
-                            parseFloat(applyingGig.price) * (
-                              applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0
-                                ? (1 - parseFloat(applyingGig.discount_percent) / 100)
-                                : 1
-                            ) * (
-                              applyingGig.negotiation && customProposedPrice.trim()
-                                ? parseFloat(customProposedPrice.trim()) / (parseFloat(applyingGig.price) * (applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0 ? (1 - parseFloat(applyingGig.discount_percent) / 100) : 1))
-                                : 1
-                            )
-                          ).toLocaleString()}
+                          {applyingGig.currency_symbol || "$"}{getSelectedBasePrice().toLocaleString()}
                         </span>
                       </div>
                       {orderMilestones.map((m, i) => (
@@ -845,34 +880,14 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                         <span className="text-[11px] font-black text-slate-800">Total Estimated Cost</span>
                         <span className="text-[11px] font-black text-primary">
                           {applyingGig.currency_symbol || "$"}{(
-                            (
-                              parseFloat(applyingGig.price) * (
-                                applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0
-                                  ? (1 - parseFloat(applyingGig.discount_percent) / 100)
-                                  : 1
-                              ) * (
-                                applyingGig.negotiation && customProposedPrice.trim()
-                                  ? parseFloat(customProposedPrice.trim()) / (parseFloat(applyingGig.price) * (applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0 ? (1 - parseFloat(applyingGig.discount_percent) / 100) : 1))
-                                  : 1
-                              )
-                            ) + orderMilestones.reduce((acc, m) => acc + parseFloat(m.amount || 0), 0)
+                            getSelectedBasePrice() + orderMilestones.reduce((acc, m) => acc + parseFloat(m.amount || 0), 0)
                           ).toLocaleString()}
                         </span>
                       </div>
                       <p className="text-[9px] text-amber-600 font-semibold mt-1.5">
                         50% ({applyingGig.currency_symbol || "$"}{(
                           (
-                            (
-                              parseFloat(applyingGig.price) * (
-                                applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0
-                                  ? (1 - parseFloat(applyingGig.discount_percent) / 100)
-                                  : 1
-                              ) * (
-                                applyingGig.negotiation && customProposedPrice.trim()
-                                  ? parseFloat(customProposedPrice.trim()) / (parseFloat(applyingGig.price) * (applyingGig.discount_percent && parseFloat(applyingGig.discount_percent) > 0 ? (1 - parseFloat(applyingGig.discount_percent) / 100) : 1))
-                                  : 1
-                              )
-                            ) + orderMilestones.reduce((acc, m) => acc + parseFloat(m.amount || 0), 0)
+                            getSelectedBasePrice() + orderMilestones.reduce((acc, m) => acc + parseFloat(m.amount || 0), 0)
                           ) * 0.5
                         ).toLocaleString()}) due now · 50% on completion
                       </p>

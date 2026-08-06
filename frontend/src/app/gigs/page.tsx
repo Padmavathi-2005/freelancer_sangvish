@@ -828,8 +828,8 @@ function GigsSearchContent() {
                               className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 rounded-xl shadow-sm transition cursor-pointer text-center block border-none"
                               title="Copy Affiliate Link"
                             >
-                              Share & Earn
-                            </button>
+                               {t("share_earn_btn", "Share & Earn")}
+                             </button>
                           )}
                           <div className="flex items-center justify-between text-xs font-bold text-slate-400 select-none">
                             <span className="uppercase tracking-wider">{t("starting_at", "Starting At")}</span>

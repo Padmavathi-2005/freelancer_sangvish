@@ -74,19 +74,29 @@ export default function FindWorkTab({
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const profileRes = await fetch(`${API_URL}/freelancer/onboarding/details`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!profileRes.ok) throw new Error();
-      const data = await profileRes.json();
-      const profile = data.profile;
-      if (!profile) throw new Error();
+      let profile: any = null;
+      let fSkills: string[] = [];
+      let fCatId = "";
+      let fExp = "";
 
-      const fSkills = Array.isArray(data.skills)
-        ? data.skills.map((s: any) => (s.skill_name || s.name || "").toLowerCase()).filter(Boolean)
-        : [];
-      const fCatId = profile.category_id?.toString() || "";
-      const fExp = profile.experience_level?.toLowerCase() || "";
+      try {
+        const profileRes = await fetch(`${API_URL}/freelancer/onboarding/details`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (profileRes.ok) {
+          const data = await profileRes.json();
+          profile = data.profile || null;
+          fSkills = Array.isArray(data.skills)
+            ? data.skills.map((s: any) => (s.skill_name || s.name || "").toLowerCase()).filter(Boolean)
+            : [];
+          if (profile) {
+            fCatId = profile.category_id?.toString() || "";
+            fExp = profile.experience_level?.toLowerCase() || "";
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch user profile details for local match, using defaults:", err);
+      }
 
       const localMatches = allJobs.map((job) => {
         let score = 30;
@@ -96,11 +106,20 @@ export default function FindWorkTab({
           score += 25;
         }
 
-        const jSkills = Array.isArray(job.skills)
-          ? job.skills.map((s: any) => (typeof s === "object" ? s.skill_name || s.name : s).toLowerCase()).filter(Boolean)
-          : [];
+        let jSkills: any[] = [];
+        try {
+          jSkills = Array.isArray(job.skills)
+            ? job.skills
+            : (typeof job.skills === "string" ? JSON.parse(job.skills) : []);
+        } catch (e) {
+          jSkills = [];
+        }
         
-        jSkills.forEach((js: string) => {
+        const finalJSkills = Array.isArray(jSkills) 
+          ? jSkills.map((s: any) => (typeof s === "object" && s !== null ? s.skill_name || s.name : s).toLowerCase()).filter(Boolean)
+          : [];
+
+        finalJSkills.forEach((js: string) => {
           if (fSkills.includes(js)) {
             matchedSkills.push(js);
           }
@@ -137,6 +156,7 @@ export default function FindWorkTab({
       setIsLocalFallback(true);
       setAiMatchError("");
     } catch (err) {
+      console.error("Local matching fallback failed:", err);
       setAiMatchError("Local matching failed. Please try again.");
     }
   };
@@ -553,17 +573,6 @@ export default function FindWorkTab({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {showAiMatches && isLocalFallback && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-left shadow-sm">
-              <span className="text-lg shrink-0">💡</span>
-              <div>
-                <p className="text-xs font-black text-amber-800 uppercase tracking-widest leading-none">AI Limits Exceeded</p>
-                <p className="text-[11px] text-amber-700 font-semibold mt-1.5 leading-relaxed">
-                  We've switched to a local search matching algorithm. These jobs are filtered matching your profile expertise, active skills, and category domains.
-                </p>
-              </div>
-            </div>
-          )}
           {displayedJobs.map((job) => {
               const isApplied = appliedJobIds.has(job.job_id);
               const handleCardClick = () => {

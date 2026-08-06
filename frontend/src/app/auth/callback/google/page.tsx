@@ -67,7 +67,7 @@ export default function GoogleCallbackPage() {
         if (checkRes.ok) {
           const onboarding = await checkRes.json();
           if (!onboarding.hasFreelancerProfile && !onboarding.hasClientProfile) {
-            router.push("/onboarding");
+            router.push("/dashboard");
           } else {
             router.push("/dashboard?tab=workspace");
           }

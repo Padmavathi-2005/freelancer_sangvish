@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FiHeart, FiStar, FiClock, FiTrash2, FiExternalLink, FiUser, FiBriefcase } from "react-icons/fi";
 import { API_BASE_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 const resolveMediaUrl = (url: string) => {
   if (!url) return "";
@@ -13,6 +14,7 @@ const resolveMediaUrl = (url: string) => {
 
 export default function WishlistPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<"gigs" | "projects" | "freelancers">("gigs");
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -92,10 +94,10 @@ export default function WishlistPage() {
       {/* Header Info */}
       <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase mb-1 block">Saved Items</span>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">My Wishlist</h1>
+          <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase mb-1 block">{t("wishlist_saved_items", "Saved Items")}</span>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">{t("my_wishlist_menu", "My Wishlist")}</h1>
           <p className="text-slate-500 text-xs mt-1 font-medium leading-relaxed">
-            Keep track of services, projects, and freelancers you want to hire, collaborate with, or bid on in the future.
+            {t("wishlist_desc", "Keep track of services, projects, and freelancers you want to hire, collaborate with, or bid on in the future.")}
           </p>
         </div>
         {userRole !== "freelancer" && (
@@ -104,7 +106,7 @@ export default function WishlistPage() {
               onClick={() => router.push("/dashboard/explore-gigs")}
               className="bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer"
             >
-              Explore Gigs
+              {t("explore_gigs_btn", "Explore Gigs")}
             </button>
           </div>
         )}
@@ -118,7 +120,7 @@ export default function WishlistPage() {
             activeTab === "gigs" ? "border-teal-700 text-teal-700" : "border-transparent text-slate-400 hover:text-slate-600"
           }`}
         >
-          Services ({gigsWishlist.length})
+          {t("services_tab", "Services")} ({gigsWishlist.length})
         </button>
         <button
           onClick={() => setActiveTab("projects")}
@@ -126,7 +128,7 @@ export default function WishlistPage() {
             activeTab === "projects" ? "border-teal-700 text-teal-700" : "border-transparent text-slate-400 hover:text-slate-600"
           }`}
         >
-          Projects ({projectsWishlist.length})
+          {t("projects_tab", "Projects")} ({projectsWishlist.length})
         </button>
         <button
           onClick={() => setActiveTab("freelancers")}
@@ -134,7 +136,7 @@ export default function WishlistPage() {
             activeTab === "freelancers" ? "border-teal-700 text-teal-700" : "border-transparent text-slate-400 hover:text-slate-600"
           }`}
         >
-          Freelancers ({freelancersWishlist.length})
+          {t("freelancers_tab", "Freelancers")} ({freelancersWishlist.length})
         </button>
       </div>
 
@@ -237,14 +239,14 @@ export default function WishlistPage() {
 
                   <div className="px-4 pb-4 pt-2.5 flex items-center justify-between gap-3">
                     <div>
-                      <span className="text-[9px] text-slate-400 font-bold block uppercase tracking-wider">Starting at</span>
+                      <span className="text-[9px] text-slate-400 font-bold block uppercase tracking-wider">{t("starting_at", "Starting at")}</span>
                       <span className="text-sm font-black text-slate-900">${parseFloat(gig.price || 0).toLocaleString()}</span>
                     </div>
                     <button
                       onClick={() => router.push(`/gigs/${gig.slug || gig.gig_id}`)}
                       className="flex items-center gap-1 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 font-extrabold text-[10px] px-3.5 py-2.5 rounded-xl transition-all cursor-pointer"
                     >
-                      <span>View Gig</span>
+                      <span>{t("view_gig_btn", "View Gig")}</span>
                       <FiExternalLink className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -257,15 +259,15 @@ export default function WishlistPage() {
             <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-100/80 flex items-center justify-center text-3xl mx-auto mb-4 select-none">
               💼
             </div>
-            <h2 className="text-base font-black text-slate-900">No Saved Services</h2>
+            <h2 className="text-base font-black text-slate-900">{t("no_saved_services", "No Saved Services")}</h2>
             <p className="text-slate-400 text-xs mt-1.5 max-w-sm mx-auto font-medium leading-relaxed">
-              Browse through our wide variety of expert services and click the heart icon to save them here.
+              {t("no_saved_services_desc", "Browse through our wide variety of expert services and click the heart icon to save them here.")}
             </p>
             <button
               onClick={() => router.push("/dashboard/explore-gigs")}
-              className="mt-6 bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer"
+              className="mt-6 bg-teal-700 hover:bg-teal-655 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer"
             >
-              Start Exploring
+              {t("start_exploring_btn", "Start Exploring")}
             </button>
           </div>
         )
@@ -321,7 +323,7 @@ export default function WishlistPage() {
                       onClick={() => router.push(`/projects/${job.slug || job.job_id}`)}
                       className="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
                     >
-                      Submit Proposal
+                      {t("submit_proposal_btn", "Submit Proposal")}
                     </button>
                   </div>
                 </div>
@@ -333,15 +335,15 @@ export default function WishlistPage() {
             <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-100/80 flex items-center justify-center text-3xl mx-auto mb-4 select-none">
               📂
             </div>
-            <h2 className="text-base font-black text-slate-900">No Saved Projects</h2>
+            <h2 className="text-base font-black text-slate-900">{t("no_saved_projects", "No Saved Projects")}</h2>
             <p className="text-slate-400 text-xs mt-1.5 max-w-sm mx-auto font-medium leading-relaxed">
-              Browse through our open project briefs and click the heart icon to save them here.
+              {t("no_saved_projects_desc", "Browse through our open project briefs and click the heart icon to save them here.")}
             </p>
             <button
               onClick={() => router.push("/projects")}
-              className="mt-6 bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer"
+              className="mt-6 bg-teal-700 hover:bg-teal-655 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer"
             >
-              Find Projects
+              {t("find_projects_btn", "Find Projects")}
             </button>
           </div>
         )
@@ -390,7 +392,7 @@ export default function WishlistPage() {
                         {f.name}
                       </h3>
                       {f.vetting_status === "Approved" && (
-                        <span className="bg-teal-50 text-teal-705 border border-teal-100 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">Vetted</span>
+                        <span className="bg-teal-50 text-teal-705 border border-teal-100 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">{t("vetted_badge", "Vetted")}</span>
                       )}
                     </div>
                     <p className="text-xs font-black text-slate-800 mt-1 leading-snug">
@@ -402,7 +404,7 @@ export default function WishlistPage() {
                   </div>
                   <div className="sm:border-l sm:border-slate-100 sm:pl-6 flex flex-col justify-between items-start sm:items-end gap-4 self-stretch min-w-[160px]">
                     <div>
-                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Hourly Rate</span>
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("hourly_rate", "Hourly Rate")}</span>
                       <span className="text-slate-850 font-black text-base mt-0.5 block">${parseFloat(f.hourly_rate || 0).toFixed(0)}/hr</span>
                     </div>
                     <div className="flex items-center gap-2 w-full justify-end">
@@ -420,7 +422,7 @@ export default function WishlistPage() {
                           background: `linear-gradient(135deg, var(--color-primary, #10b981) 0%, var(--color-secondary, #06b6d4) 100%)`
                         }}
                       >
-                        View Profile
+                        {t("btn_view_profile", "View Profile")}
                       </button>
                     </div>
                   </div>
@@ -433,15 +435,15 @@ export default function WishlistPage() {
             <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-100/80 flex items-center justify-center text-3xl mx-auto mb-4 select-none">
               👤
             </div>
-            <h2 className="text-base font-black text-slate-900">No Saved Freelancers</h2>
+            <h2 className="text-base font-black text-slate-900">{t("no_saved_freelancers", "No Saved Freelancers")}</h2>
             <p className="text-slate-400 text-xs mt-1.5 max-w-sm mx-auto font-medium leading-relaxed">
-              Find elite developers or designers and click the heart icon to save them here.
+              {t("no_saved_freelancers_desc", "Find elite developers or designers and click the heart icon to save them here.")}
             </p>
             <button
               onClick={() => router.push("/talent")}
               className="mt-6 bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer"
             >
-              Hire Freelancers
+              {t("hire_freelancers_btn", "Hire Freelancers")}
             </button>
           </div>
         )

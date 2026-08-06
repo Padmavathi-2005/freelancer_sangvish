@@ -38,6 +38,31 @@ type Plan = {
   is_enabled?: boolean;
 };
 
+const BadgeAvatar = ({ src, name }: { src?: string; name: string }) => {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [src]);
+
+  if (src && !imgError) {
+    return (
+      <img
+        src={src}
+        alt={name}
+        className="w-8 h-8 rounded-lg object-cover shrink-0 border border-slate-200"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+
+  return (
+    <div className="w-8 h-8 rounded-lg bg-teal-100 border border-teal-300 flex items-center justify-center shrink-0 shadow-sm">
+      <span className="text-sm font-black text-teal-900 uppercase">{name ? name.charAt(0) : "P"}</span>
+    </div>
+  );
+};
+
 const emptyForm = (): Plan => ({
   name: "",
   plan_role: "seller",
@@ -645,20 +670,7 @@ export default function SubscriptionPlansPage() {
                       <tr key={plan.plan_id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            {plan.badge_image ? (
-                              <img
-                                src={plan.badge_image}
-                                alt={plan.name}
-                                className="w-8 h-8 rounded-lg object-cover shrink-0"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = "none";
-                                }}
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-100 to-cyan-100 border border-teal-200/60 flex items-center justify-center shrink-0">
-                                <span className="text-[10px] font-black text-teal-700">{plan.name.charAt(0)}</span>
-                              </div>
-                            )}
+                            <BadgeAvatar src={plan.badge_image} name={plan.name} />
                             <span className="text-xs font-extrabold text-teal-700">{plan.name}</span>
                           </div>
                         </td>

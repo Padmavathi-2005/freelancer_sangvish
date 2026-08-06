@@ -4,32 +4,32 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function SuccessStories() {
-  const { t } = useLanguage();
+  const { t, direction } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const testimonials = [
     {
-      name: "Elena Rodriguez",
-      role: "CTO, TechStart Inc.",
+      name: t("testimonial_1_name", "Elena Rodriguez"),
+      role: t("testimonial_1_role", "CTO, TechStart Inc."),
       avatar: "/sarah-avatar.png",
       rating: 5,
-      quote: "Finding the right developer for our core platform was daunting. Freelancer matched us with David within 24 hours. His expertise accelerated our launch by 2 months.",
+      quote: t("testimonial_1_quote", "Finding the right developer for our core platform was daunting. Freelancer matched us with David within 24 hours. His expertise accelerated our launch by 2 months."),
     },
     {
-      name: "Marcus Vance",
-      role: "Founder, Apex Systems",
+      name: t("testimonial_2_name", "Marcus Vance"),
+      role: t("testimonial_2_role", "Founder, Apex Systems"),
       avatar: "/david-avatar.png",
       rating: 5,
-      quote: "We needed a complete redesign of our SaaS portal under a tight deadline. The designer Freelancer found was spectacular—delivering pixel-perfect Figma prototypes ahead of schedule.",
+      quote: t("testimonial_2_quote", "We needed a complete redesign of our SaaS portal under a tight deadline. The designer Freelancer found was spectacular—delivering pixel-perfect Figma prototypes ahead of schedule."),
     },
     {
-      name: "Priya Patel",
-      role: "Product Lead, CloudScale",
+      name: t("testimonial_3_name", "Priya Patel"),
+      role: t("testimonial_3_role", "Product Lead, CloudScale"),
       avatar: null, // renders initials placeholder
       initials: "PP",
       rating: 5,
-      quote: "The AI automation engineer we hired through Freelancer integrated a custom LLM pipeline into our product in just two weeks. Outstanding talent pool and seamless payments.",
+      quote: t("testimonial_3_quote", "The AI automation engineer we hired through Freelancer integrated a custom LLM pipeline into our product in just two weeks. Outstanding talent pool and seamless payments."),
     },
   ];
 
@@ -56,6 +56,9 @@ export default function SuccessStories() {
     resetTimer(); // resets auto-slide timer on manual click
   };
 
+  const isRtl = direction?.toUpperCase() === "RTL";
+  const transformValue = isRtl ? `${activeIndex * 100}%` : `-${activeIndex * 100}%`;
+
   return (
     <section className="w-full bg-[#f8fafc] border-t border-slate-200/50 py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-[1600px] mx-auto">
@@ -68,7 +71,7 @@ export default function SuccessStories() {
           
           <div 
             className="flex transition-transform duration-700 ease-in-out w-full"
-            style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+            style={{ transform: `translateX(${transformValue})` }}
           >
             {testimonials.map((testimonial, index) => (
               <div 

@@ -56,7 +56,9 @@ export async function checkUserSubscription(userId, io) {
       }
     }
   } catch (err) {
-    console.error(`Error checking subscription for user ${userId}:`, err);
+    if (err.code !== '42703') {
+      console.error(`Error checking subscription for user ${userId}:`, err.message || err);
+    }
   }
 }
 
@@ -166,7 +168,9 @@ export async function checkAllSubscriptions(io) {
       }
     }
   } catch (err) {
-    console.error("Error in subscription check cron:", err);
+    if (err.code !== '42703') {
+      console.error("Error in subscription check cron:", err.message || err);
+    }
   }
 }
 

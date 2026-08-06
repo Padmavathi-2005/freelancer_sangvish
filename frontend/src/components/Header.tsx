@@ -17,13 +17,50 @@ const resolveLogoUrl = (url: string) => {
 
 
 import React, { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuthModal } from "@/context/AuthModalContext";
-import { FiZap, FiPlus, FiGrid, FiChevronDown, FiChevronRight, FiSearch, FiUser, FiLogOut } from "react-icons/fi";
+import { FiZap, FiPlus, FiGrid, FiChevronDown, FiChevronRight, FiSearch, FiUser, FiLogOut, FiBell } from "react-icons/fi";
+import NotificationsDropdown from "./dashboard/NotificationsDropdown";
+import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
 export default function Header() {
+  const router = useRouter();
+  const handleTalentClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    let isLoggedIn = false;
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+      isLoggedIn = !!(token && user);
+    }
+    if (isLoggedIn) {
+      const result = await checkAndSwitchRole("client", "/talent", false);
+      router.push(result.targetUrl);
+    } else {
+      router.push("/talent");
+    }
+  };
+
+  const handleProjectsClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    let isLoggedIn = false;
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      const user = localStorage.getItem("user");
+      isLoggedIn = !!(token && user);
+    }
+    if (isLoggedIn) {
+      const result = await checkAndSwitchRole("freelancer", "/projects", false);
+      router.push(result.targetUrl);
+    } else {
+      router.push("/projects");
+    }
+  };
   const pathname = usePathname() || "";
+
+
+
   const isHome1Active = pathname === "/" || pathname === "/home-1";
   const isHome2Active = pathname === "/home-2";
   const isHome3Active = pathname === "/home-3";
@@ -73,6 +110,141 @@ export default function Header() {
   const [siteLogoDark, setSiteLogoDark] = useState("");
   const [siteName, setSiteName] = useState("");
   const [mounted, setMounted] = useState(false);
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_URL}/notifications`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          setNotifications(await res.json());
+        }
+      } catch (e) {
+        console.error("Failed to fetch notifications in Header:", e);
+      }
+    };
+
+    const fetchUnreadCount = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_URL}/notifications/unread-count`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadNotificationsCount(data.unreadCount);
+        }
+      } catch (e) {
+        console.error("Failed to fetch unread count in Header:", e);
+      }
+    };
+
+    fetchNotifications();
+    fetchUnreadCount();
+
+    const interval = setInterval(() => {
+      fetchNotifications();
+      fetchUnreadCount();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isLoggedIn]);
+
+  const handleMarkAllRead = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/notifications/read-all`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setUnreadNotificationsCount(0);
+        setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      }
+    } catch (e) {
+      console.error("Failed to mark all notifications as read in Header:", e);
+    }
+  };
+
+  const handleMarkSingleRead = async (notifId: number, notifType: string, refId: string | null) => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_URL}/notifications/${notifId}/read`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      let redirectUrl = "/dashboard";
+      const type = notifType ? notifType.toLowerCase() : "";
+      
+      if (type === "message" || type === "chat") {
+        redirectUrl = refId ? `/dashboard/inbox?chat_id=${refId}` : "/dashboard/inbox";
+      } else if (type === "proposal" || type === "project") {
+        redirectUrl = "/dashboard/proposals";
+      } else if (type === "gig") {
+        if (userRole === "client") {
+          redirectUrl = refId ? `/dashboard/orders?application_id=${refId}` : "/dashboard/orders";
+        } else {
+          redirectUrl = refId ? `/dashboard/applications?application_id=${refId}` : "/dashboard/applications";
+        }
+      } else if (type === "wallet" || type === "payout" || type === "withdrawal") {
+        redirectUrl = "/dashboard/wallet";
+      } else if (
+        type === "contract" ||
+        type === "dispute" ||
+        type === "work_started" ||
+        type === "completion" ||
+        type === "milestone" ||
+        type === "payment"
+      ) {
+        let isGigContract = false;
+        let gigAppId = null;
+        if (refId) {
+          try {
+            const refNum = parseInt(refId);
+            const token = localStorage.getItem("token");
+            const endpoint = userRole === "client" 
+              ? `${API_URL}/freelancer/client/gigs/applications`
+              : `${API_URL}/freelancer/gigs/applications`;
+            const checkRes = await fetch(endpoint, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (checkRes.ok) {
+              const apps = await checkRes.json();
+              const matchedApp = apps.find((a: any) => a.contract_id === refNum);
+              if (matchedApp) {
+                isGigContract = true;
+                gigAppId = matchedApp.application_id;
+              }
+            }
+          } catch (e) {
+            console.error("Error checking gig contract:", e);
+          }
+        }
+
+        if (isGigContract && gigAppId) {
+          redirectUrl = userRole === "client"
+            ? `/dashboard/orders?application_id=${gigAppId}`
+            : `/dashboard/applications?application_id=${gigAppId}`;
+        } else {
+          redirectUrl = refId ? `/dashboard/my-projects?contract_id=${refId}` : "/dashboard/my-projects";
+        }
+      }
+      
+      window.location.href = redirectUrl;
+    } catch (e) {
+      console.error("Failed to mark notification as read and redirect:", e);
+      window.location.href = "/dashboard";
+    }
+  };
 
   const getCategoryLink = (catName: string, subCatName: string) => {
     if (typeof window !== "undefined") {
@@ -363,7 +535,7 @@ export default function Header() {
                       : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary"
                   }`}
                 >
-                  <span>Home 1 (Default)</span>
+                  <span>{t("home_1_default", "Home 1 (Default)")}</span>
                   {isHome1Active && <span className="text-teal-600 font-black">✓</span>}
                 </a>
                 <a
@@ -374,7 +546,7 @@ export default function Header() {
                       : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary"
                   }`}
                 >
-                  <span>Home 2</span>
+                  <span>{t("home_2", "Home 2")}</span>
                   {isHome2Active && <span className="text-teal-600 font-black">✓</span>}
                 </a>
                 <a
@@ -385,7 +557,7 @@ export default function Header() {
                       : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary"
                   }`}
                 >
-                  <span>Home 3</span>
+                  <span>{t("home_3", "Home 3")}</span>
                   {isHome3Active && <span className="text-teal-600 font-black">✓</span>}
                 </a>
               </div>
@@ -493,6 +665,7 @@ export default function Header() {
               {/* Navigation Links */}
               <a
                 href="/talent"
+                onClick={handleTalentClick}
                 className={`font-bold text-sm leading-none transition-all duration-200 ${
                   isTalentActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
@@ -501,6 +674,7 @@ export default function Header() {
               </a>
               <a
                 href="/projects"
+                onClick={handleProjectsClick}
                 className={`font-bold text-sm leading-none transition-all duration-200 ${
                   isProjectsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
@@ -590,14 +764,34 @@ export default function Header() {
               )}
             </button>
 
+            {isLoggedIn && (
+              <NotificationsDropdown
+                notifications={notifications}
+                unreadNotificationsCount={unreadNotificationsCount}
+                isNotificationsOpen={isNotificationsOpen}
+                setIsNotificationsOpen={setIsNotificationsOpen}
+                handleMarkAllRead={handleMarkAllRead}
+                handleMarkSingleRead={handleMarkSingleRead}
+                setActiveTab={() => { window.location.href = "/dashboard/notifications"; }}
+              />
+            )}
+
             {isLoggedIn ? (
               <div className="relative group">
                 <button className="flex items-center gap-2 px-1 py-1 focus:outline-none cursor-pointer border-none bg-transparent">
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-primary flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0 text-[11px]">
-                    {userProfileImage ? (
-                      <img src={resolveLogoUrl(userProfileImage)} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      userFirstName ? userFirstName.substring(0, 2).toUpperCase() : "US"
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-primary flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0 text-[11px] relative">
+                    <span className="text-[11px] font-extrabold text-white">
+                      {userFirstName ? userFirstName.substring(0, 2).toUpperCase() : "US"}
+                    </span>
+                    {userProfileImage && (
+                      <img
+                        src={resolveLogoUrl(userProfileImage)}
+                        alt="Avatar"
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e: any) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
                     )}
                   </div>
                   <span className="font-extrabold text-slate-800 text-sm select-none group-hover:text-primary transition-colors">
@@ -654,7 +848,20 @@ export default function Header() {
           </div>
 
           {/* Mobile Menu Toggle Button */}
-          <div className="flex lg:hidden">
+          <div className="flex lg:hidden items-center gap-2">
+            {isLoggedIn && (
+              <a
+                href="/dashboard/notifications"
+                className="relative p-2 text-slate-500 hover:text-primary rounded-xl transition-all"
+              >
+                <FiBell className="w-5 h-5" />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute top-1 right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-[8px] font-extrabold leading-none text-white transform translate-x-1 -translate-y-1 bg-rose-600 rounded-full">
+                    {unreadNotificationsCount}
+                  </span>
+                )}
+              </a>
+            )}
             <button
               onClick={() => setIsOpen(!isOpen)}
               type="button"
@@ -685,7 +892,7 @@ export default function Header() {
       >
         <div className="px-4 pt-4 pb-28 space-y-2 flex flex-col min-h-full">
           <div className="space-y-1 bg-slate-100 dark:bg-zinc-800 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700">
-            <span className="block px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider">Home Variations</span>
+            <span className="block px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("home_variations", "Home Variations")}</span>
             <a
               href="/"
               className={`flex items-center justify-between px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${
@@ -694,7 +901,7 @@ export default function Header() {
                   : "text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
               }`}
             >
-              <span>Home 1 (Default)</span>
+              <span>{t("home_1_default", "Home 1 (Default)")}</span>
               {isHome1Active && <span className="text-xs font-black">✓</span>}
             </a>
             <a
@@ -705,7 +912,7 @@ export default function Header() {
                   : "text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
               }`}
             >
-              <span>Home 2</span>
+              <span>{t("home_2", "Home 2")}</span>
               {isHome2Active && <span className="text-xs font-black">✓</span>}
             </a>
             <a
@@ -716,7 +923,7 @@ export default function Header() {
                   : "text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
               }`}
             >
-              <span>Home 3</span>
+              <span>{t("home_3", "Home 3")}</span>
               {isHome3Active && <span className="text-xs font-black">✓</span>}
             </a>
           </div>
@@ -734,6 +941,7 @@ export default function Header() {
           </a>
           <a
             href="/talent"
+            onClick={handleTalentClick}
             className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${
               isTalentActive
                 ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
@@ -745,6 +953,7 @@ export default function Header() {
           </a>
           <a
             href="/projects"
+            onClick={handleProjectsClick}
             className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${
               isProjectsActive
                 ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"

@@ -108,10 +108,46 @@ app.post('/api/contact', async (req, res) => {
       [name || null, email, subject || 'General Inquiry', message]
     );
     
+    const savedInquiry = result.rows[0];
+
+    // Trigger notification to all administrators
+    try {
+      const adminQuery = await pool.query("SELECT admin_id, email, full_name FROM admins");
+      for (const adminRow of adminQuery.rows) {
+        const userCheck = await pool.query("SELECT user_id FROM users WHERE email = $1", [adminRow.email]);
+        let adminUserId;
+        if (userCheck.rows.length > 0) {
+          adminUserId = userCheck.rows[0].user_id;
+        } else {
+          const insertUser = await pool.query(
+            "INSERT INTO users (first_name, email, password_hash) VALUES ($1, $2, $3) RETURNING user_id",
+            [adminRow.full_name || "Admin", adminRow.email, "ADMIN_VIRTUAL_HASH"]
+          );
+          adminUserId = insertUser.rows[0].user_id;
+        }
+
+        const adminNotif = await pool.query(
+          `INSERT INTO notifications (user_id, title, message, type, reference_id)
+           VALUES ($1, 'New Contact Inquiry 📩', $2, 'contact_inquiry', $3) RETURNING *`,
+          [
+            adminUserId,
+            `A new contact inquiry "${subject || 'General Inquiry'}" was submitted by ${name || email}.`,
+            savedInquiry.id.toString()
+          ]
+        );
+
+        if (req.io && adminNotif.rows.length > 0) {
+          req.io.to(`user_${adminUserId}`).emit("new_notification", adminNotif.rows[0]);
+        }
+      }
+    } catch (notifErr) {
+      console.error("Error sending admin notifications for contact inquiry:", notifErr);
+    }
+    
     return res.status(201).json({
       success: true,
       message: "Inquiry submitted successfully!",
-      inquiry: result.rows[0]
+      inquiry: savedInquiry
     });
   } catch (error) {
     console.error("Error submitting contact inquiry:", error);

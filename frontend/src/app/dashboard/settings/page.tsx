@@ -71,7 +71,35 @@ export default function SettingsPage() {
     profileImage,
     handleProfileImageUpload,
     setSelectedFreelancerProfile,
-    userEmail
+    userEmail,
+    userPhone,
+    setUserPhone,
+    phoneVerified,
+    emailVerified,
+    emailOtp,
+    setEmailOtp,
+    emailOtpSent,
+    setEmailOtpSent,
+    sendingEmailOtp,
+    setSendingEmailOtp,
+    verifyingEmailOtp,
+    setVerifyingEmailOtp,
+    phoneOtp,
+    setPhoneOtp,
+    phoneOtpSent,
+    setPhoneOtpSent,
+    sendingPhoneOtp,
+    setSendingPhoneOtp,
+    verifyingPhoneOtp,
+    setVerifyingPhoneOtp,
+    otpSuccess,
+    setOtpSuccess,
+    otpError,
+    setOtpError,
+    handleSendEmailOtp,
+    handleVerifyEmailOtp,
+    handleSendPhoneOtp,
+    handleVerifyPhoneOtp
   } = useDashboard();
 
   // Map the newExp/newEdu/newCert to props expected by SettingsTab
@@ -164,6 +192,34 @@ export default function SettingsPage() {
       handleProfileImageUpload={handleProfileImageUpload}
       setSelectedFreelancerProfile={setSelectedFreelancerProfile}
       userEmail={userEmail}
+      userPhone={userPhone}
+      setUserPhone={setUserPhone}
+      phoneVerified={phoneVerified}
+      emailVerified={emailVerified}
+      emailOtp={emailOtp}
+      setEmailOtp={setEmailOtp}
+      emailOtpSent={emailOtpSent}
+      setEmailOtpSent={setEmailOtpSent}
+      sendingEmailOtp={sendingEmailOtp}
+      setSendingEmailOtp={setSendingEmailOtp}
+      verifyingEmailOtp={verifyingEmailOtp}
+      setVerifyingEmailOtp={setVerifyingEmailOtp}
+      phoneOtp={phoneOtp}
+      setPhoneOtp={setPhoneOtp}
+      phoneOtpSent={phoneOtpSent}
+      setPhoneOtpSent={setPhoneOtpSent}
+      sendingPhoneOtp={sendingPhoneOtp}
+      setSendingPhoneOtp={setSendingPhoneOtp}
+      verifyingPhoneOtp={verifyingPhoneOtp}
+      setVerifyingPhoneOtp={setVerifyingPhoneOtp}
+      otpSuccess={otpSuccess}
+      setOtpSuccess={setOtpSuccess}
+      otpError={otpError}
+      setOtpError={setOtpError}
+      handleSendEmailOtp={handleSendEmailOtp}
+      handleVerifyEmailOtp={handleVerifyEmailOtp}
+      handleSendPhoneOtp={handleSendPhoneOtp}
+      handleVerifyPhoneOtp={handleVerifyPhoneOtp}
     />
   );
 }

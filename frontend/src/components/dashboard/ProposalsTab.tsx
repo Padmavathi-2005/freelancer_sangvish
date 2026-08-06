@@ -2,6 +2,7 @@ import { API_URL } from "@/config/api";
 import React, { useState, useMemo, useEffect } from "react";
 import { FiCheck, FiStar } from "react-icons/fi";
 import CustomSelect from "../CustomSelect";
+import { useLanguage } from "@/context/LanguageContext";
 import ProjectMilestoneTracker from "./ProjectMilestoneTracker";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { initSocket } from "@/utils/socket";
@@ -142,6 +143,7 @@ export default function ProposalsTab({
   setPostJobSelectedLanguages,
 }: ProposalsTabProps) {
   const { pendingInviteFreelancer, setPendingInviteFreelancer } = useDashboard();
+  const { t } = useLanguage();
   const [clientSubscription, setClientSubscription] = useState<any>(null);
   const [siteShortName, setSiteShortName] = useState("Lancer");
   const [durations, setDurations] = useState<string[]>([
@@ -2268,15 +2270,15 @@ export default function ProposalsTab({
       <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <i className="fa-solid fa-paper-plane text-primary"></i> My Submitted Proposals
+            <i className="fa-solid fa-paper-plane text-primary"></i> {t("my_submitted_proposals_header", "My Submitted Proposals")}
           </h2>
-          <p className="text-slate-400 text-xs mt-1 font-semibold">Track and manage the status of your bids on active client projects.</p>
+          <p className="text-slate-400 text-xs mt-1 font-semibold">{t("my_submitted_proposals_desc", "Track and manage the status of your bids on active client projects.")}</p>
         </div>
         <button
           onClick={() => setActiveTab("find_work")}
           className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
         >
-          <i className="fa-solid fa-magnifying-glass"></i> Find Projects
+          <i className="fa-solid fa-magnifying-glass"></i> {t("find_projects_btn_label", "Find Projects")}
         </button>
       </div>
 
@@ -2284,24 +2286,28 @@ export default function ProposalsTab({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           {
+            labelKey: "total_submitted_metric",
             label: "Total Submitted",
             value: freelancerProposals.length,
             color: "from-blue-500 to-indigo-500",
             icon: "fa-paper-plane"
           },
           {
+            labelKey: "accepted_offers_metric",
             label: "Accepted Offers",
             value: freelancerProposals.filter((p) => p.status === "Accepted").length,
             color: "from-emerald-500 to-teal-500",
             icon: "fa-circle-check"
           },
           {
+            labelKey: "pending_review_metric",
             label: "Pending Review",
             value: freelancerProposals.filter((p) => p.status === "Pending").length,
             color: "from-amber-500 to-orange-500",
             icon: "fa-clock"
           },
           {
+            labelKey: "declined_metric",
             label: "Declined",
             value: freelancerProposals.filter((p) => p.status === "Declined" || p.status === "Cancelled").length,
             color: "from-rose-500 to-pink-500",
@@ -2310,7 +2316,7 @@ export default function ProposalsTab({
         ].map((stat, idx) => (
           <div key={idx} className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex items-center justify-between gap-4">
             <div>
-              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{stat.label}</span>
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t(stat.labelKey, stat.label)}</span>
               <h3 className="text-xl font-black text-slate-800 mt-1">{stat.value}</h3>
             </div>
             <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} text-white flex items-center justify-center text-sm shadow-sm`}>
@@ -2332,7 +2338,7 @@ export default function ProposalsTab({
                   : "text-slate-500 hover:text-slate-800 bg-transparent"
               }`}
             >
-              All Proposals ({freelancerProposals.length})
+              {t("all_proposals_filter", "All Proposals")} ({freelancerProposals.length})
             </button>
             <button
               onClick={() => setFreelancerFilter("pending")}
@@ -2342,7 +2348,7 @@ export default function ProposalsTab({
                   : "text-slate-500 hover:text-slate-800 bg-transparent"
               }`}
             >
-              Pending Review ({freelancerProposals.filter((p) => p.status === "Pending").length})
+              {t("pending_review_filter", "Pending Review")} ({freelancerProposals.filter((p) => p.status === "Pending").length})
             </button>
             <button
               onClick={() => setFreelancerFilter("accepted")}
@@ -2352,7 +2358,7 @@ export default function ProposalsTab({
                   : "text-slate-500 hover:text-slate-800 bg-transparent"
               }`}
             >
-              Accepted & Hired ({freelancerProposals.filter((p) => p.status === "Accepted" || p.status === "Accepted_By_Freelancer" || p.contract_status === "Hired" || p.contract_status === "Work Started" || p.contract_status === "Completed").length})
+              {t("accepted_hired_filter", "Accepted & Hired")} ({freelancerProposals.filter((p) => p.status === "Accepted" || p.status === "Accepted_By_Freelancer" || p.contract_status === "Hired" || p.contract_status === "Work Started" || p.contract_status === "Completed").length})
             </button>
             <button
               onClick={() => setFreelancerFilter("declined")}
@@ -2362,7 +2368,7 @@ export default function ProposalsTab({
                   : "text-slate-500 hover:text-slate-800 bg-transparent"
               }`}
             >
-              Declined & Cancelled ({freelancerProposals.filter((p) => p.status === "Declined" || p.status === "Cancelled" || p.contract_status === "Cancelled").length})
+              {t("declined_cancelled_filter", "Declined & Cancelled")} ({freelancerProposals.filter((p) => p.status === "Declined" || p.status === "Cancelled" || p.contract_status === "Cancelled").length})
             </button>
           </div>
 
@@ -2371,8 +2377,8 @@ export default function ProposalsTab({
               type="text"
               value={searchProposalQuery}
               onChange={(e) => setSearchProposalQuery(e.target.value)}
-              placeholder="Search proposals..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-805 focus:outline-none focus:border-teal-700 focus:bg-white transition-all shadow-xs"
+              placeholder={t("search_proposals_placeholder", "Search proposals...")}
+              className="w-full bg-slate-55 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-805 focus:outline-none focus:border-teal-700 focus:bg-white transition-all shadow-xs"
             />
             <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
           </div>
@@ -2453,32 +2459,32 @@ export default function ProposalsTab({
                   <div className="text-left w-full sm:w-auto">
                     <h3 
                       onClick={() => setSelectedProposalDetails(proposal)}
-                      className="text-sm font-extrabold text-slate-850 hover:text-primary transition-colors cursor-pointer flex items-center gap-2 flex-wrap"
+                      className="text-sm font-extrabold text-slate-855 hover:text-primary transition-colors cursor-pointer flex items-center gap-2 flex-wrap"
                     >
                       <span>{proposal.job_title}</span>
                       {proposal.initiated_by === "client" && (
-                        <span className="bg-amber-100 text-amber-800 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">Direct Hire Offer</span>
+                        <span className="bg-amber-100 text-amber-800 text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">{t("direct_hire_offer", "Direct Hire Offer")}</span>
                       )}
                     </h3>
                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1">
                       <span className="text-slate-400 text-[10px] font-bold">
-                        Client: <strong>{proposal.client_company_name || proposal.client_name}</strong> ({proposal.client_email})
+                        {t("client_prefix", "Client:")} <strong>{proposal.client_company_name || proposal.client_name}</strong> ({proposal.client_email})
                       </span>
                       <span className="text-slate-400 text-[10px] font-bold">
-                        • Offer Date: {new Date(proposal.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                        • {t("offer_date_prefix", "Offer Date:")} {new Date(proposal.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                   </div>
                   <div className="shrink-0">
                     <span className={`text-[10px] font-black border px-2.5 py-0.5 rounded uppercase tracking-wider whitespace-nowrap shrink-0 ${statusColorClass}`}>
-                      {displayStatus}
+                      {t(displayStatus.toLowerCase(), displayStatus)}
                     </span>
                   </div>
                 </div>
 
               <div className="bg-slate-50/50 border border-slate-200/50 rounded-xl p-4 flex flex-col gap-2">
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">
-                  {proposal.initiated_by === "client" ? "Offer Invitation Message" : "Cover Letter"}
+                  {proposal.initiated_by === "client" ? t("offer_invitation_msg", "Offer Invitation Message") : t("cover_letter_label", "Cover Letter")}
                 </span>
                 <p className="text-slate-600 text-xs font-medium leading-relaxed whitespace-pre-line line-clamp-3">{proposal.cover_letter}</p>
               </div>
@@ -2487,11 +2493,11 @@ export default function ProposalsTab({
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="flex items-center gap-1.5">
                     <i className="fa-solid fa-wallet text-slate-400"></i>
-                    <span>Offer Budget: <strong className="text-slate-700 font-extrabold">${parseFloat(proposal.bid_amount).toLocaleString()}</strong></span>
+                    <span>{t("offer_budget_label", "Offer Budget:")} <strong className="text-slate-700 font-extrabold">${parseFloat(proposal.bid_amount).toLocaleString()}</strong></span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <i className="fa-solid fa-clock text-slate-400"></i>
-                    <span>Delivery Time: <strong className="text-slate-700 font-extrabold">{proposal.delivery_days} days</strong></span>
+                    <span>{t("delivery_time_label", "Delivery Time:")} <strong className="text-slate-700 font-extrabold">{proposal.delivery_days} days</strong></span>
                   </div>
                 </div>
                 
@@ -2505,7 +2511,7 @@ export default function ProposalsTab({
                         }}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[9px] px-3.5 py-2 rounded-xl cursor-pointer shadow-sm uppercase tracking-wider border-0"
                       >
-                        Accept Offer
+                        {t("accept_offer_btn", "Accept Offer")}
                       </button>
                       <button
                         onClick={(e) => {
@@ -2514,7 +2520,7 @@ export default function ProposalsTab({
                         }}
                         className="bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-extrabold text-[9px] px-3.5 py-2 rounded-xl cursor-pointer uppercase tracking-wider"
                       >
-                        Decline
+                        {t("decline_btn", "Decline")}
                       </button>
                     </div>
                   )}
@@ -2523,7 +2529,7 @@ export default function ProposalsTab({
                     onClick={() => setSelectedProposalDetails(proposal)}
                     className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-xl text-xs font-black shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center gap-1.5 border-0"
                   >
-                    <span>View Details</span>
+                    <span>{t("view_details_btn", "View Details")}</span>
                     <i className="fa-solid fa-arrow-right text-[10px]"></i>
                   </button>
                 </div>
@@ -2536,22 +2542,22 @@ export default function ProposalsTab({
       {totalProposalPages > 1 && (
         <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 text-xs font-bold select-none">
           <span className="text-slate-400">
-            Showing {(proposalPage - 1) * proposalsPerPage + 1} - {Math.min(proposalPage * proposalsPerPage, filteredFreelancerProposals.length)} of {filteredFreelancerProposals.length} proposals
+            {t("showing", "Showing")} {(proposalPage - 1) * proposalsPerPage + 1} - {Math.min(proposalPage * proposalsPerPage, filteredFreelancerProposals.length)} {t("of", "of")} {filteredFreelancerProposals.length} {t("proposals_label_pagination", "proposals")}
           </span>
           <div className="flex gap-2">
             <button
               onClick={() => setProposalPage(p => Math.max(1, p - 1))}
               disabled={proposalPage === 1}
-              className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+              className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
             >
-              Previous
+              {t("btn_previous", "Previous")}
             </button>
             <button
               onClick={() => setProposalPage(p => Math.min(totalProposalPages, p + 1))}
               disabled={proposalPage === totalProposalPages}
-              className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+              className="px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
             >
-              Next
+              {t("btn_next", "Next")}
             </button>
           </div>
         </div>
