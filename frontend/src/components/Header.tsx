@@ -705,7 +705,7 @@ export default function Header() {
           <div className="hidden lg:flex items-center gap-5">
             {/* Language Switcher */}
             <div className="relative group/lang">
-              <button className="text-slate-650 hover:text-teal-750 font-bold text-xs flex items-center gap-1.5 cursor-pointer bg-slate-100 hover:bg-slate-200/60 px-3 py-2 rounded-xl border border-slate-200/50 transition-all duration-200">
+              <button className="text-slate-700 dark:text-zinc-200 hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-3 py-2 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253" />
                 </svg>
@@ -728,8 +728,8 @@ export default function Header() {
 
             {/* Currency Switcher */}
             <div className="relative group/curr">
-              <button className="text-slate-650 hover:text-teal-750 font-bold text-xs flex items-center gap-1 cursor-pointer bg-slate-100 hover:bg-slate-200/60 px-3 py-2 rounded-xl border border-slate-200/50 transition-all duration-200">
-                <span className="font-extrabold text-teal-700 mr-0.5">{currencySymbol}</span>
+              <button className="text-slate-700 dark:text-zinc-200 hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-3 py-2 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200">
+                <span className="font-extrabold text-primary dark:text-teal-400 mr-0.5">{currencySymbol}</span>
                 <span>{currency}</span>
               </button>
               <div className="absolute right-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/curr:opacity-100 group-hover/curr:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">

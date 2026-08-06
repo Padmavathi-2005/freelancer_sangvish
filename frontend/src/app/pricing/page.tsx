@@ -147,7 +147,7 @@ export default function PricingPage() {
         <Header />
 
         {/* ── Hero ── */}
-        <section className="relative bg-white dark:bg-slate-900/40 overflow-hidden border-b border-slate-100/80 dark:border-slate-800/80 py-20 px-4 text-center transition-colors duration-300">
+        <section className="relative bg-white dark:bg-slate-900/40 overflow-hidden border-b border-slate-100/80 dark:border-slate-800/80 pt-20 pb-10 px-4 text-center transition-colors duration-300">
           {/* Animated blobs */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <div className="blob-a absolute -top-24 -left-24 w-80 h-80 bg-teal-100/50 dark:bg-teal-900/10 rounded-full blur-3xl" />
@@ -162,7 +162,7 @@ export default function PricingPage() {
             <h1 className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               Simple,{" "}
               <span className="relative inline-block">
-                <span className="relative z-10 text-transparent bg-clip-text bg-gradient-to-r from-teal-700 to-emerald-600 dark:from-teal-400 dark:to-emerald-400">
+                <span className="relative z-10 text-teal-600 dark:text-teal-400">
                   transparent
                 </span>
                 <span className="absolute bottom-1 left-0 right-0 h-2.5 bg-teal-100/60 dark:bg-teal-900/40 rounded-full z-0" />
@@ -187,7 +187,7 @@ export default function PricingPage() {
         </section>
 
         {/* ── Plans ── */}
-        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-32 gap-4">
               <div className="w-10 h-10 border-4 border-teal-600 dark:border-teal-400 border-t-transparent rounded-full animate-spin" />
