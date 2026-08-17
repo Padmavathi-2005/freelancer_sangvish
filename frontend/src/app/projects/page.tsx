@@ -8,9 +8,10 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CustomSelect from "@/components/CustomSelect";
+import ShareSection from "@/components/ShareSection";
 import { useLanguage } from "@/context/LanguageContext";
 import { convertPrice } from "@/utils/currencyHelper";
-import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiClock, FiActivity, FiUser, FiBriefcase, FiHeart, FiStar, FiCpu } from "react-icons/fi";
+import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiClock, FiActivity, FiUser, FiBriefcase, FiHeart, FiStar, FiCpu, FiX } from "react-icons/fi";
 import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
 function ProjectsSearchContent() {
@@ -113,6 +114,7 @@ function ProjectsSearchContent() {
   // Affiliate states
   const [isAffiliate, setIsAffiliate] = useState(false);
   const [userReferralCode, setUserReferralCode] = useState("");
+  const [activeShareProject, setActiveShareProject] = useState<any | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -1009,13 +1011,10 @@ function ProjectsSearchContent() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const link = `${window.location.origin}/projects/${match.slug || match.job_id}?ref=${userReferralCode}`;
-                                  navigator.clipboard.writeText(link);
-                                  setToast({ type: "success", message: "Affiliate referral link copied to clipboard!" });
-                                  setTimeout(() => setToast(null), 3000);
+                                  setActiveShareProject(match);
                                 }}
                                 className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-700 text-[10px] font-black py-1.5 px-3 rounded-lg shadow-sm transition cursor-pointer border-none"
-                                title="Copy Affiliate Link"
+                                title="Share & Earn Affiliate Commission"
                               >
                                   {t("share_earn_btn", "Share & Earn")}
                                 </button>
@@ -1176,13 +1175,10 @@ function ProjectsSearchContent() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const link = `${window.location.origin}/projects/${job.slug || job.job_id}?ref=${userReferralCode}`;
-                                navigator.clipboard.writeText(link);
-                                setToast({ type: "success", message: "Affiliate referral link copied to clipboard!" });
-                                setTimeout(() => setToast(null), 3000);
+                                setActiveShareProject(job);
                               }}
                               className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-700 text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
-                              title="Copy Affiliate Link"
+                              title="Share & Earn Affiliate Commission"
                             >
                               {t("share_earn_btn", "Share & Earn")}
                             </button>
@@ -1240,6 +1236,50 @@ function ProjectsSearchContent() {
         </section>
 
       </main>
+
+      {/* Share & Earn Pop-up Modal */}
+      {activeShareProject && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setActiveShareProject(null)}
+          />
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-md p-6 relative z-10 flex flex-col gap-4 text-left animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3.5">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 font-extrabold flex items-center justify-center text-base">
+                  🎁
+                </span>
+                <div>
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight">Share & Earn Commission</h3>
+                  <p className="text-[10px] font-bold text-slate-400">Promote this project and earn affiliate commission</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveShareProject(null)}
+                className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer border-none"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            </div>
+
+            <ShareSection
+              type="project"
+              itemTitle={activeShareProject.title || "Project"}
+              itemDescription={activeShareProject.description || ""}
+              priceOrBudget={activeShareProject.budget ? `$${parseFloat(activeShareProject.budget || 0).toLocaleString()}` : ""}
+              customUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/projects/${activeShareProject.slug || activeShareProject.job_id}`}
+              referralCode={userReferralCode}
+              isAffiliate={isAffiliate}
+              onToast={(type, msg) => {
+                setToast({ type: type === "error" ? "error" : "success", message: msg });
+                setTimeout(() => setToast(null), 3000);
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (

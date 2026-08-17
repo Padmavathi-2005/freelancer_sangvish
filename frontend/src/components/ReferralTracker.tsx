@@ -7,10 +7,10 @@ export default function ReferralTracker() {
   
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const ref = searchParams.get("ref");
+      const ref = searchParams.get("ref") || searchParams.get("aff");
       if (ref) {
         localStorage.setItem("referral_code", ref);
-        console.log("Captured referral code:", ref);
+        console.log("Captured referral/affiliate code:", ref);
       }
     }
   }, [searchParams]);

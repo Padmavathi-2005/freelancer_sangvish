@@ -933,7 +933,8 @@ export const getAffiliateStats = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
         const referralCode = userRes.rows[0].referral_code;
-        const isAffiliate = userRes.rows[0].is_affiliate === true || userRes.rows[0].is_affiliate === 1;
+        const rawIsAffiliate = userRes.rows[0].is_affiliate;
+        const isAffiliate = rawIsAffiliate === true || rawIsAffiliate === 1 || rawIsAffiliate === "true" || rawIsAffiliate === "t" || Boolean(rawIsAffiliate);
 
         // 2. Count total referred users
         const referredCountRes = await pool.query("SELECT COUNT(*) as count FROM users WHERE referred_by = $1", [userId]);

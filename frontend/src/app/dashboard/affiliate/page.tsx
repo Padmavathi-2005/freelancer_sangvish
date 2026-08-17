@@ -3,7 +3,7 @@ import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FiCopy, FiCheck, FiUsers, FiDollarSign, FiAward, FiInfo, FiActivity } from "react-icons/fi";
+import { FiCopy, FiCheck, FiUsers, FiDollarSign, FiAward, FiInfo, FiActivity, FiArrowRight } from "react-icons/fi";
 
 interface LedgerEntry {
   commission_id: number;
@@ -78,6 +78,15 @@ export default function AffiliatePortalPage() {
         }
       });
       if (res.ok) {
+        // Update stored user object in localStorage
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            parsed.is_affiliate = true;
+            localStorage.setItem("user", JSON.stringify(parsed));
+          } catch (e) {}
+        }
         const statsRes = await fetch(`${API_URL}/users/affiliate/stats`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -85,7 +94,9 @@ export default function AffiliatePortalPage() {
         });
         if (statsRes.ok) {
           const stats = await statsRes.json();
-          setData(stats);
+          setData({ ...stats, is_affiliate: true });
+        } else {
+          setData(prev => prev ? { ...prev, is_affiliate: true } : null);
         }
         setShowTermsModal(false);
       } else {
@@ -125,7 +136,14 @@ export default function AffiliatePortalPage() {
     );
   }
 
-  if (data && !data.is_affiliate) {
+  const isAffiliate = Boolean(
+    data?.is_affiliate === true ||
+    data?.is_affiliate === 1 ||
+    data?.is_affiliate === "true" ||
+    data?.is_affiliate === "t"
+  );
+
+  if (data && !isAffiliate) {
     return (
       <div className="flex-grow max-w-2xl mx-auto w-full px-3 sm:px-4 py-2 sm:py-6 flex flex-col gap-5 sm:gap-6 text-center animate-fadeIn">
         <div className="space-y-1">
@@ -261,29 +279,27 @@ export default function AffiliatePortalPage() {
           </p>
         </div>
 
-        {/* Copy affiliate link box */}
-        <div className="w-full md:max-w-md bg-slate-50 border border-slate-200 p-5 rounded-xl flex flex-col gap-3 relative z-10">
-          <label className="text-[10px] font-black text-slate-450 uppercase tracking-widest">Your Affiliate Referral Link</label>
-          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg p-2.5">
-            <input
-              type="text"
-              readOnly
-              value={affiliateLink}
-              className="flex-1 bg-transparent text-xs font-bold text-slate-800 outline-none select-all"
-            />
-            <button
-              onClick={handleCopyLink}
-              className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white p-2 rounded-lg cursor-pointer flex items-center justify-center shrink-0"
-              title="Copy link"
-            >
-              {copied ? <FiCheck className="w-4 h-4 text-emerald-500" /> : <FiCopy className="w-4 h-4" />}
-            </button>
+        {/* Product-Level Affiliate Links Info Box */}
+        <div className="w-full md:max-w-md bg-emerald-50/80 border border-emerald-200/80 p-5 rounded-2xl flex flex-col gap-3 relative z-10 shadow-xs text-left">
+          <div className="flex items-center gap-2.5 border-b border-emerald-200/60 pb-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-xs">
+              🛍️
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-850 uppercase tracking-wider">Product-Specific Affiliate Links</h4>
+              <p className="text-[10px] font-extrabold text-emerald-700 mt-0.5">Share specific Gigs & Projects</p>
+            </div>
           </div>
-          {copied && (
-            <span className="text-[10px] font-bold text-emerald-600 text-right animate-fade-in select-none">
-              Link copied to clipboard!
-            </span>
-          )}
+          <p className="text-[11px] font-semibold text-slate-600 leading-relaxed bg-white/90 p-3 rounded-xl border border-emerald-150/70">
+            Affiliate referral links are item-specific. Browse any Gig or Project on the marketplace to find your unique <strong>"Copy Product Affiliate Link"</strong> button.
+          </p>
+          <a
+            href="/gigs"
+            className="inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-black py-2.5 px-4 rounded-xl shadow-xs transition cursor-pointer text-center no-underline border-none"
+          >
+            <span>Browse Marketplace Products</span>
+            <FiArrowRight className="w-3.5 h-3.5" />
+          </a>
         </div>
       </div>
 
