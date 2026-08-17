@@ -4,6 +4,7 @@ import { API_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 import { FiGlobe, FiUploadCloud, FiExternalLink, FiPlus, FiTrash2 } from "react-icons/fi";
 import { Home3HeroSlide, DEFAULT_HOME3_HERO_SLIDES } from "@/components/home/Home3Hero";
+import { useAdmin } from "@/app/admin/AdminContext";
 
 interface SiteSettingsTabProps {
   handleSaveSetting: (key: string, value: any, category?: string) => Promise<void>;
@@ -12,6 +13,7 @@ interface SiteSettingsTabProps {
 export default function SiteSettingsTab({
   handleSaveSetting
 }: SiteSettingsTabProps) {
+  const { isDark } = useAdmin();
 
   // Site name/logo/favicon/OG details states
   const [siteName, setSiteName] = useState("Buy2Lancer");
@@ -679,15 +681,15 @@ export default function SiteSettingsTab({
 
         <div className="flex flex-col gap-6">
           {hero3Slides.map((slide, idx) => (
-            <div key={slide.id || idx} className="bg-slate-900 border border-slate-800 p-5 rounded-2xl flex flex-col gap-4 text-white shadow-md">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <span className="bg-teal-600/30 text-teal-300 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border border-teal-500/30">
+            <div key={slide.id || idx} className={`p-5 rounded-2xl flex flex-col gap-4 border shadow-sm ${isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50/70 border-slate-200/90 text-slate-800"}`}>
+              <div className={`flex items-center justify-between border-b pb-3 ${isDark ? "border-slate-800" : "border-slate-200/80"}`}>
+                <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border ${isDark ? "bg-teal-600/30 text-teal-300 border-teal-500/30" : "bg-teal-50 text-teal-750 border-teal-200"}`}>
                   Slide #{idx + 1}
                 </span>
                 <button
                   type="button"
                   onClick={() => handleRemoveSlide(idx)}
-                  className="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer border-none bg-transparent"
+                  className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer border-none bg-transparent"
                 >
                   <FiTrash2 className="w-4 h-4" />
                   <span>Remove Slide</span>
@@ -696,86 +698,100 @@ export default function SiteSettingsTab({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Title</span>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Title</span>
                   <input
                     type="text"
                     value={slide.title}
                     onChange={(e) => handleSlideChange(idx, "title", e.target.value)}
-                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold"
+                    className={`w-full border rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition ${
+                      isDark ? "bg-slate-950 border-slate-800 text-white focus:border-teal-500" : "bg-white border-slate-200 text-slate-800 focus:border-teal-700"
+                    }`}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Underlined Highlight Text</span>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Underlined Highlight Text</span>
                   <input
                     type="text"
                     value={slide.highlight_text}
                     onChange={(e) => handleSlideChange(idx, "highlight_text", e.target.value)}
                     placeholder="Text inside title to highlight green"
-                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold"
+                    className={`w-full border rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition ${
+                      isDark ? "bg-slate-950 border-slate-800 text-white placeholder-slate-500 focus:border-teal-500" : "bg-white border-slate-200 text-slate-800 placeholder-slate-400 focus:border-teal-700"
+                    }`}
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Subtitle / Description</span>
+                <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Subtitle / Description</span>
                 <textarea
                   value={slide.subtitle}
                   onChange={(e) => handleSlideChange(idx, "subtitle", e.target.value)}
                   rows={2}
-                  className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-medium"
+                  className={`w-full border rounded-xl px-3 py-2 text-xs font-medium focus:outline-none transition ${
+                    isDark ? "bg-slate-950 border-slate-800 text-white focus:border-teal-500" : "bg-white border-slate-200 text-slate-800 focus:border-teal-700"
+                  }`}
                 />
               </div>
 
               {/* Buttons Links */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Primary Button Text</span>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Primary Button Text</span>
                   <input
                     type="text"
                     value={slide.primary_btn_text}
                     onChange={(e) => handleSlideChange(idx, "primary_btn_text", e.target.value)}
-                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold"
+                    className={`w-full border rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition ${
+                      isDark ? "bg-slate-950 border-slate-800 text-white focus:border-teal-500" : "bg-white border-slate-200 text-slate-800 focus:border-teal-700"
+                    }`}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Primary Button Link</span>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Primary Button Link</span>
                   <input
                     type="text"
                     value={slide.primary_btn_link}
                     onChange={(e) => handleSlideChange(idx, "primary_btn_link", e.target.value)}
-                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono"
+                    className={`w-full border rounded-xl px-3 py-2 text-xs font-mono focus:outline-none transition ${
+                      isDark ? "bg-slate-950 border-slate-800 text-white focus:border-teal-500" : "bg-white border-slate-200 text-slate-800 focus:border-teal-700"
+                    }`}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Secondary Button Text</span>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Secondary Button Text</span>
                   <input
                     type="text"
                     value={slide.secondary_btn_text}
                     onChange={(e) => handleSlideChange(idx, "secondary_btn_text", e.target.value)}
-                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold"
+                    className={`w-full border rounded-xl px-3 py-2 text-xs font-bold focus:outline-none transition ${
+                      isDark ? "bg-slate-950 border-slate-800 text-white focus:border-teal-500" : "bg-white border-slate-200 text-slate-800 focus:border-teal-700"
+                    }`}
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Secondary Button Link</span>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Secondary Button Link</span>
                   <input
                     type="text"
                     value={slide.secondary_btn_link}
                     onChange={(e) => handleSlideChange(idx, "secondary_btn_link", e.target.value)}
-                    className="dark-card-input w-full border border-slate-700 rounded-xl px-3 py-2 text-xs font-mono"
+                    className={`w-full border rounded-xl px-3 py-2 text-xs font-mono focus:outline-none transition ${
+                      isDark ? "bg-slate-950 border-slate-800 text-white focus:border-teal-500" : "bg-white border-slate-200 text-slate-800 focus:border-teal-700"
+                    }`}
                   />
                 </div>
               </div>
 
               {/* Dual Cutout Images & Circle Background Colors */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800">
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t ${isDark ? "border-slate-800" : "border-slate-200/80"}`}>
                 
                 {/* Image 1 Box */}
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2.5">
-                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-wider">Cut-out Person Image 1 (Left Circle)</span>
+                <div className={`p-3.5 rounded-xl border flex flex-col gap-2.5 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/90 shadow-2xs"}`}>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Cut-out Person Image 1 (Left Circle)</span>
                   <div className="flex items-center gap-3">
                     <div 
                       style={{ backgroundColor: slide.image_1_bg || "#0d9488" }} 
-                      className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-slate-700 flex items-center justify-center relative"
+                      className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-slate-300 flex items-center justify-center relative shadow-xs"
                     >
                       <img src={slide.image_1} className="w-full h-full object-cover object-top" alt="Cutout 1" />
                     </div>
@@ -785,7 +801,9 @@ export default function SiteSettingsTab({
                         value={slide.image_1}
                         onChange={(e) => handleSlideChange(idx, "image_1", e.target.value)}
                         placeholder="Image URL"
-                        className="dark-card-input w-full border border-slate-700 rounded-lg px-2.5 py-1.5 text-[10px] font-mono"
+                        className={`w-full border rounded-lg px-2.5 py-1.5 text-[10px] font-mono focus:outline-none transition ${
+                          isDark ? "bg-slate-900 border-slate-800 text-white placeholder-slate-500" : "bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-teal-700"
+                        }`}
                       />
                       <div className="flex items-center gap-2">
                         <label className="bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg cursor-pointer shrink-0">
@@ -798,7 +816,7 @@ export default function SiteSettingsTab({
                           />
                         </label>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-[9px] font-bold text-slate-400">Circle Color:</span>
+                          <span className={`text-[9px] font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>Circle Color:</span>
                           <input
                             type="color"
                             value={slide.image_1_bg || "#0d9488"}
@@ -812,12 +830,12 @@ export default function SiteSettingsTab({
                 </div>
 
                 {/* Image 2 Box */}
-                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col gap-2.5">
-                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-wider">Cut-out Person Image 2 (Right Circle)</span>
+                <div className={`p-3.5 rounded-xl border flex flex-col gap-2.5 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/90 shadow-2xs"}`}>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Cut-out Person Image 2 (Right Circle)</span>
                   <div className="flex items-center gap-3">
                     <div 
                       style={{ backgroundColor: slide.image_2_bg || "#eab308" }} 
-                      className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-slate-700 flex items-center justify-center relative"
+                      className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-slate-300 flex items-center justify-center relative shadow-xs"
                     >
                       <img src={slide.image_2} className="w-full h-full object-cover object-top" alt="Cutout 2" />
                     </div>
@@ -827,7 +845,9 @@ export default function SiteSettingsTab({
                         value={slide.image_2}
                         onChange={(e) => handleSlideChange(idx, "image_2", e.target.value)}
                         placeholder="Image URL"
-                        className="dark-card-input w-full border border-slate-700 rounded-lg px-2.5 py-1.5 text-[10px] font-mono"
+                        className={`w-full border rounded-lg px-2.5 py-1.5 text-[10px] font-mono focus:outline-none transition ${
+                          isDark ? "bg-slate-900 border-slate-800 text-white placeholder-slate-500" : "bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-teal-700"
+                        }`}
                       />
                       <div className="flex items-center gap-2">
                         <label className="bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg cursor-pointer shrink-0">
@@ -840,7 +860,7 @@ export default function SiteSettingsTab({
                           />
                         </label>
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-[9px] font-bold text-slate-400">Circle Color:</span>
+                          <span className={`text-[9px] font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>Circle Color:</span>
                           <input
                             type="color"
                             value={slide.image_2_bg || "#eab308"}
