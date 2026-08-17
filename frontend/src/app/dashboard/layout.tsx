@@ -15,6 +15,13 @@ const resolveLogoUrl = (url: string) => {
   return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
 };
 
+const formatExpDate = (dateStr?: string | null) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+};
+
 
 import React, { useState } from "react";
 import Link from "next/link";
@@ -2669,7 +2676,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           {experiences.map((exp, idx) => (
                             <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0">
                               <p className="font-extrabold text-slate-900">{exp.job_title} @ {exp.company_name}</p>
-                              <p className="text-slate-400 text-xxs">{exp.start_date || "N/A"} - {exp.currently_working ? "Present" : exp.end_date || "N/A"}</p>
+                              <p className="text-slate-400 text-xxs">{formatExpDate(exp.start_date) || "N/A"} - {exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}</p>
                             </div>
                           ))}
                         </div>
@@ -3875,7 +3882,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                               <div key={idx} className="border-l-2 border-teal-500/50 pl-3">
                                 <h5 className="text-xxs font-black text-slate-850 truncate">{exp.title}</h5>
                                 <p className="text-[10px] font-bold text-slate-500 mt-0.5">{exp.company_name}</p>
-                                <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">{exp.start_date} - {exp.current_job ? "Present" : exp.end_date}</span>
+                                <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">{formatExpDate(exp.start_date) || "N/A"} - {exp.current_job || exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}</span>
                               </div>
                             ))}
                           </div>

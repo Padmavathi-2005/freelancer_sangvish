@@ -20,7 +20,7 @@ import React, { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuthModal } from "@/context/AuthModalContext";
-import { FiZap, FiPlus, FiGrid, FiChevronDown, FiChevronRight, FiSearch, FiUser, FiLogOut, FiBell } from "react-icons/fi";
+import { FiZap, FiPlus, FiGrid, FiChevronDown, FiChevronRight, FiSearch, FiUser, FiLogOut, FiBell, FiHeart, FiGift, FiCreditCard, FiBriefcase, FiSettings, FiExternalLink } from "react-icons/fi";
 import NotificationsDropdown from "./dashboard/NotificationsDropdown";
 import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
@@ -106,9 +106,10 @@ export default function Header() {
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(null);
-  const [siteLogo, setSiteLogo] = useState("");
-  const [siteLogoDark, setSiteLogoDark] = useState("");
-  const [siteName, setSiteName] = useState("");
+  const DEFAULT_SITE_LOGO = "/public/images/onboard/file-1783600571599-686657795.png";
+  const [siteLogo, setSiteLogo] = useState(DEFAULT_SITE_LOGO);
+  const [siteLogoDark, setSiteLogoDark] = useState(DEFAULT_SITE_LOGO);
+  const [siteName, setSiteName] = useState("Buy2Lancer");
   const [mounted, setMounted] = useState(false);
 
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -475,96 +476,75 @@ export default function Header() {
           
           {/* Left Section: Logo & Links */}
           <div className="flex items-center gap-10">
-            {/* Logo with Home Dropdown on hover */}
-            <div className="relative group/home shrink-0">
+            {/* Logo */}
+            <div className="shrink-0">
               <a href="/" className="flex items-center gap-2 select-none py-2">
-                {mounted && (siteTheme === "dark" ? (siteLogoDark || siteLogo) : (siteLogo || siteLogoDark)) ? (
-                  <img
-                    src={resolveLogoUrl(siteTheme === "dark" ? (siteLogoDark || siteLogo) : (siteLogo || siteLogoDark))}
-                    alt={siteName || "Buy2Lancer"}
-                    className="h-8 w-auto max-w-[180px] object-contain shrink-0"
-                  />
-                ) : (
-                  <>
-                    <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-750 font-extrabold shadow-sm shrink-0">
-                      <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                    </div>
-                    <span className="text-xl font-black tracking-tight font-display flex items-baseline gap-0.5">
-                      {mounted && siteName ? (
-                        (() => {
-                          const words = siteName.split(" ");
-                          if (words.length > 1) {
-                            return (
-                              <>
-                                <span className="text-slate-800">{words[0]}</span>
-                                <span className="text-teal-700">{words.slice(1).join(" ")}</span>
-                              </>
-                            );
-                          }
-                          const match = siteName.match(/^([a-z0-9]+)([A-Z].*)$/i);
-                          if (match) {
-                            return (
-                              <>
-                                <span className="text-slate-800">{match[1]}</span>
-                                <span className="text-teal-700">{match[2]}</span>
-                              </>
-                            );
-                          }
-                          return <span className="text-slate-800">{siteName}</span>;
-                        })()
-                      ) : (
-                        <>
-                          <span className="text-slate-800">Buy2</span>
-                          <span className="text-teal-700">Lancer</span>
-                        </>
-                      )}
-                    </span>
-                  </>
-                )}
+                <img
+                  src={resolveLogoUrl(siteTheme === "dark" ? (siteLogoDark || siteLogo) : (siteLogo || siteLogoDark)) || resolveLogoUrl("/public/images/onboard/file-1783600571599-686657795.png")}
+                  alt={siteName || "Buy2Lancer"}
+                  className="h-8 w-auto max-w-[180px] object-contain shrink-0"
+                  onError={(e: any) => {
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                  }}
+                />
               </a>
-
-              {/* Home Dropdown Options on Hover */}
-              <div className="absolute left-0 mt-1 w-48 bg-white dark:bg-zinc-900 border border-slate-200/85 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/home:opacity-100 group-hover/home:visible transition-all duration-200 z-50">
-                <a
-                  href="/"
-                  className={`flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors ${
-                    isHome1Active
-                      ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
-                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary"
-                  }`}
-                >
-                  <span>{t("home_1_default", "Home 1 (Default)")}</span>
-                  {isHome1Active && <span className="text-teal-600 font-black">✓</span>}
-                </a>
-                <a
-                  href="/home-2"
-                  className={`flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors ${
-                    isHome2Active
-                      ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
-                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary"
-                  }`}
-                >
-                  <span>{t("home_2", "Home 2")}</span>
-                  {isHome2Active && <span className="text-teal-600 font-black">✓</span>}
-                </a>
-                <a
-                  href="/home-3"
-                  className={`flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors ${
-                    isHome3Active
-                      ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
-                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-primary"
-                  }`}
-                >
-                  <span>{t("home_3", "Home 3")}</span>
-                  {isHome3Active && <span className="text-teal-600 font-black">✓</span>}
-                </a>
-              </div>
             </div>
 
             {/* Navigation Links (Desktop) */}
             <nav className="hidden lg:flex items-center gap-7">
+              {/* Home Dropdown Link */}
+              <div className="relative group/home py-2">
+                <a
+                  href="/"
+                  className={`font-bold text-sm leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer ${
+                    isHome1Active || isHome2Active || isHome3Active
+                      ? "text-teal-700 dark:text-teal-400 font-black"
+                      : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
+                  }`}
+                >
+                  {t("nav_home", "Home")}
+                  <FiChevronDown className="w-3.5 h-3.5 text-slate-450 transition-transform duration-250 group-hover/home:rotate-180" />
+                </a>
+
+                {/* Home Variations Dropdown Options on Hover */}
+                <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-slate-200/85 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/home:opacity-100 group-hover/home:visible transition-all duration-200 z-50">
+                  <a
+                    href="/"
+                    className={`flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors ${
+                      isHome1Active
+                        ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
+                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-teal-600 dark:hover:text-teal-400"
+                    }`}
+                  >
+                    {t("home_1_default", "Home 1 (Default)")}
+                    {isHome1Active && <span className="text-teal-600 dark:text-teal-400 font-black">✓</span>}
+                  </a>
+                  <a
+                    href="/home-2"
+                    className={`flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors ${
+                      isHome2Active
+                        ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
+                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-teal-600 dark:hover:text-teal-400"
+                    }`}
+                  >
+                    {t("home_2", "Home 2")}
+                    {isHome2Active && <span className="text-teal-600 dark:text-teal-400 font-black">✓</span>}
+                  </a>
+                  <a
+                    href="/home-3"
+                    className={`flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors ${
+                      isHome3Active
+                        ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
+                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-teal-600 dark:hover:text-teal-400"
+                    }`}
+                  >
+                    {t("home_3", "Home 3")}
+                    {isHome3Active && <span className="text-teal-600 dark:text-teal-400 font-black">✓</span>}
+                  </a>
+                </div>
+              </div>
+
               {/* Categories Dropdown (Triggers mega dropdown on hover) */}
               <div className="group/mega py-2">
                 <button className="text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400 font-bold text-sm leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer">
@@ -705,11 +685,14 @@ export default function Header() {
           <div className="hidden lg:flex items-center gap-5">
             {/* Language Switcher */}
             <div className="relative group/lang">
-              <button className="text-slate-700 dark:text-zinc-200 hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-3 py-2 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200">
+              <button 
+                className="hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-3 py-2 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200"
+                style={{ color: siteTheme === "dark" ? "#e4e4e7" : "#334155" }}
+              >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253" />
                 </svg>
-                <span>{lang}</span>
+                {lang}
               </button>
               <div className="absolute right-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
                 {activeLanguages.map((l, idx) => (
@@ -728,9 +711,12 @@ export default function Header() {
 
             {/* Currency Switcher */}
             <div className="relative group/curr">
-              <button className="text-slate-700 dark:text-zinc-200 hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-3 py-2 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200">
+              <button 
+                className="hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-3 py-2 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200"
+                style={{ color: siteTheme === "dark" ? "#e4e4e7" : "#334155" }}
+              >
                 <span className="font-extrabold text-primary dark:text-teal-400 mr-0.5">{currencySymbol}</span>
-                <span>{currency}</span>
+                {currency}
               </button>
               <div className="absolute right-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/curr:opacity-100 group-hover/curr:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
                 {currencies.map((c, idx) => (
@@ -801,30 +787,93 @@ export default function Header() {
 
                 {/* Dropdown Menu (visible on hover) */}
                 <div className="absolute right-0 mt-3 w-64 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.12)] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
+                  {/* User Badge */}
+                  <div className="px-3.5 py-2 border-b border-slate-100 dark:border-zinc-800 mb-1">
+                    <p className="text-xs font-black text-slate-800 dark:text-zinc-100 truncate">
+                      {userFirstName} {userLastName}
+                    </p>
+                    <p className="text-[10px] font-semibold text-slate-400 dark:text-zinc-400 capitalize truncate">
+                      {userRole || "Member"}
+                    </p>
+                  </div>
+
                   <div className="flex flex-col gap-0.5">
-                    <a href="/dashboard" className="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-650 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item hover:translate-x-0.5">
+                    {/* Dashboard */}
+                    <a href="/dashboard" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
                       <div className="flex items-center gap-2.5">
                         <FiGrid className="w-4 h-4 text-slate-400 dark:text-zinc-400 group-hover:text-primary" />
-                        <span>{t("dashboard", "Go to Dashboard")}</span>
+                        <span>{t("dashboard", "Dashboard")}</span>
                       </div>
                       <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
                     </a>
+
+                    {/* Refer & Earn */}
+                    <a href="/dashboard?tab=referrals" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
+                      <div className="flex items-center gap-2.5">
+                        <FiGift className="w-4 h-4 text-amber-500 group-hover:text-primary" />
+                        <span>{t("refer_and_earn", "Refer & Earn")}</span>
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md">
+                        Earn $
+                      </span>
+                    </a>
+
+                    {/* Wishlist */}
+                    <a href="/dashboard/wishlist" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
+                      <div className="flex items-center gap-2.5">
+                        <FiHeart className="w-4 h-4 text-rose-500 group-hover:text-primary" />
+                        <span>{t("wishlist", "Wishlist")}</span>
+                      </div>
+                      <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                    </a>
+
+                    {/* Wallet & Earnings */}
+                    <a href="/dashboard?tab=wallet" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
+                      <div className="flex items-center gap-2.5">
+                        <FiCreditCard className="w-4 h-4 text-emerald-500 group-hover:text-primary" />
+                        <span>{t("wallet_earnings", "Wallet & Earnings")}</span>
+                      </div>
+                      <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                    </a>
+
+                    {/* My Orders / Projects */}
+                    <a href={userRole === "client" ? "/dashboard?tab=orders" : "/dashboard?tab=proposals"} className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
+                      <div className="flex items-center gap-2.5">
+                        <FiBriefcase className="w-4 h-4 text-indigo-500 group-hover:text-primary" />
+                        <span>{userRole === "client" ? t("my_orders", "My Orders") : t("my_proposals", "My Proposals")}</span>
+                      </div>
+                      <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                    </a>
+
+                    {/* Settings / Account */}
+                    <a href="/dashboard?tab=settings" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
+                      <div className="flex items-center gap-2.5">
+                        <FiSettings className="w-4 h-4 text-slate-400 dark:text-zinc-400 group-hover:text-primary" />
+                        <span>{t("account_settings", "Account Settings")}</span>
+                      </div>
+                      <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                    </a>
+
+                    {/* View Freelancer Profile (If applicable) */}
                     {userRole === "freelancer" && userSlug && (
-                      <a href={`/freelancer/${userSlug}`} className="flex items-center justify-between px-3.5 py-2.5 text-xs text-slate-650 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item hover:translate-x-0.5">
+                      <a href={`/freelancer/${userSlug}`} className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
                         <div className="flex items-center gap-2.5">
-                          <FiUser className="w-4 h-4 text-slate-400 dark:text-zinc-400 group-hover:text-primary" />
-                          <span>View Profile</span>
+                          <FiExternalLink className="w-4 h-4 text-teal-500 group-hover:text-primary" />
+                          <span>{t("view_public_profile", "Public Profile")}</span>
                         </div>
                         <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
                       </a>
                     )}
+
                     <div className="h-px bg-slate-100 dark:bg-zinc-800 my-1 mx-2" />
+
+                    {/* Logout */}
                     <button
                       onClick={handleHeaderLogout}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold rounded-xl transition-all duration-200 hover:translate-x-0.5 cursor-pointer text-left border-none bg-transparent"
+                      className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold rounded-xl transition-all duration-200 cursor-pointer text-left border-none bg-transparent"
                     >
                       <FiLogOut className="w-4 h-4 text-rose-500 dark:text-rose-400" />
-                      <span>Logout</span>
+                      <span>{t("logout", "Logout")}</span>
                     </button>
                   </div>
                 </div>

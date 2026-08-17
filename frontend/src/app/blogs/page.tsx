@@ -5,9 +5,11 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 import { FiSearch, FiCalendar, FiUser, FiFolder, FiClock, FiArrowRight } from "react-icons/fi";
 
 export default function BlogsPage() {
+  const { t } = useLanguage();
   const [blogs, setBlogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -16,6 +18,36 @@ export default function BlogsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [siteName, setSiteName] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("cached_site_name") || "Buy2Lancer";
+    }
+    return "Buy2Lancer";
+  });
+
+  useEffect(() => {
+    fetch(`${API_URL}/settings`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          data.forEach((s: any) => {
+            if (s.setting_key === "site_settings") {
+              let val = s.setting_value;
+              if (typeof val === "string") {
+                try { val = JSON.parse(val); } catch (e) {}
+              }
+              if (val?.site_name) {
+                setSiteName(val.site_name);
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("cached_site_name", val.site_name);
+                }
+              }
+            }
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Dynamic SEO Setup
   useEffect(() => {
@@ -107,7 +139,7 @@ export default function BlogsPage() {
   const calculateReadTime = (content: string) => {
     const words = content ? content.replace(/<[^>]*>/g, "").split(/\s+/).length : 0;
     const time = Math.max(1, Math.ceil(words / 200));
-    return `${time} min read`;
+    return `${time} ${t("blog_min_read", "min read")}`;
   };
 
   return (
@@ -139,13 +171,13 @@ export default function BlogsPage() {
 
         <div className="max-w-6xl mx-auto relative z-10 text-center flex flex-col items-center gap-6">
           <span className="text-teal-700 font-black text-xs uppercase tracking-widest bg-teal-50 border border-teal-200/60 px-3.5 py-1.5 rounded-full shadow-sm animate-fadeIn">
-            LancerFlow Publications
+            {t("blog_hero_pill", "{{siteName}} Publications").replace("{{siteName}}", siteName || "Buy2Lancer")}
           </span>
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight text-slate-900 max-w-3xl font-display">
-            Insights & Guides for the Modern Freelancer
+            {t("blog_hero_title", "Insights & Guides for the Modern Freelancer")}
           </h1>
           <p className="text-slate-500 text-sm md:text-base font-semibold max-w-2xl leading-relaxed">
-            Stay up to date with the latest industry insights, hiring tips, coding guides, and career advice curated by our engineering and business specialists.
+            {t("blog_hero_subtitle", "Stay up to date with the latest industry insights, hiring tips, coding guides, and career advice curated by our engineering and business specialists.")}
           </p>
 
           {/* SEARCH INPUT */}
@@ -153,7 +185,7 @@ export default function BlogsPage() {
             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-450 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search articles by title, keywords, or topics..."
+              placeholder={t("blog_search_placeholder", "Search articles by title, keywords, or topics...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-12 pr-4 py-3.5 bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-slate-800 rounded-2xl border border-slate-200 focus:border-teal-500/60 transition-all focus:outline-none placeholder-slate-400 font-semibold text-sm shadow-sm focus:shadow-md"
@@ -175,7 +207,7 @@ export default function BlogsPage() {
                 : "bg-white hover:bg-slate-100 text-slate-655 border-slate-200"
             }`}
           >
-            All Publications
+            {t("blog_all_publications", "All Publications")}
           </button>
           {allCategories.map((cat) => (
             <button
@@ -210,15 +242,15 @@ export default function BlogsPage() {
             <div className="w-12 h-12 bg-slate-100 text-slate-450 border border-slate-200 rounded-2xl flex items-center justify-center">
               <FiFolder className="w-6 h-6" />
             </div>
-            <h3 className="text-lg font-extrabold text-slate-800">No Articles Found</h3>
+            <h3 className="text-lg font-extrabold text-slate-800">{t("blog_no_articles_title", "No Articles Found")}</h3>
             <p className="text-slate-500 text-sm max-w-xs leading-relaxed">
-              We couldn't find any published blog posts matching your search query or selected category filter.
+              {t("blog_no_articles_desc", "We couldn't find any published blog posts matching your search query or selected category filter.")}
             </p>
             <button
               onClick={() => { setSearch(""); setCategory("all"); }}
               className="mt-2 text-teal-750 font-bold text-xs hover:underline"
             >
-              Reset Search Filters
+              {t("blog_reset_filters", "Reset Search Filters")}
             </button>
           </div>
         ) : (
@@ -286,7 +318,7 @@ export default function BlogsPage() {
                       href={`/blogs/${blog.slug}`}
                       className="text-teal-750 hover:text-teal-600 font-extrabold text-xs flex items-center gap-1 group/btn"
                     >
-                      Read Post <FiArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                      {t("blog_read_post", "Read Post")} <FiArrowRight className="w-3.5 h-3.5 group-hover/btn:translate-x-1 transition-transform" />
                     </Link>
                   </div>
                 </div>
@@ -307,10 +339,10 @@ export default function BlogsPage() {
                   : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
               }`}
             >
-              Previous
+              {t("blog_prev", "Previous")}
             </button>
             <span className="text-xs font-black text-slate-500 px-4">
-              Page {currentPage} of {totalPages}
+              {t("blog_page", "Page")} {currentPage} {t("blog_of", "of")} {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
@@ -321,7 +353,7 @@ export default function BlogsPage() {
                   : "bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
               }`}
             >
-              Next
+              {t("blog_next", "Next")}
             </button>
           </div>
         )}

@@ -270,15 +270,15 @@ export default function LandingSectionsEditor({
         search: dbVals.search || (code === "EN" ? (frontendHeroContent?.search || "Search") : ""),
 
         // Home 2 Hero Section
-        home2_hero_title_prefix: dbVals.home2_hero_title_prefix || (code === "EN" ? "Transform" : ""),
-        home2_hero_title_highlight: dbVals.home2_hero_title_highlight || (code === "EN" ? "Your Team with" : ""),
-        home2_hero_title_suffix: dbVals.home2_hero_title_suffix || (code === "EN" ? "Top Talent Discovery" : ""),
-        home2_hero_subtitle: dbVals.home2_hero_subtitle || (code === "EN" ? "Flourish in a thriving freelance ecosystem dedicated to excellence and limitless opportunities." : ""),
-        home2_search_placeholder: dbVals.home2_search_placeholder || (code === "EN" ? "Search by keyword" : ""),
-        home2_filter_label: dbVals.home2_filter_label || (code === "EN" ? "Sellers" : ""),
-        home2_search_btn: dbVals.home2_search_btn || (code === "EN" ? "Search" : ""),
-        home2_popular_label: dbVals.home2_popular_label || (code === "EN" ? "Popular categories" : ""),
-        home2_category_chips: dbVals.home2_category_chips || (code === "EN" ? "Digital marketing, Analytics & Strategy, AI Services" : ""),
+        home2_hero_title_prefix: dbVals.home2_hero_title_prefix || (code === "AR" ? "حول" : code === "FR" ? "Transformez" : code === "DE" ? "Transformieren Sie" : "Transform"),
+        home2_hero_title_highlight: dbVals.home2_hero_title_highlight || (code === "AR" ? "فريقك مع" : code === "FR" ? "votre équipe grâce à" : code === "DE" ? "Ihr Team mit" : "Your Team with"),
+        home2_hero_title_suffix: dbVals.home2_hero_title_suffix || (code === "AR" ? "اكتشاف أفضل المواهب" : code === "FR" ? "la découverte des meilleurs talents" : code === "DE" ? "Spitzen-Talenten" : "Top Talent Discovery"),
+        home2_hero_subtitle: dbVals.home2_hero_subtitle || (code === "AR" ? "انمُ في بيئة العمل الحر المزدهرة المخصصة للتميز والفرص غير المحدودة." : code === "FR" ? "Épanouissez-vous dans un écosystème freelance florissant dédié à l'excellence et aux opportunités illimitées." : code === "DE" ? "Entfalten Sie sich in einem florierenden Freelance-Ökosystem, das auf Exzellenz und unbegrenzte Möglichkeiten ausgerichtet ist." : "Flourish in a thriving freelance ecosystem dedicated to excellence and limitless opportunities."),
+        home2_search_placeholder: dbVals.home2_search_placeholder || (code === "AR" ? "البحث حسب الكلمة الرئيسية" : code === "FR" ? "Rechercher par mot-clé" : code === "DE" ? "Nach Stichwort suchen" : "Search by keyword"),
+        home2_filter_label: dbVals.home2_filter_label || (code === "AR" ? "البائعون" : code === "FR" ? "Vendeurs" : code === "DE" ? "Verkäufer" : "Sellers"),
+        home2_search_btn: dbVals.home2_search_btn || (code === "AR" ? "بحث" : code === "FR" ? "Rechercher" : code === "DE" ? "Suchen" : "Search"),
+        home2_popular_label: dbVals.home2_popular_label || (code === "AR" ? "الفئات الشائعة" : code === "FR" ? "Catégories populaires" : code === "DE" ? "Beliebte Kategorien" : "Popular categories"),
+        home2_category_chips: dbVals.home2_category_chips || (code === "AR" ? "التسويق الرقمي، التحليلات والاستراتيجية، خدمات الذكاء الاصطناعي" : code === "FR" ? "Marketing numérique, Analyse et stratégie, Services IA" : code === "DE" ? "Digitales Marketing, Analytik & Strategie, KI-Dienste" : "Digital marketing, Analytics & Strategy, AI Services"),
 
         // General headings
         trusted_title: dbVals.trusted_title || (code === "EN" ? "Trusted by Innovative Companies Worldwide" : ""),
@@ -732,12 +732,89 @@ export default function LandingSectionsEditor({
                 className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
               />
             </div>
+
+            <div className="flex flex-col gap-1.5 md:col-span-2 border-t border-slate-100 pt-4 mt-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Categories Section Title ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="Trending Top Categories"
+                value={translationsByLang[selectedContentLang]?.home2_categories_title || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_categories_title", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Categories Section Subtitle ({selectedContentLang})</label>
+              <textarea
+                rows={2}
+                placeholder="At our core, we are experts in connecting local business..."
+                value={translationsByLang[selectedContentLang]?.home2_categories_subtitle || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "home2_categories_subtitle", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium resize-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Explore Box Title ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="Explore Categories"
+                value={translationsByLang[selectedContentLang]?.explore_categories_title || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "explore_categories_title", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Explore Box Subtitle ({selectedContentLang})</label>
+              <input
+                type="text"
+                placeholder="More categories with lots of talent available..."
+                value={translationsByLang[selectedContentLang]?.explore_categories_subtitle || ""}
+                onChange={(e) => updateLangField(selectedContentLang, "explore_categories_subtitle", e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+              />
+            </div>
           </div>
         )}
 
         {/* Home 2 Features Pool Subtab */}
         {activeSubTab === "home2_features" && (
           <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Features Section Badge ({selectedContentLang})</label>
+                <input
+                  type="text"
+                  placeholder="Why Choose Our Platform"
+                  value={translationsByLang[selectedContentLang]?.home2_features_badge || ""}
+                  onChange={(e) => updateLangField(selectedContentLang, "home2_features_badge", e.target.value)}
+                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Features Section Title ({selectedContentLang})</label>
+                <input
+                  type="text"
+                  placeholder="Engineered for Speed, Security, and Success"
+                  value={translationsByLang[selectedContentLang]?.home2_features_title || ""}
+                  onChange={(e) => updateLangField(selectedContentLang, "home2_features_title", e.target.value)}
+                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Features Section Subtitle ({selectedContentLang})</label>
+                <textarea
+                  rows={2}
+                  placeholder="Discover the core features powering top businesses..."
+                  value={translationsByLang[selectedContentLang]?.home2_features_subtitle || ""}
+                  onChange={(e) => updateLangField(selectedContentLang, "home2_features_subtitle", e.target.value)}
+                  className="bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium resize-none"
+                />
+              </div>
+            </div>
+
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
               <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">Add New Feature to Pool</span>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

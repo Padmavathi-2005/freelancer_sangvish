@@ -29,8 +29,8 @@ interface LanguageContextProps {
   t: (key: string, defaultVal?: string) => string;
   changeLanguage: (code: string) => void;
   changeCurrency: (code: string) => void;
-  convertPrice: (amountInUSD: number) => number;
-  formatPrice: (amountInUSD: number) => string;
+  convertPrice: (amountInUSD: number | string) => number;
+  formatPrice: (amountInUSD: number | string) => string;
   loading: boolean;
 }
 
@@ -112,16 +112,23 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         let activeCurrsList: Currency[] = [];
         if (currRes.ok) {
           activeCurrsList = await currRes.json();
-          setCurrencies(activeCurrsList);
-          
-          const matchingCurr = activeCurrsList.find(c => c.code === defCurr);
-          if (matchingCurr) {
-            defSym = matchingCurr.symbol || "$";
-            defRate = matchingCurr.rate !== undefined ? matchingCurr.rate : 1.0;
-          }
         }
+        
+        const FALLBACK_CURRENCIES: Currency[] = [
+          { code: "USD", name: "US Dollar", symbol: "$", rate: 1.0 },
+          { code: "INR", name: "Indian Rupee", symbol: "₹", rate: 83.5 },
+          { code: "EUR", name: "Euro", symbol: "€", rate: 0.92 },
+          { code: "GBP", name: "British Pound", symbol: "£", rate: 0.79 },
+          { code: "CAD", name: "Canadian Dollar", symbol: "CA$", rate: 1.36 },
+          { code: "AUD", name: "Australian Dollar", symbol: "A$", rate: 1.52 },
+        ];
 
-        // If local storage is empty, initialize with platform defaults
+        if (!activeCurrsList || activeCurrsList.length === 0) {
+          activeCurrsList = FALLBACK_CURRENCIES;
+        }
+        setCurrencies(activeCurrsList);
+
+        // If local storage has saved currency, maintain or sync its rate & symbol
         if (typeof window !== "undefined") {
           const savedLang = localStorage.getItem("lang");
           const savedCurr = localStorage.getItem("currency");
@@ -131,7 +138,24 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
             setDirection(defDir);
             document.documentElement.dir = defDir.toLowerCase();
           }
-          if (!savedCurr) {
+          if (savedCurr) {
+            const match = activeCurrsList.find(c => c.code.toUpperCase() === savedCurr.toUpperCase()) || FALLBACK_CURRENCIES.find(c => c.code === savedCurr.toUpperCase());
+            if (match) {
+              const sym = match.symbol || "$";
+              const rateVal = match.rate !== undefined && match.rate !== null ? Number(match.rate) : 1.0;
+              setCurrency(match.code);
+              setCurrencySymbol(sym);
+              setCurrencyRate(rateVal);
+              localStorage.setItem("currency", match.code);
+              localStorage.setItem("currencySymbol", sym);
+              localStorage.setItem("currencyRate", rateVal.toString());
+            }
+          } else {
+            const match = activeCurrsList.find(c => c.code.toUpperCase() === defCurr.toUpperCase());
+            if (match) {
+              defSym = match.symbol || "$";
+              defRate = match.rate !== undefined && match.rate !== null ? Number(match.rate) : 1.0;
+            }
             setCurrency(defCurr);
             setCurrencySymbol(defSym);
             setCurrencyRate(defRate);
@@ -183,29 +207,46 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setCurrency(uppercaseCode);
     localStorage.setItem("currency", uppercaseCode);
 
-    const matchingCurr = currencies.find((c) => c.code === uppercaseCode);
+    const FALLBACK_CURRENCIES: Currency[] = [
+      { code: "USD", name: "US Dollar", symbol: "$", rate: 1.0 },
+      { code: "INR", name: "Indian Rupee", symbol: "₹", rate: 83.5 },
+      { code: "EUR", name: "Euro", symbol: "€", rate: 0.92 },
+      { code: "GBP", name: "British Pound", symbol: "£", rate: 0.79 },
+      { code: "CAD", name: "Canadian Dollar", symbol: "CA$", rate: 1.36 },
+      { code: "AUD", name: "Australian Dollar", symbol: "A$", rate: 1.52 },
+    ];
+
+    const matchingCurr = currencies.find((c) => c.code.toUpperCase() === uppercaseCode) || FALLBACK_CURRENCIES.find((c) => c.code === uppercaseCode);
     if (matchingCurr) {
       const sym = matchingCurr.symbol || "$";
-      const rate = matchingCurr.rate !== undefined ? matchingCurr.rate : 1.0;
+      const rateVal = matchingCurr.rate !== undefined && matchingCurr.rate !== null ? Number(matchingCurr.rate) : 1.0;
       setCurrencySymbol(sym);
-      setCurrencyRate(rate);
+      setCurrencyRate(rateVal);
       localStorage.setItem("currencySymbol", sym);
-      localStorage.setItem("currencyRate", rate.toString());
+      localStorage.setItem("currencyRate", rateVal.toString());
     }
   };
 
-  const convertPrice = (amountInUSD: number) => {
-    return amountInUSD * currencyRate;
+  const convertPrice = (amountInUSD: number | string) => {
+    const num = typeof amountInUSD === "string" ? parseFloat(amountInUSD) : amountInUSD;
+    if (isNaN(num) || num === undefined || num === null) return 0;
+    return num * (currencyRate || 1.0);
   };
 
-  const formatPrice = (amountInUSD: number) => {
-    const converted = convertPrice(amountInUSD);
-    return `${currencySymbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatPrice = (amountInUSD: number | string) => {
+    const num = typeof amountInUSD === "string" ? parseFloat(amountInUSD) : amountInUSD;
+    if (isNaN(num) || num === undefined || num === null) return `${currencySymbol || "$"}0`;
+    const converted = convertPrice(num);
+    const decimals = converted % 1 === 0 ? 0 : 2;
+    return `${currencySymbol || "$"}${converted.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: 2 })}`;
   };
 
 const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
   FR: {
+    nav_home: "Accueil",
     nav_categories: "Catégories",
+    "transform your team with top talent discovery": "Transformez votre équipe grâce aux meilleurs talents",
+    "flourish in a thriving freelance ecosystem dedicated to excellence and limitless opportunities.": "Épanouissez-vous dans un écosystème freelance florissant dédié à l'excellence et aux opportunités illimitées.",
     nav_talent: "Engager des Freelances",
     nav_projects: "Trouver des Projets",
     nav_gigs: "Explorer les Services",
@@ -1275,7 +1316,16 @@ const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
     btn_back_to_settings_hub: "← Volver al centro de configuración"
   },
   AR: {
+    nav_home: "الرئيسية",
     nav_categories: "الفئات",
+    hero_badge: "أفضل 3٪ من المستقلين العالميين",
+    hero_title: "وظف مستقلين خبراء لمشروعك الكبير القادم",
+    hero_subtitle: "تواصل مع محترفين من الدرجة الأولى. نفذ مشاريعك بشكل أسرع مع مواهب موثوقة ومخصصة لاحتياجات شركتك.",
+    hero_search_placeholder: "ما هي المهارة التي تبحث عنها؟",
+    hero_search_btn: "ابحث عن المواهب",
+    hero_popular_label: "شائع: تصميم واجهة المستخدم، ريأكت، أتمتة الذكاء الاصطناعي، تحسين محركات البحث",
+    "transform your team with top talent discovery": "حول فريقك مع اكتشاف أفضل المواهب",
+    "flourish in a thriving freelance ecosystem dedicated to excellence and limitless opportunities.": "انمُ في بيئة العمل الحر المزدهرة المخصصة للتميز والفرص غير المحدودة.",
     nav_talent: "توظيف مستقلين",
     nav_projects: "البحث عن مشاريع",
     nav_gigs: "استكشاف الخدمات",
@@ -2323,16 +2373,29 @@ const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
     if (!key) return defaultVal || "";
     const trimmed = key.trim();
     const cleanKey = trimmed.toLowerCase();
+    const activeLang = lang ? lang.toUpperCase() : "EN";
 
-    // 1. Check API loaded translations map
+    // 1. Check API loaded translations map by key
     if (translations[cleanKey]) return translations[cleanKey];
     if (translations[trimmed]) return translations[trimmed];
 
-    // 2. Check Static Fallback Dictionary for active lang
-    const langDict = STATIC_FALLBACK_DICTIONARY[lang.toUpperCase()];
+    // 2. Check Static Fallback Dictionary for active lang by key
+    const langDict = STATIC_FALLBACK_DICTIONARY[activeLang];
     if (langDict) {
       if (langDict[cleanKey]) return langDict[cleanKey];
       if (langDict[trimmed]) return langDict[trimmed];
+    }
+
+    // 3. If key translation wasn't found, check if defaultVal itself has a translation mapping
+    if (defaultVal && defaultVal !== key) {
+      const trimmedVal = defaultVal.trim();
+      const cleanVal = trimmedVal.toLowerCase();
+      if (translations[cleanVal]) return translations[cleanVal];
+      if (translations[trimmedVal]) return translations[trimmedVal];
+      if (langDict) {
+        if (langDict[cleanVal]) return langDict[cleanVal];
+        if (langDict[trimmedVal]) return langDict[trimmedVal];
+      }
     }
 
     return defaultVal || key;
@@ -2377,8 +2440,8 @@ export function useLanguage(): LanguageContextProps {
       t: (key: string, fallback?: string) => fallback || key,
       changeLanguage: () => {},
       changeCurrency: () => {},
-      convertPrice: (price: number) => price,
-      formatPrice: (price: number) => `$${price.toFixed(2)}`,
+      convertPrice: (price: number | string) => (typeof price === "number" ? price : parseFloat(price) || 0),
+      formatPrice: (price: number | string) => `$${(typeof price === "number" ? price : parseFloat(price) || 0).toFixed(2)}`,
       loading: false
     };
   }

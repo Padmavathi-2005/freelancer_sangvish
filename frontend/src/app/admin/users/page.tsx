@@ -35,7 +35,9 @@ export default function UsersPage() {
     adminLoading,
     handleCreateAdmin,
     handleDeleteAdmin,
-    fetchError
+    fetchError,
+    handleUpdateUserByAdmin,
+    handleUpdateUserVettingStatus
   } = useAdmin();
 
   return (
@@ -54,6 +56,8 @@ export default function UsersPage() {
       userCounts={userCounts}
       itemsPerPage={itemsPerPage}
       handleToggleUserActive={handleToggleUserActive}
+      handleUpdateUserByAdmin={handleUpdateUserByAdmin}
+      handleUpdateUserVettingStatus={handleUpdateUserVettingStatus}
       adminsList={adminsList}
       adminUser={adminUser}
       newAdminName={newAdminName}

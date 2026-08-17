@@ -515,7 +515,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
                   {t("delivery_days_count", "Delivery: {{days}} days").replace("{{days}}", String(g.delivery_days))}
                 </span>
                 <button
-                  disabled={onboardingCheckLoading !== null}
+                  disabled={onboardingCheckLoading === g.gig_id}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleOrderClick(g);

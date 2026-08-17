@@ -315,17 +315,17 @@ export default function Home3Hero() {
 
   const renderTitle = (title: string, highlight: string) => {
     if (!highlight || !title.includes(highlight)) {
-      return <span>{title}</span>;
+      return <span style={{ unicodeBidi: "plaintext" }}>{title}</span>;
     }
     const parts = title.split(highlight);
     return (
-      <>
+      <span style={{ unicodeBidi: "plaintext" }}>
         {parts[0]}
-        <span className="text-[#10b981] dark:text-emerald-400 relative inline-block pb-1 border-b-4 border-[#10b981] dark:border-emerald-400 font-black">
+        <span className="text-white relative inline-block pb-1 border-b-4 border-emerald-400 font-black mx-1">
           {highlight}
         </span>
         {parts.slice(1).join(highlight)}
-      </>
+      </span>
     );
   };
 
@@ -409,6 +409,13 @@ function CardInnerContent({
   slide: Home3HeroSlide;
   renderTitle: (title: string, highlight: string) => React.ReactNode;
 }) {
+  const { t } = useLanguage();
+  const translatedTitle = t(slide.title, slide.title);
+  const translatedHighlight = t(slide.highlight_text, slide.highlight_text);
+  const translatedSubtitle = t(slide.subtitle, slide.subtitle);
+  const translatedPrimaryBtn = t(slide.primary_btn_text || "Try it Free", slide.primary_btn_text || "Try it Free");
+  const translatedSecondaryBtn = t(slide.secondary_btn_text || "Learn More", slide.secondary_btn_text || "Learn More");
+
   return (
     <>
       {/* Subtle grid accent background */}
@@ -421,11 +428,11 @@ function CardInnerContent({
         <div className="lg:col-span-7 flex flex-col items-start text-left space-y-6">
           
           <h1 className="text-3xl sm:text-5xl lg:text-5xl font-black text-white leading-[1.16] tracking-tight font-display max-w-2xl">
-            {renderTitle(slide.title, slide.highlight_text)}
+            {renderTitle(translatedTitle, translatedHighlight)}
           </h1>
 
-          <p className="text-slate-300 dark:text-slate-400 text-sm sm:text-base lg:text-lg font-normal leading-relaxed max-w-xl">
-            {slide.subtitle}
+          <p className="text-slate-200 text-sm sm:text-base lg:text-lg font-medium leading-relaxed max-w-xl">
+            {translatedSubtitle}
           </p>
 
           <div className="flex flex-wrap items-center gap-3.5 pt-2">
@@ -433,13 +440,13 @@ function CardInnerContent({
               href={slide.primary_btn_link || "/talent"}
               className="bg-[#10b981] hover:bg-[#059669] text-white font-extrabold text-sm sm:text-base px-7 py-3.5 rounded-xl transition duration-200 shadow-lg shadow-emerald-950/40 active:scale-95 cursor-pointer no-underline border-none z-20"
             >
-              {slide.primary_btn_text || "Try it Free"}
+              {translatedPrimaryBtn}
             </a>
             <a
               href={slide.secondary_btn_link || "/gigs"}
               className="border border-slate-700 hover:border-slate-500 bg-slate-900/60 text-white font-extrabold text-sm sm:text-base px-6 py-3.5 rounded-xl transition duration-200 flex items-center gap-2 active:scale-95 cursor-pointer no-underline z-20"
             >
-              <span>{slide.secondary_btn_text || "Learn More"}</span>
+              <span>{translatedSecondaryBtn}</span>
               <FiExternalLink className="w-4 h-4 text-slate-300" />
             </a>
           </div>

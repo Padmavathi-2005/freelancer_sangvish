@@ -161,7 +161,7 @@ export default function RecentProjects() {
           >
             <FiGrid className="w-3.5 h-3.5 shrink-0" />
             <span>{t("browse_all", "Browse All")}</span>
-            <FiArrowRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5" />
+            <FiArrowRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5 rtl:rotate-180" />
           </button>
         </div>
 
@@ -221,16 +221,16 @@ export default function RecentProjects() {
                   <div className="flex flex-col gap-3">
                     <div className="flex justify-between items-start gap-2">
                       <span className="text-[9px] font-black text-teal-700 bg-teal-50 border border-teal-100 px-2.5 py-0.5 rounded-full uppercase tracking-wider leading-5">
-                        {job.category_name || "Development"}
+                        {t(job.category_name || "Development", job.category_name || "Development")}
                       </span>
                       <span className={`text-[9px] font-extrabold border px-2 py-0.5 rounded-full uppercase leading-5 ${typeColor}`}>
-                        {job.project_type || "Fixed"}
+                        {t(job.project_type || "Fixed", job.project_type || "Fixed")}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <h3 className="text-sm font-black text-slate-900 leading-snug line-clamp-2 group-hover:text-teal-800 transition-colors">
-                        {job.title}
+                        {t(job.title, job.title)}
                       </h3>
                       {job.is_featured && (
                         <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider animate-pulse shrink-0 flex items-center gap-1">
@@ -241,17 +241,19 @@ export default function RecentProjects() {
                     </div>
 
                     <p className="text-slate-500 text-[11px] line-clamp-2 leading-relaxed font-medium">
-                      {job.description}
+                      {t(job.description, job.description)}
                     </p>
                   </div>
 
                   {/* Bottom */}
                   <div className="border-t border-slate-100 pt-3 flex flex-col gap-2">
                     <div className="flex items-center justify-between text-xs font-bold">
-                      <span className="text-slate-400 font-medium text-[10px] uppercase tracking-wider">Budget</span>
+                      <span className="text-slate-400 font-medium text-[10px] uppercase tracking-wider">
+                        {t("budget_label", "Budget")}
+                      </span>
                       <span className="text-slate-900 text-sm font-extrabold">
                         {displayBudget}
-                        {job.project_type === "Hourly" ? <span className="text-xs font-bold text-slate-500">/hr</span> : ""}
+                        {job.project_type === "Hourly" ? <span className="text-xs font-bold text-slate-500">{t("per_hr", "/hr")}</span> : ""}
                       </span>
                     </div>
 
@@ -259,13 +261,13 @@ export default function RecentProjects() {
                       {job.duration && (
                         <div className="flex items-center gap-1">
                           <FiClock className="w-3 h-3 shrink-0 text-slate-350" />
-                          <span>{job.duration}</span>
+                          <span>{t(job.duration, job.duration)}</span>
                         </div>
                       )}
                       {job.location && (
                         <div className="flex items-center gap-1">
                           <FiMapPin className="w-3 h-3 shrink-0 text-slate-350" />
-                          <span>{job.location}</span>
+                          <span>{t(job.location, job.location)}</span>
                         </div>
                       )}
                     </div>
@@ -273,7 +275,7 @@ export default function RecentProjects() {
                     {job.company_name && (
                       <div className="text-[10px] font-semibold text-slate-400/90 italic border-t border-slate-100/50 pt-2 flex items-center gap-1 mt-1">
                         <FiBriefcase className="w-3 h-3 shrink-0" />
-                        <span className="truncate">Posted by {job.company_name}</span>
+                        <span className="truncate">{t("posted_by", "Posted by")} {job.company_name}</span>
                       </div>
                     )}
                   </div>

@@ -153,10 +153,15 @@ export const getUsers = async (req, res) => {
     try {
         const query = `
             SELECT 
-              u.user_id, u.first_name, u.last_name, u.email, u.phone, u.is_active, u.is_verified, u.created_at,
-              cp.company_name, cp.onboarding_completed AS client_onboarding,
-              fp.professional_title, fp.onboarding_completed AS freelancer_onboarding,
-              COALESCE(fp.vetting_status, cp.vetting_status) AS vetting_status
+              u.user_id, u.first_name, u.last_name, u.display_name, u.email, u.phone, u.profile_image, u.country, u.state, u.city, u.address, u.pincode, u.tagline, u.description, u.is_active, u.is_verified, u.email_verified, u.phone_verified, u.created_at,
+              cp.company_name, cp.company_website AS client_website, cp.industry, cp.onboarding_completed AS client_onboarding,
+              fp.professional_title, fp.hourly_rate, fp.experience_level, fp.total_experience_years, fp.bio, fp.linkedin_url, fp.portfolio_website, fp.resume_url, fp.onboarding_completed AS freelancer_onboarding, fp.current_step AS freelancer_step,
+              COALESCE(fp.vetting_status, cp.vetting_status) AS vetting_status,
+              (
+                SELECT COALESCE(json_agg(e.*), '[]'::json)
+                FROM education e
+                WHERE e.user_id = u.user_id
+              ) AS education_details
             FROM users u
             LEFT JOIN client_profiles cp ON u.user_id = cp.user_id
             LEFT JOIN freelancer_profiles fp ON u.user_id = fp.user_id
@@ -165,6 +170,7 @@ export const getUsers = async (req, res) => {
         const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
+        console.error("Error fetching users in adminController:", err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -184,6 +190,105 @@ export const toggleUserActive = async (req, res) => {
         }
         res.json({ message: "User active status updated", is_active: result.rows[0].is_active });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const updateUserByAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            first_name,
+            last_name,
+            display_name,
+            email,
+            phone,
+            profile_image,
+            country,
+            city,
+            tagline,
+            description,
+            professional_title,
+            hourly_rate,
+            experience_level,
+            vetting_status,
+            bio,
+            email_verified,
+            phone_verified,
+            is_active
+        } = req.body;
+
+        // 1. Update users table
+        const userResult = await pool.query(
+            `UPDATE users
+             SET first_name = COALESCE($1, first_name),
+                 last_name = COALESCE($2, last_name),
+                 display_name = COALESCE($3, display_name),
+                 email = COALESCE($4, email),
+                 phone = COALESCE($5, phone),
+                 profile_image = COALESCE($6, profile_image),
+                 country = COALESCE($7, country),
+                 city = COALESCE($8, city),
+                 tagline = COALESCE($9, tagline),
+                 description = COALESCE($10, description),
+                 email_verified = COALESCE($11, email_verified),
+                 phone_verified = COALESCE($12, phone_verified),
+                 is_active = COALESCE($13, is_active)
+             WHERE user_id = $14
+             RETURNING *`,
+            [
+                first_name,
+                last_name,
+                display_name,
+                email,
+                phone,
+                profile_image,
+                country,
+                city,
+                tagline,
+                description,
+                email_verified,
+                phone_verified,
+                is_active,
+                id
+            ]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // 2. Update freelancer_profiles if exists
+        const fpCheck = await pool.query("SELECT * FROM freelancer_profiles WHERE user_id = $1", [id]);
+        if (fpCheck.rows.length > 0) {
+            await pool.query(
+                `UPDATE freelancer_profiles
+                 SET professional_title = COALESCE($1, professional_title),
+                     hourly_rate = COALESCE($2, hourly_rate),
+                     experience_level = COALESCE($3, experience_level),
+                     vetting_status = COALESCE($4, vetting_status),
+                     bio = COALESCE($5, bio),
+                     updated_at = NOW()
+                 WHERE user_id = $6`,
+                [professional_title, hourly_rate, experience_level, vetting_status, bio, id]
+            );
+        }
+
+        // 3. Update client_profiles if exists
+        const cpCheck = await pool.query("SELECT * FROM client_profiles WHERE user_id = $1", [id]);
+        if (cpCheck.rows.length > 0) {
+            await pool.query(
+                `UPDATE client_profiles
+                 SET vetting_status = COALESCE($1, vetting_status),
+                     updated_at = NOW()
+                 WHERE user_id = $2`,
+                [vetting_status, id]
+            );
+        }
+
+        res.json({ message: "User details updated successfully", user: userResult.rows[0] });
+    } catch (err) {
+        console.error("Error updating user by admin:", err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -308,65 +413,108 @@ export const createBackup = async (req, res) => {
         const { default: pool } = await import("../../config/db.js");
         const backupDir = path.join(process.cwd(), "backups");
         if (!fs.existsSync(backupDir)) {
-            fs.mkdirSync(backupDir);
+            fs.mkdirSync(backupDir, { recursive: true });
         }
 
-        // List of tables to backup
-        const tables = [
-            'users',
-            'categories',
-            'sub_categories',
-            'skills',
-            'currencies',
-            'languages',
-            'translations',
-            'settings',
-            'cms_pages',
-            'gigs',
-            'gig_skills',
-            'jobs',
-            'proposals',
-            'contracts',
-            'contract_milestones',
-            'wallets',
-            'wallet_transactions',
-            'withdrawal_requests',
-            'conversations',
-            'messages',
-            'dispute_reasons',
-            'subscription_plans'
-        ];
+        // Fetch all base tables dynamically from public schema
+        const tablesRes = await pool.query(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY table_name"
+        );
+        const tables = tablesRes.rows.map(r => r.table_name);
 
-        let sqlContent = `-- Database Backup generated on ${new Date().toISOString()}\n\n`;
+        let sqlContent = `-- Database Backup generated on ${new Date().toISOString()}\n`;
+        sqlContent += `-- Total Tables: ${tables.length}\n`;
+        sqlContent += `SET session_replication_role = 'replica';\n\n`;
 
+        // 1. Generate CREATE TABLE DDL statements for every table
+        sqlContent += `-- SECTION 1: CREATE TABLE SCHEMAS\n`;
         for (const table of tables) {
-            // Check if table exists
-            const tableCheck = await pool.query(
-                "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = $1)",
-                [table]
-            );
-            if (!tableCheck.rows[0].exists) continue;
+            const colRes = await pool.query(`
+                SELECT column_name, data_type, character_maximum_length, is_nullable, column_default
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = $1
+                ORDER BY ordinal_position
+            `, [table]);
 
+            const pkRes = await pool.query(`
+                SELECT a.attname
+                FROM pg_index i
+                JOIN pg_attribute a ON a.attrelid = i.indrelid AND a.attnum = ANY(i.indkey)
+                WHERE i.indrelid = $1::regclass AND i.indisprimary
+            `, [table]);
+            const pkCols = pkRes.rows.map(r => r.attname);
+
+            const colDefs = colRes.rows.map(col => {
+                let typeStr = col.data_type.toUpperCase();
+                if (typeStr === 'ARRAY') typeStr = 'TEXT[]';
+                if (col.character_maximum_length && typeStr.includes('VARCHAR')) {
+                    typeStr += `(${col.character_maximum_length})`;
+                }
+                let def = `  "${col.column_name}" ${typeStr}`;
+                if (col.column_default) {
+                    def += ` DEFAULT ${col.column_default}`;
+                }
+                if (col.is_nullable === 'NO') {
+                    def += ` NOT NULL`;
+                }
+                return def;
+            });
+
+            if (pkCols.length > 0) {
+                colDefs.push(`  PRIMARY KEY (${pkCols.map(c => `"${c}"`).join(', ')})`);
+            }
+
+            sqlContent += `CREATE TABLE IF NOT EXISTS "${table}" (\n${colDefs.join(',\n')}\n);\n\n`;
+        }
+
+        // 2. Truncate all tables
+        sqlContent += `-- SECTION 2: TRUNCATE TABLES\n`;
+        for (const table of tables) {
+            sqlContent += `TRUNCATE TABLE "${table}" CASCADE;\n`;
+        }
+        sqlContent += `\n`;
+
+        // 3. Insert data rows
+        sqlContent += `-- SECTION 3: INSERT DATA ROWS\n`;
+        for (const table of tables) {
             const data = await pool.query(`SELECT * FROM "${table}"`);
             if (data.rows.length === 0) continue;
 
-            sqlContent += `-- Table: ${table}\n`;
-            sqlContent += `TRUNCATE TABLE "${table}" CASCADE;\n`;
+            // Fetch column data types for precise SQL type escaping
+            const colTypesRes = await pool.query(
+                "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1",
+                [table]
+            );
+            const colTypes = {};
+            colTypesRes.rows.forEach(r => { colTypes[r.column_name] = r.data_type; });
+
+            sqlContent += `-- Table Data: ${table}\n`;
 
             const columns = Object.keys(data.rows[0]);
             
             for (const row of data.rows) {
                 const valuePlaceholders = columns.map((col) => {
                     const val = row[col];
-                    if (val === null) return 'NULL';
-                    if (typeof val === 'string') {
-                        return `'${val.replace(/'/g, "''")}'`;
+                    const dataType = colTypes[col] || '';
+
+                    if (val === null || val === undefined) return 'NULL';
+
+                    if (dataType === 'json' || dataType === 'jsonb') {
+                        const jsonStr = typeof val === 'string' ? (val.startsWith('{') || val.startsWith('[') || val.startsWith('"') ? val : JSON.stringify(val)) : JSON.stringify(val);
+                        return `'${jsonStr.replace(/'/g, "''")}'`;
+                    }
+
+                    if (typeof val === 'boolean') {
+                        return val ? 'TRUE' : 'FALSE';
                     }
                     if (val instanceof Date) {
                         return `'${val.toISOString()}'`;
                     }
                     if (typeof val === 'object') {
                         return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+                    }
+                    if (typeof val === 'string') {
+                        return `'${val.replace(/'/g, "''")}'`;
                     }
                     return val;
                 });
@@ -376,13 +524,99 @@ export const createBackup = async (req, res) => {
             sqlContent += '\n';
         }
 
+        sqlContent += `SET session_replication_role = 'origin';\n`;
+
         const filename = `backup-${Date.now()}.sql`;
         const filePath = path.join(backupDir, filename);
         fs.writeFileSync(filePath, sqlContent, 'utf-8');
 
-        res.status(201).json({ message: 'Backup created successfully', filename });
+        if (req.query && req.query.download === 'true') {
+            return res.download(filePath, filename);
+        }
+
+        res.status(201).json({
+            message: 'Database backup created successfully',
+            filename,
+            downloadUrl: `/api/backup/download/${filename}`,
+            sizeBytes: fs.statSync(filePath).size,
+            timestamp: new Date().toISOString()
+        });
     } catch (err) {
+        console.error("Error creating database backup:", err);
         res.status(500).json({ error: err.message });
+    }
+};
+
+export const restoreBackup = async (req, res) => {
+    try {
+        const { default: pool } = await import("../../config/db.js");
+        const backupDir = path.join(process.cwd(), "backups");
+        
+        let targetFilename = req.body?.filename || req.query?.filename || req.params?.filename;
+
+        if (!targetFilename) {
+            if (!fs.existsSync(backupDir)) {
+                return res.status(404).json({ message: "No backups directory found on server." });
+            }
+            const files = fs.readdirSync(backupDir)
+                .filter(f => f.endsWith(".sql"))
+                .map(f => ({
+                    name: f,
+                    time: fs.statSync(path.join(backupDir, f)).mtime.getTime()
+                }))
+                .sort((a, b) => b.time - a.time);
+
+            if (files.length === 0) {
+                return res.status(404).json({ message: "No backup (.sql) files found in backups directory." });
+            }
+            targetFilename = files[0].name;
+        }
+
+        if (targetFilename.includes("/") || targetFilename.includes("\\") || targetFilename.includes("..")) {
+            return res.status(400).json({ message: "Invalid filename specified." });
+        }
+
+        const filePath = path.join(backupDir, targetFilename);
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ message: `Backup file '${targetFilename}' not found.` });
+        }
+
+        const sqlContent = fs.readFileSync(filePath, "utf-8");
+        const lines = sqlContent.split('\n');
+        const truncates = lines.filter(l => l.trim().startsWith('TRUNCATE TABLE'));
+        const inserts = lines.filter(l => l.trim().startsWith('INSERT INTO'));
+
+        const client = await pool.connect();
+        try {
+            await client.query("ALTER TABLE users ALTER COLUMN referral_code DROP NOT NULL;");
+            await client.query("ALTER TABLE settings ALTER COLUMN setting_value TYPE text USING setting_value::text;");
+            await client.query("ALTER TABLE subscription_plans ALTER COLUMN price TYPE text USING price::text;");
+            await client.query("SET session_replication_role = 'replica';");
+
+            for (const trunc of truncates) {
+                try { await client.query(trunc); } catch (e) {}
+            }
+
+            for (const ins of inserts) {
+                try { await client.query(ins); } catch (e) {}
+            }
+
+            await client.query("SET session_replication_role = 'origin';");
+        } catch (execErr) {
+            console.error("Error executing restore backup:", execErr);
+            throw execErr;
+        } finally {
+            client.release();
+        }
+
+        return res.status(200).json({
+            message: `Database restored successfully from '${targetFilename}'!`,
+            filename: targetFilename,
+            restoredAt: new Date().toISOString()
+        });
+    } catch (err) {
+        console.error("Error restoring database backup:", err);
+        return res.status(500).json({ error: err.message });
     }
 };
 
@@ -507,8 +741,14 @@ export const getGigs = async (req, res) => {
     try {
         const query = `
             SELECT 
-              g.gig_id, g.title, g.description, g.price, g.delivery_days, g.revisions, g.status, g.created_at,
+              g.gig_id, g.freelancer_id, g.category_id, g.sub_category_id, 
+              g.title, g.description, g.price, g.delivery_days, g.revisions, 
+              g.status, 
+              COALESCE(g.images->>0, '') AS cover_image,
+              g.images, g.plans, g.slug, g.created_at, g.updated_at,
               u.first_name || ' ' || COALESCE(u.last_name, '') AS freelancer_name,
+              u.email AS freelancer_email,
+              u.profile_image AS freelancer_image,
               c.category_name,
               sc.sub_category_name
             FROM gigs g
@@ -520,6 +760,73 @@ export const getGigs = async (req, res) => {
         const result = await pool.query(query);
         res.json(result.rows);
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+export const updateGigByAdmin = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { 
+            title, 
+            description, 
+            price, 
+            delivery_days, 
+            revisions, 
+            category_id, 
+            sub_category_id, 
+            cover_image, 
+            images, 
+            status 
+        } = req.body;
+
+        let finalImages = images;
+        if (typeof images === 'string') {
+            try { finalImages = JSON.parse(images); } catch(e) { finalImages = [images]; }
+        }
+        if (cover_image && Array.isArray(finalImages) && !finalImages.includes(cover_image)) {
+            finalImages = [cover_image, ...finalImages];
+        }
+        if (Array.isArray(finalImages)) {
+            finalImages = JSON.stringify(finalImages);
+        }
+
+        const query = `
+            UPDATE gigs 
+            SET 
+              title = COALESCE($1, title),
+              description = COALESCE($2, description),
+              price = COALESCE($3, price),
+              delivery_days = COALESCE($4, delivery_days),
+              revisions = COALESCE($5, revisions),
+              category_id = COALESCE($6, category_id),
+              sub_category_id = COALESCE($7, sub_category_id),
+              images = COALESCE($8, images),
+              status = COALESCE($9, status),
+              updated_at = NOW()
+            WHERE gig_id = $10
+            RETURNING *
+        `;
+        const values = [
+            title !== undefined ? title : null, 
+            description !== undefined ? description : null, 
+            price !== undefined && price !== "" ? parseFloat(price) : null, 
+            delivery_days !== undefined && delivery_days !== "" ? parseInt(delivery_days) : null, 
+            revisions !== undefined && revisions !== "" ? parseInt(revisions) : null, 
+            category_id !== undefined && category_id !== "" ? parseInt(category_id) : null, 
+            sub_category_id !== undefined && sub_category_id !== "" ? parseInt(sub_category_id) : null, 
+            finalImages !== undefined ? finalImages : null, 
+            status !== undefined ? status : null, 
+            id
+        ];
+
+        const result = await pool.query(query, values);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Gig not found" });
+        }
+        res.json({ message: "Gig updated successfully", gig: result.rows[0] });
+    } catch (err) {
+        console.error("Error updating gig by admin:", err);
         res.status(500).json({ error: err.message });
     }
 };

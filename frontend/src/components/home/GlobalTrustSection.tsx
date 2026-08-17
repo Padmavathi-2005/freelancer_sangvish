@@ -120,16 +120,16 @@ export default function GlobalTrustSection() {
         
         {/* Left Column: Overlapping Real Freelancer Cards */}
         <div className="lg:col-span-6 relative flex items-center justify-center py-6 sm:py-10">
-          <div className="relative w-full max-w-md h-[340px] flex items-center justify-center">
+          <div className="relative w-full max-w-[420px] sm:max-w-[460px] h-[360px] flex items-center justify-center select-none">
             
-            {/* Card 1 (Back left) */}
+            {/* Card 1 (Back) */}
             <div 
               onClick={() => handleNavigateProfile(card1)}
-              className={`absolute ${isRtl ? "right-0 translate-x-6 sm:translate-x-10" : "left-0 -translate-x-6 sm:-translate-x-10"} z-10 w-52 sm:w-60 bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-slate-200 dark:border-zinc-800 shadow-lg scale-90 opacity-65 transition-all duration-500 flex flex-col items-center text-center gap-2.5 cursor-pointer hover:opacity-100`}
+              className={`absolute ${isRtl ? "right-0" : "left-0"} top-8 z-10 w-[240px] sm:w-[270px] bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-slate-200 dark:border-zinc-800 shadow-lg scale-90 opacity-70 transition-all duration-300 flex flex-col items-center text-center gap-2 cursor-pointer hover:opacity-100 hover:scale-95`}
             >
-              {renderAvatar(card1, "w-16 h-16")}
-              <h4 className="text-sm font-extrabold text-slate-900 dark:text-white truncate max-w-full">{card1.name}</h4>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 font-medium truncate max-w-full">
+              {renderAvatar(card1, "w-14 h-14")}
+              <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white truncate max-w-full">{card1.name}</h4>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-zinc-400 font-medium truncate max-w-full">
                 {card1.professional_title || card1.category_name || "Freelancer"}
               </p>
               <div className="text-[10px] text-amber-500 font-bold flex items-center gap-0.5">
@@ -141,7 +141,7 @@ export default function GlobalTrustSection() {
                   e.stopPropagation();
                   handleNavigateProfile(card1);
                 }}
-                className="w-full mt-1 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-bold text-xs py-2 rounded-xl border-none cursor-pointer transition"
+                className="w-full mt-1 bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 text-slate-700 dark:text-slate-200 font-bold text-xs py-1.5 rounded-xl border-none cursor-pointer transition"
               >
                 {t("view_profile_btn", "View Profile")}
               </button>
@@ -150,10 +150,10 @@ export default function GlobalTrustSection() {
             {/* Card 2 (Middle) */}
             <div 
               onClick={() => handleNavigateProfile(card2)}
-              className={`absolute ${isRtl ? "right-1/4 translate-x-3 sm:translate-x-5" : "left-1/4 -translate-x-3 sm:-translate-x-5"} z-20 w-56 sm:w-64 bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-slate-200 dark:border-zinc-800 shadow-xl scale-95 opacity-85 transition-all duration-500 flex flex-col items-center text-center gap-2.5 cursor-pointer hover:opacity-100`}
+              className={`absolute ${isRtl ? "right-[55px] sm:right-[70px]" : "left-[55px] sm:left-[70px]"} top-4 z-20 w-[240px] sm:w-[270px] bg-white dark:bg-zinc-900 rounded-3xl p-5 border border-slate-200 dark:border-zinc-800 shadow-xl scale-95 opacity-85 transition-all duration-300 flex flex-col items-center text-center gap-2 cursor-pointer hover:opacity-100 hover:scale-100`}
             >
               {renderAvatar(card2, "w-16 h-16")}
-              <h4 className="text-base font-extrabold text-slate-900 dark:text-white truncate max-w-full">{card2.name}</h4>
+              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white truncate max-w-full">{card2.name}</h4>
               <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium truncate max-w-full">
                 {card2.professional_title || card2.category_name || "Freelancer"}
               </p>
@@ -172,22 +172,21 @@ export default function GlobalTrustSection() {
               </button>
             </div>
 
-            {/* Card 3 (Active Front Right - Top Featured PRO Freelancer) */}
+            {/* Card 3 (Active Front PRO Freelancer) */}
             <div 
               onClick={() => handleNavigateProfile(card3)}
-              className={`absolute ${isRtl ? "left-0 sm:left-4" : "right-0 sm:right-4"} z-30 w-60 sm:w-72 bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-slate-200/90 dark:border-zinc-800 shadow-2xl scale-100 opacity-100 transition-all duration-500 flex flex-col items-center text-center gap-3 cursor-pointer hover:scale-[1.02]`}
+              className={`absolute ${isRtl ? "right-[110px] sm:right-[140px]" : "left-[110px] sm:left-[140px]"} top-0 z-30 w-[240px] sm:w-[270px] bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-slate-200/90 dark:border-zinc-800 shadow-2xl scale-100 opacity-100 transition-all duration-300 flex flex-col items-center text-center gap-2.5 cursor-pointer hover:scale-[1.02]`}
             >
-              
               {/* PRO Badge top right */}
               <div className={`absolute top-4 ${isRtl ? "left-4" : "right-4"} bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 px-2.5 py-0.5 rounded-md font-black text-[10px] flex items-center gap-1 border border-amber-300/40`}>
                 <FiZap className="w-3 h-3 fill-amber-500 text-amber-500" />
                 <span>PRO</span>
               </div>
 
-              {renderAvatar(card3, "w-20 h-20")}
+              {renderAvatar(card3, "w-18 h-18 sm:w-20 sm:h-20")}
 
               <div className="w-full text-center">
-                <h4 className="text-lg font-extrabold text-slate-900 dark:text-white truncate max-w-full">{card3.name}</h4>
+                <h4 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white truncate max-w-full">{card3.name}</h4>
                 <p className="text-xs text-slate-500 dark:text-zinc-400 font-medium mt-0.5 truncate max-w-full">
                   {card3.professional_title || card3.category_name || "Freelancer"}
                 </p>

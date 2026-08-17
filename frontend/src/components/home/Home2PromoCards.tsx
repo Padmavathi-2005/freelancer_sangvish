@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_URL, API_BASE_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 import { FiChevronRight } from "react-icons/fi";
 import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
@@ -46,6 +47,7 @@ const DEFAULT_CARDS: PromoCard[] = [
 ];
 
 export default function Home2PromoCards() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [cards, setCards] = useState<PromoCard[]>(DEFAULT_CARDS);
 
@@ -119,13 +121,13 @@ export default function Home2PromoCards() {
             >
               <div className="flex flex-col justify-center text-left max-w-xs z-10">
                 <span className="text-xs font-extrabold text-amber-700 dark:text-amber-400 tracking-wide uppercase mb-1">
-                  {card.eyebrow}
+                  {t(card.eyebrow, card.eyebrow)}
                 </span>
                 <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight font-display mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                  {card.title}
+                  {t(card.title, card.title)}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-                  {card.description}
+                  {t(card.description, card.description)}
                 </p>
               </div>
 

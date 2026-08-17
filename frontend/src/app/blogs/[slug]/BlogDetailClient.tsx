@@ -6,6 +6,7 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 import { FiCalendar, FiUser, FiClock, FiChevronLeft, FiFolder, FiFacebook, FiTwitter, FiLinkedin, FiLink, FiAlertCircle } from "react-icons/fi";
 
 interface BlogDetailClientProps {
@@ -13,6 +14,7 @@ interface BlogDetailClientProps {
 }
 
 export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps) {
+  const { t } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const slug = params?.slug;
@@ -72,7 +74,7 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
   const calculateReadTime = (content: string) => {
     const words = content ? content.replace(/<[^>]*>/g, "").split(/\s+/).length : 0;
     const time = Math.max(1, Math.ceil(words / 200));
-    return `${time} min read`;
+    return `${time} ${t("blog_min_read", "min read")}`;
   };
 
   const handleCopyLink = () => {
@@ -89,7 +91,7 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
         <Header />
         <div className="flex-1 flex flex-col justify-center items-center py-20 gap-4">
           <div className="w-12 h-12 border-4 border-teal-500/20 border-t-teal-700 rounded-full animate-spin" />
-          <p className="text-slate-500 text-sm font-semibold">Loading publication details...</p>
+          <p className="text-slate-500 text-sm font-semibold">{t("blog_loading", "Loading publication details...")}</p>
         </div>
         <Footer />
       </div>
@@ -104,15 +106,15 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
           <div className="w-16 h-16 bg-rose-500/10 text-rose-500 border border-rose-500/20 rounded-3xl flex items-center justify-center">
             <FiAlertCircle className="w-8 h-8" />
           </div>
-          <h2 className="text-2xl font-black tracking-tight">Article Not Found</h2>
+          <h2 className="text-2xl font-black tracking-tight">{t("blog_not_found", "Article Not Found")}</h2>
           <p className="text-slate-500 text-sm leading-relaxed max-w-sm">
-            The publication you are looking for may have been drafted, removed, or is temporarily unavailable.
+            {t("blog_not_found_desc", "The publication you are looking for may have been drafted, removed, or is temporarily unavailable.")}
           </p>
           <button
             onClick={() => router.push("/blogs")}
             className="bg-teal-700 hover:bg-teal-600 text-white font-bold text-sm px-6 py-3 rounded-2xl flex items-center gap-2 shadow-md hover:shadow-teal-700/15 cursor-pointer transition-all duration-200"
           >
-            <FiChevronLeft className="w-4 h-4" /> Back to Publications
+            <FiChevronLeft className="w-4 h-4" /> {t("blog_back_to_pubs", "Back to Publications")}
           </button>
         </div>
         <Footer />
@@ -220,7 +222,7 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
             className="text-slate-500 hover:text-teal-750 font-bold text-xs flex items-center gap-1.5 transition-colors group"
           >
             <FiChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-            Back to publications
+            {t("blog_back_to_pubs", "Back to Publications")}
           </Link>
           <span className="text-[10px] font-black text-teal-700 bg-teal-50 border border-teal-200 px-3 py-1 rounded-full uppercase tracking-wider">
             {blog.category || "General"}
@@ -241,7 +243,7 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
               </div>
               <div className="flex flex-col">
                 <span className="text-slate-800 font-black">{blog.author_name || "Administrator"}</span>
-                <span className="text-[10px] text-slate-400">Author & editor</span>
+                <span className="text-[10px] text-slate-400">{t("blog_author_editor", "Author & editor")}</span>
               </div>
             </div>
             
@@ -249,7 +251,7 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
 
             <span className="flex items-center gap-1.5">
               <FiCalendar className="w-4 h-4 text-slate-400" />
-              Published {new Date(blog.created_at).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}
+              {t("blog_published", "Published")} {new Date(blog.created_at).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}
             </span>
 
             <span className="w-1.5 h-1.5 bg-slate-300 rounded-full hidden sm:block" />
@@ -283,7 +285,7 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
           {/* Right Sidebar: Social Actions & Sharing */}
           <aside className="lg:col-span-1 flex flex-col gap-6 self-start lg:sticky lg:top-24 border-t lg:border-t-0 pt-6 lg:pt-0 border-slate-200">
             <div className="flex flex-col gap-4">
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-450">Share Article</h4>
+              <h4 className="text-xs font-black uppercase tracking-widest text-slate-450">{t("blog_share_article", "Share Article")}</h4>
               
               <div className="flex items-center gap-2">
                 {/* Facebook Share */}
@@ -335,14 +337,14 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
               
               {copied && (
                 <span className="text-[10px] font-bold text-teal-650 animate-fadeIn">
-                  Link copied to clipboard!
+                  {t("blog_copied", "Link copied to clipboard!")}
                 </span>
               )}
             </div>
             
             {/* Tag Badges */}
             <div className="flex flex-col gap-3 pt-4 border-t border-slate-200/60">
-              <h4 className="text-xs font-black uppercase tracking-widest text-slate-450">Category</h4>
+              <h4 className="text-xs font-black uppercase tracking-widest text-slate-450">{t("blog_category", "Category")}</h4>
               <div className="flex flex-wrap gap-1.5">
                 <span className="flex items-center gap-1 text-[11px] font-bold text-slate-655 bg-slate-100 px-3 py-1 rounded-lg">
                   <FiFolder className="w-3 h-3 text-slate-400" />
@@ -356,7 +358,7 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
         {/* RELATED ARTICLES SECTION */}
         {relatedBlogs.length > 0 && (
           <section className="border-t border-slate-200/60 pt-12 mt-8 flex flex-col gap-6">
-            <h3 className="text-xl font-black text-slate-850">Related Publications</h3>
+            <h3 className="text-xl font-black text-slate-850">{t("blog_related_pubs", "Related Publications")}</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {relatedBlogs.map((rel) => (
                 <Link

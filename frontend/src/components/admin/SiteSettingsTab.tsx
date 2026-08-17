@@ -19,7 +19,7 @@ export default function SiteSettingsTab({
   const [siteLogoDark, setSiteLogoDark] = useState("/public/logo.png");
   const [siteFavicon, setSiteFavicon] = useState("/public/favicon.ico");
   const [siteOgImage, setSiteOgImage] = useState("/public/og-image.png");
-  const [siteChatbotAvatar, setSiteChatbotAvatar] = useState("/public/images/chatbot-avatar.png");
+  const [siteChatbotAvatar, setSiteChatbotAvatar] = useState("/public/chatbot-avatar.png");
   const [siteDescription, setSiteDescription] = useState("LancerFlow Freelance Marketplace");
   const [siteKeywords, setSiteKeywords] = useState("freelance, marketplace, gig, order");
   const [siteShortName, setSiteShortName] = useState("Lancer");

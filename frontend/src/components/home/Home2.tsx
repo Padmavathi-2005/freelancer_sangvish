@@ -62,7 +62,7 @@ export default function Home2() {
       {/* HERO SECTION 2 - SOFT PRIMARY COLOR LIGHT BACKGROUND */}
       <section className="relative overflow-hidden bg-primary/[0.05] dark:bg-primary/[0.12] pt-16 pb-20 sm:pt-20 sm:pb-24 px-4 sm:px-6 lg:px-8 select-none border-b border-primary/10">
 
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-8 relative z-10">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-8 relative z-10" style={{ direction: "ltr" }}>
 
           {/* LEFT: Empty spacer (keeps layout balanced) */}
           <div className="hidden lg:block w-60 shrink-0" />
@@ -165,7 +165,7 @@ export default function Home2() {
           </div>{/* end center col */}
 
           {/* RIGHT: Animated Chat Widget */}
-          <div className="hidden lg:flex flex-col items-start justify-center w-60 shrink-0 self-stretch">
+          <div className="hidden lg:flex flex-col items-center justify-center w-60 h-[300px] shrink-0">
             <Home2ChatWidget />
           </div>
 
@@ -228,51 +228,7 @@ export default function Home2() {
       {/* RECENT CLIENT PROJECTS */}
       <RecentProjects />
 
-      {/* WHY CHOOSE HOME 2 */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full text-left">
-        <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="max-w-2xl mb-10 relative z-10">
-            <span className="text-xs font-black text-primary-light uppercase tracking-widest block mb-1">Why Choose Us</span>
-            <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight font-display">
-              Built for Speed, Security, and Seamless Hiring
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
-            <div className="bg-slate-800/60 border border-slate-700/60 p-6 rounded-2xl text-left">
-              <div className="w-10 h-10 rounded-xl bg-primary/20 text-teal-400 flex items-center justify-center mb-4">
-                <FiShield className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-extrabold text-white mb-2">Escrow Protection</h3>
-              <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                Funds are held safely in platform escrow and only released when you approve completed milestones.
-              </p>
-            </div>
-
-            <div className="bg-slate-800/60 border border-slate-700/60 p-6 rounded-2xl text-left">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-4">
-                <FiZap className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-extrabold text-white mb-2">Instant Collaboration</h3>
-              <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                Built-in direct messaging, proposal attachments, and real-time order status tracking.
-              </p>
-            </div>
-
-            <div className="bg-slate-800/60 border border-slate-700/60 p-6 rounded-2xl text-left">
-              <div className="w-10 h-10 rounded-xl bg-primary/20 text-primary-light flex items-center justify-center mb-4">
-                <FiStar className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-extrabold text-white mb-2">Vetted Quality</h3>
-              <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                Every freelancer undergoes admin identity vetting and portfolio review before bidding.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* CTA & FOOTER */}
       <div className="relative overflow-hidden bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 dark:from-zinc-950 dark:to-black border-t border-slate-200/60 dark:border-zinc-800 w-full mt-auto">

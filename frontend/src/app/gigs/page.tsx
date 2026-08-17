@@ -100,8 +100,13 @@ function GigsSearchContent() {
         });
         if (res.ok) {
           const profile = await res.json();
-          setIsAffiliate(profile.is_affiliate === true || profile.is_affiliate === 1);
-          setUserReferralCode(profile.referral_code || "");
+          if (profile.authenticated === false) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+          } else {
+            setIsAffiliate(profile.is_affiliate === true || profile.is_affiliate === 1);
+            setUserReferralCode(profile.referral_code || "");
+          }
         }
       } catch (err) {
         console.error("Error fetching user profile for affiliate check:", err);

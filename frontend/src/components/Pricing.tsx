@@ -15,7 +15,8 @@ import {
   FiZap,
   FiShoppingBag,
   FiCheckCircle,
-  FiAward
+  FiAward,
+  FiStar
 } from "react-icons/fi";
 
 interface Plan {
@@ -210,6 +211,54 @@ export default function Pricing() {
 
   return (
     <section id="pricing" className="w-full bg-[#fafbfc] border-t border-slate-200/40 py-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) scale(1.025); }
+          50%       { transform: translateY(-10px) scale(1.025); }
+        }
+        @keyframes glowPulse {
+          0%, 100% { 
+            box-shadow: 0 0 0 0 transparent, 0 20px 40px rgba(15, 23, 42, 0.15); 
+          }
+          50% { 
+            box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-primary, #0F766E) 18%, transparent), 0 25px 50px rgba(15, 23, 42, 0.22); 
+          }
+        }
+        .card-popular {
+          animation: float 4s ease-in-out infinite, glowPulse 3s ease-in-out infinite;
+        }
+        .shimmer-badge {
+          background: linear-gradient(90deg, #22c55e 0%, #4ade80 40%, #22c55e 60%, #16a34a 100%);
+          background-size: 200% auto;
+          animation: shimmer 2.5s linear infinite;
+        }
+        @keyframes rotateBadge {
+          0%,100% { transform: rotate(-2deg) scale(1); }
+          50%      { transform: rotate(2deg) scale(1.08); }
+        }
+        @keyframes shimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .btn-shine {
+          position: relative;
+          overflow: hidden;
+        }
+        .btn-shine::after {
+          content: '';
+          position: absolute;
+          top: 0; left: -100%;
+          width: 60%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+          transform: skewX(-20deg);
+          transition: none;
+        }
+        .btn-shine:hover::after {
+          left: 150%;
+          transition: left 0.5s ease;
+        }
+      `}</style>
       {/* Background blurs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-0 opacity-40">
         <div className="absolute top-1/4 left-1/3 w-80 h-80 bg-teal-50 rounded-full filter blur-3xl"></div>
@@ -259,7 +308,7 @@ export default function Pricing() {
 
         {/* SECTION 2: Dynamic Plan Cards Grid */}
         <div className={`flex flex-wrap justify-center gap-6 items-stretch mx-auto ${containerMaxWidth} mb-16`}>
-          {filteredPlans.map((dbPlan) => {
+          {filteredPlans.map((dbPlan, idx) => {
             const planId = dbPlan.plan_id;
             const isPopular = dbPlan.is_popular;
             const isCurrent = activePlanId ? activePlanId === planId : dbPlan.is_current;
@@ -301,79 +350,113 @@ export default function Pricing() {
               );
             }
 
+            const price = parseFloat(String(dbPlan.price || "0"));
+            const isFree = price === 0;
+            const delay = `${idx * 0.12}s`;
+            const isLight = idx === 0;
             return (
               <div 
                 key={planId} 
-                className={`relative rounded-xl p-8 flex flex-col justify-between transition-all duration-300 hover:scale-[1.02] border ${cardWidthClass} ${
+                className={`relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 ${cardWidthClass} ${
                   isPopular 
-                    ? "pricing-popular-card bg-primary text-white border-transparent shadow-2xl shadow-primary/30 z-10 lg:-translate-y-4" 
-                    : "bg-white text-slate-900 border-slate-200/60 shadow-lg shadow-slate-100/50"
+                    ? "card-popular z-10" 
+                    : "hover:scale-[1.025] hover:shadow-xl hover:-translate-y-1"
+                } ${
+                  isPopular
+                    ? "border border-primary-dark/40 shadow-2xl text-white"
+                    : "bg-[#0f172a] dark:bg-slate-950/90 border border-slate-800/80 shadow-xl text-white"
                 }`}
+                style={{
+                  animationDelay: delay,
+                  ...(isPopular ? { background: "linear-gradient(180deg, var(--color-primary-dark, #0a504a) 0%, rgba(15, 23, 42, 0.95) 100%)" } : {})
+                }}
               >
+                {/* Popular special top glow bar */}
                 {isPopular && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-primary-hover text-white font-extrabold text-[10px] tracking-wider uppercase py-1.5 px-5 rounded-full shadow-md">
-                    {t("most_popular_badge", "Most Popular")}
+                  <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,var(--color-primary,#0F766E),var(--color-secondary,#06b6d4),var(--color-primary,#0F766E))", backgroundSize: "200% auto", animation: "shimmer 2s linear infinite" }} />
+                )}
+
+                {/* Popular badge */}
+                {isPopular && (
+                  <div className="flex justify-center pt-5 pb-0">
+                    <span className="shimmer-badge rotateBadge flex items-center gap-1.5 bg-white/10 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border border-white/15">
+                      <FiStar className="w-2.5 h-2.5" style={{ animation: "rotateBadge 2s ease-in-out infinite" }} />
+                      {t("most_popular_badge", "Most Popular")}
+                    </span>
                   </div>
                 )}
 
-                <div>
-                  {/* Card Header */}
-                  <div className="mb-6">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-white/90" : "text-primary"}`}>
-                      {t("plan_name_label", "{{name}} Plan").replace("{{name}}", dbPlan.name)}
-                    </span>
-                    <p className={`text-xxs mt-1 font-semibold leading-relaxed ${isPopular ? "text-slate-200" : "text-slate-405"}`}>
-                      {dbPlan.description}
-                    </p>
+                {/* Card Content Wrapper */}
+                <div className="p-8 flex-1 flex flex-col justify-between">
+                  <div>
+                    {/* Card Header */}
+                    <div className="mb-6">
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-teal-300" : isLight ? "text-teal-300" : "text-amber-400"}`}>
+                        {t("plan_name_label", "{{name}} Plan").replace("{{name}}", dbPlan.name)}
+                      </span>
+                      <p className="text-xs mt-2 font-semibold leading-relaxed text-white/70">
+                        {dbPlan.description}
+                      </p>
+                    </div>
+
+                    {/* Card Pricing */}
+                    <div className="flex items-baseline gap-1.5 mb-8">
+                      <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
+                        {parseFloat((dbPlan.price || 0).toString()) === 0 
+                          ? t("plan_free", "Free") 
+                          : convertPrice(parseFloat((dbPlan.price || 0).toString().replace(/[^0-9.]/g, "") || "0"), currency).formatted
+                        }
+                      </span>
+                      <span className="text-xs font-bold text-white/60">
+                        {dbPlan.plan_duration ? `/ ${dbPlan.plan_duration} ${t("plan_duration_days", "DAYS")}` : ""}
+                      </span>
+                    </div>
+
+                    {/* Card Features list */}
+                    <ul className={`flex flex-col gap-3.5 pt-6 ${isPopular ? "border-t border-white/10" : "border-t border-slate-800"}`}>
+                      {realFeatures.map((feature, idx) => (
+                        <li key={idx} className="flex items-center gap-3.5 text-xs font-semibold">
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow-md ${
+                            isPopular 
+                              ? "bg-white text-teal-900 font-black" 
+                              : "bg-emerald-500 text-white font-black"
+                          }`}>
+                            <FiCheck className="w-3.5 h-3.5 stroke-[3]" />
+                          </span>
+                          <span className={isPopular ? "text-white font-bold" : "text-slate-100 font-semibold"}>
+                            {feature}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  {/* Card Pricing */}
-                  <div className="flex items-baseline gap-1.5 mb-8">
-                    <span className="text-4xl font-black tracking-tight">
-                      {parseFloat((dbPlan.price || 0).toString()) === 0 
-                        ? t("plan_free", "Free") 
-                        : convertPrice(parseFloat((dbPlan.price || 0).toString().replace(/[^0-9.]/g, "") || "0"), currency).formatted
-                      }
-                    </span>
-                    <span className={`text-xxs font-black uppercase tracking-wider ${isPopular ? "text-slate-350" : "text-slate-400"}`}>
-                      {dbPlan.plan_duration ? `/${dbPlan.plan_duration} ${t("plan_duration_days", "DAYS")}` : ""}
-                    </span>
+                  {/* Upgrade Button */}
+                  <div className="mt-8 pt-4">
+                    {isCurrent ? (
+                      <button 
+                        disabled
+                        className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold cursor-default transition ${
+                          isPopular
+                            ? "bg-white/10 border border-white/20 text-white"
+                            : "bg-slate-800 border border-slate-700 text-slate-300"
+                        }`}
+                      >
+                        {t("active_plan_btn", "Active Plan")}
+                      </button>
+                    ) : (
+                      <Link 
+                        href={`/pricing/${planId}`}
+                        className={`btn-shine w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold transition-all duration-200 active:scale-[0.98] ${
+                          isPopular
+                            ? "bg-white hover:bg-slate-100 text-slate-950 shadow-lg hover:shadow-white/15 font-black"
+                            : "bg-primary hover:bg-primary-hover text-white shadow-md"
+                        }`}
+                      >
+                        {t("choose_plan_btn", "Choose Plan")}
+                      </Link>
+                    )}
                   </div>
-
-                  {/* Card Features list */}
-                  <ul className="flex flex-col gap-3 border-t border-slate-100/10 pt-6">
-                    {realFeatures.map((feature, idx) => (
-                      <li key={idx} className="flex items-start gap-2.5 text-xs font-semibold">
-                        <FiCheck className={`w-4 h-4 mt-0.5 shrink-0 ${isPopular ? "text-white" : "text-primary"}`} />
-                        <span className={isPopular ? "text-slate-100" : "text-slate-650"}>
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Upgrade Button */}
-                <div className="mt-8 pt-4">
-                  {isCurrent ? (
-                    <button 
-                      disabled
-                      className="w-full bg-slate-100 border border-slate-200/50 text-slate-400 font-black text-xs py-3.5 rounded-xl cursor-default"
-                    >
-                      {t("active_plan_btn", "Active Plan")}
-                    </button>
-                  ) : (
-                    <Link 
-                      href={`/pricing/${planId}`}
-                      className={`w-full font-black text-xs py-3.5 rounded-xl block text-center transition active:scale-[0.98] cursor-pointer ${
-                        isPopular
-                          ? "bg-white text-slate-900 hover:bg-slate-100 shadow-md"
-                          : "bg-teal-700 text-white hover:bg-teal-800"
-                      }`}
-                    >
-                      {t("choose_plan_btn", "Choose Plan")}
-                    </Link>
-                  )}
                 </div>
               </div>
             );

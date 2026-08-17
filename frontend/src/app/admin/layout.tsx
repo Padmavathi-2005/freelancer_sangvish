@@ -10,12 +10,12 @@ import { API_URL, API_BASE_URL } from "@/config/api";
 const resolveLogoUrl = (url: string) => {
   if (!url) return "";
   let cleanUrl = url;
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("data:")) {
+    return cleanUrl;
+  }
   const publicIdx = cleanUrl.indexOf("/public/");
   if (publicIdx !== -1) {
     cleanUrl = cleanUrl.substring(publicIdx);
-  }
-  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
-    return cleanUrl;
   }
   const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
   return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
@@ -55,9 +55,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   const [isAdminNotificationsOpen, setIsAdminNotificationsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [siteLogo, setSiteLogo] = useState("");
-  const [siteLogoDark, setSiteLogoDark] = useState("");
-  const [siteName, setSiteName] = useState("");
+  const DEFAULT_SITE_LOGO = "/public/images/onboard/file-1783600571599-686657795.png";
+  const [siteLogo, setSiteLogo] = useState(DEFAULT_SITE_LOGO);
+  const [siteLogoDark, setSiteLogoDark] = useState(DEFAULT_SITE_LOGO);
+  const [siteName, setSiteName] = useState("Buy2Lancer");
   const [mounted, setMounted] = useState(false);
   const [marketingMenuOpen, setMarketingMenuOpen] = useState(false);
 
@@ -297,22 +298,15 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             href="/"
             className="flex items-center gap-2.5 hover:opacity-80 transition-all cursor-pointer min-w-0"
           >
-            {mounted && ((isDark && siteLogoDark) ? siteLogoDark : siteLogo) ? (
-              <img 
-                src={resolveLogoUrl((isDark && siteLogoDark) ? siteLogoDark : siteLogo)} 
-                alt={siteName || "Logo"} 
-                className="h-8 w-auto object-contain shrink-0" 
-              />
-            ) : (
-              <>
-                <div className="w-7 h-7 rounded-lg bg-teal-600 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-sm">
-                  L
-                </div>
-                <span className="text-sm font-black tracking-tight text-slate-805 dark:text-teal-400 truncate">
-                  {mounted && siteName ? siteName : "Freelancer Panel"}
-                </span>
-              </>
-            )}
+            <img 
+              src={resolveLogoUrl((isDark && siteLogoDark) ? siteLogoDark : siteLogo) || resolveLogoUrl("/public/images/onboard/file-1783600571599-686657795.png")} 
+              alt={siteName || "Buy2Lancer"} 
+              className="h-9 w-auto max-w-[170px] object-contain shrink-0" 
+              onError={(e: any) => {
+                e.target.onerror = null;
+                e.target.style.display = 'none';
+              }}
+            />
           </Link>
           <div className="flex items-center gap-1.5 shrink-0">
             <button
@@ -328,16 +322,12 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         {/* Profile Card Header */}
         <div className={profileCardClass}>
           <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
-              <img 
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256" 
-                alt="Admin" 
-                className="w-full h-full object-cover" 
-              />
+            <div className="w-10 h-10 rounded-xl bg-teal-600 text-white font-black text-base flex items-center justify-center shrink-0 shadow-sm border border-teal-500/30 select-none">
+              A
             </div>
             <div>
-              <div className={profileNameClass}>{adminUser?.full_name || "Admin Admin"}</div>
-              <div className="text-[10px] font-bold text-emerald-600 flex items-center gap-1.5">
+              <div className={profileNameClass}>{adminUser?.full_name || "Admin"}</div>
+              <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                 Active
               </div>
@@ -789,7 +779,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
                 isDark ? "bg-teal-500/10 text-teal-400 border border-teal-500/30" : "bg-teal-50 text-teal-750 border border-teal-200"
               }`}>Admin</span>
-              Control Terminal
+              <span className="hidden sm:inline">Control Terminal</span>
             </h1>
           </div>
           
@@ -936,7 +926,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Scrollable Main Content */}
-        <main className="flex-1 p-6 lg:p-10 overflow-y-auto relative w-full flex flex-col gap-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-10 overflow-y-visible lg:overflow-y-auto relative w-full flex flex-col gap-8">
           
           {/* Stats metrics widgets row */}
           {pathname === "/admin" && (

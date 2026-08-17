@@ -59,7 +59,7 @@ interface ProjectDetailsClientProps {
 }
 
 export default function ProjectDetailsClient({ initialJob, initialSlug }: ProjectDetailsClientProps) {
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const { openLoginModal } = useAuthModal();
@@ -548,11 +548,10 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-center">
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{t("project_budget", "Project Budget")}</span>
               <div className="flex items-center justify-center gap-1 text-primary font-black text-2xl">
-                <FiDollarSign className="w-6 h-6" />
                 <span>
                   {job.project_type === "Hourly"
-                    ? `${job.budget || job.hourly_rate || 50}/hr`
-                    : finalBudget.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    ? `${formatPrice(job.budget || job.hourly_rate || 50)}/hr`
+                    : formatPrice(finalBudget)}
                 </span>
               </div>
 
@@ -728,7 +727,7 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
                 }
                 return manual || job?.client_image || job?.company_logo || "";
               })()}
-              priceOrBudget={job?.budget ? `$${parseFloat(job.budget).toFixed(2)}` : job?.min_budget ? `$${job.min_budget} - $${job.max_budget}` : ""}
+              priceOrBudget={job?.budget ? formatPrice(parseFloat(job.budget)) : job?.min_budget ? `${formatPrice(job.min_budget)} - ${formatPrice(job.max_budget)}` : ""}
               isAffiliate={isAffiliate}
               referralCode={userReferralCode}
               onToast={(type, message) => showToast(type, message)}

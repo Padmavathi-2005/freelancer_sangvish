@@ -297,41 +297,55 @@ export default function GeneralSettingsTab({
             <p className="text-xs text-slate-550 mt-1 font-semibold">Customize the primary (base accent) and secondary (complementary accent) brand colors used in the layout.</p>
           </div>
           
-          <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-4 sm:items-center shrink-0">
-            <div className="flex flex-col gap-1.5 min-w-[200px] sm:min-w-[220px]">
-              <span className="text-[10px] font-black text-slate-405 uppercase tracking-wider">Primary Color</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={pColor}
-                  onChange={(e) => setLocalPrimaryColor(e.target.value)}
-                  className="w-10 h-10 border border-slate-200 rounded-xl cursor-pointer bg-transparent p-0 overflow-hidden shrink-0"
-                />
+          <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-5 sm:items-center shrink-0">
+            {/* Primary Color */}
+            <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[220px]">
+              <label className="text-[11px] font-extrabold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full inline-block shadow-sm" style={{ backgroundColor: pColor || "#0F766E" }}></span>
+                Primary Color
+              </label>
+              <div className="relative flex items-center bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700/80 rounded-2xl p-1.5 transition-all duration-200 focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/10 shadow-sm">
+                <div className="relative w-8 h-8 rounded-full shrink-0 shadow-inner border border-black/10 overflow-hidden flex items-center justify-center cursor-pointer transition-transform hover:scale-105 active:scale-95">
+                  <div className="w-full h-full rounded-full" style={{ backgroundColor: pColor || "#0F766E" }}></div>
+                  <input
+                    type="color"
+                    value={pColor || "#0F766E"}
+                    onChange={(e) => setLocalPrimaryColor(e.target.value)}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer border-none"
+                  />
+                </div>
                 <input
                   type="text"
                   value={pColor}
                   onChange={(e) => setLocalPrimaryColor(e.target.value)}
-                  placeholder="#10b981"
-                  className="w-full bg-slate-50 border border-slate-202 rounded-xl px-3 py-2 text-xs font-mono text-slate-805 uppercase focus:outline-none focus:border-teal-700 transition"
+                  placeholder="#0F766E"
+                  className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 px-2.5 py-1 text-xs font-mono font-bold text-slate-800 dark:text-zinc-100 uppercase tracking-wider"
                 />
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[200px] sm:min-w-[220px]">
-              <span className="text-[10px] font-black text-slate-405 uppercase tracking-wider">Secondary Color</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={sColor}
-                  onChange={(e) => setLocalSecondaryColor(e.target.value)}
-                  className="w-10 h-10 border border-slate-200 rounded-xl cursor-pointer bg-transparent p-0 overflow-hidden shrink-0"
-                />
+            {/* Secondary Color */}
+            <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[220px]">
+              <label className="text-[11px] font-extrabold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full inline-block shadow-sm" style={{ backgroundColor: sColor || "#22C55E" }}></span>
+                Secondary Color
+              </label>
+              <div className="relative flex items-center bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700/80 rounded-2xl p-1.5 transition-all duration-200 focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/10 shadow-sm">
+                <div className="relative w-8 h-8 rounded-full shrink-0 shadow-inner border border-black/10 overflow-hidden flex items-center justify-center cursor-pointer transition-transform hover:scale-105 active:scale-95">
+                  <div className="w-full h-full rounded-full" style={{ backgroundColor: sColor || "#22C55E" }}></div>
+                  <input
+                    type="color"
+                    value={sColor || "#22C55E"}
+                    onChange={(e) => setLocalSecondaryColor(e.target.value)}
+                    className="absolute inset-0 opacity-0 w-full h-full cursor-pointer border-none"
+                  />
+                </div>
                 <input
                   type="text"
                   value={sColor}
                   onChange={(e) => setLocalSecondaryColor(e.target.value)}
-                  placeholder="#06b6d4"
-                  className="w-full bg-slate-50 border border-slate-202 rounded-xl px-3 py-2 text-xs font-mono text-slate-805 uppercase focus:outline-none focus:border-teal-700 transition"
+                  placeholder="#22C55E"
+                  className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 px-2.5 py-1 text-xs font-mono font-bold text-slate-800 dark:text-zinc-100 uppercase tracking-wider"
                 />
               </div>
             </div>

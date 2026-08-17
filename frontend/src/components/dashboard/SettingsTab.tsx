@@ -1,6 +1,13 @@
 import { API_URL } from "@/config/api";
 import React, { useState, useMemo } from "react";
 import CustomSelect from "../CustomSelect";
+
+const formatExpDate = (dateStr?: string | null) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+};
 import { FiSettings, FiUser, FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiTrash2, FiPlus, FiCircle, FiFileText, FiUpload, FiShield, FiPhone, FiMail, FiSend, FiKey, FiLoader } from "react-icons/fi";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -1393,7 +1400,7 @@ export default function SettingsTab({
                             <h4 className="text-sm font-extrabold text-slate-800">{exp.job_title}</h4>
                             <p className="text-xs text-slate-505 font-bold mt-0.5">{exp.company_name} • {exp.employment_type}</p>
                             <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                              {exp.start_date} to {exp.currently_working ? "Present" : exp.end_date}
+                              {formatExpDate(exp.start_date) || "N/A"} to {exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}
                             </p>
                             {exp.description && <p className="text-xs text-slate-500 mt-2 leading-relaxed">{exp.description}</p>}
                           </div>
@@ -3075,7 +3082,7 @@ export default function SettingsTab({
                                   <h4 className="text-xs font-black text-slate-805 uppercase tracking-wide">{exp.job_title}</h4>
                                   <p className="text-xs font-bold text-slate-500 mt-0.5">{exp.company_name} • {exp.employment_type}</p>
                                   <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                                    {exp.start_date} to {exp.currently_working ? "Present" : exp.end_date}
+                                    {formatExpDate(exp.start_date) || "N/A"} to {exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}
                                   </p>
                                   {exp.description && <p className="text-xs text-slate-450 mt-1.5 leading-relaxed">{exp.description}</p>}
                                 </div>

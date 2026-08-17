@@ -6,8 +6,16 @@ import { API_URL, API_BASE_URL } from "@/config/api";
 
 const resolveLogoUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+  let cleanUrl = url;
+  const publicIdx = cleanUrl.indexOf("/public/");
+  if (publicIdx !== -1) {
+    cleanUrl = cleanUrl.substring(publicIdx);
+  }
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+    return cleanUrl;
+  }
+  const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
+  return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
 };
 
 interface FooterProps {
@@ -17,12 +25,21 @@ interface FooterProps {
 export default function Footer({ transparent = false }: FooterProps) {
   const { t } = useLanguage();
   const currentYear = new Date().getFullYear();
-  const [siteLogo, setSiteLogo] = useState<string>("");
-  const [siteName, setSiteName] = useState<string>("");
+  const [siteLogo, setSiteLogo] = useState<string>("/public/logo.png");
+  const [siteLogoDark, setSiteLogoDark] = useState<string>("");
+  const [siteName, setSiteName] = useState<string>("Buy2Lancer");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== "undefined") {
+      const cachedLogo = localStorage.getItem("cached_site_logo");
+      const cachedLogoDark = localStorage.getItem("cached_site_logo_dark");
+      const cachedName = localStorage.getItem("cached_site_name");
+      if (cachedLogo) setSiteLogo(cachedLogo);
+      if (cachedLogoDark) setSiteLogoDark(cachedLogoDark);
+      if (cachedName) setSiteName(cachedName);
+    }
     const fetchSettings = async () => {
       try {
         const apiUrl = API_URL || "http://localhost:5000/api";
@@ -34,12 +51,21 @@ export default function Footer({ transparent = false }: FooterProps) {
               let val = setting.setting_value;
               if (typeof val === "string") {
                 try {
-                  const parsed = JSON.parse(val);
-                  if (typeof parsed === "string") val = parsed;
+                  const trimmed = val.trim();
+                  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+                    val = JSON.parse(val);
+                  }
                 } catch (e) {}
               }
-              if (setting.setting_key === "site_logo" && val) setSiteLogo(val);
-              if (setting.setting_key === "site_name" && val) setSiteName(val);
+              if (setting.setting_key === "site_settings") {
+                if (val?.site_logo) setSiteLogo(val.site_logo);
+                if (val?.site_logo_dark) setSiteLogoDark(val.site_logo_dark);
+                if (val?.site_name) setSiteName(val.site_name);
+              } else if (setting.setting_key === "site_logo" && val) {
+                setSiteLogo(val);
+              } else if (setting.setting_key === "site_name" && val) {
+                setSiteName(val);
+              }
             });
           }
         }
@@ -92,25 +118,11 @@ export default function Footer({ transparent = false }: FooterProps) {
           {/* Logo & Brand Copy Column */}
           <div className="md:col-span-5 flex flex-col gap-4 text-left">
             <a href="/" className="inline-flex items-center gap-2 select-none w-fit">
-              {mounted && siteLogo ? (
-                <img
-                  src={resolveLogoUrl(siteLogo)}
-                  alt={siteName || "Freelancer"}
-                  className="h-9 w-auto max-w-[200px] object-contain shrink-0 filter dark:invert-0"
-                />
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#10b981]/20 border border-[#10b981]/40 flex items-center justify-center text-[#10b981] font-extrabold shadow-sm shrink-0">
-                    <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                  <span className="font-extrabold text-2xl tracking-tight font-display flex items-baseline gap-0.5 select-none">
-                    <span className="font-extrabold text-white">{siteName || "Freelancer"}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] mb-0.5" />
-                  </span>
-                </div>
-              )}
+              <img
+                src={resolveLogoUrl(siteLogoDark || siteLogo || "/public/logo.png")}
+                alt={siteName || "Buy2Lancer"}
+                className="h-9 w-auto max-w-[200px] object-contain shrink-0"
+              />
             </a>
             
             <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed max-w-sm font-sans">

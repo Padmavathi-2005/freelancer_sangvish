@@ -5,12 +5,14 @@ import {
     getAdmins,
     deleteAdmin,
     getUsers,
+    updateUserByAdmin,
     toggleUserActive,
     updateFreelancerVettingStatus,
     getProjects,
     updateProjectStatus,
     deleteProject,
     getGigs,
+    updateGigByAdmin,
     updateGigStatus,
     deleteGig,
     getGigOrders,
@@ -45,6 +47,7 @@ import {
     updateProposalVettingStatus,
     getBackups,
     createBackup,
+    restoreBackup,
     downloadBackup,
     deleteBackup,
     getAdminProfile,
@@ -115,11 +118,14 @@ router.delete("/form-field-options/:id", adminAuth, deleteFormFieldOption);
 // database backups
 router.get("/backups", adminAuth, getBackups);
 router.post("/backups", adminAuth, createBackup);
+router.post("/backups/restore", adminAuth, restoreBackup);
+router.post("/backups/:filename/restore", adminAuth, restoreBackup);
 router.get("/backups/:filename/download", adminAuth, downloadBackup);
 router.delete("/backups/:filename", adminAuth, deleteBackup);
 
 // user management routes
 router.get("/users", adminAuth, getUsers);
+router.put("/users/:id", adminAuth, updateUserByAdmin);
 router.put("/users/:id/toggle-active", adminAuth, toggleUserActive);
 router.put("/users/:id/vetting", adminAuth, updateFreelancerVettingStatus);
 
@@ -134,6 +140,7 @@ router.put("/proposals/:id/vetting", adminAuth, updateProposalVettingStatus);
 
 // gig management routes
 router.get("/gigs", adminAuth, getGigs);
+router.put("/gigs/:id", adminAuth, updateGigByAdmin);
 router.put("/gigs/:id/status", adminAuth, updateGigStatus);
 router.delete("/gigs/:id", adminAuth, deleteGig);
 

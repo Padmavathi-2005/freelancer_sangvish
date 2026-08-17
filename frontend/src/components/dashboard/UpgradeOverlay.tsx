@@ -213,10 +213,10 @@ export default function UpgradeOverlay({ isOpen, onClose, message }: UpgradeOver
                     <ul className="space-y-4">
                       {featuresList.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-3">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                            isEnterprise ? "bg-teal-500/10 text-teal-400" : "bg-teal-50 text-teal-700"
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 shadow-sm ${
+                            isEnterprise ? "bg-emerald-500 text-white font-black" : "bg-emerald-600 text-white font-black"
                           }`}>
-                            <FiCheck className="w-3.5 h-3.5" />
+                            <FiCheck className="w-3.5 h-3.5 stroke-[3]" />
                           </div>
                           <span className={`text-xs font-bold ${isEnterprise ? "text-slate-200" : "text-slate-700"}`}>
                             {feature}

@@ -55,9 +55,10 @@ export default function Home2Categories() {
 
   const displayItems = cardData.map((item, index) => {
     const fetchedCat = categories[index];
+    const catTitle = fetchedCat ? fetchedCat.category_name : item.title;
     return {
-      name: fetchedCat ? fetchedCat.category_name : item.title,
-      desc: item.desc,
+      name: t(catTitle, catTitle),
+      desc: t(item.desc, item.desc),
       Icon: item.icon,
       href: fetchedCat ? `/gigs?category=${encodeURIComponent(fetchedCat.category_name)}` : `/gigs?query=${encodeURIComponent(item.title)}`
     };

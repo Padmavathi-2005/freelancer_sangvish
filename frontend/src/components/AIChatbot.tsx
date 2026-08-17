@@ -226,17 +226,18 @@ function CheckoutWidget({ gigId, title, price, currencyId = 1, onSuccess }: Chec
 }
 
 const resolveChatLogoUrl = (url: string) => {
-  if (!url) return "";
+  if (!url) return "/chatbot-avatar.png";
   let cleanUrl = url;
+  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://") || cleanUrl.startsWith("data:")) {
+    return cleanUrl;
+  }
   const publicIdx = cleanUrl.indexOf("/public/");
   if (publicIdx !== -1) {
     cleanUrl = cleanUrl.substring(publicIdx);
   }
-  if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
-    return cleanUrl;
-  }
+  if (!cleanUrl.startsWith("/")) cleanUrl = "/" + cleanUrl;
   const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
-  return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+  return `${baseBackendUrl}${cleanUrl}`;
 };
 
 export default function AIChatbot() {
@@ -344,7 +345,13 @@ export default function AIChatbot() {
         const profRes = await fetch(`${API_URL}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (!profRes.ok) return;
+        if (!profRes.ok) {
+          if (profRes.status === 401 || profRes.status === 404) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+          }
+          return;
+        }
         const profData = await profRes.json();
 
         // Fetch wallet balance
@@ -975,39 +982,45 @@ export default function AIChatbot() {
 
   return (
     <>
-      {/* Floating Chat Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-white dark:bg-zinc-900 text-slate-800 dark:text-white shadow-2xl hover:shadow-teal-900/20 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-teal-600/40 p-2 cursor-pointer group"
-        aria-label="Open AI Assistant"
-      >
-        {isOpen ? (
-          <div className="w-full h-full rounded-full bg-teal-700 text-white flex items-center justify-center">
-            <FiX className="w-6 h-6 animate-fadeIn" />
-          </div>
-        ) : (
-          <div className="relative w-full h-full flex items-center justify-center">
-            {!btnImageFailed && (siteChatbotAvatar || siteFavicon || siteLogo || !mounted) ? (
-              <img 
-                src={siteChatbotAvatar ? resolveChatLogoUrl(siteChatbotAvatar) : siteFavicon ? resolveChatLogoUrl(siteFavicon) : siteLogo ? resolveChatLogoUrl(siteLogo) : "/favicon.ico"} 
-                alt="AI Assistant" 
-                className="w-full h-full object-contain animate-fadeIn group-hover:scale-105 transition-transform"
-                onError={() => setBtnImageFailed(true)}
-              />
-            ) : (
-              <img
-                src="https://cdn-icons-png.flaticon.com/512/8943/8943377.png"
-                alt="AI Chat"
-                className="w-full h-full object-contain animate-fadeIn group-hover:scale-105 transition-transform"
-              />
-            )}
-            <span className="absolute -top-1.5 -right-1.5 flex h-2.5 w-2.5 z-10">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-white shadow-sm"></span>
-            </span>
-          </div>
+      {/* Floating Chat Button Container */}
+      <div className="fixed bottom-6 right-6 z-[9999] group">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-14 h-14 rounded-full bg-white dark:bg-zinc-900 text-slate-800 dark:text-white shadow-2xl hover:shadow-teal-900/30 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center border-2 border-teal-600/70 p-0 overflow-hidden cursor-pointer"
+          aria-label="Open AI Assistant"
+        >
+          {isOpen ? (
+            <div className="w-full h-full rounded-full bg-teal-700 text-white flex items-center justify-center">
+              <FiX className="w-6 h-6 animate-fadeIn" />
+            </div>
+          ) : (
+            <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-white">
+              {!btnImageFailed ? (
+                <img 
+                  src={resolveChatLogoUrl(siteChatbotAvatar || "/chatbot-avatar.png")} 
+                  alt="AI Assistant" 
+                  className="w-full h-full object-cover rounded-full animate-fadeIn group-hover:scale-105 transition-transform"
+                  onError={() => setBtnImageFailed(true)}
+                />
+              ) : (
+                <img
+                  src="/chatbot-avatar.png"
+                  alt="AI Chat"
+                  className="w-full h-full object-cover rounded-full animate-fadeIn group-hover:scale-105 transition-transform"
+                />
+              )}
+            </div>
+          )}
+        </button>
+
+        {/* Online Status Green Indicator Dot */}
+        {!isOpen && (
+          <span className="absolute top-0.5 right-0.5 flex h-3.5 w-3.5 z-[10000] pointer-events-none">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white shadow-md"></span>
+          </span>
         )}
-      </button>
+      </div>
 
       {/* Chat Window */}
       {isOpen && (
@@ -1019,7 +1032,7 @@ export default function AIChatbot() {
           {/* Header */}
           <div className="bg-white dark:bg-zinc-900 border-b border-slate-200/80 dark:border-zinc-800 px-5 py-4 flex justify-between items-center relative shrink-0">
             <div className="flex items-center gap-3 z-10 min-w-0">
-              {/* Logo */}
+              {/* Logo / Chatbot Avatar */}
               <div className="h-8 flex items-center shrink-0">
                 {isFullscreen && siteLogo ? (
                   <img 
@@ -1028,19 +1041,15 @@ export default function AIChatbot() {
                     className="h-8 w-auto object-contain max-w-[120px]" 
                   />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-center overflow-hidden">
-                    {!faviconFailed && (siteFavicon || !mounted) ? (
-                      <img 
-                        src={siteFavicon ? resolveChatLogoUrl(siteFavicon) : "/favicon.ico"} 
-                        alt="Favicon" 
-                        className="h-5.5 h-5.5 object-contain"
-                        onError={() => {
-                          setFaviconFailed(true);
-                        }}
-                      />
-                    ) : (
-                      <i className="fa-solid fa-robot text-primary dark:text-teal-400 text-sm"></i>
-                    )}
+                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
+                    <img 
+                      src={resolveChatLogoUrl(siteChatbotAvatar || "/chatbot-avatar.png")} 
+                      alt="AI Assistant Avatar" 
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLElement).setAttribute("src", "/chatbot-avatar.png");
+                      }}
+                    />
                   </div>
                 )}
               </div>

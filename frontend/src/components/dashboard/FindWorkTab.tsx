@@ -59,10 +59,10 @@ export default function FindWorkTab({
   setShowProposalModal,
   setSelectedFreelancerProfile,
 }: FindWorkTabProps) {
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const catScrollRef = useRef<HTMLDivElement>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
-  const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(false);
+  const [onboardingCheckLoading, setOnboardingCheckLoading] = useState<any | null>(null);
 
   // AI Project Matching states
   const [showAiMatches, setShowAiMatches] = useState(false);
@@ -237,7 +237,7 @@ export default function FindWorkTab({
     }
 
     try {
-      setOnboardingCheckLoading(true);
+      setOnboardingCheckLoading(job.job_id);
       const res = await fetch(`${API_URL}/users/onboarding-check`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -274,7 +274,7 @@ export default function FindWorkTab({
     } catch (err) {
       triggerToast("error", "Error checking profile status.");
     } finally {
-      setOnboardingCheckLoading(false);
+      setOnboardingCheckLoading(null);
     }
   };
 
@@ -364,7 +364,7 @@ export default function FindWorkTab({
                     </div>
                     
                     <span className="text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200/50 px-2 py-1 rounded-lg shrink-0">
-                      ${freelancer.hourlyRate}/hr
+                      {formatPrice(freelancer.hourlyRate)}/hr
                     </span>
                   </div>
 
@@ -742,11 +742,11 @@ export default function FindWorkTab({
                     </button>
                   ) : (
                     <button
-                      disabled={onboardingCheckLoading}
+                      disabled={onboardingCheckLoading === job.job_id}
                       onClick={(e) => handleBidClick(e, job)}
                       className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-2 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
                     >
-                      <i className="fa-solid fa-paper-plane"></i> {onboardingCheckLoading ? t("checking_btn", "Checking...") : t("submit_proposal_btn", "Submit Proposal")}
+                      <i className="fa-solid fa-paper-plane"></i> {onboardingCheckLoading === job.job_id ? t("checking_btn", "Checking...") : t("submit_proposal_btn", "Submit Proposal")}
                     </button>
                   )}
                   </div>

@@ -119,6 +119,8 @@ interface AdminContextType {
   setUsersFilterRole: (v: string) => void;
   fetchUsers: () => Promise<void>;
   handleToggleUserActive: (userId: number) => Promise<void>;
+  handleUpdateUserByAdmin: (userId: number, updatedData: any) => Promise<boolean>;
+  handleUpdateUserVettingStatus: (userId: number, vetting_status: string) => Promise<boolean>;
 
   // Onboarded directory states
   onboardedSearch: string;
@@ -148,6 +150,7 @@ interface AdminContextType {
   gigsLoading: boolean;
   fetchGigs: () => Promise<void>;
   handleUpdateGigStatus: (gigId: number, status: string) => Promise<void>;
+  handleUpdateGigByAdmin: (gigId: number, updatedData: any) => Promise<boolean>;
   handleDeleteGig: (gigId: number) => Promise<void>;
 
   // Gig orders states
@@ -859,6 +862,54 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Update user details by admin
+  const handleUpdateUserByAdmin = async (userId: number, updatedData: any) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return false;
+      const res = await fetch(`${API_URL}/admin/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+      if (res.ok) {
+        await fetchUsers();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error updating user by admin:", err);
+      return false;
+    }
+  };
+
+  // Update user vetting status directly
+  const handleUpdateUserVettingStatus = async (userId: number, vetting_status: string) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return false;
+      const res = await fetch(`${API_URL}/admin/users/${userId}/vetting`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ vetting_status })
+      });
+      if (res.ok) {
+        await fetchUsers();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error updating vetting status:", err);
+      return false;
+    }
+  };
+
   // Fetch projects
   const fetchProjects = async () => {
     try {
@@ -916,10 +967,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Fetch Gigs
   const fetchGigs = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("token");
       if (!token) return;
       setGigsLoading(true);
       const res = await fetch(`${API_URL}/admin/gigs`, {
@@ -953,6 +1003,29 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       console.error("Error updating gig status:", err);
+    }
+  };
+
+  const handleUpdateGigByAdmin = async (gigId: number, updatedData: any) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return false;
+      const res = await fetch(`${API_URL}/admin/gigs/${gigId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(updatedData)
+      });
+      if (res.ok) {
+        await fetchGigs();
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error("Error updating gig by admin:", err);
+      return false;
     }
   };
 
@@ -2438,10 +2511,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated, setIsAuthenticated, activeTab, setActiveTab, isSidebarOpen, setIsSidebarOpen,
       adminTheme, setAdminTheme,
       usersList, usersSearch, setUsersSearch, usersPage, setUsersPage, usersLoading, usersFilterRole, setUsersFilterRole,
-      fetchUsers, handleToggleUserActive, onboardedSearch, setOnboardedSearch, onboardedFilterRole, setOnboardedFilterRole,
+      fetchUsers, handleToggleUserActive, handleUpdateUserByAdmin, handleUpdateUserVettingStatus, onboardedSearch, setOnboardedSearch, onboardedFilterRole, setOnboardedFilterRole,
       onboardedPage, setOnboardedPage, projectsList, projectsSearch, setProjectsSearch, projectsPage, setProjectsPage,
       projectsLoading, fetchProjects, handleUpdateProjectStatus, handleDeleteProject, gigsList, gigsSearch, setGigsSearch,
-      gigsPage, setGigsPage, gigsLoading, fetchGigs, handleUpdateGigStatus, handleDeleteGig, gigOrdersList, gigOrdersSearch,
+      gigsPage, setGigsPage, gigsLoading, fetchGigs, handleUpdateGigStatus, handleUpdateGigByAdmin, handleDeleteGig, gigOrdersList, gigOrdersSearch,
       setGigOrdersSearch, gigOrdersPage, setGigOrdersPage, gigOrdersLoading, fetchGigOrders, handleUpdateGigOrderStatus,
       transactionsList, transactionsSearch, setTransactionsSearch, transactionsPage, setTransactionsPage, transactionsLoading,
       fetchTransactions, gigMenuOpen, setGigMenuOpen, projectMenuOpen, setProjectMenuOpen, settingsMenuOpen, setSettingsMenuOpen, categoriesSubTab, setCategoriesSubTab,

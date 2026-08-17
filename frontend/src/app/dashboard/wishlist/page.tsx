@@ -14,7 +14,7 @@ const resolveMediaUrl = (url: string) => {
 
 export default function WishlistPage() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const [activeTab, setActiveTab] = useState<"gigs" | "projects" | "freelancers">("gigs");
   const [userRole, setUserRole] = useState<string | null>(null);
 
@@ -295,7 +295,7 @@ export default function WishlistPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-1 text-teal-700 font-black text-sm">
-                      <span>${parseFloat(job.budget || job.max_budget || 0).toLocaleString()}</span>
+                      <span>{formatPrice(job.budget || job.max_budget || 0)}</span>
                       {job.project_type === "Hourly" && <span className="text-xs font-bold text-slate-500">/hr</span>}
                     </div>
                   </div>
@@ -377,7 +377,11 @@ export default function WishlistPage() {
                     <span>{initials}</span>
                     {f.profile_image && (
                       <img
-                        src={`https://freelancer.sangvish.com${f.profile_image}`}
+                        src={
+                          f.profile_image.startsWith("http") || f.profile_image.startsWith("data:")
+                            ? f.profile_image
+                            : `https://freelancer.sangvish.com${f.profile_image.startsWith("/") ? "" : "/"}${f.profile_image}`
+                        }
                         alt={f.name}
                         className="absolute inset-0 w-full h-full object-cover rounded-xl"
                         onError={(e: any) => {
@@ -405,7 +409,7 @@ export default function WishlistPage() {
                   <div className="sm:border-l sm:border-slate-100 sm:pl-6 flex flex-col justify-between items-start sm:items-end gap-4 self-stretch min-w-[160px]">
                     <div>
                       <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("hourly_rate", "Hourly Rate")}</span>
-                      <span className="text-slate-850 font-black text-base mt-0.5 block">${parseFloat(f.hourly_rate || 0).toFixed(0)}/hr</span>
+                      <span className="text-slate-850 font-black text-base mt-0.5 block">{formatPrice(f.hourly_rate || 0)}/hr</span>
                     </div>
                     <div className="flex items-center gap-2 w-full justify-end">
                       <button

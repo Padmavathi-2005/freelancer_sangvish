@@ -12,6 +12,41 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
 
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [siteLogo, setSiteLogo] = useState<string | null>(null);
+  const [siteName, setSiteName] = useState<string>("Buy2Lancer");
+  const [mounted, setMounted] = useState(false);
+
+  const resolveLogoUrl = (logoPath: string | null) => {
+    if (!logoPath) return "/public/logo.png";
+    if (logoPath.startsWith("http://") || logoPath.startsWith("https://")) return logoPath;
+    const baseUrl = API_URL.replace(/\/api$/, "");
+    return `${baseUrl}${logoPath.startsWith("/") ? "" : "/"}${logoPath}`;
+  };
+
+  useEffect(() => {
+    setMounted(true);
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const settings = await res.json();
+          const logoSetting = settings.find((s: any) => s.setting_key === "site_logo");
+          const logoDarkSetting = settings.find((s: any) => s.setting_key === "site_logo_dark");
+          const nameSetting = settings.find((s: any) => s.setting_key === "site_name");
+
+          if (logoSetting?.setting_value || logoDarkSetting?.setting_value) {
+            setSiteLogo(logoSetting?.setting_value || logoDarkSetting?.setting_value);
+          }
+          if (nameSetting?.setting_value) {
+            setSiteName(nameSetting.setting_value);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings in admin login:", e);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     // If admin is already authenticated, validate token and redirect to admin dashboard
@@ -119,9 +154,52 @@ export default function AdminLoginPage() {
       <div className="relative z-10 w-full max-w-md flex flex-col gap-8">
         
         {/* Top Header */}
-        <div className="text-center">
-          <a href="/" className="inline-block text-3xl font-extrabold tracking-tight text-primary font-display mb-1 select-none">
-            Freelancer <span className="text-slate-500 text-lg font-bold">Admin</span>
+        <div className="text-center flex flex-col items-center">
+          <a href="/" className="inline-flex items-center gap-2 select-none mb-1 group">
+            {mounted && siteLogo ? (
+              <div className="flex items-center gap-2.5">
+                <img
+                  src={resolveLogoUrl(siteLogo)}
+                  alt={siteName || "Buy2Lancer"}
+                  className="h-9 w-auto max-w-[200px] object-contain shrink-0"
+                />
+                <span className="bg-teal-700 text-white text-[11px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
+                  Admin
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-750 font-extrabold shadow-sm shrink-0">
+                  <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <span className="text-2xl font-black tracking-tight font-display text-slate-800">
+                  {mounted && siteName ? (
+                    (() => {
+                      const words = siteName.split(" ");
+                      if (words.length > 1) {
+                        return (
+                          <>
+                            <span className="text-slate-800">{words[0]}</span>
+                            <span className="text-teal-700">{words.slice(1).join(" ")}</span>
+                          </>
+                        );
+                      }
+                      return <span className="text-slate-800">{siteName}</span>;
+                    })()
+                  ) : (
+                    <>
+                      <span className="text-slate-800">Buy2</span>
+                      <span className="text-teal-700">Lancer</span>
+                    </>
+                  )}
+                </span>
+                <span className="bg-teal-700 text-white text-[11px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
+                  Admin
+                </span>
+              </div>
+            )}
           </a>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-100 uppercase tracking-widest mt-2 select-none">
             ⚠️ SECURE TERMINAL - AUTHORIZED ONLY

@@ -255,34 +255,34 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
   };
 
   return (
-    <div className="flex flex-col gap-8 animate-fadeIn max-w-full overflow-hidden text-left">
+    <div className="flex flex-col gap-8 animate-fadeIn max-w-full overflow-x-hidden text-left">
       
       {/* 1. Admin Profile Header Card */}
-      <div className="relative overflow-hidden bg-white border border-slate-200 rounded-xl p-6 lg:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-radial from-teal-700/5 to-transparent rounded-full -mr-20 -mt-20 -z-10" />
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 rounded-[1.25rem] bg-gradient-to-tr from-teal-750 to-cyan-600 text-white font-extrabold flex items-center justify-center text-3xl shadow-md select-none transform transition hover:scale-105 duration-300">
+      <div className="relative overflow-hidden bg-white border border-slate-200 rounded-xl p-4 sm:p-6 lg:p-8 shadow-sm flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 sm:gap-6">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-radial from-teal-700/5 to-transparent rounded-full -mr-20 -mt-20 -z-10 pointer-events-none" />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3.5 sm:gap-5 min-w-0">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-[1.25rem] bg-gradient-to-tr from-teal-750 to-cyan-600 text-white font-extrabold flex items-center justify-center text-2xl sm:text-3xl shadow-md select-none shrink-0 transform transition hover:scale-105 duration-300">
             {adminUser?.full_name?.charAt(0).toUpperCase() || "A"}
           </div>
-          <div>
-            <h2 className="text-xl lg:text-2xl font-black text-slate-850 tracking-tight leading-tight">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-850 tracking-tight leading-tight truncate">
               Welcome back, {adminUser?.full_name || "Administrator"}
             </h2>
-            <p className="text-xs text-slate-500 mt-1 font-bold flex items-center gap-2">
-              <span>{adminUser?.email || "admin@freelancer.com"}</span>
-              <span className="w-1 h-1 bg-slate-300 rounded-full" />
-              <span className="bg-teal-700/10 text-teal-750 px-2 py-0.5 rounded-full border border-teal-700/15 uppercase text-[9px] tracking-wider font-extrabold">
+            <div className="text-xs text-slate-500 mt-1 font-bold flex flex-wrap items-center gap-2">
+              <span className="font-bold truncate max-w-[200px] sm:max-w-none">{adminUser?.email || "admin@freelancer.com"}</span>
+              <span className="w-1 h-1 bg-slate-300 rounded-full shrink-0 hidden sm:inline-block" />
+              <span className="bg-teal-700/10 text-teal-750 px-2 py-0.5 rounded-full border border-teal-700/15 uppercase text-[9px] tracking-wider font-extrabold inline-block shrink-0">
                 {adminUser?.role || "Main Admin"}
               </span>
-            </p>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 shrink-0 bg-slate-50 border border-slate-200/60 p-4 rounded-xl">
-          <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
+        <div className="w-full md:w-auto flex items-center gap-3.5 shrink-0 bg-slate-50 border border-slate-200/60 p-3.5 sm:p-4 rounded-xl">
+          <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping shrink-0" />
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">Session Status</span>
-            <span className="text-xs font-black text-slate-800 mt-1 block">Vetted Security Active</span>
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">Session Status</div>
+            <div className="text-xs font-black text-slate-800 mt-1 block">Vetted Security Active</div>
           </div>
         </div>
       </div>

@@ -31,8 +31,8 @@ export default function CompanyScrollSection() {
     { name: "Apple", Icon: FaApple }
   ];
 
-  // Quadruple the array for infinite smooth looping
-  const loopedCompanies = [...companies, ...companies, ...companies, ...companies];
+  // 6x the array for infinite smooth 360-degree looping without gaps
+  const loopedCompanies = [...companies, ...companies, ...companies, ...companies, ...companies, ...companies];
 
   return (
     <div className="w-full bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md border-y border-slate-200/60 dark:border-zinc-800/80 py-8 overflow-hidden select-none">
@@ -41,7 +41,7 @@ export default function CompanyScrollSection() {
           {t("trusted_title", "Trusted by Innovative Companies Worldwide")}
         </p>
 
-        <div className="relative w-full overflow-hidden mask-linear-gradient">
+        <div className="relative w-full overflow-hidden mask-linear-gradient" style={{ direction: "ltr" }}>
           <div className="flex items-center gap-12 sm:gap-16 w-max animate-marquee py-2">
             {loopedCompanies.map((comp, idx) => {
               const IconComp = comp.Icon;

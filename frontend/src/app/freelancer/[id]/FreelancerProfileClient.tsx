@@ -30,7 +30,7 @@ import {
 } from "react-icons/fi";
 
 export default function FreelancerProfileClient() {
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -492,7 +492,7 @@ export default function FreelancerProfileClient() {
                 <div className="bg-white dark:bg-zinc-800/90 border border-slate-300 dark:border-zinc-700 rounded-xl px-3.5 py-2 shadow-xs flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
                   <span className="text-slate-600 dark:text-slate-400 font-bold">{t("hourly_rate", "Hourly Rate")}:</span>
                   <span className="font-black text-[#0a5a54] dark:text-teal-400 text-sm">
-                    {profile?.hourly_rate ? `$${parseFloat(profile.hourly_rate).toFixed(0)}/hr` : "N/A"}
+                    {profile?.hourly_rate ? `${formatPrice(profile.hourly_rate)}/hr` : "N/A"}
                   </span>
                 </div>
 
@@ -807,7 +807,7 @@ export default function FreelancerProfileClient() {
                 }
                 return manual || user?.profile_image || "";
               })()}
-              priceOrBudget={profile?.hourly_rate ? `$${parseFloat(profile.hourly_rate).toFixed(0)}/hr` : ""}
+              priceOrBudget={profile?.hourly_rate ? `${formatPrice(profile.hourly_rate)}/hr` : ""}
               onToast={(type, message) => showToast(type, message)}
             />
 

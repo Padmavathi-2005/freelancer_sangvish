@@ -25,25 +25,41 @@ const stripHtml = (html: string) => {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 };
 
-const handleDownloadVideo = async (url: string, filename = "showcase-video.mp4") => {
-  if (!url) return;
+const handleDownloadVideo = async (rawUrl: string, filename = "showcase-video.mp4") => {
+  if (!rawUrl || !rawUrl.trim()) return;
+
+  // Clean up URL string (e.g. if multiple URLs are passed as comma separated)
+  const cleanUrlStr = rawUrl.split(",")[0].trim();
+  if (!cleanUrlStr) return;
+
+  // Resolve relative backend URLs to absolute URLs
+  let downloadUrl = cleanUrlStr;
+  if (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://")) {
+    const base = API_URL.replace(/\/api\/?$/, "");
+    downloadUrl = `${base}${downloadUrl.startsWith("/") ? "" : "/"}${downloadUrl}`;
+  }
+
+  const cleanFilename = filename || downloadUrl.split("/").pop()?.split("?")[0] || "showcase-video.mp4";
+
   try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Fetch failed");
+    const response = await fetch(downloadUrl, { mode: "cors" });
+    if (!response.ok) throw new Error("Network response was not ok");
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = blobUrl;
-    link.download = filename || url.split("/").pop() || "showcase-video.mp4";
+    link.download = cleanFilename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    window.URL.revokeObjectURL(blobUrl);
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
   } catch (err) {
+    console.warn("Blob download failed, triggering fallback download/open link:", err);
     const link = document.createElement("a");
-    link.href = url;
+    link.href = downloadUrl;
     link.target = "_blank";
-    link.download = filename;
+    link.rel = "noopener noreferrer";
+    link.download = cleanFilename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -85,7 +85,7 @@ const getInitials = (name: string) => {
 };
 
 export default function Home1Freelancers() {
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const router = useRouter();
 
   const [freelancers, setFreelancers] = useState<Freelancer[]>([]);
@@ -240,7 +240,7 @@ export default function Home1Freelancers() {
                     {/* Bottom Footer: Rate on left + Hire Now CTA button on right */}
                     <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-zinc-800">
                       <span className="text-base font-extrabold text-slate-900 dark:text-white">
-                        {freelancer.hourly_rate ? `$${parseFloat(freelancer.hourly_rate).toLocaleString()}/hr` : t("request_quote", "Request Quote")}
+                        {freelancer.hourly_rate ? `${formatPrice(freelancer.hourly_rate)}/hr` : t("request_quote", "Request Quote")}
                       </span>
                       <button
                         onClick={(e) => {

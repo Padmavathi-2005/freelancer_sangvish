@@ -630,7 +630,11 @@ function TalentSearchContent() {
                       <span>{initials}</span>
                       {f.profile_image && (
                         <img
-                          src={`https://freelancer.sangvish.com${f.profile_image}`}
+                          src={
+                            f.profile_image.startsWith("http") || f.profile_image.startsWith("data:")
+                              ? f.profile_image
+                              : `https://freelancer.sangvish.com${f.profile_image.startsWith("/") ? "" : "/"}${f.profile_image}`
+                          }
                           alt={f.name}
                           className="absolute inset-0 w-full h-full object-cover rounded-xl"
                           onError={(e: any) => {
@@ -693,8 +697,7 @@ function TalentSearchContent() {
                       <div className="text-left sm:text-right">
                         <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("hourly_rate", "Hourly Rate")}</span>
                         <div className="flex items-baseline gap-0.5 text-slate-850 font-black text-lg mt-0.5">
-                          <FiDollarSign className="w-3.5 h-3.5 text-slate-400 self-center" />
-                          <span>{hourlyRate.toFixed(0)}</span>
+                          <span>{formatPrice(hourlyRate)}</span>
                           <span className="text-slate-450 text-[10px] font-bold">/{t("hr_short", "hr")}</span>
                         </div>
                       </div>

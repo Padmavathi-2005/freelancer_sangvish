@@ -15,7 +15,9 @@ export default function GigsPage() {
     filteredGigs,
     itemsPerPage,
     handleUpdateGigStatus,
-    handleDeleteGig
+    handleUpdateGigByAdmin,
+    handleDeleteGig,
+    categoriesList
   } = useAdmin();
 
   return (
@@ -29,7 +31,9 @@ export default function GigsPage() {
       filteredGigs={filteredGigs}
       itemsPerPage={itemsPerPage}
       handleUpdateGigStatus={handleUpdateGigStatus}
+      handleUpdateGigByAdmin={handleUpdateGigByAdmin}
       handleDeleteGig={handleDeleteGig}
+      categoriesList={categoriesList}
     />
   );
 }

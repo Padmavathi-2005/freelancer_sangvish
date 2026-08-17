@@ -751,12 +751,12 @@ export default function InboxTab({
                       >
                         <div className="bg-gradient-to-br from-amber-50 to-orange-50/30 border border-amber-200/80 rounded-xl p-4 shadow-sm text-left max-w-md">
                           <div className="flex items-center justify-between border-b border-amber-200 pb-2 mb-2">
-                            <span className="text-[9px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                            <div className="text-[9px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded uppercase tracking-wider">
                               {t("custom_payment_offer_label", "Custom Payment Offer")}
-                            </span>
-                            <span className="text-xs font-black text-slate-800">
+                            </div>
+                            <div className="text-xs font-black text-slate-800">
                               ${parseFloat(offerData.price).toLocaleString()}
-                            </span>
+                            </div>
                           </div>
                           <h4 className="text-[11px] font-black text-slate-800 mb-1">{offerData.title}</h4>
                           <p className="text-slate-600 text-[9.5px] font-medium leading-relaxed whitespace-pre-wrap">{offerData.description}</p>

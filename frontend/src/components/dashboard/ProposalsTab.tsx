@@ -1917,7 +1917,7 @@ export default function ProposalsTab({
                       {clientSubscription && clientSubscription.featured_project_limit > 0 && (
                         <button
                           type="button"
-                          disabled={togglingFeatureId !== null}
+                          disabled={togglingFeatureId === job.job_id}
                           onClick={() => handleToggleFeatureProject(job)}
                           className={`w-full font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border border-transparent ${
                             job.is_featured
@@ -1939,7 +1939,7 @@ export default function ProposalsTab({
                         job.contract_status === "Cancelled" || job.contract_status === "Completed") && (
                         <button
                           type="button"
-                          disabled={relistingJobId !== null}
+                          disabled={relistingJobId === job.job_id}
                           onClick={() => handleRelistProject(job)}
                           className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border border-slate-200 mt-2"
                         >
@@ -1980,7 +1980,7 @@ export default function ProposalsTab({
                       {clientSubscription && clientSubscription.featured_project_limit > 0 && (
                         <button
                           type="button"
-                          disabled={togglingFeatureId !== null}
+                          disabled={togglingFeatureId === job.job_id}
                           onClick={() => handleToggleFeatureProject(job)}
                           className={`w-full font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border border-transparent ${
                             job.is_featured
@@ -2001,7 +2001,7 @@ export default function ProposalsTab({
                       {(job.status === "Cancelled" || job.status === "Completed") && (
                         <button
                           type="button"
-                          disabled={relistingJobId !== null}
+                          disabled={relistingJobId === job.job_id}
                           onClick={() => handleRelistProject(job)}
                           className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-1.5 border border-slate-200 mt-2"
                         >

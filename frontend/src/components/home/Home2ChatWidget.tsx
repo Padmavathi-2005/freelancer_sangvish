@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 export interface ChatMessage {
   id: string;
@@ -23,6 +24,45 @@ const DEFAULT_MESSAGES: ChatMessage[] = [
   { id: "10", side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "Thank you! Onto Milestone 2 🎯" },
 ];
 
+const CHAT_TRANSLATIONS: Record<string, Record<string, string>> = {
+  AR: {
+    "Hi! I need a React developer for 3 months.": "مرحباً! أحتاج إلى مطور React لمدة 3 أشهر.",
+    "Sure! I specialize in React & Next.js 🚀": "بالتأكيد! أنا متخصص في React و Next.js 🚀",
+    "E-commerce with real-time updates.": "متجر إلكتروني مع تحديثات مباشرة.",
+    "Perfect, available immediately!": "ممتاز، متاح فوراً!",
+    "What's your hourly rate?": "ما هو سعرك بالساعة؟",
+    "$85/hr. Starting this Monday.": "85$/ساعة. سأبدأ هذا الاثنين.",
+    "Sounds good, sending contract now.": "يبدو جيداً، سأرسل العقد الآن.",
+    "Got it! Signed & ready ✅": "تم الاستلام! تم التوقيع والجاهزية ✅",
+    "Milestone 1 approved. Payment released 💸": "تمت الموافقة على المرحلة الأولى. تم تحرير الدفعة 💸",
+    "Thank you! Onto Milestone 2 🎯": "شكراً لك! ننتقل إلى المرحلة الثانية 🎯",
+  },
+  FR: {
+    "Hi! I need a React developer for 3 months.": "Salut ! J'ai besoin d'un développeur React pour 3 mois.",
+    "Sure! I specialize in React & Next.js 🚀": "Bien sûr ! Je suis spécialisé en React & Next.js 🚀",
+    "E-commerce with real-time updates.": "E-commerce avec mises à jour en temps réel.",
+    "Perfect, available immediately!": "Parfait, disponible immédiatement !",
+    "What's your hourly rate?": "Quel est votre tarif horaire ?",
+    "$85/hr. Starting this Monday.": "85 $/h. Je commence ce lundi.",
+    "Sounds good, sending contract now.": "Parfait, j'envoie le contrat maintenant.",
+    "Got it! Signed & ready ✅": "Reçu ! Signé & prêt ✅",
+    "Milestone 1 approved. Payment released 💸": "Étape 1 approuvée. Paiement libéré 💸",
+    "Thank you! Onto Milestone 2 🎯": "Merci ! En route pour l'Étape 2 🎯",
+  },
+  DE: {
+    "Hi! I need a React developer for 3 months.": "Hallo! Ich brauche einen React-Entwickler für 3 Monate.",
+    "Sure! I specialize in React & Next.js 🚀": "Sicher! Ich bin auf React & Next.js spezialisiert 🚀",
+    "E-commerce with real-time updates.": "E-Commerce mit Echtzeit-Updates.",
+    "Perfect, available immediately!": "Perfekt, sofort verfügbar!",
+    "What's your hourly rate?": "Was ist Ihr Stundensatz?",
+    "$85/hr. Starting this Monday.": "85 $/Std. Beginnend diesen Montag.",
+    "Sounds good, sending contract now.": "Klingt gut, ich sende den Vertrag jetzt.",
+    "Got it! Signed & ready ✅": "Erhalten! Unterzeichnet & bereit ✅",
+    "Milestone 1 approved. Payment released 💸": "Meilenstein 1 genehmigt. Zahlung freigegeben 💸",
+    "Thank you! Onto Milestone 2 🎯": "Vielen Dank! Weiter zu Meilenstein 2 🎯",
+  }
+};
+
 const MAX_VISIBLE = 4;
 
 const BALL_COLORS = [
@@ -40,13 +80,11 @@ const BALL_COLORS = [
   "bg-emerald-400 shadow-emerald-400/50",
 ];
 
-// Varied sizes for organic scatter effect (tiny 6px, medium 14px, large 24px)
 const VARIED_SIZES = [6, 20, 10, 26, 8, 16, 22, 7, 14, 24, 9, 18, 12, 25, 8, 15];
 
-// Pre-calculated angles, distances, and varied sizes for 16 scattered balls
 const BALL_BURSTS = Array.from({ length: 16 }).map((_, i) => {
   const angle = (i * 360) / 16 + ((i * 17) % 25 - 12);
-  const distance = 40 + ((i * 13) % 45); // 40px to 85px spread
+  const distance = 40 + ((i * 13) % 45);
   const rad = (angle * Math.PI) / 180;
   const x = Math.round(Math.cos(rad) * distance);
   const y = Math.round(Math.sin(rad) * distance);
@@ -81,7 +119,7 @@ function TypingBubble({ side, color }: { side: "left" | "right"; color: string }
   );
 }
 
-function MessageBubble({ msg, fadeOut }: { msg: ChatMessage; fadeOut: boolean }) {
+function MessageBubble({ msg, fadeOut, translatedText }: { msg: ChatMessage; fadeOut: boolean; translatedText: string }) {
   const isRight = msg.side === "right";
   return (
     <div
@@ -93,19 +131,19 @@ function MessageBubble({ msg, fadeOut }: { msg: ChatMessage; fadeOut: boolean })
         {msg.avatar}
       </div>
       <div
-        className={`max-w-[165px] px-3 py-2 rounded-2xl text-[11px] font-semibold shadow-sm leading-relaxed ${
+        className={`max-w-[170px] px-3 py-2 rounded-2xl text-[11px] font-semibold shadow-sm leading-relaxed ${
           isRight
-            ? "bg-primary text-white rounded-br-sm"
-            : "bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700/60 rounded-bl-sm"
+            ? "bg-primary text-white rounded-br-sm text-right"
+            : "bg-white dark:bg-zinc-800 text-slate-800 dark:text-zinc-100 border border-slate-200/70 dark:border-zinc-700/60 rounded-bl-sm text-left"
         }`}
+        style={{ unicodeBidi: "plaintext" }}
       >
-        {msg.text}
+        {translatedText}
       </div>
     </div>
   );
 }
 
-// Scattered colorful balls component
 function ScatteredBalls({ visible }: { visible: boolean }) {
   if (!visible) return null;
 
@@ -122,7 +160,6 @@ function ScatteredBalls({ visible }: { visible: boolean }) {
             animationDuration: "1.2s",
             animationTimingFunction: "cubic-bezier(0.15, 0.85, 0.35, 1.2)",
             animationFillMode: "forwards",
-            // Custom target translation passed via CSS variables
             ["--tx" as any]: `${b.x}px`,
             ["--ty" as any]: `${b.y}px`,
           }}
@@ -133,12 +170,19 @@ function ScatteredBalls({ visible }: { visible: boolean }) {
 }
 
 export default function Home2ChatWidget() {
+  const { lang, t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>(DEFAULT_MESSAGES);
   const [window_, setWindow_] = useState<{ msg: ChatMessage; fadeOut: boolean }[]>([]);
   const [typingFor, setTypingFor] = useState<ChatMessage | null>(null);
   const [windowOpacity, setWindowOpacity] = useState(1);
   const [phase, setPhase] = useState<"running" | "fadeOut" | "scatter" | "done">("running");
   const [restartKey, setRestartKey] = useState(0);
+
+  const getTranslatedMsg = (text: string) => {
+    const langCode = (lang || "EN").toUpperCase();
+    if (langCode === "EN") return t(text, text);
+    return CHAT_TRANSLATIONS[langCode]?.[text] || t(text, text);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -195,13 +239,11 @@ export default function Home2ChatWidget() {
 
       if (cancelled) return;
 
-      // Fade out chat messages
       await delay(400);
       setPhase("fadeOut");
       setWindowOpacity(0);
       await delay(400);
 
-      // Scatter colorful balls!
       setPhase("scatter");
       await delay(1300);
 
@@ -243,18 +285,23 @@ export default function Home2ChatWidget() {
         }
       `}</style>
 
-      <div className="w-full max-w-[230px] flex flex-col gap-2.5 select-none pointer-events-none mt-20 relative">
+      <div className="w-full max-w-[240px] h-[280px] flex flex-col justify-end gap-2.5 select-none pointer-events-none relative overflow-hidden p-1">
 
         {/* Scattered colorful balls at the end */}
         <ScatteredBalls visible={phase === "scatter"} />
 
         {/* Chat messages sliding window */}
         <div
-          className="flex flex-col gap-2.5 transition-opacity duration-400"
+          className="flex flex-col justify-end gap-2.5 transition-opacity duration-400"
           style={{ opacity: phase === "done" || phase === "scatter" ? 0 : windowOpacity }}
         >
           {window_.map((entry) => (
-            <MessageBubble key={entry.msg.id} msg={entry.msg} fadeOut={entry.fadeOut} />
+            <MessageBubble
+              key={entry.msg.id}
+              msg={entry.msg}
+              fadeOut={entry.fadeOut}
+              translatedText={getTranslatedMsg(entry.msg.text)}
+            />
           ))}
           {typingFor && (
             <TypingBubble side={typingFor.side} color={typingFor.avatarColor} />

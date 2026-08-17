@@ -129,7 +129,7 @@ interface ClientRecommendedFreelancersTabProps {
 export default function ClientRecommendedFreelancersTab({
   setSelectedFreelancerProfile,
 }: ClientRecommendedFreelancersTabProps) {
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const [freelancers, setFreelancers] = useState<Freelancer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -211,7 +211,11 @@ export default function ClientRecommendedFreelancersTab({
                     </span>
                     {freelancer.profileImage && (
                       <img
-                        src={`https://freelancer.sangvish.com${freelancer.profileImage}`}
+                        src={
+                          freelancer.profileImage.startsWith("http") || freelancer.profileImage.startsWith("data:")
+                            ? freelancer.profileImage
+                            : `https://freelancer.sangvish.com${freelancer.profileImage.startsWith("/") ? "" : "/"}${freelancer.profileImage}`
+                        }
                         alt={freelancer.name}
                         className="absolute inset-0 w-full h-full object-cover"
                         onError={(e: any) => {
@@ -265,7 +269,7 @@ export default function ClientRecommendedFreelancersTab({
                   <span className="text-slate-700">{freelancer.rating.toFixed(1)}</span>
                   <span className="text-slate-400 font-semibold">({t("contracts_count_label", "{{count}} contracts").replace("{{count}}", String(freelancer.completedJobs))})</span>
                 </div>
-                <span className="text-primary font-extrabold text-xs">${freelancer.hourlyRate}/hr</span>
+                <span className="text-primary font-extrabold text-xs">{formatPrice(freelancer.hourlyRate)}/hr</span>
               </div>
             </div>
           ))}

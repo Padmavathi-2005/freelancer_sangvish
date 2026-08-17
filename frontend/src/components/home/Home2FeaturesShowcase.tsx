@@ -199,10 +199,10 @@ export default function Home2FeaturesShowcase() {
                 {/* Text */}
                 <div className="flex-1 min-w-0">
                   <p className={`text-xs font-black uppercase tracking-wide mb-0.5 ${isActive ? "text-primary" : "text-slate-400 dark:text-zinc-500"}`}>
-                    {item.tag}
+                    {t(item.tag, item.tag)}
                   </p>
                   <p className={`text-sm font-bold leading-snug truncate ${isActive ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-zinc-300"}`}>
-                    {item.title}
+                    {t(item.title, item.title)}
                   </p>
                 </div>
 
@@ -232,11 +232,11 @@ export default function Home2FeaturesShowcase() {
               </div>
               <div>
                 <span className={`text-xs font-black uppercase tracking-widest block ${activeColor.text}`}>
-                  {activeItem?.tag}
+                  {activeItem?.tag ? t(activeItem.tag, activeItem.tag) : ""}
                 </span>
                 {activeItem?.badge && (
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${activeColor.bg} ${activeColor.text} inline-block mt-0.5`}>
-                    {activeItem.badge}
+                    {t(activeItem.badge, activeItem.badge)}
                   </span>
                 )}
               </div>
@@ -244,10 +244,10 @@ export default function Home2FeaturesShowcase() {
 
             {/* Title & Description */}
             <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight mb-4 font-display">
-              {activeItem?.title}
+              {activeItem?.title ? t(activeItem.title, activeItem.title) : ""}
             </h3>
             <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8">
-              {activeItem?.desc}
+              {activeItem?.desc ? t(activeItem.desc, activeItem.desc) : ""}
             </p>
 
             {/* Step indicator dots */}

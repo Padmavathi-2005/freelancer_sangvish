@@ -196,19 +196,19 @@ export default function SubscriptionTab() {
               </p>
             </div>
 
-            <div className="flex justify-between items-center text-[10px] text-white/90 font-extrabold z-10 mt-4 border-t border-white/20 pt-3">
+            <div className="flex justify-between items-center text-[10px] font-extrabold z-10 mt-4 border-t border-white/20 pt-3" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
               {subInfo.active_plan_expires_at && subInfo.active_plan_id !== 1 && subInfo.active_plan_id !== 5 ? (
-                <span className="flex items-center gap-1">
+                <div className="flex items-center gap-1" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
                   <FiCalendar /> {t("expires_days_left", "Expires: {{date}} ({{days}} Days Left)")
                     .replace("{{date}}", new Date(subInfo.active_plan_expires_at).toLocaleDateString())
                     .replace("{{days}}", String(Math.max(0, Math.ceil((new Date(subInfo.active_plan_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))))}
-                </span>
+                </div>
               ) : (
-                <span className="flex items-center gap-1">
+                <div className="flex items-center gap-1" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
                   <FiCalendar /> {t("cycle_limit_days", "Cycle Limit: {{duration}} Days").replace("{{duration}}", String(duration))}
-                </span>
+                </div>
               )}
-              <span className="uppercase text-white/90 font-black">{t("role_label", "Role: {{role}}").replace("{{role}}", subInfo.plan_role || "Seller")}</span>
+              <div className="uppercase font-black" style={{ color: "rgba(255, 255, 255, 0.9)" }}>{t("role_label", "Role: {{role}}").replace("{{role}}", subInfo.plan_role || "Seller")}</div>
             </div>
           </div>
 

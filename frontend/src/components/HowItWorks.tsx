@@ -12,7 +12,7 @@ interface StepItem {
 }
 
 export default function HowItWorks() {
-  const { t } = useLanguage();
+  const { t, currency } = useLanguage();
   const [steps, setSteps] = useState<StepItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -30,6 +30,31 @@ export default function HowItWorks() {
     fetchSteps();
   }, []);
 
+  const formatPaidToTalentStat = (curr: string) => {
+    const activeCurr = (curr || "INR").toUpperCase();
+    const rawVal = t("stats_val_3", "₹50Cr+");
+    
+    if (rawVal !== "₹50Cr+" && rawVal !== "$6M+" && rawVal !== "€5.5M+" && rawVal !== "£4.7M+") {
+      if (rawVal.includes("₹") && activeCurr !== "INR") {
+        if (activeCurr === "USD") return rawVal.replace("₹", "$").replace("50Cr", "6M");
+        if (activeCurr === "EUR") return rawVal.replace("₹", "€").replace("50Cr", "5.5M");
+        if (activeCurr === "GBP") return rawVal.replace("₹", "£").replace("50Cr", "4.7M");
+      }
+    }
+
+    switch (activeCurr) {
+      case "USD":
+        return "$6M+";
+      case "EUR":
+        return "€5.5M+";
+      case "GBP":
+        return "£4.7M+";
+      case "INR":
+      default:
+        return "₹50Cr+";
+    }
+  };
+
   const stats = [
     {
       value: t("stats_val_1", "25K+"),
@@ -40,7 +65,7 @@ export default function HowItWorks() {
       label: t("stats_label_2", "Jobs Completed"),
     },
     {
-      value: t("stats_val_3", "₹50Cr+"),
+      value: formatPaidToTalentStat(currency),
       label: t("stats_label_3", "Paid to Talent"),
     },
     {

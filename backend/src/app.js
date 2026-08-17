@@ -18,6 +18,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import walletRoutes from './routes/walletRoutes.js';
 import { getSettings } from './admin/controllers/settingsController.js';
 import { getFormFieldOptions } from './controllers/formFieldController.js';
+import { createBackup, restoreBackup, downloadBackup, getBackups } from './admin/controllers/adminController.js';
 import cmsRoutes from './admin/routes/cmsRoutes.js';
 import translationRoutes from './routes/translationRoutes.js';
 import subscriptionPlanRoutes from './routes/subscriptionPlanRoutes.js';
@@ -36,7 +37,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Attach socket.io instance to requests
 app.use((req, res, next) => {
@@ -44,9 +46,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve uploaded files statically
-app.use('/public', express.static(path.join(__dirname, '../public')));
-app.use('/api/public', express.static(path.join(__dirname, '../public')));
+// Serve uploaded files statically with CORS headers enabled for downloads
+const staticFileOptions = {
+  setHeaders: (res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  }
+};
+app.use('/public', express.static(path.join(__dirname, '../public'), staticFileOptions));
+app.use('/api/public', express.static(path.join(__dirname, '../public'), staticFileOptions));
 
 app.get('/api/settings', getSettings);
 app.get('/api/form-field-options', getFormFieldOptions);
@@ -71,6 +79,23 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/seo', seoRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/documents', documentRoutes);
+
+// Database Backup & Restore Endpoints
+app.all(['/api/backup', '/backup'], (req, res, next) => {
+  if (req.method === 'GET' || req.method === 'POST') {
+    return createBackup(req, res);
+  }
+  next();
+});
+
+app.get(['/api/backup/download/:filename', '/backup/download/:filename'], downloadBackup);
+
+app.all(['/api/restore', '/restore', '/api/restore/:filename', '/restore/:filename'], (req, res, next) => {
+  if (req.method === 'GET' || req.method === 'POST') {
+    return restoreBackup(req, res);
+  }
+  next();
+});
 
 
 app.use("/api/admin/categories",categoryRoutes);

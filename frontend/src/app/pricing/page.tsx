@@ -89,12 +89,16 @@ export default function PricingPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes float {
-          0%, 100% { transform: translateY(0px) scale(1.03); }
-          50%       { transform: translateY(-8px) scale(1.03); }
+          0%, 100% { transform: translateY(0px) scale(1.025); }
+          50%       { transform: translateY(-10px) scale(1.025); }
         }
         @keyframes glowPulse {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(20,184,166,0), 0 25px 50px rgba(6,60,56,0.35); }
-          50%       { box-shadow: 0 0 0 6px rgba(20,184,166,0.18), 0 25px 50px rgba(6,60,56,0.45); }
+          0%, 100% { 
+            box-shadow: 0 0 0 0 transparent, 0 20px 40px rgba(15, 23, 42, 0.15); 
+          }
+          50% { 
+            box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-primary, #0F766E) 18%, transparent), 0 25px 50px rgba(15, 23, 42, 0.22); 
+          }
         }
         @keyframes shimmer {
           0%   { background-position: -200% center; }
@@ -162,10 +166,10 @@ export default function PricingPage() {
             <h1 className="text-5xl sm:text-6xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
               Simple,{" "}
               <span className="relative inline-block">
-                <span className="relative z-10 text-teal-600 dark:text-teal-400">
+                <span className="relative z-10 text-primary">
                   transparent
                 </span>
-                <span className="absolute bottom-1 left-0 right-0 h-2.5 bg-teal-100/60 dark:bg-teal-900/40 rounded-full z-0" />
+                <span className="absolute bottom-1 left-0 right-0 h-2.5 bg-primary-light rounded-full z-0" />
               </span>{" "}
               pricing
             </h1>
@@ -175,10 +179,10 @@ export default function PricingPage() {
 
             {!loading && hasBuyerPlans && (
               <div className="mt-8 inline-flex items-center bg-slate-100/80 dark:bg-slate-850/80 backdrop-blur border border-slate-200 dark:border-slate-800 rounded-2xl p-1 gap-1 shadow-sm">
-                <button onClick={() => setRoleTab("seller")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "seller" ? "bg-primary text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-205"}`}>
+                <button onClick={() => setRoleTab("seller")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "seller" ? "bg-primary text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>
                   Freelancer Plans
                 </button>
-                <button onClick={() => setRoleTab("buyer")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "buyer" ? "bg-primary text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-205"}`}>
+                <button onClick={() => setRoleTab("buyer")} className={`px-6 py-2.5 rounded-xl text-xs font-extrabold transition-all duration-300 cursor-pointer ${roleTab === "buyer" ? "bg-primary text-white shadow-md" : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"}`}>
                   Client Plans
                 </button>
               </div>
@@ -216,69 +220,70 @@ export default function PricingPage() {
                     className={`card-enter relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 ${
                       isPopular
                         ? "card-popular z-10"
-                        : "hover:scale-[1.02] hover:shadow-xl"
+                        : "hover:scale-[1.025] hover:shadow-xl hover:-translate-y-1"
                     } ${
-                      isLight
-                        ? "bg-white dark:bg-slate-900/85 ring-2 ring-slate-200 dark:ring-slate-800/80 shadow-md"
-                        : isPopular
-                        ? "bg-[#063c38] ring-2 ring-teal-400 dark:ring-teal-500 shadow-2xl"
-                        : "bg-[#0f172a] ring-2 ring-slate-700 shadow-xl"
+                      isPopular
+                        ? "border border-primary-dark/40 shadow-2xl text-white"
+                        : "bg-[#0f172a] dark:bg-slate-950/90 border border-slate-800/80 shadow-xl text-white"
                     }`}
-                    style={{ animationDelay: delay }}
+                    style={{
+                      animationDelay: delay,
+                      ...(isPopular ? { background: "linear-gradient(180deg, var(--color-primary-dark, #0a504a) 0%, rgba(15, 23, 42, 0.95) 100%)" } : {})
+                    }}
                   >
                     {/* Popular special top glow bar */}
                     {isPopular && (
-                      <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,#14b8a6,#22c55e,#14b8a6)", backgroundSize: "200% auto", animation: "shimmer 2s linear infinite" }} />
+                      <div className="h-1 w-full" style={{ background: "linear-gradient(90deg,var(--color-primary,#0F766E),var(--color-secondary,#06b6d4),var(--color-primary,#0F766E))", backgroundSize: "200% auto", animation: "shimmer 2s linear infinite" }} />
                     )}
 
                     {/* Popular badge */}
                     {isPopular && (
-                      <div className="flex justify-center pt-3 pb-0">
-                        <span className="shimmer-badge rotateBadge flex items-center gap-1.5 bg-teal-800 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg">
+                      <div className="flex justify-center pt-5 pb-0">
+                        <span className="shimmer-badge rotateBadge flex items-center gap-1.5 bg-white/10 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border border-white/15">
                           <FiStar className="w-2.5 h-2.5" style={{ animation: "rotateBadge 2s ease-in-out infinite" }} />
                           Most Popular
                         </span>
                       </div>
                     )}
                     {isActive && !isPopular && (
-                      <div className="absolute top-3 right-3">
-                        <span className="bg-teal-700 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">✓ Active</span>
+                      <div className="absolute top-4 right-4">
+                        <span className="bg-primary-light border border-primary/20 text-primary text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm">✓ Active</span>
                       </div>
                     )}
 
                     {/* Header */}
-                    <div className={`px-7 pt-7 pb-6 ${isPopular ? "bg-teal-700 text-white" : isLight ? "bg-slate-50/80 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800/80" : "bg-[#1e293b] border-b border-slate-700/50"}`}>
+                    <div className="px-7 pt-7 pb-5">
                       {plan.badge_image && (
-                        <img src={plan.badge_image} alt={plan.name} className="w-9 h-9 rounded-xl object-cover mb-3 border border-white/20 shadow"
+                        <img src={plan.badge_image} alt={plan.name} className="w-10 h-10 rounded-xl object-cover mb-4 border border-white/10 shadow-md"
                           onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
                       )}
-                      <p className={`text-[9px] font-black uppercase tracking-widest ${isPopular ? "text-white/90" : isLight ? "text-teal-700" : "text-amber-400"}`}>
+                      <p className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-teal-300" : isLight ? "text-teal-300" : "text-amber-400"}`}>
                         {plan.name}
                       </p>
-                      <div className="mt-3 flex items-baseline gap-1.5">
-                        <span className={`text-4xl font-black tracking-tight ${isPopular ? "text-white" : isLight ? "text-slate-900 dark:text-white" : "text-white"}`}>
+                      <div className="mt-3.5 flex items-baseline gap-1.5">
+                        <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
                           {isFree ? "Free" : `$${price % 1 === 0 ? Math.round(price) : price.toFixed(2)}`}
                         </span>
                         {!isFree && (
-                          <span className={`text-xs font-bold ${isPopular ? "text-slate-200" : isLight ? "text-slate-450 dark:text-slate-400" : "text-slate-300"}`}>
+                          <span className="text-xs font-bold text-white/60">
                             {plan.plan_duration ? `/ ${plan.plan_duration} days` : `/ ${plan.period || "mo"}`}
                           </span>
                         )}
                       </div>
                       {plan.description && (
-                        <p className={`text-[11px] font-semibold mt-1.5 leading-relaxed ${isPopular ? "text-slate-200" : isLight ? "text-slate-400 dark:text-slate-400" : "text-slate-300"}`}>
+                        <p className="text-xs font-semibold mt-2 leading-relaxed text-white/70">
                           {plan.description}
                         </p>
                       )}
                     </div>
 
                     {/* Features */}
-                    <div className="flex-1 px-7 py-5 flex flex-col gap-3">
+                    <div className={`flex-1 px-7 py-6 flex flex-col gap-3.5 ${isPopular ? "border-t border-white/10" : "border-t border-slate-800"}`}>
                       {features.length > 0
                         ? features.map((f, i) => (
                             <div
                               key={i}
-                              className="flex items-center gap-3"
+                              className="flex items-center gap-3.5"
                               style={{
                                 animationName: "fadeUp",
                                 animationDuration: "0.4s",
@@ -287,13 +292,17 @@ export default function PricingPage() {
                                 animationDelay: `${parseFloat(delay) + i * 0.06}s`,
                               }}
                             >
-                              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${isPopular ? "bg-teal-50" : isLight ? "bg-teal-50" : "bg-slate-700"}`}>
-                                <FiCheck className={`w-3 h-3 ${isPopular ? "text-teal-700" : isLight ? "text-teal-700" : "text-amber-400"}`} />
+                              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow-md ${
+                                isPopular 
+                                  ? "bg-white text-teal-900 font-black" 
+                                  : "bg-emerald-500 text-white font-black"
+                              }`}>
+                                <FiCheck className="w-3.5 h-3.5 stroke-[3]" />
                               </span>
-                              <span className={`text-[11px] font-semibold ${isPopular ? "text-slate-100" : isLight ? "text-slate-700 dark:text-slate-300" : "text-slate-300"}`}>{f}</span>
+                              <span className={`text-xs font-semibold ${isPopular ? "text-white font-bold" : "text-slate-100 font-semibold"}`}>{f}</span>
                             </div>
                           ))
-                        : <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500">Basic access included</p>
+                        : <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">Basic access included</p>
                       }
                     </div>
 
@@ -303,10 +312,12 @@ export default function PricingPage() {
                         href={`/pricing/${plan.plan_id}`}
                         className={`btn-shine w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold transition-all duration-200 active:scale-[0.98] ${
                           isActive
-                            ? "bg-teal-50 border border-teal-200 text-teal-700"
+                            ? isPopular
+                              ? "bg-white/10 border border-white/20 text-white cursor-default"
+                              : "bg-slate-800 border border-slate-700 text-slate-300 cursor-default"
                             : isPopular
-                            ? "bg-teal-700 hover:bg-teal-800 text-white shadow-lg shadow-teal-700/30"
-                            : "bg-teal-700 hover:bg-teal-800 text-white shadow-sm"
+                            ? "bg-white hover:bg-slate-100 text-slate-950 shadow-lg hover:shadow-white/15 font-black"
+                            : "bg-primary hover:bg-primary-hover text-white shadow-md"
                         }`}
                       >
                         {isActive ? "Current Plan" : isFree ? "Get Started Free" : plan.button_text || `Choose ${plan.name}`}
@@ -321,8 +332,8 @@ export default function PricingPage() {
 
           {!loading && plans.length > 0 && (
             <div className="flex items-center justify-center gap-2 mt-12" style={{ animation: "fadeUp 0.6s 0.5s both" }}>
-              <FiShield className="w-3.5 h-3.5 text-teal-650 dark:text-teal-400" />
-              <p className="text-[10px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider">
+              <FiShield className="w-3.5 h-3.5 text-primary dark:text-teal-400" />
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                 Secure checkout &nbsp;·&nbsp; Cancel anytime &nbsp;·&nbsp; Instant activation
               </p>
             </div>

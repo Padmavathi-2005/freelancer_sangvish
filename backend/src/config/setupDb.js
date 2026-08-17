@@ -4,6 +4,214 @@ async function setupTables() {
   try {
     console.log("⏳ Initializing database tables...");
 
+    // Create core base tables if they do not exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        user_id SERIAL PRIMARY KEY,
+        name VARCHAR(255),
+        first_name VARCHAR(100),
+        last_name VARCHAR(100),
+        display_name VARCHAR(255),
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255),
+        password_hash TEXT,
+        role VARCHAR(50) DEFAULT 'client',
+        profile_image TEXT,
+        banner_image TEXT,
+        tagline VARCHAR(255),
+        description TEXT,
+        phone VARCHAR(50),
+        location VARCHAR(100),
+        country VARCHAR(100),
+        state VARCHAR(100),
+        city VARCHAR(100),
+        address TEXT,
+        pincode VARCHAR(50),
+        is_verified BOOLEAN DEFAULT FALSE,
+        is_active BOOLEAN DEFAULT TRUE,
+        email_verified BOOLEAN DEFAULT FALSE,
+        phone_verified BOOLEAN DEFAULT FALSE,
+        slug VARCHAR(255) UNIQUE,
+        referral_code VARCHAR(100),
+        referred_by INTEGER,
+        is_affiliate BOOLEAN DEFAULT FALSE,
+        active_plan_id INTEGER,
+        active_plan_subscribed_at TIMESTAMP,
+        active_plan_expires_at TIMESTAMP,
+        sub_notified_7d BOOLEAN DEFAULT FALSE,
+        sub_notified_3d BOOLEAN DEFAULT FALSE,
+        sub_notified_1d BOOLEAN DEFAULT FALSE,
+        phone_otp VARCHAR(20),
+        phone_otp_expires_at TIMESTAMP,
+        email_otp VARCHAR(20),
+        email_otp_expires_at TIMESTAMP,
+        credits INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'users' table ready.");
+
+    try {
+      await pool.query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS first_name VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS last_name VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS display_name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS password_hash TEXT,
+        ADD COLUMN IF NOT EXISTS banner_image TEXT,
+        ADD COLUMN IF NOT EXISTS tagline VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS description TEXT,
+        ADD COLUMN IF NOT EXISTS country VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS state VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS city VARCHAR(100),
+        ADD COLUMN IF NOT EXISTS address TEXT,
+        ADD COLUMN IF NOT EXISTS pincode VARCHAR(50),
+        ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE,
+        ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS phone_verified BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS referred_by INTEGER,
+        ADD COLUMN IF NOT EXISTS is_affiliate BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS email_otp VARCHAR(20),
+        ADD COLUMN IF NOT EXISTS email_otp_expires_at TIMESTAMP,
+        ADD COLUMN IF NOT EXISTS credits INTEGER DEFAULT 0;
+      `);
+    } catch (e) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        category_id SERIAL PRIMARY KEY,
+        name VARCHAR(255),
+        category_name VARCHAR(255),
+        slug VARCHAR(255),
+        description TEXT,
+        image TEXT,
+        category_image TEXT,
+        category_video TEXT,
+        icon VARCHAR(100),
+        status VARCHAR(50) DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'categories' table ready.");
+
+    try {
+      await pool.query(`
+        ALTER TABLE categories
+        ADD COLUMN IF NOT EXISTS name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS category_name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS category_image TEXT,
+        ADD COLUMN IF NOT EXISTS category_video TEXT;
+      `);
+    } catch (e) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sub_categories (
+        sub_category_id SERIAL PRIMARY KEY,
+        category_id INTEGER REFERENCES categories(category_id) ON DELETE CASCADE,
+        name VARCHAR(255),
+        sub_category_name VARCHAR(255),
+        slug VARCHAR(255),
+        description TEXT,
+        image TEXT,
+        sub_category_image TEXT,
+        status VARCHAR(50) DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'sub_categories' table ready.");
+
+    try {
+      await pool.query(`
+        ALTER TABLE sub_categories
+        ADD COLUMN IF NOT EXISTS name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS sub_category_name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS sub_category_image TEXT;
+      `);
+    } catch (e) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS skills (
+        skill_id SERIAL PRIMARY KEY,
+        name VARCHAR(255),
+        skill_name VARCHAR(255),
+        category_id INTEGER REFERENCES categories(category_id) ON DELETE SET NULL,
+        sub_category_id INTEGER REFERENCES sub_categories(sub_category_id) ON DELETE SET NULL,
+        status VARCHAR(50) DEFAULT 'Active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'skills' table ready.");
+
+    try {
+      await pool.query(`
+        ALTER TABLE skills
+        ADD COLUMN IF NOT EXISTS name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS skill_name VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS sub_category_id INTEGER REFERENCES sub_categories(sub_category_id) ON DELETE SET NULL,
+        ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active';
+      `);
+    } catch (e) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS freelancer_profiles (
+        freelancer_profile_id SERIAL PRIMARY KEY,
+        user_id INTEGER UNIQUE NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+        category_id INTEGER REFERENCES categories(category_id) ON DELETE SET NULL,
+        sub_category_id INTEGER REFERENCES sub_categories(sub_category_id) ON DELETE SET NULL,
+        professional_title VARCHAR(255),
+        experience_level VARCHAR(50),
+        total_experience_years INTEGER DEFAULT 0,
+        hourly_rate NUMERIC,
+        availability_status VARCHAR(50) DEFAULT 'Available',
+        linkedin_url TEXT,
+        portfolio_website TEXT,
+        resume_url TEXT,
+        onboarding_completed BOOLEAN DEFAULT FALSE,
+        current_step INTEGER DEFAULT 1,
+        bio TEXT,
+        portfolio JSONB,
+        skills JSONB,
+        vetting_status VARCHAR(50) DEFAULT 'Approved',
+        seo JSONB,
+        rating NUMERIC(3,2) DEFAULT 5.00,
+        completed_jobs INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'freelancer_profiles' table ready.");
+
+    try {
+      await pool.query(`
+        ALTER TABLE freelancer_profiles
+        ADD COLUMN IF NOT EXISTS total_experience_years INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS availability_status VARCHAR(50) DEFAULT 'Available',
+        ADD COLUMN IF NOT EXISTS linkedin_url TEXT,
+        ADD COLUMN IF NOT EXISTS portfolio_website TEXT,
+        ADD COLUMN IF NOT EXISTS resume_url TEXT,
+        ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS current_step INTEGER DEFAULT 1,
+        ADD COLUMN IF NOT EXISTS vetting_status VARCHAR(50) DEFAULT 'Approved',
+        ADD COLUMN IF NOT EXISTS bio TEXT,
+        ADD COLUMN IF NOT EXISTS seo JSONB;
+      `);
+    } catch (e) {}
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS settings (
+        setting_id SERIAL PRIMARY KEY,
+        category VARCHAR(100) DEFAULT 'site_settings',
+        setting_key VARCHAR(255) UNIQUE NOT NULL,
+        setting_value TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("✅ 'settings' table ready.");
+
     // Ensure phone_otp columns exist in users table
     try {
       await pool.query(`
@@ -278,13 +486,17 @@ async function setupTables() {
     `);
     console.log("✅ 'withdrawal_requests' table ready.");
     // Add vetting_status, bio, and seo columns to freelancer_profiles if not exists
-    await pool.query(`
-      ALTER TABLE freelancer_profiles
-      ADD COLUMN IF NOT EXISTS vetting_status VARCHAR(50) DEFAULT 'Pending',
-      ADD COLUMN IF NOT EXISTS bio TEXT,
-      ADD COLUMN IF NOT EXISTS seo JSONB DEFAULT NULL
-    `);
-    console.log("✅ 'freelancer_profiles.vetting_status', 'bio', and 'seo' columns ready.");
+    try {
+      await pool.query(`
+        ALTER TABLE freelancer_profiles
+        ADD COLUMN IF NOT EXISTS vetting_status VARCHAR(50) DEFAULT 'Pending',
+        ADD COLUMN IF NOT EXISTS bio TEXT,
+        ADD COLUMN IF NOT EXISTS seo JSONB DEFAULT NULL
+      `);
+      console.log("✅ 'freelancer_profiles.vetting_status', 'bio', and 'seo' columns ready.");
+    } catch (e) {
+      console.log("Notice on freelancer_profiles columns:", e.message);
+    }
 
     // Create cms_pages table
     await pool.query(`
@@ -350,6 +562,11 @@ async function setupTables() {
         plan_type VARCHAR(50) DEFAULT 'Day(s)',
         plan_duration INTEGER DEFAULT 30,
         credits INTEGER DEFAULT 10,
+        proposal_limit INTEGER DEFAULT 5,
+        job_posting_limit INTEGER DEFAULT 3,
+        transaction_fee_percent NUMERIC(5,2) DEFAULT 5.00,
+        featured_job_allowance BOOLEAN DEFAULT FALSE,
+        gig_discount_percent INTEGER DEFAULT 0,
         profile_featured_duration INTEGER DEFAULT 0,
         featured_project_limit INTEGER DEFAULT 0,
         featured_project_duration INTEGER DEFAULT 0,
@@ -361,6 +578,21 @@ async function setupTables() {
       )
     `);
     console.log("✅ 'subscription_plans' table ready.");
+
+    // Alter subscription_plans to ensure SaaS limit columns exist
+    try {
+      await pool.query(`
+        ALTER TABLE subscription_plans
+        ADD COLUMN IF NOT EXISTS proposal_limit INTEGER DEFAULT 5,
+        ADD COLUMN IF NOT EXISTS job_posting_limit INTEGER DEFAULT 3,
+        ADD COLUMN IF NOT EXISTS transaction_fee_percent NUMERIC(5,2) DEFAULT 5.00,
+        ADD COLUMN IF NOT EXISTS featured_job_allowance BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS gig_discount_percent INTEGER DEFAULT 0
+      `);
+      console.log("✅ 'subscription_plans' SaaS limit columns verified.");
+    } catch (e) {
+      console.log("Notice on subscription_plans columns:", e.message);
+    }
 
     // Create faq_items table
     await pool.query(`
@@ -503,24 +735,27 @@ async function setupTables() {
     `);
     console.log("✅ 'disputes.raised_by' column ready.");
 
-    // Seed default languages mapping
-    await pool.query(`
-      INSERT INTO languages (language_name, code, direction, status, is_site_lang) VALUES
-      ('English', 'EN', 'LTR', 'Active', TRUE) ON CONFLICT (language_name) DO UPDATE SET code = 'EN', direction = 'LTR', status = 'Active', is_site_lang = TRUE
-    `);
-    await pool.query(`
-      INSERT INTO languages (language_name, code, direction, status, is_site_lang) VALUES
-      ('Arabic', 'AR', 'RTL', 'Active', TRUE) ON CONFLICT (language_name) DO UPDATE SET code = 'AR', direction = 'RTL', status = 'Active', is_site_lang = TRUE
-    `);
-    await pool.query(`
-      INSERT INTO languages (language_name, code, direction, status, is_site_lang) VALUES
-      ('French', 'FR', 'LTR', 'Active', TRUE) ON CONFLICT (language_name) DO UPDATE SET code = 'FR', direction = 'LTR', status = 'Active', is_site_lang = TRUE
-    `);
-    await pool.query(`
-      INSERT INTO languages (language_name, code, direction, status, is_site_lang) VALUES
-      ('German', 'DE', 'LTR', 'Active', TRUE) ON CONFLICT (language_name) DO UPDATE SET code = 'DE', direction = 'LTR', status = 'Active', is_site_lang = TRUE
-    `);
-    console.log("🌱 Seeded default languages (EN, AR, FR, DE).");
+    // Seed default languages mapping safely without requiring ON CONFLICT constraint
+    try {
+      const defaultLangs = [
+        ['English', 'EN', 'LTR', 'Active', true],
+        ['Arabic', 'AR', 'RTL', 'Active', true],
+        ['French', 'FR', 'LTR', 'Active', true],
+        ['German', 'DE', 'LTR', 'Active', true]
+      ];
+      for (const [lName, lCode, lDir, lStatus, lIsSite] of defaultLangs) {
+        const checkL = await pool.query("SELECT 1 FROM languages WHERE language_name = $1 OR code = $2", [lName, lCode]);
+        if (checkL.rows.length === 0) {
+          await pool.query(
+            "INSERT INTO languages (language_name, code, direction, status, is_site_lang) VALUES ($1, $2, $3, $4, $5)",
+            [lName, lCode, lDir, lStatus, lIsSite]
+          );
+        }
+      }
+      console.log("🌱 Seeded default languages (EN, AR, FR, DE).");
+    } catch (langErr) {
+      console.log("Notice on language seeding:", langErr.message);
+    }
 
     // Seed translations if empty
     const transCount = await pool.query("SELECT COUNT(*) FROM translations");
@@ -569,7 +804,6 @@ async function setupTables() {
         ('EN', 'hero_search_placeholder', 'What skill are you looking for?'),
         ('EN', 'hero_search_btn', 'Search Talent'),
         ('EN', 'hero_popular_label', 'Popular: UI Design, React, AI Automation, SEO')
-        ON CONFLICT DO NOTHING
       `);
       console.log("🌱 Seeded translation values for EN, AR, FR, DE.");
     }
@@ -768,12 +1002,22 @@ async function setupTables() {
     ];
 
     for (const page of seedPages) {
-      await pool.query(`
-        INSERT INTO cms_pages (title, slug, status, content_type, content)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (slug) DO UPDATE
-        SET title = $1, status = $3, content_type = $4, content = $5
-      `, [page.title, page.slug, page.status, page.content_type, page.content]);
+      try {
+        const checkPage = await pool.query("SELECT 1 FROM cms_pages WHERE slug = $1", [page.slug]);
+        if (checkPage.rows.length === 0) {
+          await pool.query(
+            "INSERT INTO cms_pages (title, slug, status, content_type, content) VALUES ($1, $2, $3, $4, $5)",
+            [page.title, page.slug, page.status, page.content_type, page.content]
+          );
+        } else {
+          await pool.query(
+            "UPDATE cms_pages SET title = $1, status = $3, content_type = $4, content = $5 WHERE slug = $2",
+            [page.title, page.slug, page.status, page.content_type, page.content]
+          );
+        }
+      } catch (pErr) {
+        console.log("Notice on cms_page seeding:", pErr.message);
+      }
     }
     console.log("✅ Seed CMS pages inserted/updated successfully.");
 
@@ -851,8 +1095,14 @@ async function setupTables() {
     if (checkSite.rows.length === 0) {
       const siteDefaults = {
         site_name: "Buy2Lancer",
-        site_logo: "/public/logo.png",
-        site_logo_dark: "/public/logo.png"
+        site_logo: "/public/images/onboard/file-1783600571599-686657795.png",
+        site_logo_dark: "/public/images/onboard/file-1783600571599-686657795.png",
+        site_favicon: "/public/images/onboard/file-1783600576902-726023436.png",
+        favicon: "/public/images/onboard/file-1783600576902-726023436.png",
+        site_og_image: "/public/images/onboard/file-1783600582007-535281136.png",
+        og_image: "/public/images/onboard/file-1783600582007-535281136.png",
+        site_chatbot_avatar: "/public/images/onboard/ai_chatbot_avatar.jpg",
+        chatbot_avatar: "/public/images/onboard/ai_chatbot_avatar.jpg"
       };
       await pool.query(
         "INSERT INTO settings (category, setting_key, setting_value) VALUES ('site_settings', 'site_settings', $1)",
@@ -1121,22 +1371,26 @@ async function setupTables() {
       console.log(`🌱 Backfilled slugs for ${emptyGigSlugs.rows.length} gigs.`);
     }
 
-    // Backfill slugs for users
-    const emptyUserSlugs = await pool.query("SELECT user_id, first_name, last_name, display_name FROM users WHERE slug IS NULL OR slug = ''");
-    for (const user of emptyUserSlugs.rows) {
-      let rawName = user.display_name || `${user.first_name || ''} ${user.last_name || ''}`;
-      let baseSlug = makeSlug(rawName) || `user-${user.user_id}`;
-      let finalSlug = baseSlug;
-      let counter = 1;
-      while (true) {
-        const check = await pool.query("SELECT 1 FROM users WHERE slug = $1 AND user_id != $2", [finalSlug, user.user_id]);
-        if (check.rows.length === 0) break;
-        finalSlug = `${baseSlug}-${counter++}`;
+    // Backfill slugs for users safely
+    try {
+      const emptyUserSlugs = await pool.query("SELECT * FROM users WHERE slug IS NULL OR slug = ''");
+      for (const user of emptyUserSlugs.rows) {
+        let rawName = user.name || user.display_name || `${user.first_name || ''} ${user.last_name || ''}`;
+        let baseSlug = makeSlug(rawName) || `user-${user.user_id}`;
+        let finalSlug = baseSlug;
+        let counter = 1;
+        while (true) {
+          const check = await pool.query("SELECT 1 FROM users WHERE slug = $1 AND user_id != $2", [finalSlug, user.user_id]);
+          if (check.rows.length === 0) break;
+          finalSlug = `${baseSlug}-${counter++}`;
+        }
+        await pool.query("UPDATE users SET slug = $1 WHERE user_id = $2", [finalSlug, user.user_id]);
       }
-      await pool.query("UPDATE users SET slug = $1 WHERE user_id = $2", [finalSlug, user.user_id]);
-    }
-    if (emptyUserSlugs.rows.length > 0) {
-      console.log(`🌱 Backfilled slugs for ${emptyUserSlugs.rows.length} users.`);
+      if (emptyUserSlugs.rows.length > 0) {
+        console.log(`🌱 Backfilled slugs for ${emptyUserSlugs.rows.length} users.`);
+      }
+    } catch (uSlugErr) {
+      console.log("Notice on user slug backfill:", uSlugErr.message);
     }
 
     // Create form_field_options table
@@ -1167,12 +1421,13 @@ async function setupTables() {
           }
           if (Array.isArray(val)) {
             for (let i = 0; i < val.length; i++) {
-              await pool.query(
-                `INSERT INTO form_field_options (field_key, option_value, sort_order) 
-                 VALUES ($1, $2, $3)
-                 ON CONFLICT (field_key, option_value) DO NOTHING`,
-                [key, val[i], i]
-              );
+              const checkOpt = await pool.query("SELECT 1 FROM form_field_options WHERE field_key = $1 AND option_value = $2", [key, val[i]]);
+              if (checkOpt.rows.length === 0) {
+                await pool.query(
+                  "INSERT INTO form_field_options (field_key, option_value, sort_order) VALUES ($1, $2, $3)",
+                  [key, val[i], i]
+                );
+              }
             }
           }
         }
@@ -1188,6 +1443,323 @@ async function setupTables() {
       );
       console.log("🌱 Seeded default_home_page setting = home_1");
     }
+
+    // Core schema auto-generated DDL for remaining tables
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "admins" (
+        "admin_id" SERIAL NOT NULL,
+        "full_name" CHARACTER VARYING NOT NULL,
+        "email" CHARACTER VARYING NOT NULL,
+        "password_hash" TEXT NOT NULL,
+        "role" CHARACTER VARYING NOT NULL,
+        "is_active" BOOLEAN DEFAULT true,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("admin_id")
+      )
+    `);
+    console.log("✅ 'admins' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "affiliate_commissions" (
+        "commission_id" SERIAL NOT NULL,
+        "affiliate_id" INTEGER,
+        "referred_user_id" INTEGER,
+        "transaction_id" INTEGER,
+        "amount" NUMERIC NOT NULL,
+        "platform_fee" NUMERIC NOT NULL,
+        "status" CHARACTER VARYING DEFAULT 'pending'::character varying,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("commission_id")
+      )
+    `);
+    console.log("✅ 'affiliate_commissions' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "blogs" (
+        "blog_id" SERIAL NOT NULL,
+        "title" CHARACTER VARYING NOT NULL,
+        "slug" CHARACTER VARYING NOT NULL,
+        "summary" TEXT,
+        "content" TEXT NOT NULL,
+        "cover_image" CHARACTER VARYING,
+        "author_id" INTEGER,
+        "category" CHARACTER VARYING,
+        "is_published" BOOLEAN DEFAULT false,
+        "created_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "author_name" CHARACTER VARYING,
+        PRIMARY KEY ("blog_id")
+      )
+    `);
+    console.log("✅ 'blogs' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "career_applications" (
+        "id" SERIAL NOT NULL,
+        "name" CHARACTER VARYING NOT NULL,
+        "email" CHARACTER VARYING NOT NULL,
+        "phone" CHARACTER VARYING,
+        "role" CHARACTER VARYING,
+        "cover_letter" TEXT,
+        "resume_url" TEXT,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("id")
+      )
+    `);
+    console.log("✅ 'career_applications' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "certifications" (
+        "certification_id" SERIAL NOT NULL,
+        "user_id" INTEGER,
+        "certificate_name" CHARACTER VARYING,
+        "issuing_organization" CHARACTER VARYING,
+        "issue_date" DATE,
+        "credential_url" TEXT,
+        PRIMARY KEY ("certification_id")
+      )
+    `);
+    console.log("✅ 'certifications' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "client_profiles" (
+        "client_profile_id" SERIAL NOT NULL,
+        "user_id" INTEGER NOT NULL,
+        "company_name" CHARACTER VARYING,
+        "company_size" CHARACTER VARYING,
+        "industry" CHARACTER VARYING,
+        "company_website" TEXT,
+        "company_description" TEXT,
+        "company_established_year" INTEGER,
+        "hiring_contact_name" CHARACTER VARYING,
+        "hiring_contact_designation" CHARACTER VARYING,
+        "onboarding_completed" BOOLEAN DEFAULT false,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "vetting_status" CHARACTER VARYING DEFAULT 'Approved'::character varying,
+        PRIMARY KEY ("client_profile_id")
+      )
+    `);
+    console.log("✅ 'client_profiles' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "contact_inquiries" (
+        "id" SERIAL NOT NULL,
+        "name" CHARACTER VARYING,
+        "email" CHARACTER VARYING NOT NULL,
+        "subject" CHARACTER VARYING DEFAULT 'General Inquiry'::character varying,
+        "message" TEXT NOT NULL,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "status" CHARACTER VARYING DEFAULT 'Pending'::character varying,
+        PRIMARY KEY ("id")
+      )
+    `);
+    console.log("✅ 'contact_inquiries' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "contract_reviews" (
+        "review_id" SERIAL NOT NULL,
+        "contract_id" INTEGER NOT NULL,
+        "reviewer_id" INTEGER NOT NULL,
+        "reviewee_id" INTEGER NOT NULL,
+        "reviewer_role" CHARACTER VARYING NOT NULL,
+        "rating" NUMERIC NOT NULL,
+        "comment" TEXT,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("review_id")
+      )
+    `);
+    console.log("✅ 'contract_reviews' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "contract_timecards" (
+        "timecard_id" SERIAL NOT NULL,
+        "contract_id" INTEGER,
+        "freelancer_id" INTEGER,
+        "client_id" INTEGER,
+        "work_date" DATE DEFAULT CURRENT_DATE NOT NULL,
+        "hours" INTEGER DEFAULT 0 NOT NULL,
+        "minutes" INTEGER DEFAULT 0 NOT NULL,
+        "description" TEXT,
+        "status" CHARACTER VARYING DEFAULT 'Pending'::character varying,
+        "amount" NUMERIC DEFAULT 0.00 NOT NULL,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("timecard_id")
+      )
+    `);
+    console.log("✅ 'contract_timecards' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "conversation_participants" (
+        "conversation_participant_id" SERIAL NOT NULL,
+        "conversation_id" INTEGER NOT NULL,
+        "user_id" INTEGER NOT NULL,
+        "joined_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("conversation_participant_id")
+      )
+    `);
+    console.log("✅ 'conversation_participants' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "document_fields" (
+        "field_id" SERIAL NOT NULL,
+        "field_key" CHARACTER VARYING NOT NULL,
+        "field_name" CHARACTER VARYING NOT NULL,
+        "field_description" TEXT,
+        "is_required" BOOLEAN DEFAULT true,
+        "is_enabled" BOOLEAN DEFAULT true,
+        "has_expiry" BOOLEAN DEFAULT true,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "applicable_to" CHARACTER VARYING DEFAULT 'freelancer'::character varying,
+        "field_type" CHARACTER VARYING DEFAULT 'file_any'::character varying,
+        "step_number" INTEGER DEFAULT 5,
+        "is_system" BOOLEAN DEFAULT false,
+        PRIMARY KEY ("field_id")
+      )
+    `);
+    console.log("✅ 'document_fields' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "education" (
+        "education_id" SERIAL NOT NULL,
+        "user_id" INTEGER,
+        "institution_name" CHARACTER VARYING,
+        "degree" CHARACTER VARYING,
+        "field_of_study" CHARACTER VARYING,
+        "start_year" INTEGER,
+        "end_year" INTEGER,
+        PRIMARY KEY ("education_id")
+      )
+    `);
+    console.log("✅ 'education' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "experiences" (
+        "experience_id" SERIAL NOT NULL,
+        "user_id" INTEGER,
+        "company_name" CHARACTER VARYING,
+        "job_title" CHARACTER VARYING,
+        "employment_type" CHARACTER VARYING,
+        "start_date" DATE,
+        "end_date" DATE,
+        "currently_working" BOOLEAN DEFAULT false,
+        "description" TEXT,
+        PRIMARY KEY ("experience_id")
+      )
+    `);
+    console.log("✅ 'experiences' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "freelancer_documents" (
+        "document_id" SERIAL NOT NULL,
+        "user_id" INTEGER,
+        "field_id" INTEGER,
+        "file_url" TEXT NOT NULL,
+        "expiry_date" DATE,
+        "status" CHARACTER VARYING DEFAULT 'Pending'::character varying,
+        "rejection_reason" TEXT,
+        "submitted_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "text_value" TEXT,
+        PRIMARY KEY ("document_id")
+      )
+    `);
+    console.log("✅ 'freelancer_documents' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "freelancer_projects" (
+        "project_id" SERIAL NOT NULL,
+        "user_id" INTEGER,
+        "title" CHARACTER VARYING NOT NULL,
+        "description" TEXT,
+        "image_urls" JSONB,
+        "video_urls" TEXT,
+        "document_urls" JSONB,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("project_id")
+      )
+    `);
+    console.log("✅ 'freelancer_projects' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "gig_reviews" (
+        "review_id" SERIAL NOT NULL,
+        "gig_id" INTEGER NOT NULL,
+        "client_id" INTEGER NOT NULL,
+        "application_id" INTEGER NOT NULL,
+        "rating" NUMERIC NOT NULL,
+        "comment" TEXT,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("review_id")
+      )
+    `);
+    console.log("✅ 'gig_reviews' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "newsletter_subscribers" (
+        "id" SERIAL NOT NULL,
+        "email" CHARACTER VARYING NOT NULL,
+        "status" CHARACTER VARYING DEFAULT 'active'::character varying,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("id")
+      )
+    `);
+    console.log("✅ 'newsletter_subscribers' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "referral_payouts" (
+        "payout_id" SERIAL NOT NULL,
+        "referrer_id" INTEGER,
+        "referred_id" INTEGER,
+        "status" CHARACTER VARYING DEFAULT 'pending'::character varying,
+        "amount" NUMERIC DEFAULT 10.00,
+        "details" JSONB,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        "updated_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("payout_id")
+      )
+    `);
+    console.log("✅ 'referral_payouts' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "subscription_invoices" (
+        "invoice_id" SERIAL NOT NULL,
+        "user_id" INTEGER,
+        "plan_id" INTEGER,
+        "invoice_number" CHARACTER VARYING NOT NULL,
+        "amount" NUMERIC NOT NULL,
+        "payment_method" CHARACTER VARYING NOT NULL,
+        "status" CHARACTER VARYING DEFAULT 'Paid'::character varying NOT NULL,
+        "billing_name" CHARACTER VARYING,
+        "billing_email" CHARACTER VARYING,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("invoice_id")
+      )
+    `);
+    console.log("✅ 'subscription_invoices' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "unique_views_log" (
+        "id" SERIAL NOT NULL,
+        "view_type" CHARACTER VARYING NOT NULL,
+        "target_id" CHARACTER VARYING NOT NULL,
+        "ip_address" CHARACTER VARYING NOT NULL,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("id")
+      )
+    `);
+    console.log("✅ 'unique_views_log' table ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "user_skills" (
+        "user_skill_id" SERIAL NOT NULL,
+        "user_id" INTEGER,
+        "skill_id" INTEGER,
+        PRIMARY KEY ("user_skill_id")
+      )
+    `);
+    console.log("✅ 'user_skills' table ready.");
 
   } catch (error) {
     console.error("❌ Error setting up database tables:", error.message);

@@ -4,6 +4,7 @@ import { API_URL } from "@/config/api";
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 // Mock Freelancer Data
 interface Freelancer {
@@ -107,6 +108,7 @@ interface MarketplaceProps {
 }
 
 export default function Marketplace({ onToggleView }: MarketplaceProps) {
+  const { formatPrice } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<"all" | "development" | "design" | "marketing" | "ai">("all");
   const [showPostJobModal, setShowPostJobModal] = useState(false);
@@ -474,7 +476,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
                     </div>
                     
                     <span className="text-xs font-bold text-slate-700 bg-slate-100 border border-slate-200/50 px-2.5 py-1 rounded-lg shrink-0">
-                      ${freelancer.hourlyRate}/hr
+                      {formatPrice(freelancer.hourlyRate)}/hr
                     </span>
                   </div>
 
@@ -658,7 +660,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
                   </div>
                   <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block mt-1 truncate">{selectedFreelancerForInvite.role}</span>
                   <span className="text-slate-650 text-xxs font-bold mt-1.5 inline-block bg-white px-2 py-0.5 border border-slate-150 rounded">
-                    ${selectedFreelancerForInvite.hourlyRate}/hr
+                    {formatPrice(selectedFreelancerForInvite.hourlyRate)}/hr
                   </span>
                 </div>
               </div>

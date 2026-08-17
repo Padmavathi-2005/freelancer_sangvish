@@ -19,7 +19,7 @@ const COMPANY_ICON_POOL = [
 const FALLBACK_COMPANIES = ["Google", "Microsoft", "Amazon", "Meta", "Netflix", "Stripe", "Airbnb"];
 
 export default function Hero() {
-  const { t } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const router = useRouter();
 
   const [heroContent, setHeroContent] = useState({
@@ -49,24 +49,8 @@ export default function Hero() {
     slug: string;
   }
 
-  const [topFreelancers, setTopFreelancers] = useState<HeroFreelancer[]>([
-    {
-      name: "Sarah J.",
-      professional_title: "Senior UI Designer",
-      rating: 4.9,
-      hourly_rate: 85,
-      profile_image: "/sarah-avatar.png",
-      slug: "sarah-jenkins"
-    },
-    {
-      name: "David M.",
-      professional_title: "AI Engineer",
-      rating: 5.0,
-      hourly_rate: 120,
-      profile_image: "/david-avatar.png",
-      slug: "david-m"
-    }
-  ]);
+  const [topFreelancers, setTopFreelancers] = useState<HeroFreelancer[]>([]);
+  const [loadingFreelancers, setLoadingFreelancers] = useState(true);
 
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
@@ -82,6 +66,7 @@ export default function Hero() {
   useEffect(() => {
     const fetchTopFreelancers = async () => {
       try {
+        setLoadingFreelancers(true);
         const apiUrl = API_URL || "http://localhost:5000/api";
         const res = await fetch(`${apiUrl}/freelancer/public/list`, {
           headers: { "Content-Type": "application/json" }
@@ -116,8 +101,10 @@ export default function Hero() {
             setTopFreelancers(formatted);
           }
         }
-      } catch {
-        // Fallback silently to default top freelancers if backend is unreachable
+      } catch (e) {
+        console.error("Error fetching hero freelancers:", e);
+      } finally {
+        setLoadingFreelancers(false);
       }
     };
     fetchTopFreelancers();
@@ -345,11 +332,20 @@ export default function Hero() {
               </div>
 
               {/* Floating Card: 1st Pick */}
-              {topFreelancers[0] && (
-                <div className="absolute top-[12%] -left-2 sm:-left-6 md:-left-[10%] z-20 animate-float-up">
+              <div className="absolute top-[12%] -left-2 sm:-left-6 md:-left-[10%] z-20">
+                {loadingFreelancers ? (
+                  <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] border border-slate-100 dark:border-zinc-800 animate-pulse">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-zinc-800 shrink-0"></div>
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <div className="h-3.5 bg-slate-200 dark:bg-zinc-800 rounded-md w-3/4"></div>
+                      <div className="h-2.5 bg-slate-100 dark:bg-zinc-800 rounded-md w-full"></div>
+                      <div className="h-2 bg-slate-100 dark:bg-zinc-800 rounded-md w-1/2"></div>
+                    </div>
+                  </div>
+                ) : topFreelancers[0] ? (
                   <div
                     onClick={() => router.push(`/freelancer/${topFreelancers[0].slug}`)}
-                    className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100"
+                    className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100 animate-float-up"
                   >
                     {!topFreelancers[0].profile_image || imageErrors[topFreelancers[0].slug] ? (
                       <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-extrabold text-white shrink-0 text-xs shadow-sm select-none">
@@ -376,22 +372,31 @@ export default function Hero() {
                       <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
                         <span className="text-primary flex items-center gap-0.5">★ <span className="text-slate-800">{topFreelancers[0].rating}</span></span>
                         <span className="text-slate-700">
-                          {typeof topFreelancers[0].hourly_rate === 'number' || !isNaN(Number(topFreelancers[0].hourly_rate)) 
-                            ? `$${parseFloat(topFreelancers[0].hourly_rate.toString()).toFixed(0)}/hr` 
+                          {topFreelancers[0].hourly_rate 
+                            ? `${formatPrice(topFreelancers[0].hourly_rate)}/hr` 
                             : "N/A"}
                         </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                ) : null}
+              </div>
 
               {/* Floating Card: 2nd Pick */}
-              {topFreelancers[1] && (
-                <div className="absolute bottom-[14%] -right-2 sm:-right-6 md:-right-[10%] z-20 animate-float-up">
+              <div className="absolute bottom-[14%] -right-2 sm:-right-6 md:-right-[10%] z-20">
+                {loadingFreelancers ? (
+                  <div className="bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] border border-slate-100 dark:border-zinc-800 animate-pulse">
+                    <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-zinc-800 shrink-0"></div>
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      <div className="h-3.5 bg-slate-200 dark:bg-zinc-800 rounded-md w-3/4"></div>
+                      <div className="h-2.5 bg-slate-100 dark:bg-zinc-800 rounded-md w-full"></div>
+                      <div className="h-2 bg-slate-100 dark:bg-zinc-800 rounded-md w-1/2"></div>
+                    </div>
+                  </div>
+                ) : topFreelancers[1] ? (
                   <div
                     onClick={() => router.push(`/freelancer/${topFreelancers[1].slug}`)}
-                    className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100"
+                    className="hero-floating-card bg-white rounded-xl p-2.5 sm:p-3.5 shadow-lg flex items-center gap-2 sm:gap-3 w-[140px] sm:w-[190px] lg:w-[205px] transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer border border-slate-100 animate-float-up"
                   >
                     {!topFreelancers[1].profile_image || imageErrors[topFreelancers[1].slug] ? (
                       <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-extrabold text-white shrink-0 text-xs shadow-sm select-none">
@@ -418,15 +423,15 @@ export default function Hero() {
                       <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
                         <span className="text-primary flex items-center gap-0.5">★ <span className="text-slate-800">{topFreelancers[1].rating}</span></span>
                         <span className="text-slate-700">
-                          {typeof topFreelancers[1].hourly_rate === 'number' || !isNaN(Number(topFreelancers[1].hourly_rate)) 
-                            ? `$${parseFloat(topFreelancers[1].hourly_rate.toString()).toFixed(0)}/hr` 
+                          {topFreelancers[1].hourly_rate 
+                            ? `${formatPrice(topFreelancers[1].hourly_rate)}/hr` 
                             : "N/A"}
                         </span>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                ) : null}
+              </div>
             </div>
           </div>
 
@@ -438,10 +443,10 @@ export default function Hero() {
         <p className="text-center text-[10px] sm:text-xs font-black tracking-[0.22em] text-slate-700 dark:text-slate-300 uppercase mb-5">
           {t("trusted_title", "Trusted by Innovative Companies Worldwide")}
         </p>
-        <div className="overflow-hidden relative w-full mask-gradient">
-          <div className="animate-marquee flex items-center py-1.5">
-            {[...companies, ...companies, ...companies, ...companies].map((name, index) => (
-              <div key={index} className="flex items-center gap-2.5 mx-10 sm:mx-16 shrink-0">
+        <div className="overflow-hidden relative w-full mask-gradient" style={{ direction: "ltr" }}>
+          <div className="animate-marquee flex items-center py-1.5 w-max">
+            {[...companies, ...companies, ...companies, ...companies, ...companies, ...companies].map((name, index) => (
+              <div key={index} className="flex items-center gap-2.5 mx-8 sm:mx-14 shrink-0">
                 {COMPANY_ICON_POOL[index % COMPANY_ICON_POOL.length]}
                 <span className="text-slate-700 dark:text-slate-300 font-black text-xs sm:text-sm tracking-wider uppercase font-display">
                   {name}
