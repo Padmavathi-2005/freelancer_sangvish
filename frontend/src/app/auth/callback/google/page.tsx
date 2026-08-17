@@ -39,12 +39,14 @@ export default function GoogleCallbackPage() {
         const profile = await profileRes.json();
         
         // 3. Perform backend login/register exchange
+        const refCode = localStorage.getItem("referral_code");
         const res = await fetch(`${API_URL}/users/social-login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email: profile.email,
-            first_name: profile.name || profile.given_name || ""
+            first_name: profile.name || profile.given_name || "",
+            refCode: refCode || undefined
           })
         });
         
@@ -58,6 +60,7 @@ export default function GoogleCallbackPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("onboarding_completed");
         localStorage.removeItem("onboarding_step");
+        localStorage.removeItem("onboarding_role");
 
         // Check onboarding status
         const checkRes = await fetch(`${API_URL}/users/onboarding-check`, {

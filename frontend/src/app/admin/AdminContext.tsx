@@ -396,6 +396,11 @@ interface AdminContextType {
   fetchWithdrawalRequests: () => Promise<void>;
   handleApproveWithdrawal: (id: number) => Promise<void>;
   handleRejectWithdrawal: (id: number) => Promise<void>;
+  referralPayouts: any[];
+  loadingReferralPayouts: boolean;
+  fetchReferralPayouts: () => Promise<void>;
+  handleApproveReferralPayout: (id: number) => Promise<void>;
+  handleRejectReferralPayout: (id: number) => Promise<void>;
   handlePayToUser: (userId: number, amount: number, description: string) => Promise<{ success: boolean; message: string }>;
   cmsPagesList: any[];
   loadingCms: boolean;
@@ -757,6 +762,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [loadingAdminWallet, setLoadingAdminWallet] = useState(false);
   const [withdrawalRequests, setWithdrawalRequests] = useState<any[]>([]);
   const [loadingWithdrawals, setLoadingWithdrawals] = useState(false);
+  const [referralPayouts, setReferralPayouts] = useState<any[]>([]);
+  const [loadingReferralPayouts, setLoadingReferralPayouts] = useState(false);
 
   // CMS Pages States
   const [cmsPagesList, setCmsPagesList] = useState<any[]>([]);
@@ -1971,6 +1978,66 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const fetchReferralPayouts = async () => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return;
+      setLoadingReferralPayouts(true);
+      const res = await fetch(`${API_URL}/admin/referrals/payouts`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (res.ok) {
+        setReferralPayouts(await res.json());
+      }
+    } catch (e) {
+      console.error("Failed to fetch referral payouts:", e);
+    } finally {
+      setLoadingReferralPayouts(false);
+    }
+  };
+
+  const handleApproveReferralPayout = async (payoutId: number) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return;
+      const res = await fetch(`${API_URL}/admin/referrals/payouts/${payoutId}/approve`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || "Referral/Signup bonus payout approved successfully.");
+        fetchAdminWalletStats();
+        fetchReferralPayouts();
+      } else {
+        alert(data.message || "Failed to approve referral payout.");
+      }
+    } catch (err) {
+      console.error("Error approving referral payout:", err);
+    }
+  };
+
+  const handleRejectReferralPayout = async (payoutId: number) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      if (!token) return;
+      const res = await fetch(`${API_URL}/admin/referrals/payouts/${payoutId}/reject`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Referral/Signup bonus payout request rejected successfully.");
+        fetchAdminWalletStats();
+        fetchReferralPayouts();
+      } else {
+        alert(data.message || "Failed to reject referral payout.");
+      }
+    } catch (err) {
+      console.error("Error rejecting referral payout:", err);
+    }
+  };
+
   const handlePayToUser = async (userId: number, amount: number, description: string) => {
     try {
       const token = localStorage.getItem("adminToken");
@@ -2188,6 +2255,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         fetchTransactions();
         fetchAdminWalletStats();
         fetchWithdrawalRequests();
+        fetchReferralPayouts();
         fetchCmsPages();
         fetchBlogs();
         fetchPendingProposals();
@@ -2547,6 +2615,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       adminWalletStats, loadingAdminWallet, fetchAdminWalletStats,
       withdrawalRequests, loadingWithdrawals, fetchWithdrawalRequests,
       handleApproveWithdrawal, handleRejectWithdrawal, handlePayToUser,
+      referralPayouts, loadingReferralPayouts, fetchReferralPayouts,
+      handleApproveReferralPayout, handleRejectReferralPayout,
       cmsPagesList, loadingCms, fetchCmsPages,
       handleCreateCmsPage, handleUpdateCmsPage, handleDeleteCmsPage,
       blogsList, loadingBlogs, fetchBlogs,

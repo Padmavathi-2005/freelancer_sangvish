@@ -44,6 +44,48 @@ export const getUserWallet = async (req, res) => {
     `;
     const transactionsRes = await pool.query(transactionsQuery, [wallet.wallet_id]);
 
+    // Calculate total non-withdrawable signup bonus credits
+    const bonusRes = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total_bonus FROM wallet_transactions 
+       WHERE receiver_wallet_id = $1 AND type IN ('referral_signup_bonus', 'signup_bonus') AND status = 'completed'`,
+      [wallet.wallet_id]
+    );
+    const bonusBalance = parseFloat(bonusRes.rows[0].total_bonus || "0");
+
+    // Calculate pending (unapproved) referral/signup bonus amount from referral_payouts table
+    const pendingBonusRes = await pool.query(
+      `SELECT COALESCE(SUM(amount), 0) AS pending_bonus 
+       FROM referral_payouts 
+       WHERE (referred_id = $1 OR referrer_id = $1) AND status = 'pending'`,
+      [userId]
+    );
+    const pendingBonusBalance = parseFloat(pendingBonusRes.rows[0].pending_bonus || "0");
+
+    // Fetch min_withdrawal_amount setting from DB
+    let minWithdrawalAmount = 10.00;
+    try {
+      const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+      if (settingsRes.rows.length > 0) {
+        let val = settingsRes.rows[0].setting_value;
+        if (typeof val === "string") { try { val = JSON.parse(val); } catch (e) {} }
+        if (val && val.min_withdrawal_amount !== undefined && parseFloat(val.min_withdrawal_amount) > 0) {
+          minWithdrawalAmount = parseFloat(val.min_withdrawal_amount);
+        }
+      }
+    } catch (sErr) {}
+
+    const activeBalance = parseFloat(wallet.balance);
+    // All wallet balance (including signup bonus, referral rewards & affiliate commissions) is withdrawable and usable for purchases
+    const withdrawableBalance = Math.max(0, activeBalance);
+
+    const walletData = {
+      ...wallet,
+      bonus_balance: bonusBalance,
+      pending_bonus_balance: pendingBonusBalance,
+      withdrawable_balance: withdrawableBalance,
+      min_withdrawal_amount: minWithdrawalAmount
+    };
+
     // Get withdrawal requests
     const withdrawalsQuery = `
       SELECT * FROM withdrawal_requests
@@ -53,7 +95,7 @@ export const getUserWallet = async (req, res) => {
     const withdrawalsRes = await pool.query(withdrawalsQuery, [userId]);
 
     return res.status(200).json({
-      wallet,
+      wallet: walletData,
       transactions: transactionsRes.rows,
       withdrawals: withdrawalsRes.rows
     });
@@ -81,18 +123,36 @@ export const requestWithdrawal = async (req, res) => {
     const withdrawAmt = parseFloat(amount);
     const wallet = await getOrCreateWallet(userId, req.user.role);
 
+    // Fetch min_withdrawal_amount setting from DB
+    let minWithdrawalAmount = 10.00;
+    try {
+      const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+      if (settingsRes.rows.length > 0) {
+        let val = settingsRes.rows[0].setting_value;
+        if (typeof val === "string") { try { val = JSON.parse(val); } catch (e) {} }
+        if (val && val.min_withdrawal_amount !== undefined && parseFloat(val.min_withdrawal_amount) > 0) {
+          minWithdrawalAmount = parseFloat(val.min_withdrawal_amount);
+        }
+      }
+    } catch (sErr) {}
+
+    if (withdrawAmt < minWithdrawalAmount) {
+      return res.status(400).json({ message: `Minimum withdrawal amount is $${minWithdrawalAmount.toFixed(2)}.` });
+    }
+
     // Calculate total pending withdrawal requests for this user
     const pendingRes = await pool.query(
       "SELECT COALESCE(SUM(amount), 0) AS total_pending FROM withdrawal_requests WHERE user_id = $1 AND status = 'Pending'",
       [userId]
     );
     const totalPending = parseFloat(pendingRes.rows[0].total_pending || "0");
-    const activeBalance = parseFloat(wallet.balance);
-    const availableBalance = activeBalance - totalPending;
 
-    if (availableBalance < withdrawAmt) {
+    const activeBalance = parseFloat(wallet.balance);
+    const withdrawableBalance = Math.max(0, activeBalance - totalPending);
+
+    if (withdrawableBalance < withdrawAmt) {
       return res.status(400).json({
-        message: `Insufficient available balance. Active balance is $${activeBalance.toFixed(2)}, Pending requests: $${totalPending.toFixed(2)}, Available: $${availableBalance.toFixed(2)}.`
+        message: `Insufficient available balance. Active balance is $${activeBalance.toFixed(2)}, Pending requests: $${totalPending.toFixed(2)}, Available: $${withdrawableBalance.toFixed(2)}.`
       });
     }
 

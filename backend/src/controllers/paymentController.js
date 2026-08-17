@@ -56,7 +56,7 @@ export const checkAndRewardReferrer = async (referredUserId) => {
   try {
     // 1. Check if the user was referred by someone
     const userRes = await pool.query(
-      "SELECT referred_by FROM users WHERE user_id = $1",
+      "SELECT referred_by, created_at FROM users WHERE user_id = $1",
       [referredUserId]
     );
     
@@ -84,6 +84,8 @@ export const checkAndRewardReferrer = async (referredUserId) => {
 
     // 4. Fetch referral settings from database
     let bonusAmount = 10.00; // Default fallback
+    let completionWindowDays = 30; // Default fallback
+    let requireReferralRewardApproval = true;
     try {
       const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
       if (settingsRes.rows.length > 0) {
@@ -91,12 +93,20 @@ export const checkAndRewardReferrer = async (referredUserId) => {
         if (typeof settingsVal === "string") {
           settingsVal = JSON.parse(settingsVal);
         }
-        if (settingsVal && Array.isArray(settingsVal.tiers)) {
-          // Sort tiers by min_referrals descending to match the highest applicable tier
-          const sortedTiers = [...settingsVal.tiers].sort((a, b) => b.min_referrals - a.min_referrals);
-          const matchingTier = sortedTiers.find(tier => referralNumber >= tier.min_referrals);
-          if (matchingTier) {
-            bonusAmount = parseFloat(matchingTier.reward);
+        if (settingsVal) {
+          if (settingsVal.require_referral_reward_approval !== undefined) {
+            requireReferralRewardApproval = settingsVal.require_referral_reward_approval === true || settingsVal.require_referral_reward_approval === "true";
+          }
+          if (settingsVal.completion_window_days !== undefined) {
+            completionWindowDays = parseInt(settingsVal.completion_window_days) || 30;
+          }
+          if (Array.isArray(settingsVal.tiers)) {
+            // Sort tiers by min_referrals descending to match the highest applicable tier
+            const sortedTiers = [...settingsVal.tiers].sort((a, b) => b.min_referrals - a.min_referrals);
+            const matchingTier = sortedTiers.find(tier => referralNumber >= tier.min_referrals);
+            if (matchingTier) {
+              bonusAmount = parseFloat(matchingTier.reward);
+            }
           }
         }
       }
@@ -104,7 +114,68 @@ export const checkAndRewardReferrer = async (referredUserId) => {
       console.error("Error reading referral settings, using fallback reward amount:", settingErr);
     }
 
-    // 5. Create a pending payout request in referral_payouts
+    // 5. Check if referral purchase window has expired
+    const regDate = new Date(userRes.rows[0].created_at);
+    const now = new Date();
+    const elapsedDays = Math.floor((now.getTime() - regDate.getTime()) / (1000 * 3600 * 24));
+
+    if (elapsedDays > completionWindowDays) {
+      console.log(`Referral expired for user #${referredUserId}. Registered ${elapsedDays} days ago (limit: ${completionWindowDays} days). Payout skipped.`);
+      return; // EXPIRED! Reward payout is NOT credited!
+    }
+
+    // Mode A: AUTO-CREDIT REFERRAL REWARD (No Approval Required)
+    if (!requireReferralRewardApproval) {
+      const insRes = await pool.query(`
+        INSERT INTO referral_payouts (referrer_id, referred_id, amount, status, details)
+        VALUES ($1, $2, $3, 'approved', $4)
+        RETURNING payout_id
+      `, [
+        referrerId, 
+        referredUserId, 
+        bonusAmount, 
+        JSON.stringify({ 
+          trigger: "first_completed_transaction",
+          referral_number: referralNumber,
+          auto_approved: true,
+          timestamp: new Date().toISOString()
+        })
+      ]);
+      const payoutId = insRes.rows[0].payout_id;
+
+      // Transfer funds to referrer wallet
+      await pool.query("UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2", [bonusAmount, referrerId]);
+      await pool.query("UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE is_system = TRUE", [bonusAmount]);
+
+      const refWalletRes = await pool.query("SELECT wallet_id FROM wallets WHERE user_id = $1", [referrerId]);
+      const sysWalletRes = await pool.query("SELECT wallet_id FROM wallets WHERE is_system = TRUE");
+      if (refWalletRes.rows.length > 0 && sysWalletRes.rows.length > 0) {
+        await pool.query(`
+          INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+          VALUES ($1, $2, $3, 'referral_bonus', 'completed', $4)
+        `, [sysWalletRes.rows[0].wallet_id, refWalletRes.rows[0].wallet_id, bonusAmount, `Referral reward for user_id = ${referredUserId} (Auto-Approved)`]);
+      }
+
+      // Send Auto-Approval Notification
+      try {
+        await pool.query(
+          `INSERT INTO notifications (user_id, title, message, type, reference_id, target_tab)
+           VALUES ($1, 'Referral Reward Approved! 💰', $2, 'referral', $3, 'wallet')`,
+          [
+            referrerId,
+            `Your referral reward payout of $${bonusAmount.toFixed(2)} for referring user #${referredUserId} has been automatically credited to your wallet!`,
+            payoutId.toString()
+          ]
+        );
+      } catch (nErr) {
+        console.error("Error sending auto-approval referral notification:", nErr);
+      }
+
+      console.log(`⚡ AUTO-CREDITED Referral reward $${bonusAmount.toFixed(2)} to referrer #${referrerId}`);
+      return;
+    }
+
+    // Mode B: MANUAL ADMIN APPROVAL REQUIRED
     await pool.query(`
       INSERT INTO referral_payouts (referrer_id, referred_id, amount, status, details)
       VALUES ($1, $2, $3, 'pending', $4)
@@ -118,6 +189,35 @@ export const checkAndRewardReferrer = async (referredUserId) => {
         timestamp: new Date().toISOString()
       })
     ]);
+
+    // Stage 3 Notifications: Inform Referrer and Admin of earned referral reward
+    try {
+      // 1. Notify Referrer
+      await pool.query(
+        `INSERT INTO notifications (user_id, title, message, type, reference_id, target_tab)
+         VALUES ($1, '💰 Referral Reward Earned!', $2, 'referral', $3, 'wallet')`,
+        [
+          referrerId,
+          `Awesome! Your referred friend completed their first order. Your $${bonusAmount.toFixed(2)} referral reward has been requested and is pending admin approval!`,
+          referredUserId.toString()
+        ]
+      );
+
+      // 2. Notify Admin
+      const admins = await pool.query("SELECT admin_id FROM admin_users");
+      for (const admin of admins.rows) {
+        await pool.query(
+          `INSERT INTO admin_notifications (admin_id, title, message, type, target_tab)
+           VALUES ($1, '💰 New Referral Reward Payout Pending', $2, 'referral_payout', 'referrals')`,
+          [
+            admin.admin_id,
+            `Referred user #${referredUserId} completed a transaction. A $${bonusAmount.toFixed(2)} referral reward for referrer #${referrerId} is pending approval.`
+          ]
+        );
+      }
+    } catch (nErr) {
+      console.error("Error sending Stage 3 referral notifications:", nErr);
+    }
 
     console.log(`Created pending referral payout request for referrer ${referrerId} and referred user ${referredUserId} (Referral #${referralNumber}, Reward: $${bonusAmount})`);
   } catch (err) {
@@ -140,7 +240,7 @@ export const checkAndEarnAffiliateCommission = async (referredUserId) => {
     // 2. Fetch the latest completed transaction of the referred user that has a commission_amount > 0
     // and hasn't been credited for affiliate commissions yet
     const query = `
-      SELECT wt.transaction_id, wt.commission_amount
+      SELECT wt.transaction_id, wt.amount, wt.commission_amount
       FROM wallet_transactions wt
       JOIN wallets w ON w.wallet_id = wt.sender_wallet_id
       WHERE w.user_id = $1 
@@ -156,20 +256,94 @@ export const checkAndEarnAffiliateCommission = async (referredUserId) => {
     const txRes = await pool.query(query, [referredUserId]);
     if (txRes.rows.length === 0) return;
 
-    const { transaction_id, commission_amount } = txRes.rows[0];
+    const { transaction_id, amount: orderPrice, commission_amount } = txRes.rows[0];
     const platformFee = parseFloat(commission_amount);
+    const productPrice = parseFloat(orderPrice) || 0;
     
-    // Affiliate gets 10%
-    const affiliateAmount = parseFloat((platformFee * 0.10).toFixed(2));
+    // Default affiliate gets 10% of platform fee
+    let affiliateAmount = parseFloat((platformFee * 0.10).toFixed(2));
+
+    // Check require_affiliate_approval setting toggle and affiliate_tiers percentage
+    let requireAffiliateApproval = true;
+    try {
+      const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+      if (settingsRes.rows.length > 0) {
+        let settingsVal = settingsRes.rows[0].setting_value;
+        if (typeof settingsVal === "string") {
+          try { settingsVal = JSON.parse(settingsVal); } catch (e) {}
+        }
+        if (settingsVal) {
+          if (settingsVal.require_affiliate_approval !== undefined) {
+            requireAffiliateApproval = settingsVal.require_affiliate_approval === true || settingsVal.require_affiliate_approval === "true";
+          }
+          if (Array.isArray(settingsVal.affiliate_tiers) && settingsVal.affiliate_tiers.length > 0) {
+            const countRes = await pool.query("SELECT COUNT(*) FROM affiliate_commissions WHERE affiliate_id = $1", [referrerId]);
+            const affiliateSaleNumber = parseInt(countRes.rows[0].count) + 1;
+            const sortedAffTiers = [...settingsVal.affiliate_tiers].sort((a, b) => b.min_referrals - a.min_referrals);
+            const matchingTier = sortedAffTiers.find(tier => affiliateSaleNumber >= tier.min_referrals);
+            if (matchingTier && parseFloat(matchingTier.reward) > 0) {
+              const commissionRatePercent = parseFloat(matchingTier.reward);
+              const basePrice = productPrice > 0 ? productPrice : platformFee;
+              affiliateAmount = parseFloat((basePrice * (commissionRatePercent / 100)).toFixed(2));
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Error reading require_affiliate_approval setting:", e);
+    }
+
     if (affiliateAmount <= 0) return;
 
-    // 3. Insert the pending commission request
+    if (!requireAffiliateApproval) {
+      // Auto-Approve Affiliate Commission
+      const insRes = await pool.query(`
+        INSERT INTO affiliate_commissions (affiliate_id, referred_user_id, transaction_id, amount, platform_fee, status)
+        VALUES ($1, $2, $3, $4, $5, 'approved')
+        RETURNING commission_id
+      `, [referrerId, referredUserId, transaction_id, affiliateAmount, platformFee]);
+
+      const commissionId = insRes.rows[0].commission_id;
+
+      // Transfer funds to affiliate wallet
+      await pool.query("UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $2", [affiliateAmount, referrerId]);
+      await pool.query("UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE is_system = TRUE", [affiliateAmount]);
+
+      const affWalletRes = await pool.query("SELECT wallet_id FROM wallets WHERE user_id = $1", [referrerId]);
+      const sysWalletRes = await pool.query("SELECT wallet_id FROM wallets WHERE is_system = TRUE");
+      if (affWalletRes.rows.length > 0 && sysWalletRes.rows.length > 0) {
+        await pool.query(`
+          INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
+          VALUES ($1, $2, $3, 'affiliate_commission', 'completed', $4)
+        `, [sysWalletRes.rows[0].wallet_id, affWalletRes.rows[0].wallet_id, affiliateAmount, `Affiliate commission for user #${referredUserId} order (Auto-Approved)`]);
+      }
+
+      // Send Notification to Affiliate
+      try {
+        await pool.query(
+          `INSERT INTO notifications (user_id, title, message, type, reference_id, target_tab)
+           VALUES ($1, '⚡ Affiliate Commission Credited!', $2, 'referral', $3, 'wallet')`,
+          [
+            referrerId,
+            `You earned an affiliate commission of $${affiliateAmount.toFixed(2)} from user #${referredUserId}'s order. It has been automatically credited to your active wallet balance!`,
+            commissionId.toString()
+          ]
+        );
+      } catch (nErr) {
+        console.error("Error sending affiliate commission notification:", nErr);
+      }
+
+      console.log(`⚡ AUTO-CREDITED Affiliate commission $${affiliateAmount.toFixed(2)} to referrer #${referrerId}`);
+      return;
+    }
+
+    // Manual Admin Approval Required
     await pool.query(`
       INSERT INTO affiliate_commissions (affiliate_id, referred_user_id, transaction_id, amount, platform_fee, status)
       VALUES ($1, $2, $3, $4, $5, 'pending')
     `, [referrerId, referredUserId, transaction_id, affiliateAmount, platformFee]);
 
-    console.log(`Log pending affiliate commission: Referrer=${referrerId}, Referred=${referredUserId}, Tx=${transaction_id}, Fee=${platformFee}, Comm=${affiliateAmount}`);
+    console.log(`Logged pending affiliate commission: Referrer=${referrerId}, Referred=${referredUserId}, Tx=${transaction_id}, Fee=${platformFee}, Comm=${affiliateAmount}`);
   } catch (err) {
     console.error("Error in checkAndEarnAffiliateCommission:", err);
   }

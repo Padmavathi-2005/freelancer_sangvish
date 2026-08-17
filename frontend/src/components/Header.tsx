@@ -196,7 +196,15 @@ export default function Header() {
         } else {
           redirectUrl = refId ? `/dashboard/applications?application_id=${refId}` : "/dashboard/applications";
         }
-      } else if (type === "wallet" || type === "payout" || type === "withdrawal") {
+      } else if (
+        type === "wallet" || 
+        type === "payout" || 
+        type === "withdrawal" ||
+        type === "signup_bonus" ||
+        type === "referral_signup_bonus" ||
+        type === "referral" ||
+        type === "bonus"
+      ) {
         redirectUrl = "/dashboard/wallet";
       } else if (
         type === "contract" ||
@@ -475,7 +483,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           
           {/* Left Section: Logo & Links */}
-          <div className="flex items-center gap-10">
+          <div className="flex items-center gap-5">
             {/* Logo */}
             <div className="shrink-0">
               <a href="/" className="flex items-center gap-2 select-none py-2">
@@ -492,7 +500,7 @@ export default function Header() {
             </div>
 
             {/* Navigation Links (Desktop) */}
-            <nav className="hidden lg:flex items-center gap-7">
+            <nav className="hidden lg:flex items-center gap-4">
               {/* Home Dropdown Link */}
               <div className="relative group/home py-2">
                 <a
@@ -682,11 +690,11 @@ export default function Header() {
           </div>
 
           {/* Right Section: CTAs */}
-          <div className="hidden lg:flex items-center gap-5">
+          <div className="hidden lg:flex items-center gap-2.5">
             {/* Language Switcher */}
             <div className="relative group/lang">
               <button 
-                className="hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-3 py-2 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200"
+                className="hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200"
                 style={{ color: siteTheme === "dark" ? "#e4e4e7" : "#334155" }}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -712,7 +720,7 @@ export default function Header() {
             {/* Currency Switcher */}
             <div className="relative group/curr">
               <button 
-                className="hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-3 py-2 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200"
+                className="hover:text-primary dark:hover:text-teal-400 font-bold text-xs flex items-center gap-1 cursor-pointer bg-slate-100 dark:bg-zinc-900/80 hover:bg-slate-200/60 dark:hover:bg-zinc-800 px-2.5 py-1.5 rounded-xl border border-slate-200/50 dark:border-zinc-800/80 transition-all duration-200"
                 style={{ color: siteTheme === "dark" ? "#e4e4e7" : "#334155" }}
               >
                 <span className="font-extrabold text-primary dark:text-teal-400 mr-0.5">{currencySymbol}</span>
@@ -736,7 +744,7 @@ export default function Header() {
             {/* Theme Switcher */}
             <button
               onClick={toggleTheme}
-              className="text-slate-650 hover:text-teal-750 font-bold text-xs flex items-center justify-center cursor-pointer bg-slate-100 hover:bg-slate-200/60 p-2 rounded-xl border border-slate-200/50 transition-all duration-200"
+              className="text-slate-650 hover:text-teal-750 font-bold text-xs flex items-center justify-center cursor-pointer bg-slate-100 hover:bg-slate-200/60 p-1.5 rounded-xl border border-slate-200/50 transition-all duration-200"
               aria-label="Toggle theme"
             >
               {siteTheme === "dark" ? (
@@ -881,7 +889,7 @@ export default function Header() {
             ) : (
               <button
                 onClick={() => openLoginModal("/dashboard")}
-                className="text-slate-650 hover:text-primary font-bold text-sm transition-all duration-200 cursor-pointer bg-transparent border-none"
+                className="text-slate-650 hover:text-primary font-bold text-xs px-2 py-1 transition-all duration-200 cursor-pointer bg-transparent border-none"
               >
                 {t("sign_in", "Sign in")}
               </button>
@@ -889,7 +897,7 @@ export default function Header() {
             {!isLoggedIn && (
               <button
                 onClick={() => openLoginModal("/dashboard")}
-                className="bg-primary hover:bg-primary-hover text-white font-bold text-sm px-6 py-2.5 rounded-xl transition-all duration-250 hover:shadow-lg hover:shadow-primary/20 transform active:scale-[0.98] cursor-pointer border-none"
+                className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-4 py-2 rounded-xl transition-all duration-250 hover:shadow-lg hover:shadow-primary/20 transform active:scale-[0.98] cursor-pointer border-none"
               >
                 {t("get_started", "Get Started")}
               </button>

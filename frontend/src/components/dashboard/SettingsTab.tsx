@@ -1819,10 +1819,11 @@ export default function SettingsTab({
                               : [...prev, skill]
                           );
                         }}
-                        className={`px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
+                        style={{ fontSize: "11.5px", lineHeight: "16px" }}
+                        className={`px-2.5 py-1 rounded-md border font-semibold transition-all cursor-pointer select-none ${
                           isSelected
-                            ? "bg-teal-700 border-teal-700 text-white shadow-sm"
-                            : "bg-slate-50 border-slate-200 text-slate-650 hover:bg-white hover:border-slate-355"
+                            ? "bg-teal-700 border-teal-700 text-white shadow-sm font-bold"
+                            : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-300"
                         }`}
                       >
                         {skill}
@@ -3174,7 +3175,8 @@ export default function SettingsTab({
 
                         <button
                           onClick={directAddExperience}
-                          className="bg-[#0a5a54]/10 text-primary border border-primary/20 hover:bg-[#0a5a54]/25 px-4 py-2 rounded-xl text-xxs font-black self-start cursor-pointer transition-all flex items-center gap-1"
+                          style={{ fontSize: "11px" }}
+                          className="bg-[#0a5a54]/10 text-primary border border-primary/20 hover:bg-[#0a5a54]/25 px-3 py-1.5 rounded-lg font-bold self-start cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
                         >
                           <FiPlus className="w-3.5 h-3.5" /> Add Experience
                         </button>
@@ -3276,7 +3278,8 @@ export default function SettingsTab({
 
                         <button
                           onClick={directAddEducation}
-                          className="bg-[#0a5a54]/10 text-primary border border-primary/20 hover:bg-[#0a5a54]/25 px-4 py-2 rounded-xl text-xxs font-black self-start cursor-pointer transition-all flex items-center gap-1"
+                          style={{ fontSize: "11px" }}
+                          className="bg-[#0a5a54]/10 text-primary border border-primary/20 hover:bg-[#0a5a54]/25 px-3 py-1.5 rounded-lg font-bold self-start cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
                         >
                           <FiPlus className="w-3.5 h-3.5" /> Add Education
                         </button>
@@ -3376,7 +3379,8 @@ export default function SettingsTab({
 
                         <button
                           onClick={directAddCertification}
-                          className="bg-[#0a5a54]/10 text-primary border border-primary/20 hover:bg-[#0a5a54]/25 px-4 py-2 rounded-xl text-xxs font-black self-start cursor-pointer transition-all flex items-center gap-1"
+                          style={{ fontSize: "11px" }}
+                          className="bg-[#0a5a54]/10 text-primary border border-primary/20 hover:bg-[#0a5a54]/25 px-3 py-1.5 rounded-lg font-bold self-start cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
                         >
                           <FiPlus className="w-3.5 h-3.5" /> Add Certification
                         </button>
@@ -3422,10 +3426,11 @@ export default function SettingsTab({
                                     : [...prev, skill]
                                 );
                               }}
-                              className={`px-4 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
+                              style={{ fontSize: "11.5px", lineHeight: "16px" }}
+                              className={`px-2.5 py-1 rounded-md border font-semibold transition-all cursor-pointer select-none ${
                                 isSelected
-                                  ? "bg-primary border-primary text-white shadow-sm"
-                                  : "bg-slate-50 border-slate-200 text-slate-650 hover:bg-white hover:border-slate-355"
+                                  ? "bg-primary border-primary text-white shadow-sm font-bold"
+                                  : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-300"
                               }`}
                             >
                               {skill}

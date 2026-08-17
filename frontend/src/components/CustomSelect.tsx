@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { FiChevronDown, FiCheck } from "react-icons/fi";
+import { FiChevronDown, FiCheck, FiX } from "react-icons/fi";
 
 interface Option {
   value: string | number;
@@ -147,6 +147,33 @@ export default function CustomSelect({
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* Selected Tag Pills with X Remove Icons for Multiple Select */}
+      {multiple && Array.isArray(value) && value.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {uniqueOptions
+            .filter((o) => !o.isHeader && value.some((v) => String(v) === String(o.value)))
+            .map((o) => (
+              <span
+                key={String(o.value)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-teal-50 text-teal-800 border border-teal-200/80 shadow-2xs group"
+              >
+                <span>{o.label}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelectOption(o.value);
+                  }}
+                  className="text-slate-400 hover:text-rose-600 hover:bg-rose-100 rounded p-0.5 transition-colors cursor-pointer"
+                  title={`Remove ${o.label}`}
+                >
+                  <FiX className="w-3 h-3 text-rose-500" />
+                </button>
+              </span>
+            ))}
         </div>
       )}
     </div>

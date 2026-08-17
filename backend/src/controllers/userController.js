@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import * as userModel from '../models/userModel.js';
 import pool from '../config/db.js';
 import { sendEmail } from '../utils/emailHelper.js';
+import { creditSignupBonusIfEligible } from '../utils/bonusHelper.js';
 
 // Helper to generate a unique referral code
 const generateUniqueReferralCode = async () => {
@@ -46,12 +47,16 @@ export const register = async (req, res) => {
         const password_hash =
             await bcrypt.hash(password, 10);
 
-        // Fetch referred_by user
+        // Fetch referred_by user and verify referral validity
         let referred_by = null;
-        if (refCode) {
-            const refUserRes = await pool.query("SELECT user_id FROM users WHERE referral_code = $1", [refCode]);
+        if (refCode && refCode.trim()) {
+            const refUserRes = await pool.query("SELECT user_id, email FROM users WHERE referral_code = $1", [refCode.trim()]);
             if (refUserRes.rows.length > 0) {
-                referred_by = refUserRes.rows[0].user_id;
+                const refUser = refUserRes.rows[0];
+                // Prevent self-referral (user cannot refer their own email)
+                if (refUser.email.toLowerCase() !== normalizedEmail) {
+                    referred_by = refUser.user_id;
+                }
             }
         }
 
@@ -101,7 +106,7 @@ export const register = async (req, res) => {
             // Create a pending payout request for the referred user's signup bonus
             await pool.query(`
                 INSERT INTO referral_payouts (referrer_id, referred_id, amount, status, details)
-                VALUES ($1, $2, $3, 'pending', $4)
+                VALUES ($1, $2, $3, $4, $5)
             `, [
                 referred_by,
                 user.user_id,
@@ -113,6 +118,22 @@ export const register = async (req, res) => {
                     timestamp: new Date().toISOString()
                 })
             ]);
+
+            // Stage 1 Notification: Inform the referrer that a new friend signed up
+            try {
+                const newUserName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+                await pool.query(
+                    `INSERT INTO notifications (user_id, title, message, type, reference_id, target_tab)
+                     VALUES ($1, '🎯 New Referral Sign-Up!', $2, 'referral', $3, 'referrals')`,
+                    [
+                        referred_by,
+                        `Great news! ${newUserName} signed up using your referral link. You'll earn a reward once they complete transactions!`,
+                        user.user_id.toString()
+                    ]
+                );
+            } catch (rNotifErr) {
+                console.error("Error sending Stage 1 referral notification:", rNotifErr);
+            }
         }
 
         const token = jwt.sign(
@@ -312,6 +333,9 @@ export const createClientProfile = async (req, res) => {
                 const isVettingEnabled = vettingVal === true || vettingVal === "true" || vettingVal?.enabled === true || vettingVal?.enabled === "true";
                 const vettingStatus = isVettingEnabled ? "Pending" : "Approved";
                 await ClientProfile.updateVettingStatus(userId, vettingStatus);
+
+                // Automatically credit Sign-up Bonus if eligible
+                await creditSignupBonusIfEligible(userId);
             }
         }
 
@@ -693,10 +717,13 @@ export const socialLogin = async (req, res) => {
 
             // Fetch referred_by user
             let referred_by = null;
-            if (refCode) {
-                const refUserRes = await pool.query("SELECT user_id FROM users WHERE referral_code = $1", [refCode]);
+            if (refCode && refCode.trim()) {
+                const refUserRes = await pool.query("SELECT user_id, email FROM users WHERE referral_code = $1", [refCode.trim()]);
                 if (refUserRes.rows.length > 0) {
-                    referred_by = refUserRes.rows[0].user_id;
+                    const refUser = refUserRes.rows[0];
+                    if (refUser.email.toLowerCase() !== email.trim().toLowerCase()) {
+                        referred_by = refUser.user_id;
+                    }
                 }
             }
 
@@ -745,7 +772,7 @@ export const socialLogin = async (req, res) => {
                 // Create a pending payout request for the referred user's signup bonus
                 await pool.query(`
                     INSERT INTO referral_payouts (referrer_id, referred_id, amount, status, details)
-                    VALUES ($1, $2, $3, 'pending', $4)
+                    VALUES ($1, $2, $3, $4, $5)
                 `, [
                     referred_by,
                     user.user_id,
@@ -790,13 +817,45 @@ export const getReferrals = async (req, res) => {
         }
         const referralCode = userRes.rows[0].referral_code;
 
-        // 2. Fetch list of referred users
+        // 2. Fetch settings configurations first
+        let signupBonusAmount = 5.00;
+        let isSignupBonusEnabled = true;
+        let bannerHeadline = "Invite Friends & Earn";
+        let bannerSubline = "Share your referral link with friends. They get a bonus on sign-up, and you get paid when they complete transactions!";
+        let maxReferrerReward = 10.00;
+        let completionWindowDays = 30;
+        try {
+            const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+            if (settingsRes.rows.length > 0) {
+                let settingsVal = settingsRes.rows[0].setting_value;
+                if (typeof settingsVal === "string") {
+                    settingsVal = JSON.parse(settingsVal);
+                }
+                if (settingsVal) {
+                    if (settingsVal.signup_bonus !== undefined) signupBonusAmount = parseFloat(settingsVal.signup_bonus);
+                    if (settingsVal.enable_signup_bonus !== undefined) {
+                        isSignupBonusEnabled = settingsVal.enable_signup_bonus === true || settingsVal.enable_signup_bonus === "true";
+                    }
+                    if (settingsVal.completion_window_days !== undefined) {
+                        completionWindowDays = parseInt(settingsVal.completion_window_days) || 30;
+                    }
+                    if (settingsVal.banner_headline) bannerHeadline = settingsVal.banner_headline;
+                    if (settingsVal.banner_subline) bannerSubline = settingsVal.banner_subline;
+                    if (Array.isArray(settingsVal.tiers) && settingsVal.tiers.length > 0) {
+                        maxReferrerReward = Math.max(...settingsVal.tiers.map(t => parseFloat(t.reward || 0)));
+                    }
+                }
+            }
+        } catch(e) {}
+
+        // 3. Fetch list of referred users
         const referredUsersRes = await pool.query(`
             SELECT 
                 u.user_id,
                 u.first_name || ' ' || COALESCE(u.last_name, '') as name,
                 u.email,
                 u.created_at,
+                COALESCE(EXTRACT(DAY FROM (NOW() - u.created_at))::int, 0) as days_elapsed,
                 (
                   COALESCE((SELECT onboarding_completed FROM freelancer_profiles WHERE user_id = u.user_id), false)
                   OR
@@ -818,6 +877,7 @@ export const getReferrals = async (req, res) => {
                       JOIN wallets w ON (w.wallet_id = wt.sender_wallet_id OR w.wallet_id = wt.receiver_wallet_id)
                       WHERE w.user_id = u.user_id AND wt.status = 'completed'
                     ) THEN 'purchased'
+                    WHEN COALESCE(EXTRACT(DAY FROM (NOW() - u.created_at))::int, 0) > $2 THEN 'expired'
                     WHEN (
                       COALESCE((SELECT onboarding_completed FROM freelancer_profiles WHERE user_id = u.user_id), false)
                       OR
@@ -832,9 +892,9 @@ export const getReferrals = async (req, res) => {
               AND (rp.details->>'type' IS NULL OR rp.details->>'type' != 'signup_bonus')
             WHERE u.referred_by = $1
             ORDER BY u.created_at DESC
-        `, [userId]);
+        `, [userId, completionWindowDays]);
 
-        // 3. Fetch total referral earnings from wallet transactions
+        // 4. Fetch total referral earnings from wallet transactions
         const walletRes = await pool.query("SELECT wallet_id FROM wallets WHERE user_id = $1", [userId]);
         let totalEarned = 0;
         if (walletRes.rows.length > 0) {
@@ -847,31 +907,16 @@ export const getReferrals = async (req, res) => {
             totalEarned = parseFloat(earningsRes.rows[0].total || 0);
         }
 
-        // 4. Fetch settings configurations
-        let signupBonusAmount = 5.00;
-        let isSignupBonusEnabled = true;
-        try {
-            const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
-            if (settingsRes.rows.length > 0) {
-                let settingsVal = settingsRes.rows[0].setting_value;
-                if (typeof settingsVal === "string") {
-                    settingsVal = JSON.parse(settingsVal);
-                }
-                if (settingsVal) {
-                    if (settingsVal.signup_bonus !== undefined) signupBonusAmount = parseFloat(settingsVal.signup_bonus);
-                    if (settingsVal.enable_signup_bonus !== undefined) {
-                        isSignupBonusEnabled = settingsVal.enable_signup_bonus === true || settingsVal.enable_signup_bonus === "true";
-                    }
-                }
-            }
-        } catch(e) {}
-
         res.status(200).json({
             referral_code: referralCode,
             referred_users: referredUsersRes.rows,
             total_earned: totalEarned,
             signup_bonus: signupBonusAmount,
-            enable_signup_bonus: isSignupBonusEnabled
+            enable_signup_bonus: isSignupBonusEnabled,
+            completion_window_days: completionWindowDays,
+            banner_headline: bannerHeadline,
+            banner_subline: bannerSubline,
+            max_referrer_reward: maxReferrerReward
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
@@ -961,8 +1006,8 @@ export const getReferralBanner = async (req, res) => {
                 val = JSON.parse(val);
             }
             if (val) {
-                // If a custom designed banner image exists, redirect the request to it!
-                if (val.banner_image_url) {
+                // If a custom designed banner image exists and no query preview override is requested, redirect to it
+                if (val.banner_image_url && !req.query.preview) {
                     return res.redirect(val.banner_image_url);
                 }
 
@@ -977,6 +1022,18 @@ export const getReferralBanner = async (req, res) => {
                     maxReferrerReward = Math.max(...val.tiers.map(t => parseFloat(t.reward || 0)));
                 }
             }
+        }
+
+        // Real-Time Query Parameter Overrides (for live Admin Banner Preview)
+        if (req.query.signup_bonus !== undefined && !isNaN(parseFloat(req.query.signup_bonus))) {
+            signupBonus = parseFloat(req.query.signup_bonus);
+        }
+        if (req.query.headline) headline = req.query.headline;
+        if (req.query.subline) subline = req.query.subline;
+        if (req.query.bg_color) bgColor = req.query.bg_color;
+        if (req.query.accent_color) accentColor = req.query.accent_color;
+        if (req.query.max_reward !== undefined && !isNaN(parseFloat(req.query.max_reward))) {
+            maxReferrerReward = parseFloat(req.query.max_reward);
         }
 
         // 2. Wrap subline text into two lines
@@ -1022,54 +1079,85 @@ export const getReferralBanner = async (req, res) => {
         const escapedSublinePart2 = escapeXml(sublinePart2);
 
         // 3. Render SVG
+        // 3. Render SVG matching Primary Teal Theme Design
+        const finalBg = bgColor && bgColor !== "#ffffff" ? bgColor : "#054638";
         const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" height="100%">
   <defs>
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="${bgColor}" />
-      <stop offset="100%" stop-color="#f8fafc" />
+      <stop offset="0%" stop-color="${finalBg}" />
+      <stop offset="50%" stop-color="#0b6354" />
+      <stop offset="100%" stop-color="#042f2e" />
     </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="${accentColor}" />
+    <linearGradient id="goldCoin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="emeraldCoin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
       <stop offset="100%" stop-color="#059669" />
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0f172a" flood-opacity="0.06" />
-    </filter>
   </defs>
 
-  <rect width="800" height="400" rx="20" fill="url(#bgGrad)" stroke="#e2e8f0" stroke-width="2" />
+  <!-- Background -->
+  <rect width="800" height="400" rx="20" fill="url(#bgGrad)" stroke="#0d9488" stroke-width="2" />
 
-  <circle cx="750" cy="50" r="180" fill="#f1f5f9" fill-opacity="0.5" />
-  <circle cx="100" cy="350" r="150" fill="${accentColor}" fill-opacity="0.04" />
-  <path d="M 600,400 L 800,200 L 800,400 Z" fill="#f1f5f9" fill-opacity="0.3" />
+  <!-- Ambient Glow Circles -->
+  <circle cx="750" cy="50" r="180" fill="#34d399" fill-opacity="0.15" />
+  <circle cx="100" cy="350" r="150" fill="#5eead4" fill-opacity="0.08" />
 
-  <g transform="translate(560, 110)" filter="url(#shadow)">
-    <rect width="180" height="180" rx="24" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5" />
-    <circle cx="70" cy="80" r="30" fill="url(#accentGrad)" />
-    <text x="70" y="88" font-family="'Inter', sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle">$</text>
-    <circle cx="120" cy="110" r="25" fill="#f59e0b" />
-    <text x="120" y="117" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="white" text-anchor="middle">$</text>
+  <!-- Floating Coins Decor -->
+  <g transform="translate(640, 45)">
+    <!-- Gold Coin -->
+    <rect x="0" y="0" width="56" height="56" rx="16" fill="url(#goldCoin)" stroke="white" stroke-width="2" transform="rotate(-12)" />
+    <text x="26" y="37" font-family="'Inter', sans-serif" font-weight="900" font-size="28" fill="white" text-anchor="middle" transform="rotate(-12)">$</text>
+
+    <!-- Emerald Coin -->
+    <rect x="42" y="24" width="46" height="46" rx="14" fill="url(#emeraldCoin)" stroke="white" stroke-width="2" transform="rotate(12)" />
+    <text x="64" y="55" font-family="'Inter', sans-serif" font-weight="900" font-size="24" fill="white" text-anchor="middle" transform="rotate(12)">$</text>
   </g>
 
-  <text x="60" y="90" font-family="'Inter', -apple-system, sans-serif" font-weight="900" font-size="36" fill="#0f172a">${escapedHeadline}</text>
+  {/* Header Badge */}
+  <rect x="60" y="45" width="160" height="28" rx="14" fill="#34d399" fill-opacity="0.2" stroke="#6ee7b7" stroke-opacity="0.4" />
+  <text x="140" y="64" font-family="'Inter', sans-serif" font-weight="900" font-size="11" fill="#a7f3d0" text-anchor="middle" letter-spacing="1.5">REFERRAL PROGRAM</text>
 
-  <text x="60" y="130" font-family="'Inter', -apple-system, sans-serif" font-weight="600" font-size="14" fill="#475569">
+  <!-- Headline & Subline -->
+  <text x="60" y="125" font-family="'Inter', -apple-system, sans-serif" font-weight="900" font-size="34" fill="#ffffff">${escapedHeadline}</text>
+
+  <text x="60" y="160" font-family="'Inter', -apple-system, sans-serif" font-weight="600" font-size="13" fill="#ccfbf1">
     <tspan x="60" dy="0">${escapedSublinePart1}</tspan>
     <tspan x="60" dy="20">${escapedSublinePart2}</tspan>
   </text>
 
-  <g transform="translate(60, 210)">
-    <rect x="0" y="0" width="220" height="100" rx="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" />
-    <text x="25" y="35" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#475569" letter-spacing="1">SIGN-UP BONUS</text>
-    <text x="25" y="75" font-family="'Inter', sans-serif" font-weight="900" font-size="32" fill="#0f172a">$${signupBonus.toFixed(2)}</text>
+  <!-- Horizontal Line Divider -->
+  <line x1="60" y1="215" x2="740" y2="215" stroke="#0d9488" stroke-opacity="0.5" stroke-width="1.5" />
 
-    <rect x="250" y="0" width="220" height="100" rx="16" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5" />
-    <text x="275" y="35" font-family="'Inter', sans-serif" font-weight="700" font-size="11" fill="#475569" letter-spacing="1">REFERRAL REWARD</text>
-    <text x="275" y="75" font-family="'Inter', sans-serif" font-weight="900" font-size="32" fill="url(#accentGrad)">Up to $${maxReferrerReward.toFixed(2)}</text>
+  <!-- Stat Metrics Line Divider Row -->
+  <g transform="translate(60, 235)">
+    <!-- SIGN-UP BONUS -->
+    <text x="0" y="20" font-family="'Inter', sans-serif" font-weight="900" font-size="11" fill="#6ee7b7" letter-spacing="1">SIGN-UP BONUS</text>
+    <text x="0" y="58" font-family="'Inter', sans-serif" font-weight="900" font-size="30" fill="#ffffff">$${signupBonus.toFixed(2)}</text>
+
+    <!-- Vertical Line Divider 1 -->
+    <line x1="220" y1="10" x2="220" y2="65" stroke="#0d9488" stroke-opacity="0.5" stroke-width="1.5" />
+
+    <!-- REFERRAL REWARD -->
+    <text x="250" y="20" font-family="'Inter', sans-serif" font-weight="900" font-size="11" fill="#fcd34d" letter-spacing="1">REFERRAL REWARD</text>
+    <text x="250" y="58" font-family="'Inter', sans-serif" font-weight="900" font-size="30" fill="#fcd34d">Up to $${maxReferrerReward.toFixed(2)}</text>
+
+    <!-- Vertical Line Divider 2 -->
+    <line x1="490" y1="10" x2="490" y2="65" stroke="#0d9488" stroke-opacity="0.5" stroke-width="1.5" />
+
+    <!-- REWARD METHOD -->
+    <text x="520" y="20" font-family="'Inter', sans-serif" font-weight="900" font-size="11" fill="#99f6e4" letter-spacing="1">REWARD METHOD</text>
+    <text x="520" y="58" font-family="'Inter', sans-serif" font-weight="900" font-size="24" fill="#ccfbf1">Wallet Credits</text>
   </g>
 
-  <text x="60" y="355" font-family="'Inter', sans-serif" font-weight="800" font-size="12" fill="#94a3b8" letter-spacing="2">POWERED BY LANCERFLOW</text>
+  <!-- Horizontal Line Divider Bottom -->
+  <line x1="60" y1="335" x2="740" y2="335" stroke="#0d9488" stroke-opacity="0.5" stroke-width="1.5" />
+
+  <text x="60" y="365" font-family="'Inter', sans-serif" font-weight="900" font-size="11" fill="#5eead4" letter-spacing="2">POWERED BY BUY2LANCER</text>
+  <text x="740" y="365" font-family="'Inter', sans-serif" font-weight="900" font-size="11" fill="#fcd34d" text-anchor="end" letter-spacing="1">● ACTIVE REWARDS</text>
 </svg>
         `;
 

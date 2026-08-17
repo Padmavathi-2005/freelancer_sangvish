@@ -5,7 +5,7 @@ import { UserLanguage } from "../models/userLanguageModel.js";
 import { Experience } from "../models/experienceModel.js";
 import { Education } from "../models/educationModel.js";
 import { Certification } from "../models/certificationModel.js";
-import { FreelancerProject } from "../models/freelancerProjectModel.js";
+import { creditSignupBonusIfEligible } from "../utils/bonusHelper.js";
 
 // In-memory store for OTPs (userId -> { emailOtp, emailOtpExpires, phoneOtp, phoneOtpExpires })
 const otps = new Map();
@@ -623,6 +623,9 @@ export const completeFreelancerOnboarding = async (req, res) => {
         await FreelancerProfile.updateOnboardingStatus(userId, true);
         await FreelancerProfile.updateVettingStatus(userId, vettingStatus);
         await FreelancerProfile.updateCurrentStep(userId, 5);
+
+        // Automatically credit Sign-up Bonus if eligible
+        await creditSignupBonusIfEligible(userId);
 
         res.status(200).json({
             message: autoVettingEnabled

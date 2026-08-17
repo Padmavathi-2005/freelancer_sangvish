@@ -2,7 +2,8 @@
 import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect } from "react";
-import { FiCopy, FiCheck, FiUsers, FiDollarSign, FiAward, FiInfo } from "react-icons/fi";
+import { FiCopy, FiCheck, FiUsers, FiDollarSign, FiAward, FiInfo, FiGift, FiZap, FiShare2, FiCheckCircle } from "react-icons/fi";
+import { FaWhatsapp, FaXTwitter, FaLinkedinIn, FaFacebookF, FaEnvelope } from "react-icons/fa6";
 
 interface ReferredUser {
   user_id: number;
@@ -12,7 +13,8 @@ interface ReferredUser {
   is_active: boolean;
   is_onboarded: boolean;
   has_purchased: boolean;
-  status: "pending" | "onboarding_completed" | "purchased" | "completed" | "approved" | "rejected";
+  days_elapsed?: number;
+  status: "pending" | "onboarding_completed" | "purchased" | "completed" | "approved" | "rejected" | "expired";
 }
 
 interface ReferralData {
@@ -21,6 +23,10 @@ interface ReferralData {
   total_earned: number;
   signup_bonus?: number;
   enable_signup_bonus?: boolean;
+  completion_window_days?: number;
+  banner_headline?: string;
+  banner_subline?: string;
+  max_referrer_reward?: number;
 }
 
 export default function ReferralsPage() {
@@ -28,6 +34,36 @@ export default function ReferralsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+
+  // Drag to scroll table state
+  const tableRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!tableRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - tableRef.current.offsetLeft);
+    setScrollLeft(tableRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !tableRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - tableRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    tableRef.current.scrollLeft = scrollLeft - walk;
+  };
 
   useEffect(() => {
     const fetchReferrals = async () => {
@@ -56,31 +92,61 @@ export default function ReferralsPage() {
     fetchReferrals();
   }, []);
 
+  const referralLink = data?.referral_code
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/register?ref=${data.referral_code}`
+    : "";
+
   const handleCopyLink = () => {
-    if (!data?.referral_code) return;
-    const link = `${window.location.origin}/register?ref=${data.referral_code}`;
-    navigator.clipboard.writeText(link);
+    if (!referralLink) return;
+    navigator.clipboard.writeText(referralLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadBanner = async () => {
-    try {
-      const res = await fetch(`${API_URL.replace("/api", "")}/api/users/referral/banner.svg`);
-      if (!res.ok) throw new Error("Failed to download banner");
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "referral_banner.svg";
-      document.body.appendChild(a);
-      a.click();
-      a.removeAttribute("href");
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Download error:", err);
-    }
+  const handleCopyCode = () => {
+    if (!data?.referral_code) return;
+    navigator.clipboard.writeText(data.referral_code);
+    setCodeCopied(true);
+    setTimeout(() => setCodeCopied(false), 2000);
+  };
+
+  const shareSubject = "Join me on Buy2Lancer!";
+  const shareText = `Join me on Buy2Lancer! Register using my referral link and get a sign-up bonus:\n${referralLink}`;
+  
+  const publicShareUrl = referralLink.includes("localhost") || referralLink.includes("127.0.0.1")
+    ? referralLink.replace(/http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/, "https://freelancer.sangvish.com")
+    : referralLink;
+
+  const handleShareWhatsApp = () => {
+    if (typeof window === "undefined") return;
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareTwitter = () => {
+    if (typeof window === "undefined") return;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareLinkedIn = () => {
+    if (typeof window === "undefined") return;
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(publicShareUrl)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareFacebook = () => {
+    if (typeof window === "undefined") return;
+    const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(publicShareUrl)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleShareEmail = () => {
+    if (typeof window === "undefined") return;
+    const subject = encodeURIComponent(shareSubject);
+    const body = encodeURIComponent(`Hi,\n\nJoin me on Buy2Lancer! Register using my referral link and get a sign-up bonus:\n${referralLink}\n\nBest regards!`);
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${subject}&body=${body}`;
+    window.open(gmailUrl, "_blank", "noopener,noreferrer");
   };
 
   if (loading) {
@@ -100,12 +166,12 @@ export default function ReferralsPage() {
     );
   }
 
-  const referralLink = data?.referral_code
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/register?ref=${data.referral_code}`
-    : "";
-
-  const pendingCount = data?.referred_users.filter((u) => u.status !== "approved").length || 0;
-  const activeCount = data?.referred_users.filter((u) => u.status === "approved").length || 0;
+  const pendingCount = data?.referred_users.filter((u) => u.status !== "approved" && u.status !== "expired").length || 0;
+  const activeCount = data?.referred_users.filter((u) => u.status === "approved" || u.status === "completed" || u.status === "purchased" || u.has_purchased).length || 0;
+  const expiredCount = data?.referred_users.filter((u) => u.status === "expired").length || 0;
+  const referralCount = activeCount; // ONLY count successful completed purchase referrals for level progress
+  const progressPercent = Math.min(100, Math.max(0, (referralCount / 5) * 100));
+  const hasSignupBonus = data?.enable_signup_bonus !== false && (data?.signup_bonus ?? 0) > 0;
 
   return (
     <div className="flex-1 max-w-5xl mx-auto w-full px-3 sm:px-4 py-2 sm:py-8 flex flex-col gap-5 sm:gap-8">
@@ -116,107 +182,330 @@ export default function ReferralsPage() {
         <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1">Invite friends and earn wallet credits</p>
       </div>
 
-      {/* Hero promo block (Dynamic Banner & Copy Box) */}
+      {/* Hero promo block (Native Card & Copy Box) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-stretch">
-        {/* Dynamic SVG Banner */}
-        <div className="lg:col-span-2 rounded-2xl overflow-hidden shadow-sm border border-slate-200 bg-slate-900 flex items-center justify-center">
-          <img
-            src={`${API_URL.replace("/api", "")}/api/users/referral/banner.svg`}
-            alt="Dynamic Referral Program Promo Banner"
-            className="w-full h-auto object-contain block"
-          />
+        {/* Referral Program Native Primary Color Design Promo Card */}
+        <div className="lg:col-span-2 bg-gradient-to-br from-[#054638] via-[#0b6354] to-[#042f2e] text-white rounded-2xl p-6 sm:p-8 shadow-xl border border-teal-700/50 flex flex-col justify-between relative overflow-hidden group">
+          {/* Ambient background glows */}
+          <div className="absolute top-0 right-0 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none -mr-16 -mt-16" />
+          <div className="absolute bottom-0 left-0 w-60 h-60 bg-teal-300/15 rounded-full blur-2xl pointer-events-none -ml-16 -mb-16" />
+
+          {/* Floating graphic coins decor - High Contrast White Dollar Symbols */}
+          <div className="absolute right-6 top-6 hidden sm:flex items-center gap-2 pointer-events-none z-20">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white font-black text-2xl shadow-xl shadow-amber-500/40 flex items-center justify-center border-2 border-white/80 transform -rotate-12">
+              $
+            </div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-400 to-emerald-500 text-white font-black text-xl shadow-xl shadow-emerald-400/40 flex items-center justify-center border-2 border-white/80 transform rotate-12 -ml-3 mt-4">
+              $
+            </div>
+          </div>
+
+          <div className="relative z-10 flex flex-col gap-4">
+            <div className="flex flex-col gap-2 max-w-lg">
+              {/* High Contrast Badge & Icon */}
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-black uppercase tracking-wider bg-emerald-400/20 text-emerald-100 border border-emerald-300/40 w-fit shadow-md backdrop-blur-sm">
+                <FiAward className="w-4 h-4 text-amber-300 shrink-0" />
+                <span>Referral Program</span>
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight mt-0.5 drop-shadow-xs">
+                {data?.banner_headline || "Invite Friends & Earn"}
+              </h2>
+              <p className="text-xs sm:text-sm font-semibold text-teal-50/90 leading-relaxed">
+                {data?.banner_subline || "Share your referral link with friends. They get a bonus on sign-up, and you get paid when they complete transactions!"}
+              </p>
+            </div>
+
+            {/* Horizontal Line Divider */}
+            <div className="border-t border-teal-600/40 my-1" />
+
+            {/* Stat Metrics Row - Clean Line Divider Structure (No Inner Boxes) */}
+            <div className={`grid grid-cols-1 ${hasSignupBonus ? "sm:grid-cols-3" : "sm:grid-cols-2"} divide-y sm:divide-y-0 sm:divide-x divide-teal-600/40 py-1`}>
+              {/* SIGN-UP BONUS (Only rendered if signup_bonus > 0 and enabled) */}
+              {hasSignupBonus && (
+                <div className="pr-4 flex flex-col gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <FiGift className="w-3.5 h-3.5 text-emerald-300 shrink-0" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300">
+                      SIGN-UP BONUS
+                    </span>
+                  </div>
+                  <span className="text-xl sm:text-2xl font-black text-white mt-0.5">
+                    ${(data?.signup_bonus ?? 5.00).toFixed(2)}
+                  </span>
+                </div>
+              )}
+
+              {/* REFERRAL REWARD */}
+              <div className="px-4 flex flex-col gap-1">
+                <div className="flex items-center gap-1.5">
+                  <FiDollarSign className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">
+                    REFERRAL REWARD
+                  </span>
+                </div>
+                <span className="text-xl sm:text-2xl font-black text-amber-300 mt-0.5">
+                  Up to ${(data?.max_referrer_reward ?? 10.00).toFixed(2)}
+                </span>
+              </div>
+
+              {/* REWARD METHOD */}
+              <div className="pl-4 flex flex-col gap-1">
+                <div className="flex items-center gap-1.5">
+                  <FiAward className="w-3.5 h-3.5 text-teal-300 shrink-0" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-teal-200">
+                    REWARD METHOD
+                  </span>
+                </div>
+                <span className="text-xl sm:text-2xl font-black text-teal-100 mt-0.5">
+                  Wallet Credits
+                </span>
+              </div>
+            </div>
+
+            {/* Horizontal Line Divider */}
+            <div className="border-t border-teal-600/40 my-1" />
+
+            {/* Visual Milestone Level Progress Line (Clean Line Section - No Box Container) */}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
+                <span className="text-emerald-200 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  PROMOTER STATUS: LEVEL 1
+                </span>
+                <span className="text-amber-300">{referralCount} / 5 SUCCESSFUL REFERRALS</span>
+              </div>
+              <div className="w-full bg-teal-950/80 rounded-full h-1.5 overflow-hidden border border-teal-600/40">
+                <div 
+                  className="bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300 h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <span className="text-[9.5px] font-semibold text-teal-200/80">
+                Invite friends to start earning instant promoter bonus payouts directly to your wallet!
+              </span>
+            </div>
+          </div>
+
+          <div className="relative z-10 mt-5 pt-3 border-t border-teal-600/40 flex items-center justify-between text-[10px] font-black tracking-widest uppercase">
+            <span className="text-teal-200">POWERED BY BUY2LANCER</span>
+            <span className="text-amber-300 font-black flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-300 animate-pulse" />
+              ACTIVE REWARDS
+            </span>
+          </div>
         </div>
 
-        {/* Copy Box & Download card */}
-        <div className="bg-white text-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between gap-5 text-left relative overflow-hidden">
-          <div className="absolute top-[-20%] right-[-10%] w-[12rem] h-[12rem] bg-teal-500/5 rounded-full filter blur-[50px] pointer-events-none" />
+        {/* Copy Link & Invite Hub Card - Clean Line Dividers */}
+        <div className="bg-white text-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between text-left relative overflow-hidden">
+          <div className="absolute top-[-20%] right-[-10%] w-[12rem] h-[12rem] bg-teal-500/10 rounded-full filter blur-[50px] pointer-events-none" />
           
-          <div className="relative z-10 flex flex-col gap-2">
-            <span className="text-[10px] font-black uppercase text-teal-700 tracking-wider">Start Inviting</span>
-            <h3 className="text-lg font-black tracking-tight leading-tight text-slate-855">Your Referral Link</h3>
-            <p className="text-[11px] font-semibold text-slate-450 leading-normal">
-              Copy this link and send it to your friends. You can also download the custom banner below to share on social media.
+          {/* Header */}
+          <div className="relative z-10 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase text-teal-700 tracking-wider">Start Inviting</span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Active Link
+              </span>
+            </div>
+            <h3 className="text-lg font-black tracking-tight leading-tight text-slate-900">Your Referral Hub</h3>
+            <p className="text-[11px] font-semibold text-slate-500 leading-normal">
+              Copy your referral code, share your direct link, or send quick invites to start earning.
             </p>
           </div>
 
-          <div className="relative z-10 flex flex-col gap-3">
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5">
-              <input
-                type="text"
-                readOnly
-                value={referralLink}
-                className="flex-1 bg-transparent text-[11px] font-bold text-slate-800 outline-none select-all"
-              />
+          {/* Line Divider */}
+          <div className="border-t border-slate-150 my-3" />
+
+          {/* Row 1: Referral Code */}
+          <div className="relative z-10 flex flex-col gap-1">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Your Referral Code</span>
+            <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2.5 pt-0.5">
+              <code className="text-sm font-black text-teal-800 tracking-wider">
+                {data?.referral_code || "---"}
+              </code>
               <button
-                onClick={handleCopyLink}
-                className="bg-teal-700 hover:bg-teal-800 active:scale-95 transition-all text-white p-2 rounded-lg cursor-pointer flex items-center justify-center shrink-0"
-                title="Copy link"
+                onClick={handleCopyCode}
+                className="bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-black transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200 shrink-0"
               >
-                {copied ? <FiCheck className="w-4 h-4 text-emerald-500" /> : <FiCopy className="w-4 h-4" />}
+                {codeCopied ? <FiCheck className="w-3 h-3 text-emerald-600" /> : <FiCopy className="w-3 h-3 text-slate-600" />}
+                <span>{codeCopied ? "Copied" : "Copy Code"}</span>
               </button>
             </div>
-            {copied && (
-              <span className="text-[9px] font-bold text-emerald-600 text-right animate-fade-in select-none">
-                Link copied to clipboard!
+          </div>
+
+          {/* Line Divider */}
+          <div className="border-t border-slate-150 my-3" />
+
+          {/* Row 2: Direct Referral Link */}
+          <div className="relative z-10 flex flex-col gap-1">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Direct Referral Link</span>
+            <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2.5 pt-0.5">
+              <span className="flex-1 text-[11px] font-extrabold text-slate-800 truncate select-all">
+                {referralLink}
               </span>
-            )}
+              <button
+                onClick={handleCopyLink}
+                className="bg-teal-700 hover:bg-teal-800 active:scale-95 transition-all text-white px-3 py-1.5 rounded-lg cursor-pointer flex items-center justify-center shrink-0 shadow-sm text-xs font-extrabold gap-1"
+                title="Copy link"
+              >
+                {copied ? <FiCheck className="w-3.5 h-3.5 text-white stroke-[3]" /> : <FiCopy className="w-3.5 h-3.5 text-white" />}
+                <span>{copied ? "Copied!" : "Copy"}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Line Divider */}
+          <div className="border-t border-slate-150 my-3" />
+
+          {/* Row 3: Official Social Share Buttons */}
+          <div className="relative z-10 flex flex-col gap-2">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Quick Share</span>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* WhatsApp */}
+              <button
+                onClick={handleShareWhatsApp}
+                className="w-10 h-10 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] hover:scale-105 active:scale-95 text-white flex items-center justify-center shadow-md shadow-[#25D366]/30 transition-all cursor-pointer"
+                title="Share via WhatsApp"
+              >
+                <FaWhatsapp className="w-5 h-5 text-white" />
+              </button>
+
+              {/* X / Twitter */}
+              <button
+                onClick={handleShareTwitter}
+                className="w-10 h-10 rounded-xl bg-black hover:bg-slate-900 hover:scale-105 active:scale-95 text-white flex items-center justify-center shadow-md shadow-black/30 transition-all cursor-pointer"
+                title="Share via X / Twitter"
+              >
+                <FaXTwitter className="w-4.5 h-4.5 text-white" />
+              </button>
+
+              {/* LinkedIn */}
+              <button
+                onClick={handleShareLinkedIn}
+                className="w-10 h-10 rounded-xl bg-[#0A66C2] hover:bg-[#08529c] hover:scale-105 active:scale-95 text-white flex items-center justify-center shadow-md shadow-[#0A66C2]/30 transition-all cursor-pointer"
+                title="Share via LinkedIn"
+              >
+                <FaLinkedinIn className="w-5 h-5 text-white" />
+              </button>
+
+              {/* Facebook */}
+              <button
+                onClick={handleShareFacebook}
+                className="w-10 h-10 rounded-xl bg-[#1877F2] hover:bg-[#166fe5] hover:scale-105 active:scale-95 text-white flex items-center justify-center shadow-md shadow-[#1877F2]/30 transition-all cursor-pointer"
+                title="Share via Facebook"
+              >
+                <FaFacebookF className="w-4.5 h-4.5 text-white" />
+              </button>
+
+              {/* Email */}
+              <button
+                onClick={handleShareEmail}
+                className="w-10 h-10 rounded-xl bg-[#EA4335] hover:bg-[#d3382b] hover:scale-105 active:scale-95 text-white flex items-center justify-center shadow-md shadow-[#EA4335]/30 transition-all cursor-pointer"
+                title="Share via Email"
+              >
+                <FaEnvelope className="w-4.5 h-4.5 text-white" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      {/* Live Referral Activity Notification Tracker Box */}
+      <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-sm text-left select-none">
+        <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg shrink-0 mt-0.5 shadow-sm shadow-emerald-600/25">
+          <FiZap />
+        </div>
+        <div className="flex-1 flex flex-col gap-1">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <h4 className="text-xs sm:text-sm font-black text-emerald-950 flex items-center gap-2">
+              <span>Referral Tracker & Status Activity</span>
+              {pendingCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900 border border-amber-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  {pendingCount} Registered (Waiting for Setup)
+                </span>
+              )}
+            </h4>
+            <span className="text-[10px] font-black text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+              {activeCount} Payouts Unlocked
+            </span>
+          </div>
+
+          {data?.referred_users && data.referred_users.length > 0 ? (
+            <p className="text-xs font-semibold text-emerald-900 leading-relaxed">
+              You have <strong className="font-black text-emerald-950">{data.referred_users.length}</strong> friend(s) registered using your referral link!{" "}
+              {pendingCount > 0 ? (
+                <span>
+                  <strong className="font-black text-amber-900">{pendingCount} friend(s)</strong> signed in and waiting to complete their first project milestone or gig purchase to clear your <strong>${(data?.max_referrer_reward ?? 10.00).toFixed(2)} wallet reward</strong>.
+                </span>
+              ) : (
+                <span>All registered friends have completed setup & unlocked wallet payouts!</span>
+              )}
+            </p>
+          ) : (
+            <p className="text-xs font-semibold text-emerald-900 leading-relaxed">
+              <strong>How tracking works after sharing:</strong> When a friend registers with your link, they immediately appear in your <strong className="font-black">Invited Friends</strong> list as <em>"Signed Up (Pending Setup)"</em>. Once they complete their first transaction, your <strong>${(data?.max_referrer_reward ?? 10.00).toFixed(2)} payout</strong> is automatically sent to your wallet!
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Metrics Row - Continuous Unified Bar Divided by Clean Vertical Lines */}
+      <div className="bg-white border border-slate-200 rounded-2xl divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 grid grid-cols-1 sm:grid-cols-3 shadow-xs">
         {/* Total Invited */}
-        <div className="bg-white border border-slate-200/80 p-6 rounded-xl flex items-center gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 text-xl shadow-sm shrink-0">
-            <FiUsers />
+        <div className="p-6 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-teal-600 text-white flex items-center justify-center text-xl shadow-md shadow-teal-600/20 shrink-0 font-bold">
+            <FiUsers className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Invited</span>
-            <span className="text-2xl font-black text-slate-805 leading-none mt-1 block">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Invited</span>
+            <span className="text-2xl font-black text-slate-900 leading-none mt-1 block">
               {data?.referred_users.length || 0}
             </span>
           </div>
         </div>
 
-        {/* Successful Referrals */}
-        <div className="bg-white border border-slate-200/80 p-6 rounded-xl flex items-center gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50/50 border border-emerald-200/60 flex items-center justify-center text-emerald-700 text-xl shadow-sm shrink-0">
-            <FiAward />
+        {/* Active Referrals */}
+        <div className="p-6 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/20 shrink-0 font-bold">
+            <FiAward className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Active Referrals</span>
-            <span className="text-2xl font-black text-slate-805 leading-none mt-1 block">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Active Referrals</span>
+            <span className="text-2xl font-black text-slate-900 leading-none mt-1 block">
               {activeCount}
             </span>
-            <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">{pendingCount} pending first transaction</span>
+            <span className="text-[9px] font-bold text-slate-400 block mt-0.5">{pendingCount} pending first transaction</span>
           </div>
         </div>
 
         {/* Total Earned */}
-        <div className="bg-white border border-slate-200/80 p-6 rounded-xl flex items-center gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-amber-50/55 border border-amber-200/50 flex items-center justify-center text-amber-600 text-xl shadow-sm shrink-0">
-            <FiDollarSign />
+        <div className="p-6 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-md shadow-amber-500/20 shrink-0 font-bold">
+            <FiDollarSign className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Earned</span>
-            <span className="text-2xl font-black text-slate-805 leading-none mt-1 block">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Total Earned</span>
+            <span className="text-2xl font-black text-slate-900 leading-none mt-1 block">
               ${data?.total_earned.toFixed(2) || "0.00"}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Program details / How it works */}
-      <div className="bg-slate-100/45 border border-slate-200/60 p-6 rounded-xl flex gap-4">
+      {/* Program details / How it works - Sleek Accent Line Section */}
+      <div className="bg-white border-l-4 border-l-teal-600 border border-slate-200/80 p-6 rounded-2xl flex gap-4 shadow-xs">
         <FiInfo className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />
         <div className="text-left flex flex-col gap-2">
-          <h4 className="text-sm font-extrabold text-slate-800">How the referral program works</h4>
-          <ol className="list-decimal pl-4 text-xs font-semibold text-slate-500 leading-relaxed space-y-1">
+          <h4 className="text-sm font-extrabold text-slate-900">How the referral program works</h4>
+          <ol className="list-decimal pl-4 text-xs font-semibold text-slate-600 leading-relaxed space-y-2">
             <li>Copy your referral link above and share it with your professional network.</li>
             <li>Your friends use the link to register a new account on our platform.</li>
-            {data?.enable_signup_bonus !== false && (
+            {hasSignupBonus ? (
               <li>Upon registering, they receive a <strong>${(data?.signup_bonus ?? 5.00).toFixed(2)} signup bonus</strong> (pending admin verification & approval) directly into their wallet.</li>
+            ) : (
+              <li>Upon registering, their account is instantly activated and linked to your referral promoter account.</li>
             )}
             <li>When they fund their first job milestone, pay for a gig, or clear a contract, you instantly receive a promoter payout reward in your wallet.</li>
           </ol>
@@ -231,7 +520,16 @@ export default function ReferralsPage() {
         </div>
 
         {data?.referred_users && data.referred_users.length > 0 ? (
-          <div className="overflow-x-auto w-full">
+          <div 
+            ref={tableRef}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
+            className={`overflow-x-auto w-full select-none cursor-grab active:cursor-grabbing transition-colors ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-100/10 text-[10px] font-black text-slate-400 uppercase tracking-wider select-none">
@@ -257,76 +555,80 @@ export default function ReferralsPage() {
                       })}
                     </td>
                     <td className="px-6 py-4.5 text-center">
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 md:gap-4">
-                        {/* Status Badge */}
-                        {(() => {
-                          let badgeClass = "";
-                          let label = "";
-                          switch (ref.status) {
-                            case "approved":
-                              badgeClass = "bg-emerald-50 text-emerald-700 border-emerald-100";
-                              label = "Approved & Paid";
-                              break;
-                            case "rejected":
-                              badgeClass = "bg-rose-50 text-rose-700 border-rose-100";
-                              label = "Audit Rejected";
-                              break;
-                            case "completed":
-                              badgeClass = "bg-sky-50 text-sky-700 border-sky-100";
-                              label = "Awaiting Audit";
-                              break;
-                            case "purchased":
-                              badgeClass = "bg-indigo-50 text-indigo-700 border-indigo-100";
-                              label = "Gig/Project Purchased";
-                              break;
-                            case "onboarding_completed":
-                              badgeClass = "bg-blue-50 text-blue-700 border-blue-100";
-                              label = "Profile Onboarded";
-                              break;
-                            default:
-                              badgeClass = "bg-amber-50 text-amber-700 border-amber-100";
-                              label = "Registered";
-                          }
-                          return (
-                            <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full border shrink-0 ${badgeClass}`}>
-                              {label}
-                            </span>
-                          );
-                        })()}
+                      {(() => {
+                        const isFullyCompleted = ref.has_purchased || ref.status === "approved" || ref.status === "completed" || ref.status === "purchased";
+                        const isOnboarded = ref.is_onboarded || isFullyCompleted;
+                        const isExpired = ref.status === "expired";
 
-                        {/* Visual Step Tracker */}
-                        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 select-none shrink-0">
-                          {/* Step 1: Registered */}
-                          <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50/60 border border-emerald-200/80 px-1.5 py-0.5 rounded-md" title="Registration Complete">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                            <span>Signed Up</span>
+                        return (
+                          <div className="flex items-center justify-center gap-1.5 sm:gap-2 select-none">
+                            {/* Step 1: Signed Up (Always completed upon registration) */}
+                            <div 
+                              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-emerald-600 text-white shadow-sm shrink-0"
+                              title="Account Registered"
+                            >
+                              <FiCheckCircle className="w-3.5 h-3.5 text-white shrink-0" />
+                              <span>Signed Up</span>
+                            </div>
+
+                            <span className="text-slate-300 font-bold text-xs shrink-0">→</span>
+
+                            {/* Step 2: Onboarded (Solid green background with white text & white checkmark if complete, Muted grey if not) */}
+                            <div 
+                              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black transition-all shrink-0 ${
+                                isOnboarded
+                                  ? "bg-emerald-600 text-white shadow-sm"
+                                  : "bg-slate-50 text-slate-400 border border-slate-200"
+                              }`}
+                              title={isOnboarded ? "Profile Onboarding Completed" : "Pending Profile Onboarding"}
+                            >
+                              {isOnboarded ? (
+                                <FiCheckCircle className="w-3.5 h-3.5 text-white shrink-0" />
+                              ) : (
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                              )}
+                              <span>Onboarded</span>
+                            </div>
+
+                            <span className="text-slate-300 font-bold text-xs shrink-0">→</span>
+
+                            {/* Step 3: Purchased (Solid green background with white text & white checkmark if complete, Muted grey if not, Rose if expired) */}
+                            <div 
+                              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black transition-all shrink-0 ${
+                                isFullyCompleted
+                                  ? "bg-emerald-600 text-white shadow-sm"
+                                  : isExpired
+                                  ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                  : "bg-slate-50 text-slate-400 border border-slate-200"
+                              }`}
+                              title={
+                                isFullyCompleted
+                                  ? "First purchase completed! Bonus paid."
+                                  : isExpired
+                                  ? `Purchase window expired (${data?.completion_window_days || 30} days passed)`
+                                  : "Waiting for first purchase"
+                              }
+                            >
+                              {isFullyCompleted ? (
+                                <>
+                                  <FiCheckCircle className="w-3.5 h-3.5 text-white shrink-0" />
+                                  <span>Purchased</span>
+                                </>
+                              ) : isExpired ? (
+                                <>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0" />
+                                  <span>Expired</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300 shrink-0" />
+                                  <span>Purchased</span>
+                                </>
+                              )}
+                            </div>
                           </div>
-
-                          <span className="text-slate-300">→</span>
-
-                          {/* Step 2: Onboarded */}
-                          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${
-                            ref.is_onboarded 
-                              ? "text-emerald-600 bg-emerald-50/60 border-emerald-200/80" 
-                              : "text-slate-400 bg-slate-50 border-slate-200"
-                          }`} title="Profile Onboarding">
-                            <span className={`w-1.5 h-1.5 rounded-full ${ref.is_onboarded ? "bg-emerald-500" : "bg-slate-300"}`}></span>
-                            <span>Onboarded</span>
-                          </div>
-
-                          <span className="text-slate-300">→</span>
-
-                          {/* Step 3: First Purchase */}
-                          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${
-                            ref.has_purchased 
-                              ? "text-emerald-600 bg-emerald-50/60 border-emerald-200/80" 
-                              : "text-slate-400 bg-slate-50 border-slate-200"
-                          }`} title="First Purchase/Order Complete">
-                            <span className={`w-1.5 h-1.5 rounded-full ${ref.has_purchased ? "bg-emerald-500" : "bg-slate-300"}`}></span>
-                            <span>Purchased</span>
-                          </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}

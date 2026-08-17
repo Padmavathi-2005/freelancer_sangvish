@@ -228,6 +228,7 @@ interface DashboardContextType {
   selectedLanguages: Array<{ language_id: number; proficiency: string }>;
   setSelectedLanguages: React.Dispatch<React.SetStateAction<Array<{ language_id: number; proficiency: string }>>>;
   handleUpdateLanguageProficiency: (langId: number, proficiency: string) => void;
+  handleRemoveLanguage: (langId: number) => void;
   step1Error: string; setStep1Error: (v: string) => void;
   step1Success: boolean; setStep1Success: (v: boolean) => void;
   step1FieldErrors: Record<string, string>; setStep1FieldErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -269,6 +270,8 @@ interface DashboardContextType {
   verifyingEmailOtp: boolean; setVerifyingEmailOtp: (v: boolean) => void;
   verifyingPhoneOtp: boolean; setVerifyingPhoneOtp: (v: boolean) => void;
   otpError: string; setOtpError: (v: string) => void;
+  emailOtpError: string; setEmailOtpError: (v: string) => void;
+  phoneOtpError: string; setPhoneOtpError: (v: string) => void;
   otpSuccess: string; setOtpSuccess: (v: string) => void;
 
   // Step 4 Form States (Portfolio Project)
@@ -632,6 +635,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const handleUpdateLanguageProficiency = (langId: number, proficiency: string) => {
     setSelectedLanguages(prev => prev.map(l => l.language_id === langId ? { ...l, proficiency } : l));
   };
+  const handleRemoveLanguage = (langId: number) => {
+    setSelectedLanguageIds(prev => prev.filter(id => id !== langId));
+    setSelectedLanguages(prev => prev.filter(l => l.language_id !== langId));
+  };
   const [step1Error, setStep1Error] = useState<string>("");
   const [step1Success, setStep1Success] = useState<boolean>(false);
   const [step1FieldErrors, setStep1FieldErrors] = useState<Record<string, string>>({});
@@ -675,6 +682,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   const [verifyingEmailOtp, setVerifyingEmailOtp] = useState(false);
   const [verifyingPhoneOtp, setVerifyingPhoneOtp] = useState(false);
   const [otpError, setOtpError] = useState("");
+  const [emailOtpError, setEmailOtpError] = useState("");
+  const [phoneOtpError, setPhoneOtpError] = useState("");
   const [otpSuccess, setOtpSuccess] = useState("");
 
   // Step 4 Form States (Portfolio Project)
@@ -1425,17 +1434,42 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         setHasFreelancerProfile(!!data.hasFreelancerProfile);
         setHasClientProfile(!!data.hasClientProfile);
 
+        const isFreelancerApproved = !!data.hasFreelancerProfile && data.freelancerVettingStatus === "Approved";
+        const isClientApproved = !!data.hasClientProfile && data.clientVettingStatus === "Approved";
+
         let savedRole = localStorage.getItem("onboarding_role");
-        if (!savedRole) {
-          if (data.hasFreelancerProfile && !data.hasClientProfile) {
+
+        // Smart detect role based on Admin Approval status
+        if (isFreelancerApproved && !isClientApproved) {
+          savedRole = "freelancer";
+          localStorage.setItem("onboarding_role", "freelancer");
+        } else if (isClientApproved && !isFreelancerApproved) {
+          savedRole = "client";
+          localStorage.setItem("onboarding_role", "client");
+        } else if (isFreelancerApproved && isClientApproved) {
+          if (savedRole !== "freelancer" && savedRole !== "client") {
             savedRole = "freelancer";
             localStorage.setItem("onboarding_role", "freelancer");
-          } else if (data.hasClientProfile && !data.hasFreelancerProfile) {
-            savedRole = "client";
-            localStorage.setItem("onboarding_role", "client");
-          } else if (data.hasFreelancerProfile && data.hasClientProfile) {
-            savedRole = "freelancer";
-            localStorage.setItem("onboarding_role", "freelancer");
+          }
+        } else {
+          // Neither profile is Approved by Admin yet
+          if (!savedRole || (savedRole !== "freelancer" && savedRole !== "client")) {
+            if (data.hasFreelancerProfile && !data.hasClientProfile) {
+              savedRole = "freelancer";
+              localStorage.setItem("onboarding_role", "freelancer");
+            } else if (data.hasClientProfile && !data.hasFreelancerProfile) {
+              savedRole = "client";
+              localStorage.setItem("onboarding_role", "client");
+            } else if (data.hasFreelancerProfile && data.hasClientProfile) {
+              if (data.freelancerVettingStatus === "Pending" && data.clientVettingStatus !== "Pending") {
+                savedRole = "freelancer";
+              } else if (data.clientVettingStatus === "Pending" && data.freelancerVettingStatus !== "Pending") {
+                savedRole = "client";
+              } else {
+                savedRole = "freelancer";
+              }
+              localStorage.setItem("onboarding_role", savedRole);
+            }
           }
         }
 
@@ -1889,6 +1923,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     if (sendingEmailOtp) return;
     try {
       setSendingEmailOtp(true);
+      setEmailOtp("");
+      setEmailOtpError("");
       setOtpError("");
       setOtpSuccess("");
       const token = localStorage.getItem("token");
@@ -1899,15 +1935,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         setEmailOtpSent(true);
         setOtpSuccess("Verification OTP sent to your email address. Please check your inbox.");
-        triggerToast("success", "OTP sent to your email address.");
+        triggerToast("success", "OTP sent to your email address. Please check your inbox.");
       } else {
         const d = await res.json();
         const msg = d.message || "Failed to send email OTP.";
-        setOtpError(msg);
+        setEmailOtpError(msg);
         triggerToast("error", msg);
       }
     } catch (e) {
-      setOtpError("Network error.");
+      setEmailOtpError("Network error.");
     } finally {
       setSendingEmailOtp(false);
     }
@@ -1917,6 +1953,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     if (!emailOtp.trim() || verifyingEmailOtp) return;
     try {
       setVerifyingEmailOtp(true);
+      setEmailOtpError("");
       setOtpError("");
       setOtpSuccess("");
       const token = localStorage.getItem("token");
@@ -1935,11 +1972,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       } else {
         const d = await res.json();
         const msg = d.message || "Invalid OTP code.";
-        setOtpError(msg);
+        setEmailOtpError(msg);
         triggerToast("error", msg);
       }
     } catch (e) {
-      setOtpError("Network error.");
+      setEmailOtpError("Network error.");
     } finally {
       setVerifyingEmailOtp(false);
     }
@@ -1952,13 +1989,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     
     if (!cleanedPhone || cleanedPhone.length < 7 || !/^\+?[1-9]\d{6,14}$/.test(cleanedPhone)) {
       const errMsg = "Mobile number does not exist or is invalid. Please enter a valid phone number with country code.";
-      setOtpError(errMsg);
+      setPhoneOtpError(errMsg);
       triggerToast("error", errMsg);
       return;
     }
 
     try {
       setSendingPhoneOtp(true);
+      setPhoneOtpError("");
       setOtpError("");
       setOtpSuccess("");
       const token = localStorage.getItem("token");
@@ -1976,17 +2014,17 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
       if (res.ok) {
         setPhoneOtpSent(true);
-        setPhoneOtp(""); // Empty field so user enters their real SMS code
+        setPhoneOtp("");
         setOtpSuccess(`Verification code sent via SMS to ${rawPhone}. Please enter the 6-digit code below.`);
         triggerToast("success", `Verification code sent to ${rawPhone}`);
       } else {
         const errMsg = d.message || "Mobile number does not exist or is invalid.";
-        setOtpError(errMsg);
+        setPhoneOtpError(errMsg);
         triggerToast("error", errMsg);
       }
     } catch (e) {
       const errMsg = "Network error. Failed to send SMS OTP.";
-      setOtpError(errMsg);
+      setPhoneOtpError(errMsg);
       triggerToast("error", errMsg);
     } finally {
       setSendingPhoneOtp(false);
@@ -1997,6 +2035,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     if (!phoneOtp.trim() || verifyingPhoneOtp) return;
     try {
       setVerifyingPhoneOtp(true);
+      setPhoneOtpError("");
       setOtpError("");
       setOtpSuccess("");
       const token = localStorage.getItem("token");
@@ -2015,11 +2054,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       } else {
         const d = await res.json();
         const msg = d.message || "Invalid SMS OTP code.";
-        setOtpError(msg);
+        setPhoneOtpError(msg);
         triggerToast("error", msg);
       }
     } catch (e) {
-      setOtpError("Network error.");
+      setPhoneOtpError("Network error.");
     } finally {
       setVerifyingPhoneOtp(false);
     }
@@ -2254,8 +2293,25 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           }
         }
       } 
-      // 4. Wallet & Payout notifications
-      else if (type === "wallet" || title.includes("wallet") || title.includes("payout") || title.includes("withdrawal")) {
+      // 4. Wallet & Bonus notifications
+      else if (
+        type === "wallet" || 
+        type === "payout" || 
+        type === "withdrawal" || 
+        type === "signup_bonus" ||
+        type === "referral_signup_bonus" ||
+        type === "referral" ||
+        type === "bonus" ||
+        title.includes("wallet") || 
+        title.includes("payout") || 
+        title.includes("withdrawal") ||
+        title.includes("sign-up") ||
+        title.includes("signup") ||
+        title.includes("bonus") ||
+        message.includes("sign-up") ||
+        message.includes("signup") ||
+        message.includes("bonus")
+      ) {
         router.push("/dashboard/wallet");
       }
       // 5. Contract, Milestone, Dispute, Payment Released, Work Started, Review notifications
@@ -3757,6 +3813,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     setOnboardingCompleted(true);
     setShowOnboardingModal(false);
     localStorage.setItem("onboarding_completed", "true");
+    localStorage.setItem("show_referral_welcome", "true");
     setForceShowOnboarding(false);
   };
 
@@ -3803,7 +3860,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       }
     } else {
       // Step 4+: Document validation
-      const stepFields = clientFields.filter(f => f.step_number === stepNum && f.is_required && f.is_enabled);
+      const stepFields = clientFields.filter(f => f.step_number === stepNum && (f.is_required == 1 || f.is_required === true || f.is_required === "1" || f.is_required === "true") && f.is_enabled);
       const incomplete = stepFields.filter(f => !userUploadedDocs.some(d => d.field_id === f.field_id));
       if (incomplete.length > 0) {
         triggerToast("error", `Please complete all required fields for this step: ${incomplete.map(f => f.field_name).join(", ")}`);
@@ -4159,6 +4216,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     selectedLanguageIds, setSelectedLanguageIds,
     selectedLanguages, setSelectedLanguages,
     handleUpdateLanguageProficiency,
+    handleRemoveLanguage,
     step1Error, setStep1Error,
     step1Success, setStep1Success,
     step1FieldErrors, setStep1FieldErrors,
@@ -4194,6 +4252,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     verifyingEmailOtp, setVerifyingEmailOtp,
     verifyingPhoneOtp, setVerifyingPhoneOtp,
     otpError, setOtpError,
+    emailOtpError, setEmailOtpError,
+    phoneOtpError, setPhoneOtpError,
     otpSuccess, setOtpSuccess,
     projectTitle, setProjectTitle,
     projectDesc, setProjectDesc,

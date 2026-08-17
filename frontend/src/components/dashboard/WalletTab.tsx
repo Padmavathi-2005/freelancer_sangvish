@@ -212,6 +212,7 @@ export default function WalletTab() {
   const transactions = walletInfo?.transactions || [];
   const withdrawals = walletInfo?.withdrawals || [];
   const balance = parseFloat(wallet?.balance || "0.00");
+  const minWithdrawalAmount = parseFloat(wallet?.min_withdrawal_amount || "10.00");
 
   const pendingTotal = withdrawals
     .filter((w: any) => w.status === "Pending")
@@ -231,6 +232,31 @@ export default function WalletTab() {
           {t("my_digital_wallet_desc", "Manage your virtual funds, payouts, and deposit records.")}
         </p>
       </div>
+
+      {/* Prominent Pending Sign-Up Bonus Notification Banner */}
+      {parseFloat(wallet?.pending_bonus_balance || "0") > 0 && (
+        <div className="bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-slate-900 border border-purple-500/30 rounded-2xl p-4 sm:p-5 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-2xl shrink-0 shadow-sm">
+              🎁
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-sm font-black text-white">
+                  Sign-Up Bonus Requested: <span className="text-amber-300 font-extrabold text-base">${parseFloat(wallet.pending_bonus_balance).toFixed(2)}</span>
+                </h4>
+                <span className="text-[10px] font-black uppercase bg-amber-400 text-slate-950 px-2 py-0.5 rounded-md shadow-xs inline-flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-pulse shrink-0" />
+                  Awaiting Admin Approval
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 font-medium mt-1 leading-relaxed">
+                Your <strong className="text-amber-300">${parseFloat(wallet.pending_bonus_balance).toFixed(2)} Sign-up Bonus</strong> has been requested upon profile setup. Once reviewed and approved by Admin, it will be credited to your active balance!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
@@ -259,7 +285,7 @@ export default function WalletTab() {
               <p className="text-2xl font-black tracking-tight text-white select-all">
                 ${balance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                 <span className="text-[10px] text-white/85 font-black uppercase tracking-wider">
                   {t("active_virtual_balance_label", "Active Virtual Balance (USD)")}
                 </span>
@@ -269,6 +295,12 @@ export default function WalletTab() {
                   </span>
                 )}
               </div>
+              {parseFloat(wallet?.pending_bonus_balance || "0") > 0 && (
+                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-xs shadow-md border border-amber-300">
+                  <span>🎁</span>
+                  <span>+${parseFloat(wallet.pending_bonus_balance).toFixed(2)} Pending Admin Release</span>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-between items-center text-[10px] text-white/90 font-black z-10 mt-3.5">
@@ -384,8 +416,8 @@ export default function WalletTab() {
                   errors.withdrawAmount = pendingTotal > 0
                     ? `Amount ($${numAmount.toFixed(2)}) exceeds available balance ($${availableBalance.toFixed(2)}). You have $${pendingTotal.toFixed(2)} in pending requests.`
                     : `Amount ($${numAmount.toFixed(2)}) exceeds available balance ($${availableBalance.toFixed(2)}).`;
-                } else if (numAmount < 10) {
-                  errors.withdrawAmount = "Minimum withdrawal amount is $10.00.";
+                } else if (numAmount < minWithdrawalAmount) {
+                  errors.withdrawAmount = `Minimum withdrawal amount is $${minWithdrawalAmount.toFixed(2)}.`;
                 }
 
                 if (!holderName.trim()) {
@@ -468,14 +500,14 @@ export default function WalletTab() {
                           ? `Amount ($${numVal.toFixed(2)}) exceeds available balance ($${availableBalance.toFixed(2)}). You have $${pendingTotal.toFixed(2)} in pending review.`
                           : `Amount ($${numVal.toFixed(2)}) exceeds available balance ($${availableBalance.toFixed(2)}).`
                       }));
-                    } else if (val && numVal < 10) {
-                      setFormErrors((prev) => ({ ...prev, withdrawAmount: "Minimum withdrawal amount is $10.00." }));
+                    } else if (val && numVal < minWithdrawalAmount) {
+                      setFormErrors((prev) => ({ ...prev, withdrawAmount: `Minimum withdrawal amount is $${minWithdrawalAmount.toFixed(2)}.` }));
                     } else {
                       setFormErrors((prev) => ({ ...prev, withdrawAmount: "" }));
                     }
                   }}
                   placeholder={t("enter_amount_placeholder", "Enter amount")}
-                  min="10"
+                  min={minWithdrawalAmount}
                   max={availableBalance > 0 ? availableBalance : 0}
                   step="0.01"
                   required

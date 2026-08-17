@@ -96,6 +96,7 @@ export default function LoginPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("onboarding_completed");
         localStorage.removeItem("onboarding_step");
+        localStorage.removeItem("onboarding_role");
         window.location.href = "/dashboard";
       }
     } catch (err: unknown) {

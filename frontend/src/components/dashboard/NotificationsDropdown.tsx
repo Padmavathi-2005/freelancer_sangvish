@@ -131,6 +131,10 @@ export default function NotificationsDropdown({
                         <span className="bg-violet-50 text-violet-600 p-1.5 rounded-lg flex items-center justify-center">
                           <FiBriefcase className="w-4 h-4" />
                         </span>
+                      ) : (n.type === "referral" || n.type === "signup_bonus" || n.type === "referral_signup_bonus") ? (
+                        <span className="bg-purple-50 text-purple-600 p-1 rounded-lg flex items-center justify-center text-sm">
+                          🎁
+                        </span>
                       ) : (
                         <span className="bg-slate-50 text-slate-600 p-1.5 rounded-lg flex items-center justify-center">
                           <FiBell className="w-4 h-4" />

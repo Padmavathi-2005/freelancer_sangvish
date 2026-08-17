@@ -9,6 +9,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [referralCode, setReferralCode] = useState("");
+  const [codeAutoFilled, setCodeAutoFilled] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,6 +27,23 @@ export default function RegisterPage() {
       const token = localStorage.getItem("token");
       if (token) {
         window.location.href = "/dashboard";
+      }
+
+      // Check URL query params for referral code: ?ref=CODE or ?referral=CODE
+      const searchParams = new URLSearchParams(window.location.search);
+      const urlRef = searchParams.get("ref") || searchParams.get("referral") || searchParams.get("ref_code") || searchParams.get("code");
+
+      if (urlRef && urlRef.trim()) {
+        const cleanRef = urlRef.trim().toUpperCase();
+        setReferralCode(cleanRef);
+        setCodeAutoFilled(true);
+        localStorage.setItem("referral_code", cleanRef);
+      } else {
+        const savedRef = localStorage.getItem("referral_code");
+        if (savedRef && savedRef.trim()) {
+          setReferralCode(savedRef.trim().toUpperCase());
+          setCodeAutoFilled(true);
+        }
       }
     }
 
@@ -67,7 +86,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim() || !password.trim()) {
-      setError("Please fill in all fields.");
+      setError("Please fill in all required fields.");
       return;
     }
 
@@ -80,7 +99,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const refCode = typeof window !== "undefined" ? localStorage.getItem("referral_code") : null;
+      const activeRefCode = referralCode.trim() || (typeof window !== "undefined" ? localStorage.getItem("referral_code") : null);
       const response = await fetch(`${API_URL}/users/register`, {
         method: "POST",
         headers: {
@@ -90,7 +109,7 @@ export default function RegisterPage() {
           first_name: name.trim(), // API parameter maps to first_name
           email: email.trim(),
           password,
-          refCode: refCode || undefined,
+          refCode: activeRefCode || undefined,
         }),
       });
 
@@ -232,6 +251,44 @@ export default function RegisterPage() {
                     </svg>
                   )}
                 </button>
+              </div>
+            </div>
+
+            {/* Referral Code Field (Auto-filled from link or manual input) */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label htmlFor="referralCode" className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                  <span>Referral Code</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">(Optional)</span>
+                </label>
+                {codeAutoFilled && (
+                  <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 flex items-center gap-1">
+                    <svg className="w-3 h-3 text-emerald-600 fill-current" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <span>Applied via Link</span>
+                  </span>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  id="referralCode"
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    setReferralCode(val);
+                    if (typeof window !== "undefined") {
+                      if (val.trim()) {
+                        localStorage.setItem("referral_code", val.trim());
+                      } else {
+                        localStorage.removeItem("referral_code");
+                      }
+                    }
+                  }}
+                  placeholder="e.g. REF_C8VL1U"
+                  className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-3 text-sm font-extrabold text-teal-800 uppercase placeholder:normal-case placeholder:font-normal placeholder:text-slate-400 focus:outline-none focus:border-[#0a5a54]/50 focus:bg-white transition-all duration-200 tracking-wider"
+                />
               </div>
             </div>
 

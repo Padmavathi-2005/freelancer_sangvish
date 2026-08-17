@@ -57,6 +57,7 @@ export default function FacebookCallbackPage() {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("onboarding_completed");
         localStorage.removeItem("onboarding_step");
+        localStorage.removeItem("onboarding_role");
 
         // Check onboarding status
         const checkRes = await fetch(`${API_URL}/users/onboarding-check`, {

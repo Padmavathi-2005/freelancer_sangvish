@@ -13,12 +13,16 @@ export default function WalletManagementTab() {
     handleApproveWithdrawal,
     handleRejectWithdrawal,
     handlePayToUser,
+    referralPayouts,
+    loadingReferralPayouts,
+    handleApproveReferralPayout,
+    handleRejectReferralPayout,
     adminTheme
   } = useAdmin();
 
   const isDark = adminTheme === "dark";
 
-  const [activeSubTab, setActiveSubTab] = useState<"requests" | "ledger" | "transactions" | "pay">("requests");
+  const [activeSubTab, setActiveSubTab] = useState<"requests" | "referrals" | "ledger" | "transactions" | "pay">("requests");
 
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [transferAmount, setTransferAmount] = useState<string>("");
@@ -50,6 +54,17 @@ export default function WalletManagementTab() {
   const transactions = adminWalletStats?.transactions || [];
 
   const pendingWithdrawalsCount = withdrawalRequests.filter(r => r.status === "Pending").length;
+  const pendingReferralsCount = (referralPayouts || []).filter((r: any) => r.status === "pending" || r.status === "Pending").length;
+
+  const [referralsPage, setReferralsPage] = useState<number>(1);
+
+  // Referral Payouts Pagination
+  const paginatedReferrals = useMemo(() => {
+    const list = referralPayouts || [];
+    const start = (referralsPage - 1) * itemsPerPage;
+    return list.slice(start, start + itemsPerPage);
+  }, [referralPayouts, referralsPage]);
+  const totalReferralsPages = useMemo(() => Math.ceil((referralPayouts || []).length / itemsPerPage), [referralPayouts]);
 
   // Requests Pagination
   const paginatedRequests = useMemo(() => {
@@ -170,6 +185,81 @@ export default function WalletManagementTab() {
         </div>
       ) : (
         <span className="text-[10px] text-slate-350 font-bold">PROCESSED</span>
+      )
+    }
+  ];
+
+  const referralColumns = [
+    {
+      header: "Payout ID",
+      accessor: (p: any) => <span className="text-slate-400 font-bold">#{p.payout_id}</span>
+    },
+    {
+      header: "User Details",
+      accessor: (p: any) => (
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-slate-800">{p.referred_name || p.referrer_name || "User"}</p>
+          <p className="text-[10px] text-slate-400 font-medium">{p.referred_email || p.referrer_email}</p>
+        </div>
+      )
+    },
+    {
+      header: "Bonus Type",
+      accessor: (p: any) => {
+        let details: any = {};
+        try { details = typeof p.details === "string" ? JSON.parse(p.details) : (p.details || {}); } catch(e) {}
+        const isSignup = details?.type === "signup_bonus";
+        return (
+          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+            isSignup ? "bg-purple-50 text-purple-700 border border-purple-100" : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+          }`}>
+            {isSignup ? "🎁 Sign-up Bonus" : "💰 Referral Reward"}
+          </span>
+        );
+      }
+    },
+    {
+      header: "Amount",
+      className: "text-right",
+      accessor: (p: any) => <span className="text-slate-900 text-xs font-black">${parseFloat(p.amount || 0).toFixed(2)}</span>
+    },
+    {
+      header: "Status",
+      className: "text-right",
+      accessor: (p: any) => (
+        <span
+          className={`text-[9px] px-2 py-0.5 rounded-full inline-block font-bold capitalize ${
+            p.status === "approved" || p.status === "Approved"
+              ? "bg-emerald-50 text-emerald-600 border border-emerald-100"
+              : p.status === "rejected" || p.status === "Rejected"
+              ? "bg-rose-50 text-rose-600 border border-rose-100"
+              : "bg-amber-50 text-amber-600 border border-amber-100 animate-pulse"
+          }`}
+        >
+          {p.status}
+        </span>
+      )
+    },
+    {
+      header: "Action",
+      className: "text-right",
+      accessor: (p: any) => (p.status === "pending" || p.status === "Pending") ? (
+        <div className="flex gap-1.5 justify-end">
+          <button
+            onClick={() => handleApproveReferralPayout(p.payout_id)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition shadow-sm"
+          >
+            Approve
+          </button>
+          <button
+            onClick={() => handleRejectReferralPayout(p.payout_id)}
+            className="bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition border border-rose-100"
+          >
+            Reject
+          </button>
+        </div>
+      ) : (
+        <span className="text-[10px] text-slate-350 font-bold uppercase">{p.status}</span>
       )
     }
   ];
@@ -364,6 +454,16 @@ export default function WalletManagementTab() {
               Payout Requests ({pendingWithdrawalsCount})
             </button>
             <button
+              onClick={() => setActiveSubTab("referrals")}
+              className={`px-4 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+                activeSubTab === "referrals"
+                  ? "bg-purple-800 text-white shadow-sm"
+                  : "text-purple-600 hover:text-purple-900 bg-purple-50/50"
+              }`}
+            >
+              🎁 Referral & Signup Bonuses ({pendingReferralsCount})
+            </button>
+            <button
               onClick={() => setActiveSubTab("ledger")}
               className={`px-4 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
                 activeSubTab === "ledger"
@@ -422,6 +522,28 @@ export default function WalletManagementTab() {
                   totalItems={withdrawalRequests.length}
                   itemsPerPage={itemsPerPage}
                   emptyMessage="No payout/withdrawal requests recorded."
+                />
+              )}
+            </div>
+          )}
+
+          {/* TAB: REFERRAL & SIGNUP BONUSES */}
+          {activeSubTab === "referrals" && (
+            <div className="space-y-4">
+              {loadingReferralPayouts ? (
+                <div className="text-center py-8 text-xs font-bold text-slate-400 animate-pulse">
+                  Loading referral & sign-up bonus payouts...
+                </div>
+              ) : (
+                <Table
+                  columns={referralColumns}
+                  data={paginatedReferrals}
+                  currentPage={referralsPage}
+                  totalPages={totalReferralsPages}
+                  onPageChange={setReferralsPage}
+                  totalItems={(referralPayouts || []).length}
+                  itemsPerPage={itemsPerPage}
+                  emptyMessage="No referral or sign-up bonus payout requests recorded."
                 />
               )}
             </div>

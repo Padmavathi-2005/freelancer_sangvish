@@ -298,15 +298,73 @@ export const payToUser = async (req, res) => {
 
 export const getReferralPayouts = async (req, res) => {
   try {
+    // Fetch dynamic referral settings from database
+    let signupBonusAmt = 2.00;
+    let promoterRewardAmt = 10.00;
+    try {
+      const sRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+      if (sRes.rows.length > 0) {
+        let val = sRes.rows[0].setting_value;
+        if (typeof val === "string") val = JSON.parse(val);
+        if (val.signup_bonus !== undefined) signupBonusAmt = parseFloat(val.signup_bonus);
+        if (val.referrer_reward !== undefined) promoterRewardAmt = parseFloat(val.referrer_reward);
+        else if (val.max_referrer_reward !== undefined) promoterRewardAmt = parseFloat(val.max_referrer_reward);
+      }
+    } catch (sErr) {
+      console.error("Error loading referral settings for payouts:", sErr);
+    }
+
+    // Update any auto_sync records that were assigned 5.00 to the real signup_bonus amount
+    try {
+      await pool.query(`UPDATE referral_payouts SET amount = $1 WHERE amount = 5.00 AND status = 'pending'`, [signupBonusAmt]);
+    } catch (e) {}
+
+    // 1. Auto-sync missing referral_payouts records for any existing referred users
+    try {
+      await pool.query(`
+        INSERT INTO referral_payouts (referrer_id, referred_id, amount, status, details)
+        SELECT 
+          u.referred_by,
+          u.user_id,
+          $1,
+          'pending',
+          '{"type":"signup_bonus","trigger":"auto_sync"}'::jsonb
+        FROM users u
+        WHERE u.referred_by IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM referral_payouts rp WHERE rp.referred_id = u.user_id AND rp.referrer_id = u.referred_by
+          )
+      `, [signupBonusAmt]);
+    } catch (syncErr) {
+      console.error("Auto-sync referral payouts error:", syncErr);
+    }
+
     const query = `
       SELECT 
-        rp.payout_id,
-        rp.referrer_id,
-        rp.referred_id,
-        rp.status,
-        rp.amount,
-        rp.created_at,
-        rp.details,
+        COALESCE(rp.payout_id, referred.user_id) as payout_id,
+        referrer.user_id as referrer_id,
+        referred.user_id as referred_id,
+        COALESCE(rp.status, 'pending') as status,
+        CASE 
+          WHEN rp.amount IS NOT NULL AND rp.amount <> 5.00 THEN rp.amount
+          WHEN EXISTS (
+            SELECT 1 
+            FROM wallet_transactions wt
+            JOIN wallets w ON (w.wallet_id = wt.sender_wallet_id OR w.wallet_id = wt.receiver_wallet_id)
+            WHERE w.user_id = referred.user_id AND wt.status = 'completed'
+          ) THEN $2
+          ELSE $1
+        END as amount,
+        COALESCE(rp.created_at, referred.created_at) as created_at,
+        COALESCE(rp.details, CASE 
+          WHEN EXISTS (
+            SELECT 1 
+            FROM wallet_transactions wt
+            JOIN wallets w ON (w.wallet_id = wt.sender_wallet_id OR w.wallet_id = wt.receiver_wallet_id)
+            WHERE w.user_id = referred.user_id AND wt.status = 'completed'
+          ) THEN '{"type":"promoter_reward"}'::jsonb
+          ELSE '{"type":"signup_bonus"}'::jsonb
+        END) as details,
         referrer.first_name || ' ' || COALESCE(referrer.last_name, '') as referrer_name,
         referrer.email as referrer_email,
         referred.first_name || ' ' || COALESCE(referred.last_name, '') as referred_name,
@@ -360,13 +418,14 @@ export const getReferralPayouts = async (req, res) => {
           ) THEN 'onboarding_completed'
           ELSE 'pending'
         END as referral_stage
-      FROM referral_payouts rp
-      JOIN users referrer ON rp.referrer_id = referrer.user_id
-      JOIN users referred ON rp.referred_id = referred.user_id
-      ORDER BY rp.created_at DESC
+      FROM users referred
+      JOIN users referrer ON referred.referred_by = referrer.user_id
+      LEFT JOIN referral_payouts rp ON rp.referred_id = referred.user_id AND rp.referrer_id = referred.referred_by
+      WHERE referred.referred_by IS NOT NULL
+      ORDER BY COALESCE(rp.created_at, referred.created_at) DESC
     `;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, [signupBonusAmt, promoterRewardAmt]);
     return res.status(200).json(result.rows);
   } catch (error) {
     console.error("Error in getReferralPayouts:", error);
@@ -379,10 +438,33 @@ export const approveReferralPayout = async (req, res) => {
     const { id } = req.params;
     const payoutId = parseInt(id);
 
+    // Fetch dynamic signup bonus amount for fallback
+    let signupBonusAmt = 2.00;
+    try {
+      const sRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+      if (sRes.rows.length > 0) {
+        let val = sRes.rows[0].setting_value;
+        if (typeof val === "string") val = JSON.parse(val);
+        if (val.signup_bonus !== undefined) signupBonusAmt = parseFloat(val.signup_bonus);
+      }
+    } catch (e) {}
+
     // 1. Fetch payout request
-    const payoutRes = await pool.query("SELECT * FROM referral_payouts WHERE payout_id = $1", [payoutId]);
+    let payoutRes = await pool.query("SELECT * FROM referral_payouts WHERE payout_id = $1", [payoutId]);
     if (payoutRes.rows.length === 0) {
-      return res.status(404).json({ message: "Referral payout request not found." });
+      const userCheck = await pool.query("SELECT user_id, referred_by FROM users WHERE user_id = $1 AND referred_by IS NOT NULL", [payoutId]);
+      if (userCheck.rows.length > 0) {
+        const refUser = userCheck.rows[0];
+        const ins = await pool.query(
+          `INSERT INTO referral_payouts (referrer_id, referred_id, amount, status, details)
+           VALUES ($1, $2, $3, 'pending', '{"type":"signup_bonus"}'::jsonb)
+           RETURNING *`,
+          [refUser.referred_by, refUser.user_id, signupBonusAmt]
+        );
+        payoutRes = ins;
+      } else {
+        return res.status(404).json({ message: "Referral payout request not found." });
+      }
     }
     const payout = payoutRes.rows[0];
 
@@ -507,8 +589,9 @@ export const approveReferralPayout = async (req, res) => {
           userId: recipientUserId,
           title,
           message,
-          type: "payment",
-          referenceId: payoutId.toString()
+          type: isSignupBonus ? "signup_bonus" : "referral",
+          referenceId: payoutId.toString(),
+          targetTab: "wallet"
         });
 
         if (req.io) {
@@ -556,6 +639,32 @@ export const rejectReferralPayout = async (req, res) => {
       "UPDATE referral_payouts SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE payout_id = $1",
       [payoutId]
     );
+
+    // Dispatch rejection notification to user
+    try {
+      const { default: Notification } = await import("../../../models/notificationModel.js");
+      let details = {};
+      try { details = typeof payout.details === "string" ? JSON.parse(payout.details) : (payout.details || {}); } catch(e) {}
+      const isSignup = details.type === "signup_bonus";
+      const targetUserId = isSignup ? payout.referred_id : payout.referrer_id;
+      
+      const notif = await Notification.create({
+        userId: targetUserId,
+        title: isSignup ? "❌ Sign-up Bonus Declined" : "❌ Referral Reward Declined",
+        message: isSignup 
+          ? `Your $${parseFloat(payout.amount).toFixed(2)} Sign-up bonus request was reviewed and declined by admin.`
+          : `Your referral reward payout request of $${parseFloat(payout.amount).toFixed(2)} was reviewed and declined by admin.`,
+        type: isSignup ? "signup_bonus" : "referral",
+        referenceId: payoutId.toString(),
+        targetTab: "wallet"
+      });
+
+      if (req.io) {
+        req.io.to(`user_${targetUserId}`).emit("new_notification", notif);
+      }
+    } catch (notifErr) {
+      console.error("Error creating rejection notification:", notifErr);
+    }
 
     return res.status(200).json({
       message: "Referral payout request rejected successfully."

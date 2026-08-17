@@ -2,6 +2,7 @@
 import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useAdmin } from "../AdminContext";
 import {
   FiUsers,
@@ -14,7 +15,12 @@ import {
   FiCheck,
   FiMail,
   FiPhone,
-  FiAward
+  FiAward,
+  FiInfo,
+  FiGift,
+  FiLayers,
+  FiArrowRight,
+  FiX
 } from "react-icons/fi";
 
 interface ReferralPayout {
@@ -42,6 +48,11 @@ export default function AdminReferralsPage() {
   const { adminTheme } = useAdmin();
   const isDark = adminTheme === "dark";
 
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [payouts, setPayouts] = useState<ReferralPayout[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -63,6 +74,39 @@ export default function AdminReferralsPage() {
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "signup_bonus" | "referral_bonus">("all");
+
+  // Modal Audit Steps state
+  const [selectedAuditPayout, setSelectedAuditPayout] = useState<ReferralPayout | null>(null);
+
+  // Drag to scroll table state
+  const tableRef = React.useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!tableRef.current) return;
+    setIsDragging(true);
+    setStartX(e.pageX - tableRef.current.offsetLeft);
+    setScrollLeft(tableRef.current.scrollLeft);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !tableRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - tableRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    tableRef.current.scrollLeft = scrollLeft - walk;
+  };
 
   const fetchPayouts = async () => {
     try {
@@ -101,7 +145,7 @@ export default function AdminReferralsPage() {
     const recipient = isSignup ? p.referred_name : p.referrer_name;
     const targetRole = isSignup ? "referred user" : "promoter";
     
-    if (!window.confirm(`Are you sure you want to approve this referral payout? $${parseFloat(p.amount).toFixed(2)} will be paid to the ${targetRole} (${recipient}).`)) return;
+    if (!window.confirm(`Are you sure you want to approve this payout? $${parseFloat(p.amount).toFixed(2)} will be credited to ${recipient}.`)) return;
     try {
       const token = localStorage.getItem("adminToken");
       const res = await fetch(`${API_URL}/admin/referrals/payouts/${p.payout_id}/approve`, {
@@ -112,7 +156,10 @@ export default function AdminReferralsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        triggerToast("success", "Payout Approved & Paid", data.message);
+        triggerToast("success", "Payout Approved & Credited", data.message);
+        if (selectedAuditPayout?.payout_id === p.payout_id) {
+          setSelectedAuditPayout(null);
+        }
         fetchPayouts();
       } else {
         triggerToast("error", "Action Failed", data.message || "Failed to approve payout.");
@@ -124,7 +171,7 @@ export default function AdminReferralsPage() {
   };
 
   const handleReject = async (payoutId: number) => {
-    if (!window.confirm("Are you sure you want to reject this referral payout request?")) return;
+    if (!window.confirm("Are you sure you want to reject this payout request?")) return;
     try {
       const token = localStorage.getItem("adminToken");
       const res = await fetch(`${API_URL}/admin/referrals/payouts/${payoutId}/reject`, {
@@ -136,6 +183,9 @@ export default function AdminReferralsPage() {
       const data = await res.json();
       if (res.ok) {
         triggerToast("success", "Request Rejected", data.message);
+        if (selectedAuditPayout?.payout_id === payoutId) {
+          setSelectedAuditPayout(null);
+        }
         fetchPayouts();
       } else {
         triggerToast("error", "Action Failed", data.message || "Failed to reject payout.");
@@ -146,9 +196,22 @@ export default function AdminReferralsPage() {
     }
   };
 
+  // Helper to identify if a payout is a Signup Bonus vs Referral Bonus
+  const isSignupPayout = (p: ReferralPayout) => {
+    try {
+      const detailsObj = typeof p.details === "string" ? JSON.parse(p.details) : (p.details || {});
+      return detailsObj.type === "signup_bonus";
+    } catch (e) {
+      return false;
+    }
+  };
+
   // Filter and search calculations
   const filteredPayouts = payouts.filter((p) => {
+    const isSignup = isSignupPayout(p);
     const matchesStatus = statusFilter === "all" || p.status === statusFilter;
+    const matchesType = typeFilter === "all" || (typeFilter === "signup_bonus" ? isSignup : !isSignup);
+    
     const cleanSearch = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !cleanSearch ||
@@ -157,8 +220,11 @@ export default function AdminReferralsPage() {
       p.referred_name.toLowerCase().includes(cleanSearch) ||
       p.referred_email.toLowerCase().includes(cleanSearch);
     
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesType && matchesSearch;
   });
+
+  const signupPayoutsCount = payouts.filter(p => isSignupPayout(p)).length;
+  const referralPayoutsCount = payouts.filter(p => !isSignupPayout(p)).length;
 
   if (loading) {
     return (
@@ -190,15 +256,15 @@ export default function AdminReferralsPage() {
 
       {/* Title */}
       <div>
-        <h2 className="text-xl font-black tracking-tight">Referral Program Auditing</h2>
+        <h2 className="text-xl font-black tracking-tight">Referral &amp; Sign-Up Bonus Auditing</h2>
         <p className={`text-[11px] font-bold uppercase tracking-wider mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-          Audit and approve wallet payout bonuses for refer and earn campaigns
+          Audit step-by-step progress, verify eligibility, and approve bonus wallet payouts
         </p>
       </div>
 
       {/* Program Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className={`p-6 rounded-xl border flex items-center gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+        <div className={`p-5 rounded-xl border flex items-center gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
           <div className="w-10 h-10 rounded-lg bg-teal-500/10 border border-teal-500/25 flex items-center justify-center text-teal-600 text-lg shrink-0">
             <FiClock />
           </div>
@@ -210,52 +276,89 @@ export default function AdminReferralsPage() {
           </div>
         </div>
 
-        <div className={`p-6 rounded-xl border flex items-center gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
-          <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-600 text-lg shrink-0">
-            <FiCheckCircle />
+        <div className={`p-5 rounded-xl border flex items-center gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+          <div className="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/25 flex items-center justify-center text-purple-600 text-lg shrink-0">
+            <FiGift />
           </div>
           <div>
-            <span className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? "text-slate-400" : "text-slate-500"}`}>Approved Payouts</span>
-            <span className="text-2xl font-black mt-1 block">
-              {payouts.filter(p => p.status === "approved").length}
+            <span className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? "text-slate-400" : "text-slate-500"}`}>Sign-Up Bonus Requests</span>
+            <span className="text-2xl font-black mt-1 block text-purple-600 dark:text-purple-400">
+              {signupPayoutsCount}
             </span>
           </div>
         </div>
 
-        <div className={`p-6 rounded-xl border flex items-center gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
-          <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-600 text-lg shrink-0">
-            <FiDollarSign />
+        <div className={`p-5 rounded-xl border flex items-center gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+          <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-600 text-lg shrink-0">
+            <FiCheckCircle />
           </div>
           <div>
-            <span className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? "text-slate-400" : "text-slate-500"}`}>Total Paid Out</span>
-            <span className="text-2xl font-black mt-1 block">
+            <span className={`text-[10px] font-bold uppercase tracking-wider block ${isDark ? "text-slate-400" : "text-slate-500"}`}>Total Released Payouts</span>
+            <span className="text-2xl font-black mt-1 block text-emerald-600 dark:text-emerald-400">
               ${payouts.filter(p => p.status === "approved").reduce((sum, p) => sum + parseFloat(p.amount), 0).toFixed(2)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Filters and Search Bar */}
-      <div className={`p-4 rounded-xl border flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm ${
+      {/* Filters & Search Bar */}
+      <div className={`p-4 rounded-xl border flex flex-col lg:flex-row gap-4 items-center justify-between shadow-sm ${
         isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"
       }`}>
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          {(["all", "pending", "approved", "rejected"] as const).map((status) => (
+        
+        {/* Type & Status Tabs */}
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          
+          {/* Type Filter Buttons */}
+          <div className="flex items-center bg-slate-100 dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
             <button
-              key={status}
-              onClick={() => setStatusFilter(status)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer ${
-                statusFilter === status
-                  ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
-                  : (isDark ? "text-slate-400 hover:bg-slate-900" : "text-slate-500 hover:bg-slate-100")
+              onClick={() => setTypeFilter("all")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
+                typeFilter === "all" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs" : "text-slate-500 hover:text-slate-900"
               }`}
             >
-              {status}
+              All Types ({payouts.length})
             </button>
-          ))}
+            <button
+              onClick={() => setTypeFilter("signup_bonus")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                typeFilter === "signup_bonus" ? "bg-purple-600 text-white shadow-xs" : "text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+              }`}
+            >
+              <FiGift className="w-3.5 h-3.5" />
+              <span>Sign-up Bonuses ({signupPayoutsCount})</span>
+            </button>
+            <button
+              onClick={() => setTypeFilter("referral_bonus")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
+                typeFilter === "referral_bonus" ? "bg-teal-700 text-white shadow-xs" : "text-teal-600 hover:bg-teal-50 dark:hover:bg-teal-950/30"
+              }`}
+            >
+              <FiLayers className="w-3.5 h-3.5" />
+              <span>Referral Rewards ({referralPayoutsCount})</span>
+            </button>
+          </div>
+
+          {/* Status Filter Buttons */}
+          <div className="flex items-center gap-1">
+            {(["all", "pending", "approved", "rejected"] as const).map((status) => (
+              <button
+                key={status}
+                onClick={() => setStatusFilter(status)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer ${
+                  statusFilter === status
+                    ? "bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900 shadow-sm"
+                    : (isDark ? "text-slate-400 hover:bg-slate-900" : "text-slate-500 hover:bg-slate-100")
+                }`}
+              >
+                {status}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className={`flex items-center gap-2 border rounded-lg px-3 py-2 w-full md:max-w-xs ${
+        {/* Search Input */}
+        <div className={`flex items-center gap-2 border rounded-lg px-3 py-2 w-full lg:max-w-xs ${
           isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
         }`}>
           <FiSearch className="text-slate-450 shrink-0" />
@@ -269,30 +372,37 @@ export default function AdminReferralsPage() {
         </div>
       </div>
 
-      {/* Main auditing table */}
+      {/* Main Auditing Table */}
       <div className={`border rounded-xl overflow-hidden shadow-sm ${
         isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"
       }`}>
         {filteredPayouts.length > 0 ? (
-          <div className="overflow-x-auto w-full">
+          <div 
+            ref={tableRef}
+            onMouseDown={handleMouseDown}
+            onMouseLeave={handleMouseLeave}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
+            className={`overflow-x-auto w-full select-none cursor-grab active:cursor-grabbing transition-colors ${
+              isDragging ? "cursor-grabbing" : "cursor-grab"
+            }`}
+          >
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className={`border-b text-[10px] font-black uppercase tracking-wider select-none ${
-                  isDark ? "bg-slate-900/50 border-slate-800 text-slate-400" : "bg-slate-100/30 border-slate-150 text-slate-450"
+                <tr className={`border-b text-xs font-bold select-none ${
+                  isDark ? "bg-slate-900/50 border-slate-800 text-slate-400" : "bg-slate-100/60 border-slate-200 text-slate-600"
                 }`}>
-                  <th className="px-6 py-4">Referrer</th>
-                  <th className="px-6 py-4">Referred Person</th>
-                  <th className="px-6 py-4">Type</th>
-                  <th className="px-6 py-4">Verification Audit</th>
-                  <th className="px-6 py-4">Fraud Flags</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
+                  <th className="px-6 py-3.5 whitespace-nowrap">Target User / Promoter</th>
+                  <th className="px-6 py-3.5 whitespace-nowrap">Reward Type &amp; Amount</th>
+                  <th className="px-6 py-3.5 whitespace-nowrap">Audit Checks &amp; Roadmap</th>
+                  <th className="px-6 py-3.5 whitespace-nowrap">Status</th>
+                  <th className="px-6 py-3.5 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredPayouts.map((p) => {
+                  const isSignup = isSignupPayout(p);
                   const hasDuplicatePhone = p.duplicate_phone_count > 0;
-                  const isLegit = !hasDuplicatePhone && p.has_completed_order;
 
                   return (
                     <tr 
@@ -301,178 +411,148 @@ export default function AdminReferralsPage() {
                         isDark ? "border-slate-850 hover:bg-slate-900/25" : "border-slate-100 hover:bg-slate-50/50"
                       }`}
                     >
-                      {/* Referrer info */}
-                      <td className="px-6 py-4.5">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-black leading-normal">{p.referrer_name}</span>
-                          <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 mt-0.5">
-                            <FiMail className="w-3 h-3 shrink-0" />
-                            {p.referrer_email}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Referred Person info */}
-                      <td className="px-6 py-4.5">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-black leading-normal">{p.referred_name}</span>
-                          <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 mt-0.5">
-                            <FiMail className="w-3 h-3 shrink-0" />
-                            {p.referred_email}
+                      {/* User Info */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col text-left">
+                          <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{p.referred_name || p.referrer_name}</span>
+                          <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5 mt-0.5">
+                            <FiMail className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                            {p.referred_email || p.referrer_email}
                           </span>
                           {p.referred_phone && (
-                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 mt-0.5">
-                              <FiPhone className="w-3 h-3 shrink-0" />
+                            <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5 mt-0.5">
+                              <FiPhone className="w-3.5 h-3.5 shrink-0 text-slate-400" />
                               {p.referred_phone}
                             </span>
                           )}
                         </div>
                       </td>
 
-                      {/* Payout Type */}
-                      <td className="px-6 py-4.5">
-                        {(() => {
-                          let detailsObj: any = {};
-                          try {
-                            detailsObj = typeof p.details === "string" ? JSON.parse(p.details) : (p.details || {});
-                          } catch (e) {}
-                          const isSignup = detailsObj.type === "signup_bonus";
-                          return (
-                            <span className={`inline-block px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg border ${
-                              isSignup 
-                                ? "bg-violet-50 text-violet-700 border-violet-100 dark:bg-violet-950/20 dark:text-violet-400 dark:border-violet-900" 
-                                : "bg-teal-50 text-teal-700 border-teal-100 dark:bg-teal-950/20 dark:text-teal-400 dark:border-teal-900"
-                            }`}>
-                              {isSignup ? "Sign-up Reward" : "Promoter Reward"}
-                            </span>
-                          );
-                        })()}
-                      </td>
-
-                      {/* Verification Audit details */}
-                      <td className="px-6 py-4.5 text-xs font-semibold">
-                        <div className="flex flex-col gap-1.5">
-                          <span className="flex items-center gap-1.5">
-                            {p.referred_email_verified ? (
-                              <FiCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                            ) : (
-                              <FiXCircle className="w-3.5 h-3.5 text-slate-350 shrink-0" />
-                            )}
-                            <span>Email Verified</span>
+                      {/* Reward Type & Amount */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border whitespace-nowrap ${
+                            isSignup 
+                              ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800" 
+                              : "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800"
+                          }`}>
+                            {isSignup ? <FiGift className="w-3 h-3 text-purple-600" /> : <FiLayers className="w-3 h-3 text-teal-600" />}
+                            <span>{isSignup ? "Sign-up Bonus" : "Referral Reward"}</span>
                           </span>
-                          <span className="flex items-center gap-1.5">
-                            {p.referred_phone_verified ? (
-                              <FiCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                            ) : (
-                              <FiXCircle className="w-3.5 h-3.5 text-slate-350 shrink-0" />
-                            )}
-                            <span>Phone Verified</span>
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            {p.is_onboarded ? (
-                              <FiCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                            ) : (
-                              <FiXCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                            )}
-                            <span>Profile Onboarded</span>
+                          <span className="text-xs font-black text-slate-900 dark:text-slate-100">
+                            ${parseFloat(p.amount).toFixed(2)}
                           </span>
                         </div>
                       </td>
 
-                      {/* Auditing and Fraud Flags */}
-                      <td className="px-6 py-4.5 text-xs font-semibold">
-                        <div className="flex flex-col gap-1.5">
-                          {/* Unique Phone Check */}
-                          {hasDuplicatePhone ? (
-                            <span className="flex items-center gap-1.5 text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/15 w-fit">
-                              <FiAlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                              <span>Duplicate Phone ({p.duplicate_phone_count} other accounts)</span>
+                      {/* Audit Checks Badges & Interactive Roadmap Trigger */}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          
+                          {/* Email Verified */}
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border inline-flex items-center gap-1.5 whitespace-nowrap ${
+                            p.referred_email_verified ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-500 border-slate-200"
+                          }`}>
+                            {p.referred_email_verified ? <FiCheck className="w-3 h-3 text-emerald-600" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />}
+                            <span>Email Verified</span>
+                          </span>
+
+                          {/* Profile Onboarded */}
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-lg border inline-flex items-center gap-1.5 whitespace-nowrap ${
+                            p.is_onboarded || p.has_completed_order ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-500 border-slate-200"
+                          }`}>
+                            {p.is_onboarded || p.has_completed_order ? <FiCheck className="w-3 h-3 text-emerald-600" /> : <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />}
+                            <span>Profile Onboarded</span>
+                          </span>
+
+                          {/* Requirement Check: Signup bonus vs Referral promoter reward */}
+                          {isSignup ? (
+                            <span className="text-[11px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1 whitespace-nowrap">
+                              <FiCheckCircle className="w-3 h-3 text-purple-600 shrink-0" />
+                              <span>Sign-up Eligibility Met</span>
+                            </span>
+                          ) : p.has_completed_order ? (
+                            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1 whitespace-nowrap">
+                              <FiAward className="w-3 h-3 text-emerald-600 shrink-0" />
+                              <span>Order Completed</span>
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1.5 text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15 w-fit">
-                              <FiCheck className="w-3.5 h-3.5 shrink-0" />
-                              <span>Unique Phone</span>
+                            <span className="text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1 whitespace-nowrap">
+                              <FiAlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                              <span>Order Pending</span>
                             </span>
                           )}
 
-                          {/* Order Completion Check */}
-                          {p.has_completed_order ? (
-                            <span className="flex items-center gap-1.5 text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/15 w-fit">
-                              <FiAward className="w-3.5 h-3.5 shrink-0" />
-                              <span>First Order Completed</span>
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1.5 text-amber-600 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/15 w-fit">
-                              <FiAlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                              <span>No Orders Yet</span>
+                          {hasDuplicatePhone && (
+                            <span className="text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-lg inline-flex items-center gap-1 whitespace-nowrap">
+                              <FiAlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />
+                              <span>Duplicate Phone</span>
                             </span>
                           )}
+
+                          {/* INTERACTIVE ROADMAP POPUP BUTTON */}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedAuditPayout(p)}
+                            className="bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 text-[11px] font-bold px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1 transition cursor-pointer"
+                          >
+                            <FiInfo className="w-3 h-3 text-teal-600" />
+                            <span>View Audit Steps ↗</span>
+                          </button>
+
                         </div>
                       </td>
 
                       {/* Status */}
-                      <td className="px-6 py-4.5">
-                        <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2.5 py-1.5 rounded-full ${
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-lg border whitespace-nowrap ${
                           p.status === "approved"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                            ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
                             : p.status === "rejected"
-                            ? "bg-rose-50 text-rose-750 border border-rose-100"
-                            : p.referral_stage === "completed"
-                            ? "bg-sky-50 text-sky-700 border border-sky-100"
-                            : p.referral_stage === "purchased"
-                            ? "bg-indigo-50 text-indigo-700 border border-indigo-100"
-                            : p.referral_stage === "onboarding_completed"
-                            ? "bg-blue-50 text-blue-700 border border-blue-100"
-                            : "bg-amber-50 text-amber-700 border border-amber-100"
+                            ? "bg-rose-50 text-rose-700 border-rose-200"
+                            : "bg-amber-50 text-amber-900 border-amber-200"
                         }`}>
-                          {p.status === "pending" 
-                            ? (p.referral_stage === "completed" ? "Awaiting Audit" : `Incomplete (${p.referral_stage.replace('_', ' ')})`)
-                            : p.status}
+                          {p.status === "approved" ? (
+                            <>
+                              <FiCheck className="w-3.5 h-3.5 text-white" />
+                              <span>Approved &amp; Paid</span>
+                            </>
+                          ) : p.status === "rejected" ? (
+                            <>
+                              <FiXCircle className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Rejected</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                              <span>Pending Audit</span>
+                            </>
+                          )}
                         </span>
                       </td>
 
                       {/* Actions */}
-                      <td className="px-6 py-4.5 text-right">
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
                         {p.status === "pending" ? (
-                          (() => {
-                            let detailsObj: any = {};
-                            try {
-                              detailsObj = typeof p.details === "string" ? JSON.parse(p.details) : (p.details || {});
-                            } catch (e) {}
-                            const isSignup = detailsObj.type === "signup_bonus";
-                            
-                            // Enable approve/reject only if:
-                            // - For promoter reward: stage is 'completed'
-                            // - For signup reward: onboarding is complete
-                            const isEligible = isSignup ? p.is_onboarded : (p.referral_stage === "completed");
-
-                            return isEligible ? (
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => handleApprove(p)}
-                                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-white bg-emerald-650 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-600/15 transition-all cursor-pointer ${
-                                    !isLegit ? "opacity-75" : ""
-                                  }`}
-                                  title={!isLegit ? "Warning: Payout failed safety audits" : "Audit looks clean"}
-                                >
-                                  Approve
-                                </button>
-                                <button
-                                  onClick={() => handleReject(p.payout_id)}
-                                  className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-rose-650 hover:bg-rose-50 border border-rose-200/60 hover:text-rose-700 transition-all cursor-pointer"
-                                >
-                                  Reject
-                                </button>
-                              </div>
-                            ) : (
-                              <span className="text-[10px] font-extrabold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-md uppercase tracking-wider select-none cursor-help" title={isSignup ? "Waiting for referred user to complete profile onboarding" : "Waiting for referred user to complete onboarding & first purchase"}>
-                                Incomplete Stage
-                              </span>
-                            );
-                          })()
+                          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                            <button
+                              onClick={() => handleApprove(p)}
+                              className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 hover:shadow-md transition-all cursor-pointer border-0 inline-flex items-center gap-1.5"
+                            >
+                              <FiCheck className="w-3.5 h-3.5" />
+                              <span>Approve Payout</span>
+                            </button>
+                            <button
+                              onClick={() => handleReject(p.payout_id)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 hover:text-rose-700 transition-all cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                          </div>
                         ) : (
-                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest select-none">
-                            Audited
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-lg select-none inline-flex items-center gap-1.5 whitespace-nowrap">
+                            <FiCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Paid</span>
                           </span>
                         )}
                       </td>
@@ -491,12 +571,213 @@ export default function AdminReferralsPage() {
             <div>
               <h4 className="text-sm font-extrabold text-slate-700">No Referral Payouts Found</h4>
               <p className="text-xs text-slate-400 max-w-xs mt-1 leading-relaxed font-semibold">
-                No referral reward requests fit the current search filters.
+                No referral reward or sign-up bonus requests fit the current search filters.
               </p>
             </div>
           </div>
         )}
       </div>
+
+      {/* POPUP MODAL: STEP-BY-STEP AUDIT WORKFLOW ROADMAP */}
+      {selectedAuditPayout && (() => {
+        const p = selectedAuditPayout;
+        const isSignup = isSignupPayout(p);
+        const recipientName = p.referred_name || p.referrer_name || "User";
+        const recipientEmail = p.referred_email || p.referrer_email;
+
+        // Timeline steps configuration
+        interface AuditStepItem {
+          title: string;
+          desc: string;
+          completed: boolean;
+          statusLabel: string;
+          isCurrent?: boolean;
+          isRejected?: boolean;
+        }
+
+        const steps: AuditStepItem[] = [
+          {
+            title: "1. Account Registration",
+            desc: `User registered account on ${new Date(p.created_at || Date.now()).toLocaleDateString()}`,
+            completed: true,
+            statusLabel: "Completed"
+          },
+          {
+            title: "2. Email Verification",
+            desc: p.referred_email_verified ? "Email OTP verified successfully" : "Pending email verification",
+            completed: p.referred_email_verified,
+            statusLabel: p.referred_email_verified ? "Verified ✅" : "Pending ⏳"
+          },
+          {
+            title: "3. Profile Onboarding Setup",
+            desc: p.is_onboarded ? "User completed all onboarding wizard steps (5/5)" : "User profile onboarding in progress",
+            completed: p.is_onboarded,
+            statusLabel: p.is_onboarded ? "Completed ✅" : "In Progress ⏳"
+          }
+        ];
+
+        if (!isSignup) {
+          steps.push({
+            title: "4. First Gig / Project Purchase",
+            desc: p.has_completed_order ? "Referred user completed first transaction order" : "Waiting for referred user to make a purchase",
+            completed: p.has_completed_order,
+            statusLabel: p.has_completed_order ? "Completed ✅" : "Waiting ⏳"
+          });
+        }
+
+        steps.push({
+          title: `${isSignup ? "4" : "5"}. Admin Audit & Approval`,
+          desc: p.status === "approved" 
+            ? "Approved by admin" 
+            : p.status === "rejected" 
+            ? "Rejected by admin" 
+            : "Awaiting admin approval decision",
+          completed: p.status === "approved",
+          isCurrent: p.status === "pending",
+          isRejected: p.status === "rejected",
+          statusLabel: p.status === "approved" ? "Approved 🟢" : p.status === "rejected" ? "Rejected 🔴" : "Pending Review 🟡"
+        });
+
+        steps.push({
+          title: `${isSignup ? "5" : "6"}. Wallet Balance Release`,
+          desc: p.status === "approved"
+            ? `$${parseFloat(p.amount).toFixed(2)} credited into user active wallet`
+            : `$${parseFloat(p.amount).toFixed(2)} will be credited upon approval`,
+          completed: p.status === "approved",
+          statusLabel: p.status === "approved" ? "Credited 🟢" : "Next Step ➡️"
+        });
+
+        if (!mounted) return null;
+
+        return createPortal(
+          <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-[2px] animate-fadeIn">
+            <div className={`w-full max-w-xl rounded-2xl shadow-2xl border overflow-hidden flex flex-col text-left ${
+              isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
+            }`}>
+              
+              {/* Modal Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg font-black ${
+                    isSignup ? "bg-purple-100 text-purple-700" : "bg-teal-100 text-teal-700"
+                  }`}>
+                    {isSignup ? <FiGift /> : <FiLayers />}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight">
+                      Audit Progress Roadmap #{p.payout_id}
+                    </h3>
+                    <p className="text-[11px] font-bold text-slate-400 mt-0.5">
+                      {isSignup ? "Sign-Up Bonus Verification" : "Referral Reward Verification"} • ${parseFloat(p.amount).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedAuditPayout(null)}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  <FiX className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* User Details Banner */}
+              <div className="px-6 py-3 bg-slate-100/50 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-[10px] font-bold uppercase text-slate-400 block">Target Recipient</span>
+                  <span className="font-extrabold text-slate-800 dark:text-slate-200">{recipientName} ({recipientEmail})</span>
+                </div>
+                <span className={`text-[10px] font-black px-2.5 py-1 rounded-md capitalize ${
+                  p.status === "approved" ? "bg-emerald-100 text-emerald-800" : p.status === "rejected" ? "bg-rose-100 text-rose-800" : "bg-amber-100 text-amber-800"
+                }`}>
+                  Status: {p.status}
+                </span>
+              </div>
+
+              {/* Step-by-Step Progress Timeline */}
+              <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">Step-by-Step Qualification Workflow:</h4>
+
+                <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+                  {steps.map((step, idx) => (
+                    <div key={idx} className="relative flex items-start justify-between gap-3 group">
+                      
+                      {/* Step Circle Indicator */}
+                      <div className={`absolute -left-6 top-0.5 w-5.5 h-5.5 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                        step.completed
+                          ? "bg-emerald-500 text-white ring-4 ring-emerald-500/10"
+                          : step.isRejected
+                          ? "bg-rose-500 text-white ring-4 ring-rose-500/10"
+                          : step.isCurrent
+                          ? "bg-amber-500 text-white ring-4 ring-amber-500/20 animate-pulse"
+                          : "bg-slate-200 dark:bg-slate-800 text-slate-500"
+                      }`}>
+                        {step.completed ? "✓" : step.isRejected ? "✕" : idx + 1}
+                      </div>
+
+                      {/* Step Text Info */}
+                      <div className="flex flex-col text-left">
+                        <span className={`text-xs font-extrabold ${step.completed ? "text-emerald-700 dark:text-emerald-400" : step.isCurrent ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"}`}>
+                          {step.title}
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          {step.desc}
+                        </span>
+                      </div>
+
+                      {/* Step Status Badge */}
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-md whitespace-nowrap ${
+                        step.completed
+                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                          : step.isRejected
+                          ? "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                          : step.isCurrent
+                          ? "bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
+                          : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                      }`}>
+                        {step.statusLabel}
+                      </span>
+
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Modal Actions Footer */}
+              <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+                <button
+                  type="button"
+                  onClick={() => setSelectedAuditPayout(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-200/60 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  Close
+                </button>
+                {p.status === "pending" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleReject(p.payout_id)}
+                      className="px-4 py-2 rounded-xl text-xs font-black text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition cursor-pointer"
+                    >
+                      Reject Request
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApprove(p)}
+                      className="px-4.5 py-2 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 shadow-md shadow-emerald-600/20 transition cursor-pointer inline-flex items-center gap-1.5"
+                    >
+                      <FiCheck className="w-3.5 h-3.5" />
+                      <span>Approve Payout (${parseFloat(p.amount).toFixed(2)})</span>
+                    </button>
+                  </>
+                )}
+              </div>
+
+            </div>
+          </div>,
+          document.body
+        );
+      })()}
 
     </div>
   );

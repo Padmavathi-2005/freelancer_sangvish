@@ -100,6 +100,8 @@ export default function NotificationsTab({
                     <FiFileText className="w-4 h-4 text-violet-500" />
                   ) : n.type === "gig" ? (
                     <FiBriefcase className="w-4 h-4 text-emerald-500" />
+                  ) : (n.type === "referral" || n.type === "signup_bonus" || n.type === "referral_signup_bonus") ? (
+                    <span className="text-base">🎁</span>
                   ) : (
                     <FiBell className="w-4 h-4 text-amber-500" />
                   )}

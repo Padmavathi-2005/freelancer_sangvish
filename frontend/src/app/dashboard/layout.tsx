@@ -27,10 +27,11 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "./DashboardContext";
-import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX, FiClock, FiShield, FiSearch, FiMail, FiTrendingUp, FiBriefcase, FiUsers, FiPlus, FiFileText, FiChevronDown } from "react-icons/fi";
+import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX, FiClock, FiShield, FiSearch, FiMail, FiTrendingUp, FiBriefcase, FiUsers, FiPlus, FiFileText, FiChevronDown, FiUploadCloud } from "react-icons/fi";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import CustomSelect from "@/components/CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
+import ReferralCelebrationModal from "@/components/ReferralCelebrationModal";
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const { t } = useLanguage();
@@ -38,6 +39,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     userName,
     profileImage,
     userRole,
+    walletInfo,
     isSidebarOpen,
     setIsSidebarOpen,
     profileCompletionProgress,
@@ -127,6 +129,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     selectedLanguages,
     setSelectedLanguages,
     handleUpdateLanguageProficiency,
+    handleRemoveLanguage,
     step1Error,
     step1Success,
     step1FieldErrors,
@@ -186,6 +189,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     emailOtpSent,
     phoneOtpSent,
     otpError,
+    emailOtpError,
+    phoneOtpError,
     otpSuccess,
     handleSendEmailOtp,
     handleVerifyEmailOtp,
@@ -266,6 +271,42 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [textValues, setTextValues] = useState<Record<number, string>>({});
 
   const pathname = usePathname();
+  const navContainerRef = React.useRef<HTMLElement | null>(null);
+  const activeNavItemRef = React.useRef<HTMLButtonElement | null>(null);
+
+  const scrollToActiveNav = React.useCallback(() => {
+    const navEl = navContainerRef.current;
+    const activeEl = activeNavItemRef.current;
+    if (navEl && activeEl) {
+      const targetScrollTop = activeEl.offsetTop - (navEl.clientHeight / 2) + (activeEl.clientHeight / 2);
+      navEl.scrollTo({
+        top: Math.max(0, targetScrollTop),
+        behavior: "smooth"
+      });
+    }
+  }, []);
+
+  const bindActiveRef = (isActive: boolean) => (el: HTMLButtonElement | null) => {
+    if (isActive) {
+      activeNavItemRef.current = el;
+      if (el) {
+        scrollToActiveNav();
+      }
+    }
+  };
+
+  // Auto-scroll active sidebar navigation item into view when active tab or route changes
+  React.useEffect(() => {
+    scrollToActiveNav();
+    const t1 = setTimeout(scrollToActiveNav, 100);
+    const t2 = setTimeout(scrollToActiveNav, 300);
+    const t3 = setTimeout(scrollToActiveNav, 600);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [activeTab, pathname, userRole, onboardingStep, scrollToActiveNav]);
 
   // Scroll to proposal error when it changes
   React.useEffect(() => {
@@ -739,7 +780,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
 
         {userRole === "client" ? (
-          <nav onClick={() => setIsSidebarOpen(false)} className="flex-1 p-4 flex flex-col gap-4 select-none overflow-y-auto max-h-[calc(100vh-12rem)] scrollbar-thin">
+          <nav ref={navContainerRef} onClick={() => setIsSidebarOpen(false)} className="flex-1 min-h-0 p-4 flex flex-col gap-4 select-none overflow-y-auto scrollbar-thin">
             {/* Quick Action Button */}
             {!isProfileIncomplete && isClientApproved && (
               <div className="mb-2 shrink-0">
@@ -761,6 +802,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Common Workspace Hub */}
             <div className="flex flex-col gap-1">
               <button
+                ref={bindActiveRef(activeTab === "workspace")}
                 onClick={() => {
                   setActiveTab("workspace");
                   setSelectedProjectDetails(null);
@@ -777,6 +819,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {t("workspace_hub_menu", "Workspace Hub")}
               </button>
               <button
+                ref={bindActiveRef(activeTab === "wishlist")}
                 onClick={() => {
                   setActiveTab("wishlist");
                   setSelectedProjectDetails(null);
@@ -800,6 +843,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("hire_freelancers_header", "Hire Freelancers")}</span>
                 
                 <button
+                  ref={bindActiveRef(activeTab === "find_work")}
                   onClick={() => {
                     setActiveTab("find_work");
                     setSelectedProjectDetails(null);
@@ -817,6 +861,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </button>
 
                 <button
+                  ref={bindActiveRef(activeTab === "client_hired_freelancers")}
                   onClick={() => {
                     setActiveTab("client_hired_freelancers");
                     setSelectedProjectDetails(null);
@@ -834,6 +879,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </button>
 
                 <button
+                  ref={bindActiveRef(activeTab === "client_recommended_freelancers")}
                   onClick={() => {
                     setActiveTab("client_recommended_freelancers");
                     setSelectedProjectDetails(null);
@@ -851,6 +897,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </button>
 
                 <button
+                  ref={bindActiveRef(activeTab === "proposals" && !isCreatingJob)}
                   onClick={() => {
                     setActiveTab("proposals");
                     setIsCreatingJob(false);
@@ -876,6 +923,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("gig_orders_services_header", "Gig Orders & Services")}</span>
                 
                 <button
+                  ref={bindActiveRef(activeTab === "explore_gigs")}
                   onClick={() => {
                     setActiveTab("explore_gigs");
                     setSelectedProjectDetails(null);
@@ -893,6 +941,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </button>
 
                 <button
+                  ref={bindActiveRef(activeTab === "client_orders")}
                   onClick={() => {
                     setActiveTab("client_orders");
                     setSelectedProjectDetails(null);
@@ -904,7 +953,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     }`}
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
                   {t("your_gig_orders_menu", "Your Gig Orders")}
                 </button>
@@ -916,6 +965,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("communication_settings_header", "Communication & Settings")}</span>
 
               <button
+                ref={bindActiveRef(activeTab === "notifications")}
                 onClick={() => {
                   setActiveTab("notifications");
                   setSelectedProjectDetails(null);
@@ -941,6 +991,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
               {isClientApproved && (
                 <button
+                  ref={bindActiveRef(activeTab === "inbox")}
                   onClick={() => {
                     setActiveTab("inbox");
                     setSelectedProjectDetails(null);
@@ -959,6 +1010,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               )}
 
               <button
+                ref={bindActiveRef(activeTab === "wallet")}
                 onClick={() => {
                   setActiveTab("wallet");
                   setSelectedProjectDetails(null);
@@ -976,6 +1028,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               <button
+                ref={bindActiveRef(activeTab === "reports")}
                 onClick={() => {
                   setActiveTab("reports");
                   setSelectedProjectDetails(null);
@@ -994,6 +1047,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
 
               <button
+                ref={bindActiveRef(activeTab === "subscription")}
                 onClick={() => {
                   setActiveTab("subscription");
                   setSelectedProjectDetails(null);
@@ -1011,6 +1065,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               <button
+                ref={bindActiveRef(activeTab === "referrals")}
                 onClick={() => {
                   setActiveTab("referrals");
                   setSelectedProjectDetails(null);
@@ -1028,6 +1083,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               <button
+                ref={bindActiveRef(activeTab === "affiliate")}
                 onClick={() => {
                   setActiveTab("affiliate");
                   setSelectedProjectDetails(null);
@@ -1045,6 +1101,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               <button
+                ref={bindActiveRef(activeTab === "settings")}
                 onClick={() => {
                   setActiveTab("settings");
                   setSelectedProjectDetails(null);
@@ -1064,7 +1121,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </nav>
         ) : (
-          <nav onClick={() => setIsSidebarOpen(false)} className="flex-1 p-4 flex flex-col gap-4 select-none overflow-y-auto max-h-[calc(100vh-12rem)] scrollbar-thin">
+          <nav ref={navContainerRef} onClick={() => setIsSidebarOpen(false)} className="flex-1 min-h-0 p-4 flex flex-col gap-4 select-none overflow-y-auto scrollbar-thin">
             {/* Quick Action Button */}
             {isFreelancerApproved && (
               <div className="mb-2 shrink-0">
@@ -1088,6 +1145,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             {/* Common Workspace Hub */}
             <div className="flex flex-col gap-1">
               <button
+                ref={bindActiveRef(activeTab === "workspace")}
                 onClick={() => {
                   setActiveTab("workspace");
                   setSelectedProjectDetails(null);
@@ -1099,11 +1157,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   }`}
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 01-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
                 {t("workspace_hub_menu", "Workspace Hub")}
               </button>
               <button
+                ref={bindActiveRef(activeTab === "wishlist")}
                 onClick={() => {
                   setActiveTab("wishlist");
                   setSelectedProjectDetails(null);
@@ -1127,6 +1186,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("find_deliver_work_header", "Find & Deliver Work")}</span>
                 
                 <button
+                  ref={bindActiveRef(activeTab === "find_work")}
                   disabled={isProfileIncomplete}
                   onClick={() => {
                     setActiveTab("find_work");
@@ -1155,6 +1215,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </button>
 
                   <button
+                    ref={bindActiveRef(activeTab === "proposals")}
                     disabled={isProfileIncomplete}
                     onClick={() => {
                       setActiveTab("proposals");
@@ -1187,6 +1248,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   </button>
 
                   <button
+                    ref={bindActiveRef(activeTab === "my_projects")}
                     disabled={isProfileIncomplete}
                     onClick={() => {
                       setActiveTab("my_projects");
@@ -1213,6 +1275,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   </button>
 
                 <button
+                  ref={bindActiveRef(activeTab === "gigs")}
                   disabled={isProfileIncomplete}
                   onClick={() => {
                     setActiveTab("gigs");
@@ -1245,6 +1308,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </button>
 
                 <button
+                  ref={bindActiveRef(activeTab === "gig_applications")}
                   disabled={isProfileIncomplete}
                   onClick={() => {
                     setActiveTab("gig_applications");
@@ -1283,6 +1347,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 mb-1">{t("communication_settings_header", "Communication & Settings")}</span>
 
               <button
+                ref={bindActiveRef(activeTab === "notifications")}
                 disabled={isProfileIncomplete}
                 onClick={() => {
                   setActiveTab("notifications");
@@ -1318,6 +1383,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
               {isFreelancerApproved && (
                 <button
+                  ref={bindActiveRef(activeTab === "inbox")}
                   disabled={isProfileIncomplete}
                   onClick={() => {
                     setActiveTab("inbox");
@@ -1351,6 +1417,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               )}
 
               <button
+                ref={bindActiveRef(activeTab === "wallet")}
                 disabled={isProfileIncomplete}
                 onClick={() => {
                   setActiveTab("wallet");
@@ -1372,6 +1439,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               <button
+                ref={bindActiveRef(activeTab === "reports")}
                 disabled={isProfileIncomplete}
                 onClick={() => {
                   setActiveTab("reports");
@@ -1393,6 +1461,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               <button
+                ref={bindActiveRef(activeTab === "subscription")}
                 onClick={() => {
                   setActiveTab("subscription");
                   setSelectedProjectDetails(null);
@@ -1410,6 +1479,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               <button
+                ref={bindActiveRef(activeTab === "referrals")}
                 onClick={() => {
                   setActiveTab("referrals");
                   setSelectedProjectDetails(null);
@@ -1427,6 +1497,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               <button
+                ref={bindActiveRef(activeTab === "affiliate")}
                 onClick={() => {
                   setActiveTab("affiliate");
                   setSelectedProjectDetails(null);
@@ -1444,6 +1515,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </button>
 
               <button
+                ref={bindActiveRef(activeTab === "settings")}
                 onClick={() => {
                   setActiveTab("settings");
                   setSelectedProjectDetails(null);
@@ -1484,8 +1556,29 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 )}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-bold text-slate-800 truncate">{userName}</p>
-                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{userRole === "client" ? t("client_role", "Client") : t("freelancer_role", "Freelancer")}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-bold text-slate-800 truncate">{userName}</p>
+                  <button
+                    onClick={() => setActiveTab("wallet")}
+                    className="inline-flex items-center gap-1 text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0 shadow-2xs hover:bg-emerald-100 transition-colors cursor-pointer"
+                    title="View Digital Wallet Balance"
+                  >
+                    <span>💳</span>
+                    <span>${parseFloat(walletInfo?.wallet?.balance || "0.00").toFixed(2)}</span>
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{userRole === "client" ? t("client_role", "Client") : t("freelancer_role", "Freelancer")}</p>
+                  {parseFloat(walletInfo?.wallet?.pending_bonus_balance || "0") > 0 && (
+                    <span 
+                      onClick={() => setActiveTab("wallet")}
+                      className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded-md cursor-pointer hover:bg-amber-100" 
+                      title="Pending Admin Payout Approval"
+                    >
+                      +${parseFloat(walletInfo.wallet.pending_bonus_balance).toFixed(2)} Pending
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <button
@@ -2033,161 +2126,205 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           const status = userDoc?.status || "Pending";
                           const isUploading = !!uploadingFields[field.field_id];
                           const errorMsg = fieldErrors[field.field_id];
+                          const isFieldRequired = field.is_required == 1 || field.is_required === true || field.is_required === "1" || field.is_required === "true";
 
                           return (
-                            <div key={field.field_id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col gap-4 transition-all duration-200 text-left">
-                              <div className="flex justify-between items-start gap-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0 shadow-xs">
-                                    <FiFileText className="w-5 h-5" />
+                            <div key={field.field_id} className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all duration-200 text-left space-y-4 relative overflow-hidden group">
+                              {/* Field Header */}
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-center gap-3.5">
+                                  <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-600 shrink-0 shadow-2xs">
+                                    <FiFileText className="w-5 h-5 text-emerald-600" />
                                   </div>
                                   <div>
-                                    <h4 className="text-xs font-black text-slate-808 flex items-center gap-1.5 uppercase tracking-wide">
-                                      {field.field_name}
-                                      {field.is_required && <span className="text-rose-500 font-black">*</span>}
+                                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                      <span>{field.field_name}</span>
+                                      {isFieldRequired ? (
+                                        <span className="text-rose-500 font-black text-sm leading-none ml-0.5 select-none" title="Required Field">*</span>
+                                      ) : (
+                                        <span className="text-[10px] font-bold text-slate-400 normal-case ml-1 select-none tracking-normal">(Optional)</span>
+                                      )}
                                     </h4>
-                                    <p className="text-[10px] text-slate-450 leading-relaxed font-semibold mt-0.5">{field.field_description}</p>
+                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-normal">{field.field_description}</p>
                                   </div>
                                 </div>
 
                                 {isUploaded && (
-                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                                  <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border shadow-2xs ${
                                     status === "Approved"
                                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                       : status === "Rejected"
                                       ? "bg-rose-50 text-rose-700 border-rose-200"
-                                      : "bg-slate-100 text-slate-500 border-slate-200"
+                                      : "bg-amber-50 text-amber-700 border-amber-200"
                                   }`}>
-                                    {status}
+                                    {status === "Approved" ? "✓ Approved" : status === "Rejected" ? "✕ Rejected" : "⏳ Audit Pending"}
                                   </span>
                                 )}
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-slate-100 pt-4">
-                                <div className="flex flex-col gap-3">
-                                  {/* Expiry Date input if field requires expiry */}
-                                  {field.has_expiry && (
-                                    <div className="flex flex-col gap-1">
-                                      <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                                        Expiration Date
-                                      </label>
-                                      <input
-                                        type="date"
-                                        value={expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "")}
-                                        onChange={(e) => setExpiryDates({ ...expiryDates, [field.field_id]: e.target.value })}
-                                        disabled={status === "Approved"}
-                                        className="bg-white border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-emerald-500 transition-all text-slate-850 font-bold"
-                                      />
-                                    </div>
-                                  )}
+                              {/* Expiration Date Section if Required */}
+                              {field.has_expiry && (
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+                                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider shrink-0 flex items-center gap-1">
+                                    <span>📅</span> Expiration Date {isFieldRequired && <span className="text-rose-500 font-extrabold text-xs">*</span>}:
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "")}
+                                    onChange={(e) => setExpiryDates({ ...expiryDates, [field.field_id]: e.target.value })}
+                                    disabled={status === "Approved"}
+                                    className="bg-white border border-slate-250 hover:border-slate-350 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-bold focus:outline-none focus:border-emerald-500 transition-all flex-1 max-w-xs"
+                                  />
+                                </div>
+                              )}
 
-                                  {(!field.field_type || field.field_type.startsWith("file_")) ? (
-                                    <div className="flex items-center gap-3">
-                                      <label className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-xs select-none ${status === "Approved" ? "opacity-50 pointer-events-none" : ""}`}>
-                                        <FiFileText className="w-3.5 h-3.5" />
-                                        <span>{isUploading ? "Uploading..." : "Attach Document"}</span>
+                              {/* Upload Dropzone OR Uploaded Evidence Preview Card */}
+                              {!isUploaded ? (
+                                (!field.field_type || field.field_type.startsWith("file_")) ? (
+                                  <label
+                                    className={`w-full border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/20 hover:bg-emerald-50/50 rounded-xl p-3 sm:p-3.5 flex items-center justify-between gap-3 transition-all cursor-pointer group/drop shadow-2xs ${status === "Approved" || isUploading ? "opacity-50 pointer-events-none" : ""}`}
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/20 group-hover/drop:scale-105 transition-transform duration-200">
+                                        <FiUploadCloud className="w-4.5 h-4.5" />
+                                      </div>
+                                      <div className="min-w-0 text-left">
+                                        <p className="text-xs font-black text-slate-800 group-hover/drop:text-emerald-700 transition-colors truncate">
+                                          {isUploading ? "Uploading File to Server..." : "Click or Drag & Drop File Here"}
+                                        </p>
+                                        <p className="text-[10px] font-extrabold text-slate-400 mt-0.5 truncate">
+                                          PDF, JPG, PNG or DOC (Max 10MB)
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <span style={{ fontSize: "11px" }} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 group-hover/drop:bg-emerald-700 text-white font-extrabold shadow-2xs transition-all active:scale-95 select-none">
+                                      <FiFileText className="w-3.5 h-3.5" />
+                                      <span>Browse File</span>
+                                    </span>
+
+                                    <input
+                                      type="file"
+                                      accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
+                                      className="hidden"
+                                      disabled={isUploading || status === "Approved"}
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
+                                        if (field.has_expiry && !expDate) {
+                                          setFieldErrors({ ...fieldErrors, [field.field_id]: "Please select document expiration date first." });
+                                          return;
+                                        }
+                                        try {
+                                          setUploadingFields({ ...uploadingFields, [field.field_id]: true });
+                                          setFieldErrors({ ...fieldErrors, [field.field_id]: "" });
+                                          await handleUploadDocument(field.field_id, file, expDate);
+                                          triggerToast("success", `${field.field_name} uploaded successfully!`);
+                                        } catch (err: any) {
+                                          setFieldErrors({ ...fieldErrors, [field.field_id]: err.message || "Failed to upload file." });
+                                        } finally {
+                                          setUploadingFields({ ...uploadingFields, [field.field_id]: false });
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <input
+                                      type={field.field_type === 'number' ? 'number' : field.field_type === 'date' ? 'date' : 'text'}
+                                      value={textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "")}
+                                      onChange={(e) => setTextValues({ ...textValues, [field.field_id]: e.target.value })}
+                                      disabled={status === "Approved" || isUploading}
+                                      placeholder={`Enter ${field.field_name}...`}
+                                      className={inputClass}
+                                    />
+                                    <button
+                                      type="button"
+                                      disabled={status === "Approved" || isUploading}
+                                      onClick={() => {
+                                        const textVal = textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "");
+                                        const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
+                                        handleSaveTextValue(field.field_id, textVal, expDate);
+                                      }}
+                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95 flex items-center gap-1.5"
+                                    >
+                                      <FiCheck className="w-4 h-4" />
+                                      <span>{isUploading ? "Saving..." : "Save Information"}</span>
+                                    </button>
+                                  </div>
+                                )
+                              ) : (
+                                /* Uploaded Card Preview */
+                                <div className="bg-emerald-50/60 border border-emerald-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/20">
+                                      <FiCheck className="w-5 h-5" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-black text-slate-850 truncate">
+                                        {userDoc.file_url ? userDoc.file_url.split('/').pop() : userDoc.text_value}
+                                      </p>
+                                      <p className="text-[10px] font-extrabold text-emerald-700 flex items-center gap-1 mt-0.5">
+                                        <span>✓ Verified File Uploaded</span>
+                                        {userDoc?.expiry_date && <span>• Expires: {userDoc.expiry_date.substring(0, 10)}</span>}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {userDoc?.file_url && (
+                                      <a
+                                        href={userDoc.file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3.5 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                                      >
+                                        <span>View File</span>
+                                        <span>↗</span>
+                                      </a>
+                                    )}
+
+                                    {status !== "Approved" && (!field.field_type || field.field_type.startsWith("file_")) && (
+                                      <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-xs active:scale-95">
+                                        <span>Replace File</span>
                                         <input
                                           type="file"
                                           accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
                                           className="hidden"
-                                          disabled={isUploading || status === "Approved"}
                                           onChange={async (e) => {
                                             const file = e.target.files?.[0];
                                             if (!file) return;
-                                            
                                             const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
-                                            if (field.has_expiry && !expDate) {
-                                              setFieldErrors({ ...fieldErrors, [field.field_id]: "Please select document expiration date first." });
-                                              return;
-                                            }
-
                                             try {
                                               setUploadingFields({ ...uploadingFields, [field.field_id]: true });
                                               setFieldErrors({ ...fieldErrors, [field.field_id]: "" });
                                               await handleUploadDocument(field.field_id, file, expDate);
-                                              triggerToast("success", `${field.field_name} uploaded successfully!`);
+                                              triggerToast("success", `${field.field_name} updated successfully!`);
                                             } catch (err: any) {
-                                              setFieldErrors({ ...fieldErrors, [field.field_id]: err.message || "Failed to upload file." });
+                                              setFieldErrors({ ...fieldErrors, [field.field_id]: err.message || "Failed to update file." });
                                             } finally {
                                               setUploadingFields({ ...uploadingFields, [field.field_id]: false });
                                             }
                                           }}
                                         />
                                       </label>
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col gap-2">
-                                      <input
-                                        type={field.field_type === 'number' ? 'number' : field.field_type === 'date' ? 'date' : 'text'}
-                                        value={textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "")}
-                                        onChange={(e) => setTextValues({ ...textValues, [field.field_id]: e.target.value })}
-                                        disabled={status === "Approved" || isUploading}
-                                        placeholder={`Enter ${field.field_name}...`}
-                                        className={inputClass}
-                                      />
-                                      <div className="flex items-center gap-3">
-                                        <button
-                                          type="button"
-                                          disabled={status === "Approved" || isUploading}
-                                          onClick={() => {
-                                            const textVal = textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "");
-                                            const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
-                                            handleSaveTextValue(field.field_id, textVal, expDate);
-                                          }}
-                                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-xs select-none disabled:opacity-50"
-                                        >
-                                          <FiCheck className="w-3.5 h-3.5" />
-                                          <span>{isUploading ? "Saving..." : "Save Answer"}</span>
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {errorMsg && (
-                                    <p className="text-[10px] text-rose-500 font-bold select-none">⚠️ {errorMsg}</p>
-                                  )}
-
-                                  {status === "Rejected" && userDoc?.rejection_reason && (
-                                    <p className="text-[10px] text-rose-600 font-bold select-none">Rejection reason: {userDoc.rejection_reason}</p>
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
+                              )}
 
-                                <div className="border border-dashed border-slate-200 bg-white/50 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-1.5 min-h-[90px]">
-                                  {isUploaded ? (
-                                    (!field.field_type || field.field_type.startsWith("file_")) ? (
-                                      <>
-                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                          <FiCheck className="w-4 h-4" />
-                                        </div>
-                                        <a
-                                          href={userDoc.file_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-[10px] font-bold text-slate-500 hover:text-teal-700 underline truncate max-w-full px-2"
-                                        >
-                                          {userDoc.file_url.split('/').pop()}
-                                        </a>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                          <FiCheck className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-[11px] font-black text-slate-800 break-all max-w-full px-2">
-                                          {userDoc.text_value}
-                                        </span>
-                                      </>
-                                    )
-                                  ) : (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                                        <FiFileText className="w-4 h-4" />
-                                      </div>
-                                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">No Evidence</span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
+                              {errorMsg && (
+                                <p className="text-[11px] text-rose-600 font-extrabold select-none bg-rose-50 border border-rose-200/70 p-2.5 rounded-xl flex items-center gap-1.5">
+                                  <span>⚠️</span> {errorMsg}
+                                </p>
+                              )}
+
+                              {status === "Rejected" && userDoc?.rejection_reason && (
+                                <p className="text-[11px] text-rose-600 font-extrabold select-none bg-rose-50 border border-rose-200/70 p-2.5 rounded-xl flex items-center gap-1.5">
+                                  <span>❌ Rejection Reason:</span> {userDoc.rejection_reason}
+                                </p>
+                              )}
                             </div>
                           );
                         })
@@ -2210,9 +2347,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   onClick={() => handleSaveClientStep(clientWizardStep)}
-                  className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-950 flex items-center gap-1"
+                  className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-white flex items-center gap-1 shadow-md"
                 >
-                  <span>{clientWizardStep === totalClientSteps ? "Complete Onboarding ✓" : "Save & Continue →"}</span>
+                  <span className="text-white">{clientWizardStep === totalClientSteps ? "Complete Onboarding ✓" : "Save & Continue →"}</span>
                 </button>
               </div>
             </div>
@@ -2572,10 +2709,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                       setStep1FieldErrors((prev) => ({ ...prev, skills: "" }));
                                     }
                                   }}
-                                  className={`px-3 py-1.5 rounded-lg border text-xxs font-bold cursor-pointer transition-all duration-150 ${
+                                  style={{ fontSize: "11.5px", lineHeight: "16px" }}
+                                  className={`px-2.5 py-1 rounded-md border font-semibold cursor-pointer transition-all duration-150 select-none ${
                                     isChecked
-                                      ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-500 font-extrabold"
-                                      : "bg-white border-slate-250 text-slate-600 hover:border-slate-355"
+                                      ? "bg-emerald-500/10 border-emerald-500/50 text-emerald-700 dark:text-emerald-400 font-bold shadow-2xs"
+                                      : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                                   }`}
                                 >
                                   {sk.skill_name}
@@ -2628,8 +2766,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             const dbLangObj = languages.find(l => l.language_id === selLang.language_id);
                             const labelName = dbLangObj ? dbLangObj.language_name : `Language #${selLang.language_id}`;
                             return (
-                              <div key={selLang.language_id} className="flex flex-col gap-1 bg-white border border-slate-200/60 rounded-xl p-2.5 shadow-sm">
-                                <span className="text-xs font-bold text-slate-800">{labelName}</span>
+                              <div key={selLang.language_id} className="flex flex-col gap-1 bg-white border border-slate-200/60 rounded-xl p-2.5 shadow-sm relative group">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-slate-800">{labelName}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveLanguage(selLang.language_id)}
+                                    className="text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-0.5 rounded-md transition-colors cursor-pointer flex items-center gap-1 text-[10px] font-bold border border-transparent hover:border-rose-200"
+                                    title={`Remove ${labelName}`}
+                                  >
+                                    <FiX className="w-3.5 h-3.5 text-rose-500" />
+                                    <span className="text-rose-600">Remove</span>
+                                  </button>
+                                </div>
                                 <select
                                   value={selLang.proficiency}
                                   onChange={(e) => handleUpdateLanguageProficiency(selLang.language_id, e.target.value)}
@@ -2650,7 +2799,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className="flex justify-end pt-4">
                       <button
                         type="submit"
-                        className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-950 flex items-center gap-1"
+                        className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-black text-xs cursor-pointer text-white flex items-center gap-1 shadow-md"
                       >
                         Save & Next →
                       </button>
@@ -2744,7 +2893,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <button
                         type="button"
                         onClick={handleAddExperience}
-                        className="mt-3 border text-bold text-xxs px-4 py-2 rounded-lg cursor-pointer transition-colors bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                        style={{ fontSize: "11px" }}
+                        className="mt-3 inline-flex items-center gap-1 font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
                       >
                         + Add Experience
                       </button>
@@ -2804,7 +2954,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <button
                         type="button"
                         onClick={handleAddEducation}
-                        className="mt-3 border text-bold text-xxs px-4 py-2 rounded-lg cursor-pointer transition-colors bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                        style={{ fontSize: "11px" }}
+                        className="mt-3 inline-flex items-center gap-1 font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
                       >
                         + Add Education
                       </button>
@@ -2857,7 +3008,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <button
                         type="button"
                         onClick={handleAddCertification}
-                        className="mt-3 border text-bold text-xxs px-4 py-2 rounded-lg cursor-pointer transition-colors bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+                        style={{ fontSize: "11px" }}
+                        className="mt-3 inline-flex items-center gap-1 font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
                       >
                         + Add Certification
                       </button>
@@ -2936,41 +3088,48 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       </div>
 
                       {!emailVerified && (
-                        <div className="flex gap-2 flex-wrap items-center">
-                          {!emailOtpSent ? (
-                            <button
-                              type="button"
-                              onClick={handleSendEmailOtp}
-                              className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
-                            >
-                              Send OTP Code
-                            </button>
-                          ) : (
-                            <div className="flex gap-2 w-full sm:w-auto">
-                              <input
-                                type="text"
-                                maxLength={6}
-                                placeholder="Enter OTP"
-                                value={emailOtp}
-                                onChange={(e) => setEmailOtp(e.target.value)}
-                                className={inputClass}
-                                style={{ width: "8rem", textAlign: "center" }}
-                              />
-                              <button
-                                type="button"
-                                onClick={handleVerifyEmailOtp}
-                                className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
-                              >
-                                Verify
-                              </button>
+                        <div className="space-y-2">
+                          <div className="flex gap-2 flex-wrap items-center">
+                            {!emailOtpSent ? (
                               <button
                                 type="button"
                                 onClick={handleSendEmailOtp}
-                                className="text-slate-450 hover:text-emerald-500 text-[10px] px-2 font-bold cursor-pointer"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-95"
                               >
-                                Resend
+                                Send OTP Code
                               </button>
-                            </div>
+                            ) : (
+                              <div className="flex gap-2 w-full sm:w-auto">
+                                <input
+                                  type="text"
+                                  maxLength={6}
+                                  placeholder="Enter OTP"
+                                  value={emailOtp}
+                                  onChange={(e) => setEmailOtp(e.target.value)}
+                                  className={`${inputClass} ${emailOtpError ? "border-rose-500 ring-2 ring-rose-500/20" : ""}`}
+                                  style={{ width: "8rem", textAlign: "center" }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={handleVerifyEmailOtp}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-95"
+                                >
+                                  Verify
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleSendEmailOtp}
+                                  className="text-slate-450 hover:text-emerald-500 text-[10px] px-2 font-bold cursor-pointer"
+                                >
+                                  Resend
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          {emailOtpError && (
+                            <p className="text-xs font-extrabold text-rose-600 dark:text-rose-400 mt-1 select-none flex items-center gap-1">
+                              ⚠️ {emailOtpError}
+                            </p>
                           )}
                         </div>
                       )}
@@ -3004,11 +3163,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                               placeholder="+1 (555) 123-4567 or +91 9876543210"
                               value={userPhone}
                               onChange={(e) => setUserPhone(e.target.value)}
-                              className={`${inputClass} ${otpError ? "border-rose-500 ring-2 ring-rose-500/20" : ""}`}
+                              className={`${inputClass} ${phoneOtpError ? "border-rose-500 ring-2 ring-rose-500/20" : ""}`}
                             />
-                            {otpError && (
+                            {phoneOtpError && (
                               <p className="text-xs font-extrabold text-rose-600 dark:text-rose-400 mt-0.5 select-none flex items-center gap-1">
-                                ⚠️ {otpError}
+                                ⚠️ {phoneOtpError}
                               </p>
                             )}
                           </div>
@@ -3017,7 +3176,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                               <button
                                 type="button"
                                 onClick={handleSendPhoneOtp}
-                                className="bg-emerald-500 hover:bg-emerald-600 text-slate-955 font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-95"
                               >
                                 Send OTP Code
                               </button>
@@ -3035,7 +3194,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 <button
                                   type="button"
                                   onClick={handleVerifyPhoneOtp}
-                                  className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[10px] px-4 py-2 rounded-lg cursor-pointer transition-colors"
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-95"
                                 >
                                   Verify
                                 </button>
@@ -3072,7 +3231,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <button
                           type="button"
                           onClick={handleSaveStep3}
-                          className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-955"
+                          className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-extrabold text-xs cursor-pointer text-white shadow-md shadow-emerald-600/20"
                         >
                           Next Step →
                         </button>
@@ -3174,7 +3333,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         </button>
                         <button
                           type="submit"
-                          className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-slate-955"
+                          className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-extrabold text-xs cursor-pointer text-white shadow-md shadow-emerald-600/20"
                         >
                           Add & Continue →
                         </button>
@@ -3219,161 +3378,205 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           const status = userDoc?.status || "Pending";
                           const isUploading = !!uploadingFields[field.field_id];
                           const errorMsg = fieldErrors[field.field_id];
+                          const isFieldRequired = field.is_required == 1 || field.is_required === true || field.is_required === "1" || field.is_required === "true";
 
                           return (
-                            <div key={field.field_id} className="bg-slate-50 border border-slate-200 rounded-xl p-5 flex flex-col gap-4 transition-all duration-200 text-left">
-                              <div className="flex justify-between items-start gap-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shrink-0 shadow-xs">
-                                    <FiFileText className="w-5 h-5" />
+                            <div key={field.field_id} className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all duration-200 text-left space-y-4 relative overflow-hidden group">
+                              {/* Field Header */}
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex items-center gap-3.5">
+                                  <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-600 shrink-0 shadow-2xs">
+                                    <FiFileText className="w-5 h-5 text-emerald-600" />
                                   </div>
                                   <div>
-                                    <h4 className="text-xs font-black text-slate-805 flex items-center gap-1.5 uppercase tracking-wide">
-                                      {field.field_name}
-                                      {field.is_required && <span className="text-rose-500 font-black">*</span>}
+                                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                                      <span>{field.field_name}</span>
+                                      {isFieldRequired ? (
+                                        <span className="text-rose-500 font-black text-sm leading-none ml-0.5 select-none" title="Required Field">*</span>
+                                      ) : (
+                                        <span className="text-[10px] font-bold text-slate-400 normal-case ml-1 select-none tracking-normal">(Optional)</span>
+                                      )}
                                     </h4>
-                                    <p className="text-[10px] text-slate-450 leading-relaxed font-semibold mt-0.5">{field.field_description}</p>
+                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-normal">{field.field_description}</p>
                                   </div>
                                 </div>
 
                                 {isUploaded && (
-                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${
+                                  <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border shadow-2xs ${
                                     status === "Approved"
                                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                                       : status === "Rejected"
-                                      ? "bg-rose-50 text-rose-705 border-rose-200"
-                                      : "bg-slate-100 text-slate-500 border-slate-200"
+                                      ? "bg-rose-50 text-rose-700 border-rose-200"
+                                      : "bg-amber-50 text-amber-700 border-amber-200"
                                   }`}>
-                                    {status}
+                                    {status === "Approved" ? "✓ Approved" : status === "Rejected" ? "✕ Rejected" : "⏳ Audit Pending"}
                                   </span>
                                 )}
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-slate-100 pt-4">
-                                <div className="flex flex-col gap-3">
-                                  {/* Expiry Date input if field requires expiry */}
-                                  {field.has_expiry && (
-                                    <div className="flex flex-col gap-1">
-                                      <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                                        Expiration Date
-                                      </label>
-                                      <input
-                                        type="date"
-                                        value={expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "")}
-                                        onChange={(e) => setExpiryDates({ ...expiryDates, [field.field_id]: e.target.value })}
-                                        disabled={status === "Approved"}
-                                        className="bg-white border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-emerald-500 transition-all text-slate-850 font-bold"
-                                      />
-                                    </div>
-                                  )}
+                              {/* Expiration Date Section if Required */}
+                              {field.has_expiry && (
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl p-3">
+                                  <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider shrink-0 flex items-center gap-1">
+                                    <span>📅</span> Expiration Date {isFieldRequired && <span className="text-rose-500 font-extrabold text-xs">*</span>}:
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "")}
+                                    onChange={(e) => setExpiryDates({ ...expiryDates, [field.field_id]: e.target.value })}
+                                    disabled={status === "Approved"}
+                                    className="bg-white border border-slate-250 hover:border-slate-350 rounded-lg px-3 py-1.5 text-xs text-slate-800 font-bold focus:outline-none focus:border-emerald-500 transition-all flex-1 max-w-xs"
+                                  />
+                                </div>
+                              )}
 
-                                  {(!field.field_type || field.field_type.startsWith("file_")) ? (
-                                    <div className="flex items-center gap-3">
-                                      <label className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-xs select-none ${status === "Approved" ? "opacity-50 pointer-events-none" : ""}`}>
-                                        <FiFileText className="w-3.5 h-3.5" />
-                                        <span>{isUploading ? "Uploading..." : "Attach Document"}</span>
+                              {/* Upload Dropzone OR Uploaded Evidence Preview Card */}
+                              {!isUploaded ? (
+                                (!field.field_type || field.field_type.startsWith("file_")) ? (
+                                  <label
+                                    className={`w-full border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/20 hover:bg-emerald-50/50 rounded-xl p-3 sm:p-3.5 flex items-center justify-between gap-3 transition-all cursor-pointer group/drop shadow-2xs ${status === "Approved" || isUploading ? "opacity-50 pointer-events-none" : ""}`}
+                                  >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                      <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/20 group-hover/drop:scale-105 transition-transform duration-200">
+                                        <FiUploadCloud className="w-4.5 h-4.5" />
+                                      </div>
+                                      <div className="min-w-0 text-left">
+                                        <p className="text-xs font-black text-slate-800 group-hover/drop:text-emerald-700 transition-colors truncate">
+                                          {isUploading ? "Uploading File to Server..." : "Click or Drag & Drop File Here"}
+                                        </p>
+                                        <p className="text-[10px] font-extrabold text-slate-400 mt-0.5 truncate">
+                                          PDF, JPG, PNG or DOC (Max 10MB)
+                                        </p>
+                                      </div>
+                                    </div>
+
+                                    <span style={{ fontSize: "11px" }} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 group-hover/drop:bg-emerald-700 text-white font-extrabold shadow-2xs transition-all active:scale-95 select-none">
+                                      <FiFileText className="w-3.5 h-3.5" />
+                                      <span>Browse File</span>
+                                    </span>
+
+                                    <input
+                                      type="file"
+                                      accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
+                                      className="hidden"
+                                      disabled={isUploading || status === "Approved"}
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
+                                        if (field.has_expiry && !expDate) {
+                                          setFieldErrors({ ...fieldErrors, [field.field_id]: "Please select document expiration date first." });
+                                          return;
+                                        }
+                                        try {
+                                          setUploadingFields({ ...uploadingFields, [field.field_id]: true });
+                                          setFieldErrors({ ...fieldErrors, [field.field_id]: "" });
+                                          await handleUploadDocument(field.field_id, file, expDate);
+                                          triggerToast("success", `${field.field_name} uploaded successfully!`);
+                                        } catch (err: any) {
+                                          setFieldErrors({ ...fieldErrors, [field.field_id]: err.message || "Failed to upload file." });
+                                        } finally {
+                                          setUploadingFields({ ...uploadingFields, [field.field_id]: false });
+                                        }
+                                      }}
+                                    />
+                                  </label>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <input
+                                      type={field.field_type === 'number' ? 'number' : field.field_type === 'date' ? 'date' : 'text'}
+                                      value={textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "")}
+                                      onChange={(e) => setTextValues({ ...textValues, [field.field_id]: e.target.value })}
+                                      disabled={status === "Approved" || isUploading}
+                                      placeholder={`Enter ${field.field_name}...`}
+                                      className={inputClass}
+                                    />
+                                    <button
+                                      type="button"
+                                      disabled={status === "Approved" || isUploading}
+                                      onClick={() => {
+                                        const textVal = textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "");
+                                        const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
+                                        handleSaveTextValue(field.field_id, textVal, expDate);
+                                      }}
+                                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95 flex items-center gap-1.5"
+                                    >
+                                      <FiCheck className="w-4 h-4" />
+                                      <span>{isUploading ? "Saving..." : "Save Information"}</span>
+                                    </button>
+                                  </div>
+                                )
+                              ) : (
+                                /* Uploaded Card Preview */
+                                <div className="bg-emerald-50/60 border border-emerald-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                                  <div className="flex items-center gap-3 min-w-0">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/20">
+                                      <FiCheck className="w-5 h-5" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-black text-slate-850 truncate">
+                                        {userDoc.file_url ? userDoc.file_url.split('/').pop() : userDoc.text_value}
+                                      </p>
+                                      <p className="text-[10px] font-extrabold text-emerald-700 flex items-center gap-1 mt-0.5">
+                                        <span>✓ Verified File Uploaded</span>
+                                        {userDoc?.expiry_date && <span>• Expires: {userDoc.expiry_date.substring(0, 10)}</span>}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    {userDoc?.file_url && (
+                                      <a
+                                        href={userDoc.file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3.5 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                                      >
+                                        <span>View File</span>
+                                        <span>↗</span>
+                                      </a>
+                                    )}
+
+                                    {status !== "Approved" && (!field.field_type || field.field_type.startsWith("file_")) && (
+                                      <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-xs active:scale-95">
+                                        <span>Replace File</span>
                                         <input
                                           type="file"
                                           accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
                                           className="hidden"
-                                          disabled={isUploading || status === "Approved"}
                                           onChange={async (e) => {
                                             const file = e.target.files?.[0];
                                             if (!file) return;
-                                            
                                             const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
-                                            if (field.has_expiry && !expDate) {
-                                              setFieldErrors({ ...fieldErrors, [field.field_id]: "Please select document expiration date first." });
-                                              return;
-                                            }
-
                                             try {
                                               setUploadingFields({ ...uploadingFields, [field.field_id]: true });
                                               setFieldErrors({ ...fieldErrors, [field.field_id]: "" });
                                               await handleUploadDocument(field.field_id, file, expDate);
-                                              triggerToast("success", `${field.field_name} uploaded successfully!`);
+                                              triggerToast("success", `${field.field_name} updated successfully!`);
                                             } catch (err: any) {
-                                              setFieldErrors({ ...fieldErrors, [field.field_id]: err.message || "Failed to upload file." });
+                                              setFieldErrors({ ...fieldErrors, [field.field_id]: err.message || "Failed to update file." });
                                             } finally {
                                               setUploadingFields({ ...uploadingFields, [field.field_id]: false });
                                             }
                                           }}
                                         />
                                       </label>
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col gap-2">
-                                      <input
-                                        type={field.field_type === 'number' ? 'number' : field.field_type === 'date' ? 'date' : 'text'}
-                                        value={textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "")}
-                                        onChange={(e) => setTextValues({ ...textValues, [field.field_id]: e.target.value })}
-                                        disabled={status === "Approved" || isUploading}
-                                        placeholder={`Enter ${field.field_name}...`}
-                                        className={inputClass}
-                                      />
-                                      <div className="flex items-center gap-3">
-                                        <button
-                                          type="button"
-                                          disabled={status === "Approved" || isUploading}
-                                          onClick={() => {
-                                            const textVal = textValues[field.field_id] !== undefined ? textValues[field.field_id] : (userDoc?.text_value || "");
-                                            const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
-                                            handleSaveTextValue(field.field_id, textVal, expDate);
-                                          }}
-                                          className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xxs font-black uppercase tracking-wider rounded-xl transition cursor-pointer shadow-xs select-none disabled:opacity-50"
-                                        >
-                                          <FiCheck className="w-3.5 h-3.5" />
-                                          <span>{isUploading ? "Saving..." : "Save Answer"}</span>
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {errorMsg && (
-                                    <p className="text-[10px] text-rose-505 font-bold select-none">⚠️ {errorMsg}</p>
-                                  )}
-
-                                  {status === "Rejected" && userDoc?.rejection_reason && (
-                                    <p className="text-[10px] text-rose-600 font-bold select-none">Rejection reason: {userDoc.rejection_reason}</p>
-                                  )}
+                                    )}
+                                  </div>
                                 </div>
+                              )}
 
-                                <div className="border border-dashed border-slate-200 bg-white/50 rounded-xl p-4 flex flex-col items-center justify-center text-center gap-1.5 min-h-[90px]">
-                                  {isUploaded ? (
-                                    (!field.field_type || field.field_type.startsWith("file_")) ? (
-                                      <>
-                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                          <FiCheck className="w-4 h-4" />
-                                        </div>
-                                        <a
-                                          href={userDoc.file_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-[10px] font-bold text-slate-500 hover:text-teal-700 underline truncate max-w-full px-2"
-                                        >
-                                          {userDoc.file_url.split('/').pop()}
-                                        </a>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                                          <FiCheck className="w-4 h-4" />
-                                        </div>
-                                        <span className="text-[11px] font-black text-slate-800 break-all max-w-full px-2">
-                                          {userDoc.text_value}
-                                        </span>
-                                      </>
-                                    )
-                                  ) : (
-                                    <>
-                                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-455">
-                                        <FiFileText className="w-4 h-4" />
-                                      </div>
-                                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">No Evidence</span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
+                              {errorMsg && (
+                                <p className="text-[11px] text-rose-600 font-extrabold select-none bg-rose-50 border border-rose-200/70 p-2.5 rounded-xl flex items-center gap-1.5">
+                                  <span>⚠️</span> {errorMsg}
+                                </p>
+                              )}
+
+                              {status === "Rejected" && userDoc?.rejection_reason && (
+                                <p className="text-[11px] text-rose-600 font-extrabold select-none bg-rose-50 border border-rose-200/70 p-2.5 rounded-xl flex items-center gap-1.5">
+                                  <span>❌ Rejection Reason:</span> {userDoc.rejection_reason}
+                                </p>
+                              )}
                             </div>
                           );
                         });
@@ -3401,14 +3604,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             (f.step_number || 5) === wizardStep
                           );
                           const missingRequired = stepFields.filter(field => {
-                            if (!field.is_required) return false;
+                            const isReq = field.is_required == 1 || field.is_required === true || field.is_required === "1" || field.is_required === "true";
+                            if (!isReq) return false;
                             const uploaded = userUploadedDocs.some(d => d.field_id === field.field_id);
                             return !uploaded;
                           });
 
                           if (missingRequired.length > 0) {
                             const list = missingRequired.map(f => f.field_name).join(", ");
-                            alert(`Please complete all required fields for this step: ${list}`);
+                            triggerToast("error", `Please complete all required fields for this step: ${list}`);
                             return;
                           }
 
@@ -3425,9 +3629,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             }
                           }
                         }}
-                        className="bg-teal-700 hover:bg-teal-850 text-white active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer shadow-sm shadow-teal-750/10"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl text-xs cursor-pointer shadow-md"
                       >
-                        {wizardStep === totalFreelancerSteps ? "Complete Onboarding ✓" : "Save & Continue →"}
+                        <span className="text-white">{wizardStep === totalFreelancerSteps ? "Complete Onboarding ✓" : "Save & Continue →"}</span>
                       </button>
                     </div>
                   </div>
@@ -4277,6 +4481,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
+      
+      {/* Referral Celebration Bonus Popup Modal */}
+      <ReferralCelebrationModal />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { FiPlus, FiTrash2, FiSave, FiAlertCircle, FiImage, FiSettings, FiPenTool, FiUpload } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiSave, FiAlertCircle, FiImage, FiSettings, FiPenTool, FiUpload, FiCheckCircle } from "react-icons/fi";
 import { useAdmin } from "@/app/admin/AdminContext";
 import CanvasEditor from "@/components/CanvasEditor";
 
@@ -21,7 +21,16 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
 
   const [signupBonus, setSignupBonus] = useState<number>(5.00);
   const [enableSignupBonus, setEnableSignupBonus] = useState<boolean>(true);
+  const [completionWindowDays, setCompletionWindowDays] = useState<number>(30);
+  const [minWithdrawalAmount, setMinWithdrawalAmount] = useState<number>(10.00);
+
+  // Approval requirement toggles (Auto-credit vs Manual Admin Approval)
+  const [requireSignupBonusApproval, setRequireSignupBonusApproval] = useState<boolean>(true);
+  const [requireReferralRewardApproval, setRequireReferralRewardApproval] = useState<boolean>(true);
+  const [requireAffiliateApproval, setRequireAffiliateApproval] = useState<boolean>(true);
+
   const [tiers, setTiers] = useState<ReferralTier[]>([]);
+  const [affiliateTiers, setAffiliateTiers] = useState<ReferralTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -91,7 +100,15 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             if (val) {
               setSignupBonus(val.signup_bonus !== undefined ? parseFloat(val.signup_bonus) : 5.00);
               setEnableSignupBonus(val.enable_signup_bonus !== undefined ? val.enable_signup_bonus === true || val.enable_signup_bonus === "true" : true);
+              setCompletionWindowDays(val.completion_window_days !== undefined ? parseInt(val.completion_window_days) || 30 : 30);
+              setMinWithdrawalAmount(val.min_withdrawal_amount !== undefined ? parseFloat(val.min_withdrawal_amount) || 10.00 : 10.00);
+              
+              setRequireSignupBonusApproval(val.require_signup_bonus_approval !== undefined ? val.require_signup_bonus_approval === true || val.require_signup_bonus_approval === "true" : true);
+              setRequireReferralRewardApproval(val.require_referral_reward_approval !== undefined ? val.require_referral_reward_approval === true || val.require_referral_reward_approval === "true" : true);
+              setRequireAffiliateApproval(val.require_affiliate_approval !== undefined ? val.require_affiliate_approval === true || val.require_affiliate_approval === "true" : true);
+
               setTiers(Array.isArray(val.tiers) ? val.tiers : []);
+              setAffiliateTiers(Array.isArray(val.affiliate_tiers) ? val.affiliate_tiers : []);
               
               setBannerHeadline(val.banner_headline || "Invite Friends & Earn");
               setBannerSubline(val.banner_subline || "Share your referral link with friends...");
@@ -113,8 +130,6 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
 
     fetchSettings();
   }, []);
-
-
 
   // Canvas editor save: receives base64 PNG dataUrl, uploads it, stores URL
   const handleCanvasSave = useCallback(async (dataUrl: string) => {
@@ -142,10 +157,6 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
     }
   }, []);
 
-
-
-  // Text items editor helpers removed — handled by CanvasEditor component
-
   // Save Configs
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -153,36 +164,58 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
       setSaving(true);
       setError("");
 
-      // Validate tiers
+      // Validate referral tiers
       for (const tier of tiers) {
         if (isNaN(tier.min_referrals) || tier.min_referrals < 1) {
-          setError("Minimum referrals must be a positive integer.");
+          setError("Minimum referrals in Referral Payout Tiers must be a positive integer.");
           setSaving(false);
           return;
         }
         if (isNaN(tier.reward) || tier.reward < 0) {
-          setError("Reward amount must be a positive number.");
+          setError("Reward amount in Referral Payout Tiers must be a positive number.");
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Validate affiliate tiers
+      for (const tier of affiliateTiers) {
+        if (isNaN(tier.min_referrals) || tier.min_referrals < 1) {
+          setError("Minimum conversions in Affiliate Payout Tiers must be a positive integer.");
+          setSaving(false);
+          return;
+        }
+        if (isNaN(tier.reward) || tier.reward < 0) {
+          setError("Reward amount in Affiliate Payout Tiers must be a positive number.");
           setSaving(false);
           return;
         }
       }
 
       const sortedTiers = [...tiers].sort((a, b) => a.min_referrals - b.min_referrals);
+      const sortedAffiliateTiers = [...affiliateTiers].sort((a, b) => a.min_referrals - b.min_referrals);
 
       const payload = {
         signup_bonus: signupBonus,
         enable_signup_bonus: enableSignupBonus,
+        completion_window_days: completionWindowDays,
+        min_withdrawal_amount: minWithdrawalAmount,
+        require_signup_bonus_approval: requireSignupBonusApproval,
+        require_referral_reward_approval: requireReferralRewardApproval,
+        require_affiliate_approval: requireAffiliateApproval,
         tiers: sortedTiers,
+        affiliate_tiers: sortedAffiliateTiers,
         banner_headline: bannerHeadline,
         banner_subline: bannerSubline,
         banner_bg_color: bannerBgColor,
         banner_accent_color: bannerAccentColor,
-        banner_image_url: bannerImageUrl, // Custom designed PNG (if any). Else backend serves SVG.
+        banner_image_url: bannerImageUrl,
       };
 
       await handleSaveSetting("referral_settings", payload, "referral");
-      triggerToast("Settings Saved", "Referral configurations saved successfully.");
+      triggerToast("Settings Saved", "Referral & Affiliate configurations saved successfully.");
       setTiers(sortedTiers);
+      setAffiliateTiers(sortedAffiliateTiers);
       setPreviewToken(Date.now());
     } catch (err: any) {
       console.error("Save error:", err);
@@ -208,6 +241,22 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
     setTiers(nextTiers);
   };
 
+  const handleAddAffiliateTier = () => {
+    setAffiliateTiers([...affiliateTiers, { min_referrals: 1, reward: 10.00 }]);
+  };
+
+  const handleRemoveAffiliateTier = (idx: number) => {
+    const nextTiers = [...affiliateTiers];
+    nextTiers.splice(idx, 1);
+    setAffiliateTiers(nextTiers);
+  };
+
+  const handleUpdateAffiliateTierField = (idx: number, field: keyof ReferralTier, value: number) => {
+    const nextTiers = [...affiliateTiers];
+    nextTiers[idx] = { ...nextTiers[idx], [field]: value };
+    setAffiliateTiers(nextTiers);
+  };
+
 
   if (loading) {
     return (
@@ -223,9 +272,18 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
       
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed bottom-5 right-5 bg-slate-900 border border-slate-800 text-white px-5 py-4 rounded-xl shadow-2xl flex flex-col gap-1 z-50 animate-slideIn">
-          <span className="text-xs font-black text-teal-400">{toastTitle}</span>
-          <span className="text-[11px] font-semibold text-slate-300">{toastText}</span>
+        <div className={`fixed bottom-6 right-6 px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3.5 z-50 animate-slideIn border ${
+          isDark 
+            ? "bg-slate-900 border-teal-500/40 text-white shadow-teal-950/40" 
+            : "bg-teal-900 border-teal-700/80 text-white shadow-teal-900/30"
+        }`}>
+          <div className="w-8 h-8 rounded-xl bg-teal-500/20 border border-teal-400/30 flex items-center justify-center text-teal-300 shrink-0">
+            <FiCheckCircle className="w-4 h-4 text-teal-300" />
+          </div>
+          <div className="flex flex-col text-left">
+            <span className="text-xs font-black text-teal-200 tracking-wide">{toastTitle}</span>
+            <span className="text-[11px] font-semibold text-slate-100">{toastText}</span>
+          </div>
         </div>
       )}
 
@@ -275,13 +333,146 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             <span className={`text-[9px] font-semibold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Amount credited to referred user's wallet after admin review and approval</span>
           </div>
         )}
+
+        {/* Referral Purchase Completion Window (Days) */}
+        <div className="flex flex-col gap-1.5 border-t pt-3.5 mt-1">
+          <label className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            Referral Purchase Window (Days)
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              required
+              value={completionWindowDays}
+              onChange={(e) => setCompletionWindowDays(parseInt(e.target.value) || 1)}
+              className={`border rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-teal-700 transition w-32 ${
+                isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+              }`}
+            />
+            <span className={`text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-600"}`}>Days from Registration</span>
+          </div>
+          <span className={`text-[9px] font-semibold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+            Referred friends must complete their first project milestone or gig purchase within this number of days. If exceeded, the referral is marked unsuccessful and reward payout is forfeited.
+          </span>
+        </div>
+
+        {/* Minimum Withdrawal Amount ($) */}
+        <div className="flex flex-col gap-1.5 border-t pt-3.5 mt-1">
+          <label className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+            Minimum Withdrawal Amount ($)
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              step="0.01"
+              required
+              value={minWithdrawalAmount}
+              onChange={(e) => setMinWithdrawalAmount(parseFloat(e.target.value) || 0)}
+              className={`border rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-teal-700 transition w-36 ${
+                isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+              }`}
+            />
+            <span className={`text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-600"}`}>USD Minimum Threshold</span>
+          </div>
+          <span className={`text-[9px] font-semibold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
+            Minimum wallet balance amount required before users, referrers, or affiliates can submit a withdrawal request to their bank account.
+          </span>
+        </div>
+      </div>
+
+      {/* Row 2: Approval Requirement Toggles (Auto-Credit vs Manual Admin Approval) */}
+      <div className={`p-5 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/50 border-slate-200/80"} flex flex-col gap-4 max-w-2xl`}>
+        <div className="flex items-center gap-2">
+          <FiSettings className="w-4 h-4 text-teal-600" />
+          <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
+            Payout Approval Requirements &amp; Auto-Credit Workflow
+          </h4>
+        </div>
+        <p className={`text-[11px] font-semibold ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+          Choose whether payouts require manual admin approval or get automatically credited into active wallet balances instantly.
+        </p>
+
+        <div className="flex flex-col gap-3.5 mt-1">
+          
+          {/* Toggle 1: Sign-Up Bonus Approval */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="flex flex-col text-left">
+              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                <span>🎁 Require Admin Approval for Sign-Up Bonus</span>
+              </span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                {requireSignupBonusApproval
+                  ? "ENABLED: Sign-up bonuses ($2.00) are logged as Pending Admin Approval."
+                  : "DISABLED (AUTO-CREDIT): Sign-up bonuses ($2.00) are credited automatically to user active wallet balance immediately upon onboarding setup."}
+              </span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={requireSignupBonusApproval}
+                onChange={(e) => setRequireSignupBonusApproval(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+            </label>
+          </div>
+
+          {/* Toggle 2: Referral Promoter Reward Approval */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="flex flex-col text-left">
+              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                <span>💰 Require Admin Approval for Referral Rewards</span>
+              </span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                {requireReferralRewardApproval
+                  ? "ENABLED: Referral promoter rewards require admin approval before wallet release."
+                  : "DISABLED (AUTO-CREDIT): Referral promoter rewards are credited automatically to referrer active wallet balance upon first completed order."}
+              </span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={requireReferralRewardApproval}
+                onChange={(e) => setRequireReferralRewardApproval(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+            </label>
+          </div>
+
+          {/* Toggle 3: Affiliate Commission Approval */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xs">
+            <div className="flex flex-col text-left">
+              <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                <span>⚡ Require Admin Approval for Affiliate Commissions</span>
+              </span>
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                {requireAffiliateApproval
+                  ? "ENABLED: Affiliate commissions require admin approval before wallet release."
+                  : "DISABLED (AUTO-CREDIT): Affiliate commissions are credited automatically to affiliate active wallet balance immediately upon earning."}
+              </span>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={requireAffiliateApproval}
+                onChange={(e) => setRequireAffiliateApproval(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+            </label>
+          </div>
+
+        </div>
       </div>
 
       {/* Row 2: Referrer Tiers Grid (Boxed) */}
       <div className={`p-5 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/50 border-slate-200/80"} flex flex-col gap-4`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-150/20 pb-3.5">
           <div>
-            <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Promoter Payout Tiers</h4>
+            <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Referral Promoter Payout Tiers</h4>
             <p className={`text-[10px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Determine how much referrers earn based on successful referral counts</p>
           </div>
           <button
@@ -290,7 +481,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             className="flex items-center gap-1.5 px-3 py-2 border border-teal-200 bg-teal-50 text-teal-750 text-[10px] font-black uppercase rounded-lg hover:bg-teal-100 hover:border-teal-300 transition-all cursor-pointer border-none"
           >
             <FiPlus className="w-3.5 h-3.5" />
-            Add Payout Rule
+            Add Referral Payout Rule
           </button>
         </div>
 
@@ -356,169 +547,112 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
         )}
       </div>
 
-      {/* Row 3: Promo Banner Customizer Mode Selector */}
-      <div className={`flex flex-col gap-4 border-t pt-6 ${isDark ? "border-slate-800" : "border-slate-100"}`}>
-        <div>
-          <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider font-extrabold">Promo Banner Customizer</h4>
-          <p className="text-[10px] text-slate-400 font-bold mt-0.5">Use the Dynamic SVG Template below for quick edits, or open the Canvas Designer to create a fully custom banner image.</p>
-        </div>
-
-        {/* Form Section: SVG Template settings */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 p-6 rounded-2xl border ${
-          isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/30 border-slate-150"
-        }`}>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Banner Headline</label>
-              <input
-                type="text"
-                required
-                value={bannerHeadline}
-                onChange={(e) => setBannerHeadline(e.target.value)}
-                className={`border rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-teal-700 transition ${
-                  isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-white border-slate-200 text-slate-700"
-                }`}
-              />
-            </div>
-            
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Banner Subline</label>
-              <textarea
-                rows={3}
-                required
-                value={bannerSubline}
-                onChange={(e) => setBannerSubline(e.target.value)}
-                className={`border rounded-xl px-4 py-2.5 text-xs font-semibold focus:outline-none focus:border-teal-700 transition resize-none ${
-                  isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-white border-slate-200 text-slate-700"
-                }`}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Primary Theme Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={bannerBgColor}
-                    onChange={(e) => setBannerBgColor(e.target.value)}
-                    className="w-10 h-10 border border-slate-200 rounded-lg cursor-pointer p-0.5 bg-transparent"
-                  />
-                  <input
-                    type="text"
-                    value={bannerBgColor}
-                    onChange={(e) => setBannerBgColor(e.target.value)}
-                    className={`border rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none w-full ${
-                      isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-white border-slate-200 text-slate-700"
-                    }`}
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Accent Theme Color</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={bannerAccentColor}
-                    onChange={(e) => setBannerAccentColor(e.target.value)}
-                    className="w-10 h-10 border border-slate-200 rounded-lg cursor-pointer p-0.5 bg-transparent"
-                  />
-                  <input
-                    type="text"
-                    value={bannerAccentColor}
-                    onChange={(e) => setBannerAccentColor(e.target.value)}
-                    className={`border rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none w-full ${
-                      isDark ? "bg-slate-950 border-slate-700 text-slate-100" : "bg-white border-slate-200 text-slate-700"
-                    }`}
-                  />
-                </div>
-              </div>
-            </div>
+      {/* Row 3: Affiliate Tiers Grid (Boxed) */}
+      <div className={`p-5 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/50 border-slate-200/80"} flex flex-col gap-4`}>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-150/20 pb-3.5">
+          <div>
+            <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Affiliate Promoter Payout Tiers</h4>
+            <p className={`text-[10px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Determine the percentage (%) affiliates earn from the product / order price based on successful conversions</p>
           </div>
-
-          <div className="flex flex-col gap-2.5">
-            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Real-time Banner Preview</span>
-            <div className={`border rounded-xl overflow-hidden shadow-inner p-2 flex items-center justify-center min-h-[220px] ${
-              isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-slate-100"
-            }`}>
-              <img
-                src={`${API_URL.replace("/api", "")}/api/users/referral/banner.svg?t=${previewToken}`}
-                alt="Referral Dynamic Banner Preview"
-                className="w-full h-auto object-contain rounded-lg shadow-sm"
-              />
-            </div>
-            <span className="text-[9px] text-slate-400 font-semibold text-right">Preview updates automatically when you save changes.</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Canvas Designer Section ──────────────────────────────────────── */}
-      <div className={`flex flex-col gap-4 border-t pt-6 ${isDark ? "border-slate-800" : "border-slate-100"}`}>
-        <div>
-          <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-            <FiPenTool className="w-3.5 h-3.5" /> Custom Banner Designer
-          </h4>
-          <p className="text-[10px] text-slate-400 font-semibold mt-1">
-            Design a fully custom promo banner — drag text, images, shapes, set fonts &amp; colors — then export as PNG.
-          </p>
-        </div>
-
-        <div className="flex items-start gap-3 flex-wrap">
-          {/* Open editor button */}
           <button
             type="button"
-            onClick={() => setShowCanvasEditor(true)}
-            className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-teal-700 to-teal-600 hover:from-teal-600 hover:to-teal-500 text-white text-xs font-black rounded-xl shadow-lg shadow-teal-700/20 transition-all cursor-pointer border-0"
+            onClick={handleAddAffiliateTier}
+            className="flex items-center gap-1.5 px-3 py-2 border border-teal-200 bg-teal-50 text-teal-750 text-[10px] font-black uppercase rounded-lg hover:bg-teal-100 hover:border-teal-300 transition-all cursor-pointer border-none"
           >
-            <FiPenTool className="w-3.5 h-3.5" />
-            Open Canvas Designer
+            <FiPlus className="w-3.5 h-3.5" />
+            Add Affiliate Payout Rule
           </button>
-
-          {/* Direct image upload button */}
-          <label className={`flex items-center gap-2 px-5 py-3 text-xs font-black rounded-xl border transition-all cursor-pointer select-none ${
-            isDark
-              ? "bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800 hover:border-slate-600"
-              : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200/80"
-          }`}>
-            {uploadingDirect ? (
-              <div className="w-3.5 h-3.5 border-2 border-t-transparent border-teal-750 rounded-full animate-spin" />
-            ) : (
-              <FiUpload className="w-3.5 h-3.5 text-slate-500" />
-            )}
-            <span>Upload Image Directly</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              disabled={uploadingDirect}
-              onChange={handleDirectBannerUpload}
-            />
-          </label>
         </div>
 
-          {/* Preview of existing custom banner */}
-          {bannerImageUrl && (
-            <div className="flex flex-col gap-1.5 flex-1">
-              <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Current Custom Banner</span>
-              <div className="flex items-start gap-3">
-                <img
-                  src={bannerImageUrl}
-                  alt="Custom Banner"
-                  className={`h-16 w-auto rounded-lg border shadow-sm object-cover ${
-                    isDark ? "border-slate-800" : "border-slate-200"
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setBannerImageUrl("")}
-                  className="text-[9px] font-black text-rose-500 hover:underline mt-1"
-                >
-                  Remove custom banner
-                </button>
-              </div>
-              <span className="text-[9px] text-teal-600 font-semibold">✓ This PNG will be served as the promo banner on user dashboards.</span>
+        {affiliateTiers.length > 0 ? (
+          <>
+            <div className={`border rounded-xl overflow-hidden ${isDark ? "border-slate-800" : "border-slate-150/80"}`}>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className={`border-b text-[9px] font-black uppercase tracking-widest select-none ${isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-50 border-slate-150/70 text-slate-400"}`}>
+                    <th className="px-5 py-3">Min Successful Conversions</th>
+                    <th className="px-5 py-3">Affiliate Commission Rate (%)</th>
+                    <th className="px-5 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {affiliateTiers.map((tier, idx) => (
+                    <tr key={idx} className={`border-b last:border-0 transition ${isDark ? "border-slate-800 hover:bg-slate-950/40 text-slate-300" : "border-slate-100 hover:bg-slate-50/50 text-slate-750"}`}>
+                      <td className="px-5 py-3.5">
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={tier.min_referrals}
+                          onChange={(e) => handleUpdateAffiliateTierField(idx, "min_referrals", parseInt(e.target.value) || 0)}
+                          className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-32 ${
+                            isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+                          }`}
+                          placeholder="e.g. 1"
+                        />
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="100"
+                            required
+                            value={tier.reward}
+                            onChange={(e) => handleUpdateAffiliateTierField(idx, "reward", parseFloat(e.target.value) || 0)}
+                            className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-28 ${
+                              isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
+                            }`}
+                            placeholder="e.g. 5"
+                          />
+                          <span className={`text-xs font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>%</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveAffiliateTier(idx)}
+                          className={`p-2 rounded-lg transition-colors cursor-pointer border-none bg-transparent ${isDark ? "text-rose-400 hover:bg-rose-950/20" : "text-rose-500 hover:bg-rose-50"}`}
+                          title="Delete tier"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
+
+            {/* Dynamic Product Price Calculation Breakdown Preview */}
+            <div className={`p-4 rounded-xl border text-xs font-semibold flex flex-col gap-2 ${isDark ? "bg-slate-950/80 border-slate-800 text-slate-300" : "bg-teal-50/60 border-teal-100/80 text-slate-700"}`}>
+              <span className="font-black text-teal-700 dark:text-teal-400 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+                <span>💡 Dynamic Product Price & Payout Preview</span>
+              </span>
+              <div className="flex flex-col gap-1 text-[11px] leading-relaxed">
+                {affiliateTiers.map((t, idx) => {
+                  const samplePrice = 100;
+                  const earnedAmount = (samplePrice * (t.reward || 0)) / 100;
+                  return (
+                    <div key={idx} className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                        Tier {idx + 1} ({t.min_referrals}+ sales @ {t.reward}%):
+                      </span>
+                      <span>
+                        For a product/order price of <strong className="text-teal-700 dark:text-teal-300">$100.00</strong>, affiliate receives <strong className="text-emerald-600 dark:text-emerald-400">${earnedAmount.toFixed(2)}</strong> payout.
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className={`border border-dashed rounded-xl p-8 text-center text-xs font-semibold ${isDark ? "border-slate-800 text-slate-500" : "border-slate-200 text-slate-400"}`}>
+            No affiliate payout tiers configured. Affiliates will fall back to default payout percentage.
+          </div>
+        )}
       </div>
 
       {/* Form Action row */}

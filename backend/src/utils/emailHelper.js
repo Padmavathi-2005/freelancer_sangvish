@@ -122,11 +122,11 @@ export async function sendEmail({ to, subject, text, html }) {
       }
     }
 
-    smtpHost = emailSettings.smtp_host || "smtp";
-    const smtpPort = parseInt(emailSettings.smtp_port || 2525);
-    const smtpUser = emailSettings.smtp_user || "";
-    const smtpPass = emailSettings.smtp_pass || "";
-    const fromEmail = emailSettings.email_id || "noreply@buy2lancer.com";
+    smtpHost = process.env.SMTP_HOST || emailSettings.smtp_host || "smtp";
+    const smtpPort = parseInt(process.env.SMTP_PORT || emailSettings.smtp_port || 2525);
+    const smtpUser = process.env.SMTP_USER || emailSettings.smtp_user || "";
+    const smtpPass = process.env.SMTP_PASS || emailSettings.smtp_pass || "";
+    const fromEmail = process.env.SMTP_FROM || emailSettings.email_id || "noreply@buy2lancer.com";
     siteName = siteSettings.site_name || "Buy2Lancer";
 
     // Resolve logo URL - handles absolute and relative paths
@@ -136,17 +136,20 @@ export async function sendEmail({ to, subject, text, html }) {
       resolvedLogoUrl = `${backendBaseUrl}${resolvedLogoUrl.startsWith("/") ? "" : "/"}${resolvedLogoUrl}`;
     }
 
-    console.log(`✉️ Preparing email to ${to} (Subject: "${subject}") via ${smtpHost}...`);
+    console.log(`✉️ Preparing email to ${to} (Subject: "${subject}") via ${smtpHost}:${smtpPort}...`);
 
     // 2. Initialize Nodemailer Transporter
     const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort,
-      secure: smtpPort === 465, // true for 465, false for other ports
+      secure: smtpPort === 465,
       auth: smtpUser && smtpPass ? {
         user: smtpUser,
         pass: smtpPass
-      } : undefined
+      } : undefined,
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
     htmlToSend = html || wrapInHtmlTemplate({
@@ -177,7 +180,8 @@ export async function sendEmail({ to, subject, text, html }) {
       emailCopyright: emailSettings.email_copyright
     });
 
-    console.error("⚠️ Failed to send email via SMTP, logging contents instead:");
+    console.error(`❌ SMTP Error sending email to ${to}:`, error.message || error);
+    console.log(`💡 Note: To deliver emails to real inboxes, configure valid SMTP credentials in Admin Panel -> Email Settings or in backend/.env (e.g. SMTP_HOST=smtp.gmail.com)`);
     console.log(`--------------------------------------------------`);
     console.log(`TO: ${to}`);
     console.log(`SUBJECT: ${subject}`);

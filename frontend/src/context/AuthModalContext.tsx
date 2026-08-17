@@ -123,6 +123,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("user", JSON.stringify(data.user));
         localStorage.removeItem("onboarding_completed");
         localStorage.removeItem("onboarding_step");
+        localStorage.removeItem("onboarding_role");
 
         setIsOpen(false);
 
