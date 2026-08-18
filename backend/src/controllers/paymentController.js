@@ -237,14 +237,15 @@ export const checkAndEarnAffiliateCommission = async (referredUserId) => {
     const referrerId = userRes.rows[0].referred_by;
     if (!referrerId) return;
 
-    // 2. Fetch the latest completed transaction of the referred user that has a commission_amount > 0
+    // 2. Fetch the latest completed transaction of the referred user (client or freelancer) that has a commission_amount > 0
     // and hasn't been credited for affiliate commissions yet
     const query = `
       SELECT wt.transaction_id, wt.amount, wt.commission_amount
       FROM wallet_transactions wt
-      JOIN wallets w ON w.wallet_id = wt.sender_wallet_id
-      WHERE w.user_id = $1 
-        AND wt.status = 'completed' 
+      LEFT JOIN wallets w_send ON w_send.wallet_id = wt.sender_wallet_id
+      LEFT JOIN wallets w_recv ON w_recv.wallet_id = wt.receiver_wallet_id
+      WHERE (w_send.user_id = $1 OR w_recv.user_id = $1)
+        AND LOWER(wt.status) = 'completed' 
         AND wt.commission_amount > 0
         AND NOT EXISTS (
           SELECT 1 FROM affiliate_commissions ac 
@@ -1557,6 +1558,14 @@ export const releaseMilestonePayment = async (req, res) => {
 
 
       await pool.query("COMMIT");
+
+      // Trigger affiliate commission checks for both client and freelancer referrals
+      try {
+        await checkAndEarnAffiliateCommission(contract.client_id);
+        await checkAndEarnAffiliateCommission(contract.freelancer_id);
+      } catch (aErr) {
+        console.error("Error checking affiliate commission on milestone release:", aErr);
+      }
 
       // Notify freelancer
       try {

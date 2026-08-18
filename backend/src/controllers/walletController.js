@@ -61,15 +61,25 @@ export const getUserWallet = async (req, res) => {
     );
     const pendingBonusBalance = parseFloat(pendingBonusRes.rows[0].pending_bonus || "0");
 
-    // Fetch min_withdrawal_amount setting from DB
+    // Fetch min_withdrawal_amount setting from DB (check general settings first, fallback to referral settings)
     let minWithdrawalAmount = 10.00;
     try {
-      const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
-      if (settingsRes.rows.length > 0) {
-        let val = settingsRes.rows[0].setting_value;
+      const directRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'min_withdrawal_amount'");
+      if (directRes.rows.length > 0) {
+        let val = directRes.rows[0].setting_value;
         if (typeof val === "string") { try { val = JSON.parse(val); } catch (e) {} }
-        if (val && val.min_withdrawal_amount !== undefined && parseFloat(val.min_withdrawal_amount) > 0) {
-          minWithdrawalAmount = parseFloat(val.min_withdrawal_amount);
+        const parsed = typeof val === "object" ? parseFloat(val.amount || val.min_withdrawal_amount) : parseFloat(val);
+        if (!isNaN(parsed) && parsed > 0) {
+          minWithdrawalAmount = parsed;
+        }
+      } else {
+        const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+        if (settingsRes.rows.length > 0) {
+          let val = settingsRes.rows[0].setting_value;
+          if (typeof val === "string") { try { val = JSON.parse(val); } catch (e) {} }
+          if (val && val.min_withdrawal_amount !== undefined && parseFloat(val.min_withdrawal_amount) > 0) {
+            minWithdrawalAmount = parseFloat(val.min_withdrawal_amount);
+          }
         }
       }
     } catch (sErr) {}
@@ -123,15 +133,25 @@ export const requestWithdrawal = async (req, res) => {
     const withdrawAmt = parseFloat(amount);
     const wallet = await getOrCreateWallet(userId, req.user.role);
 
-    // Fetch min_withdrawal_amount setting from DB
+    // Fetch min_withdrawal_amount setting from DB (check general settings first, fallback to referral settings)
     let minWithdrawalAmount = 10.00;
     try {
-      const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
-      if (settingsRes.rows.length > 0) {
-        let val = settingsRes.rows[0].setting_value;
+      const directRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'min_withdrawal_amount'");
+      if (directRes.rows.length > 0) {
+        let val = directRes.rows[0].setting_value;
         if (typeof val === "string") { try { val = JSON.parse(val); } catch (e) {} }
-        if (val && val.min_withdrawal_amount !== undefined && parseFloat(val.min_withdrawal_amount) > 0) {
-          minWithdrawalAmount = parseFloat(val.min_withdrawal_amount);
+        const parsed = typeof val === "object" ? parseFloat(val.amount || val.min_withdrawal_amount) : parseFloat(val);
+        if (!isNaN(parsed) && parsed > 0) {
+          minWithdrawalAmount = parsed;
+        }
+      } else {
+        const settingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'referral_settings'");
+        if (settingsRes.rows.length > 0) {
+          let val = settingsRes.rows[0].setting_value;
+          if (typeof val === "string") { try { val = JSON.parse(val); } catch (e) {} }
+          if (val && val.min_withdrawal_amount !== undefined && parseFloat(val.min_withdrawal_amount) > 0) {
+            minWithdrawalAmount = parseFloat(val.min_withdrawal_amount);
+          }
         }
       }
     } catch (sErr) {}

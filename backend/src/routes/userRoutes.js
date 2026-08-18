@@ -15,6 +15,7 @@ import {
     getReferrals,
     getAffiliateStats,
     joinAffiliateProgram,
+    trackAffiliateClick,
     getReferralBanner,
     getUserProfile,
     getMySubscriptionInvoices,
@@ -48,6 +49,7 @@ router.post('/verify-email-otp', auth, verifyEmailOtp);
 router.get('/referrals', auth, getReferrals);
 router.get('/affiliate/stats', auth, getAffiliateStats);
 router.post('/affiliate/join', auth, joinAffiliateProgram);
+router.post('/affiliate/track-click', trackAffiliateClick);
 router.get('/referral/banner.svg', getReferralBanner);
 
 export default router;

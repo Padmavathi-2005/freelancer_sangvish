@@ -477,6 +477,14 @@ export const updateGigApplicationStatus = async (req, res) => {
             );
 
             await pool.query("COMMIT");
+
+            try {
+              const { checkAndEarnAffiliateCommission } = await import("./paymentController.js");
+              await checkAndEarnAffiliateCommission(contract.client_id);
+              await checkAndEarnAffiliateCommission(contract.freelancer_id);
+            } catch (aErr) {
+              console.error("Error triggering affiliate commission on gig completion:", aErr);
+            }
           } catch (txErr) {
             await pool.query("ROLLBACK");
             console.error("Escrow payout failed on gig completion:", txErr);

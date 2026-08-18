@@ -17,6 +17,8 @@ import {
   FiMapPin, 
   FiDollarSign, 
   FiCheckCircle, 
+  FiCheck,
+  FiCopy,
   FiFileText,
   FiGlobe,
   FiSend,
@@ -139,6 +141,7 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
   // Share link and toast states
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [copiedShare, setCopiedShare] = useState(false);
+  const [copiedAffiliate, setCopiedAffiliate] = useState(false);
 
   // Affiliate states
   const [isAffiliate, setIsAffiliate] = useState(false);
@@ -279,7 +282,7 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
           localStorage.setItem("user_role", "freelancer");
           localStorage.setItem("onboarding_role", "freelancer");
           setTimeout(() => {
-            router.push("/dashboard?tab=settings");
+            router.push("/dashboard/settings");
           }, 2000);
           setSubmitting(false);
           return;
@@ -522,24 +525,60 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
                 <p className="text-[11px] font-semibold text-slate-500 leading-normal">
                   Share this project link. If a user registers and books/completes this project, you will earn a recurring 10% commission on the platform service fee!
                 </p>
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5 mt-2">
+                <div className="flex items-center gap-2 bg-slate-100/80 border border-slate-200 rounded-xl p-1.5 pl-3 mt-1">
                   <input
                     type="text"
                     readOnly
-                    value={`${window.location.origin}/projects/${job.slug || job.job_id}?ref=${userReferralCode}`}
-                    className="flex-1 bg-transparent text-xs font-bold text-slate-805 outline-none select-all"
+                    value={`${typeof window !== "undefined" ? window.location.origin : ""}/projects/${job.slug || job.job_id}?ref=${userReferralCode || "REF_USER"}`}
+                    style={{ outline: "none", border: "none", boxShadow: "none" }}
+                    className="flex-1 min-w-0 bg-transparent text-xs font-mono font-semibold text-slate-700 select-all truncate border-0 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 shadow-none p-0"
                   />
                   <button
+                    type="button"
                     onClick={() => {
-                      const link = `${window.location.origin}/projects/${job.slug || job.job_id}?ref=${userReferralCode}`;
+                      const link = `${typeof window !== "undefined" ? window.location.origin : ""}/projects/${job.slug || job.job_id}?ref=${userReferralCode || "REF_USER"}`;
                       navigator.clipboard.writeText(link);
-                      showToast("success", "Affiliate link copied to clipboard!");
+                      setCopiedAffiliate(true);
+                      showToast("success", "Affiliate referral link copied to clipboard!");
+                      setTimeout(() => setCopiedAffiliate(false), 2000);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white p-2 rounded-lg cursor-pointer flex items-center justify-center shrink-0 border-none"
+                    className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0 border-none text-white shadow-xs ${
+                      copiedAffiliate
+                        ? "bg-emerald-700 hover:bg-emerald-800"
+                        : "bg-teal-700 hover:bg-teal-800 active:scale-95"
+                    }`}
                     title="Copy affiliate link"
                   >
-                    Copy
+                    {copiedAffiliate ? (
+                      <>
+                        <FiCheck className="w-3.5 h-3.5" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiCopy className="w-3.5 h-3.5" />
+                        <span>Copy</span>
+                      </>
+                    )}
                   </button>
+                </div>
+
+                {/* Direct Social Share Options with Affiliate Link */}
+                <div className="pt-2.5 border-t border-slate-100 flex flex-col gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Quick Social Share:
+                  </span>
+                  <ShareSection
+                    type="project"
+                    itemTitle={job?.title || ""}
+                    itemDescription={job?.description || ""}
+                    customUrl={typeof window !== "undefined" ? window.location.href : ""}
+                    isAffiliate={isAffiliate}
+                    referralCode={userReferralCode}
+                    onToast={(type, message) => showToast(type, message)}
+                    hideHeader={true}
+                    className="flex flex-col gap-2"
+                  />
                 </div>
               </div>
             )}

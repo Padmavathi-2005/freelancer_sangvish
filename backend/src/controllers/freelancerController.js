@@ -5,6 +5,7 @@ import { UserLanguage } from "../models/userLanguageModel.js";
 import { Experience } from "../models/experienceModel.js";
 import { Education } from "../models/educationModel.js";
 import { Certification } from "../models/certificationModel.js";
+import { FreelancerProject } from "../models/freelancerProjectModel.js";
 import { creditSignupBonusIfEligible } from "../utils/bonusHelper.js";
 
 // In-memory store for OTPs (userId -> { emailOtp, emailOtpExpires, phoneOtp, phoneOtpExpires })
@@ -1227,6 +1228,14 @@ export const approveContractPayment = async (req, res) => {
             }
 
             await pool.query("COMMIT");
+
+            try {
+                const { checkAndEarnAffiliateCommission } = await import("./paymentController.js");
+                await checkAndEarnAffiliateCommission(contract.client_id);
+                await checkAndEarnAffiliateCommission(contract.freelancer_id);
+            } catch (aErr) {
+                console.error("Error checking affiliate commission on contract release:", aErr);
+            }
         } catch (txErr) {
             await pool.query("ROLLBACK");
             throw txErr;
@@ -1902,6 +1911,14 @@ export const approveContractCompletion = async (req, res) => {
             }
 
             await pool.query("COMMIT");
+
+            try {
+                const { checkAndEarnAffiliateCommission } = await import("./paymentController.js");
+                await checkAndEarnAffiliateCommission(contract.client_id);
+                await checkAndEarnAffiliateCommission(contract.freelancer_id);
+            } catch (aErr) {
+                console.error("Error checking affiliate commission on contract completion:", aErr);
+            }
         } catch (txErr) {
             await pool.query("ROLLBACK");
             throw txErr;

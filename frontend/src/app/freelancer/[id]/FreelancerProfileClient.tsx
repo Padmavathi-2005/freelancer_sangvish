@@ -30,7 +30,7 @@ import {
 } from "react-icons/fi";
 
 export default function FreelancerProfileClient() {
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, lang } = useLanguage();
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,6 +43,8 @@ export default function FreelancerProfileClient() {
   const [error, setError] = useState("");
   const [imageError, setImageError] = useState(false);
   const [loggedInUserId, setLoggedInUserId] = useState<number | null>(null);
+  const [isAffiliate, setIsAffiliate] = useState(false);
+  const [userReferralCode, setUserReferralCode] = useState("");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -58,6 +60,26 @@ export default function FreelancerProfileClient() {
         }
       }
     }
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_URL}/users/profile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const profileData = await res.json();
+          setIsAffiliate(profileData.is_affiliate === true || profileData.is_affiliate === 1);
+          setUserReferralCode(profileData.referral_code || "");
+        }
+      } catch (err) {
+        console.error("Error fetching user profile for affiliate check:", err);
+      }
+    };
+    fetchProfile();
   }, []);
   
   // Modal for hiring / messaging
@@ -127,10 +149,10 @@ export default function FreelancerProfileClient() {
     
     const parts = [];
     if (years > 0) {
-      parts.push(`${years} yr${years > 1 ? "s" : ""}`);
+      parts.push(`${years} ${years > 1 ? t("yrs_short", "yrs") : t("yr_short", "yr")}`);
     }
     if (months > 0) {
-      parts.push(`${months} mo${months > 1 ? "s" : ""}`);
+      parts.push(`${months} ${months > 1 ? t("mos_short", "mos") : t("mo_short", "mo")}`);
     }
     
     return parts.length > 0 ? `(${parts.join(" ")})` : "";
@@ -510,7 +532,7 @@ export default function FreelancerProfileClient() {
           <div className="flex gap-3 shrink-0 w-full md:w-auto justify-center">
             {loggedInUserId && (loggedInUserId === Number(user?.user_id) || loggedInUserId === Number(profile?.user_id)) ? (
               <button
-                onClick={() => router.push("/dashboard?tab=settings")}
+                onClick={() => router.push("/dashboard/settings")}
                 className="flex-1 md:flex-none justify-center bg-[#0a5a54] hover:bg-[#074540] text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-2 border-none"
               >
                 <FiSliders className="w-4 h-4" />
@@ -523,10 +545,10 @@ export default function FreelancerProfileClient() {
                     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
                     if (!token) {
                       openLoginModal(undefined, () => {
-                        router.push(`/dashboard?tab=inbox&contactId=${id}`);
+                        router.push(`/dashboard/inbox?contactId=${id}`);
                       });
                     } else {
-                      router.push(`/dashboard?tab=inbox&contactId=${id}`);
+                      router.push(`/dashboard/inbox?contactId=${id}`);
                     }
                   }}
                   className="flex-1 md:flex-none justify-center bg-white dark:bg-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-700 border border-slate-300 dark:border-zinc-700 text-slate-800 dark:text-slate-100 font-extrabold text-xs px-5 py-3.5 rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-2"
@@ -577,7 +599,7 @@ export default function FreelancerProfileClient() {
             <div className="text-left">
               <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 mb-6 flex items-center gap-2 select-none">
                 <FiBriefcase className="w-5 h-5 text-teal-700 shrink-0" />
-                <span>Work Experience</span>
+                <span>{t("work_experience_label", "Work Experience")}</span>
               </h2>
 
               {experiences && experiences.length > 0 ? (
@@ -592,14 +614,14 @@ export default function FreelancerProfileClient() {
                           <h3 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight group-hover:text-teal-900 transition-colors">{exp.job_title}</h3>
                           <span className="text-[10px] font-black text-teal-800 bg-teal-50 border border-teal-100 px-2.5 py-0.5 rounded-lg whitespace-nowrap self-start flex items-center gap-1.5">
                             <span>
-                              {new Date(exp.start_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })} – {exp.currently_working ? "Present" : new Date(exp.end_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
+                              {new Date(exp.start_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })} – {exp.currently_working ? t("present", "Present") : new Date(exp.end_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}
                             </span>
                             <span className="text-slate-400 font-bold ml-0.5">
                               {getDurationText(exp.start_date, exp.end_date, exp.currently_working)}
                             </span>
                           </span>
                         </div>
-                        <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-wider">{exp.company_name} · {exp.employment_type || "Contract"}</p>
+                        <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-wider">{exp.company_name} · {t(exp.employment_type || "Contract")}</p>
                         {exp.description && (
                           <p className="text-xs leading-relaxed text-slate-500 font-semibold mt-2.5 max-w-2xl">{exp.description}</p>
                         )}
@@ -609,7 +631,7 @@ export default function FreelancerProfileClient() {
                 </div>
               ) : (
                 <div className="text-left py-2">
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">No Work History Logged</p>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">{t("no_work_history", "No Work History Logged")}</p>
                 </div>
               )}
             </div>
@@ -618,7 +640,7 @@ export default function FreelancerProfileClient() {
             <div className="text-left">
               <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 mb-6 flex items-center gap-2 select-none">
                 <FiBookOpen className="w-5 h-5 text-teal-700 shrink-0" />
-                <span>Education</span>
+                <span>{t("education_history_label", "Education")}</span>
               </h2>
 
               {education && education.length > 0 ? (
@@ -642,7 +664,7 @@ export default function FreelancerProfileClient() {
                 </div>
               ) : (
                 <div className="text-left py-2">
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">No Education Details Logged</p>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">{t("no_education_details", "No Education Details Logged")}</p>
                 </div>
               )}
             </div>
@@ -651,7 +673,7 @@ export default function FreelancerProfileClient() {
             <div className="text-left">
               <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 mb-6 flex items-center gap-2 select-none">
                 <FiAward className="w-5 h-5 text-teal-700 shrink-0" />
-                <span>Certifications</span>
+                <span>{t("certifications_label", "Certifications")}</span>
               </h2>
 
               {certifications && certifications.length > 0 ? (
@@ -665,7 +687,7 @@ export default function FreelancerProfileClient() {
                         <h3 className="text-sm sm:text-base font-extrabold text-slate-900 leading-tight group-hover:text-teal-900 transition-colors">{cert.certificate_name}</h3>
                         <p className="text-[10px] font-black text-teal-800 uppercase tracking-widest mt-1.5">{cert.issuing_organization}</p>
                         {cert.issue_date && (
-                          <p className="text-[10px] text-slate-400 font-bold mt-1">Issued: {new Date(cert.issue_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}</p>
+                          <p className="text-[10px] text-slate-400 font-bold mt-1">{t("issued_date", "Issued:")} {new Date(cert.issue_date).toLocaleDateString(undefined, { year: 'numeric', month: 'short' })}</p>
                         )}
                         {cert.credential_url && (
                           <a
@@ -674,7 +696,7 @@ export default function FreelancerProfileClient() {
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 text-[10px] font-black text-teal-700 hover:text-teal-800 cursor-pointer mt-2 group-hover:underline"
                           >
-                            <span>Verify Credential</span>
+                            <span>{t("verify_credential", "Verify Credential")}</span>
                             <FiExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
@@ -684,7 +706,7 @@ export default function FreelancerProfileClient() {
                 </div>
               ) : (
                 <div className="text-left py-2">
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">No Certifications Logged</p>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">{t("no_certifications", "No Certifications Logged")}</p>
                 </div>
               )}
             </div>
@@ -697,7 +719,7 @@ export default function FreelancerProfileClient() {
             {/* Contact details */}
             <div className="flex flex-col gap-4 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 select-none">
-                Freelancer Metadata
+                {t("freelancer_metadata", "Freelancer Metadata")}
               </h3>
               
               <div className="flex flex-col gap-3.5 text-xs font-semibold text-slate-600">
@@ -709,7 +731,7 @@ export default function FreelancerProfileClient() {
                   <div className="flex items-center gap-2.5">
                     <FiLinkedin className="w-4 h-4 text-slate-400 shrink-0" />
                     <a href={profile.linkedin_url} target="_blank" rel="noreferrer" className="text-teal-700 hover:underline truncate">
-                      LinkedIn Profile
+                      {t("linkedin_profile", "LinkedIn Profile")}
                     </a>
                   </div>
                 )}
@@ -717,7 +739,7 @@ export default function FreelancerProfileClient() {
                   <div className="flex items-center gap-2.5">
                     <FiGlobe className="w-4 h-4 text-slate-400 shrink-0" />
                     <a href={profile.portfolio_website} target="_blank" rel="noreferrer" className="text-teal-700 hover:underline truncate">
-                      Portfolio Site
+                      {t("portfolio_site", "Portfolio Site")}
                     </a>
                   </div>
                 )}
@@ -725,7 +747,7 @@ export default function FreelancerProfileClient() {
                   <div className="flex items-center gap-2.5">
                     <FiFileText className="w-4 h-4 text-slate-400 shrink-0" />
                     <a href={profile.resume_url} target="_blank" rel="noreferrer" className="text-teal-700 hover:underline truncate">
-                      Download CV / Resume
+                      {t("download_cv_resume", "Download CV / Resume")}
                     </a>
                   </div>
                 )}
@@ -735,7 +757,7 @@ export default function FreelancerProfileClient() {
             {/* Skills */}
             <div className="flex flex-col gap-4 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 select-none">
-                Core Competencies
+                {t("core_competencies", "Core Competencies")}
               </h3>
               <div className="flex flex-wrap gap-2">
                 {skills && skills.length > 0 ? (
@@ -748,7 +770,7 @@ export default function FreelancerProfileClient() {
                     </span>
                   ))
                 ) : (
-                  <p className="text-xs text-slate-400 italic">No skills listed</p>
+                  <p className="text-xs text-slate-400 italic">{t("no_skills_listed", "No skills listed")}</p>
                 )}
               </div>
             </div>
@@ -756,18 +778,18 @@ export default function FreelancerProfileClient() {
             {/* Languages */}
             <div className="flex flex-col gap-4 text-left">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 select-none">
-                Spoken Languages
+                {t("spoken_languages", "Spoken Languages")}
               </h3>
               <div className="flex flex-col gap-2 text-xs font-bold text-slate-700">
                 {languages && languages.length > 0 ? (
                   languages.map((l: any, idx: number) => (
                     <div key={idx} className="flex justify-between items-center py-1.5 border-b border-slate-100/50 select-none">
-                      <span className="text-slate-800 font-semibold">{l.language_name}</span>
-                      <span className="text-[10px] font-black text-teal-850 bg-teal-50/50 border border-teal-100/70 px-2 py-0.5 rounded-md uppercase tracking-wider">{l.proficiency || "Fluent"}</span>
+                      <span className="text-slate-800 font-semibold">{t(l.language_name)}</span>
+                      <span className="text-[10px] font-black text-teal-850 bg-teal-50/50 border border-teal-100/70 px-2 py-0.5 rounded-md uppercase tracking-wider">{t(l.proficiency || "Fluent")}</span>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-slate-400 italic">No languages listed</p>
+                  <p className="text-xs text-slate-400 italic">{t("no_languages_listed", "No languages listed")}</p>
                 )}
               </div>
             </div>
@@ -808,6 +830,8 @@ export default function FreelancerProfileClient() {
                 return manual || user?.profile_image || "";
               })()}
               priceOrBudget={profile?.hourly_rate ? `${formatPrice(profile.hourly_rate)}/hr` : ""}
+              isAffiliate={isAffiliate}
+              referralCode={userReferralCode}
               onToast={(type, message) => showToast(type, message)}
             />
 
@@ -819,10 +843,10 @@ export default function FreelancerProfileClient() {
         {projects && projects.length > 0 && (
           <div className="mt-20 border-t border-slate-100 pt-12 text-left">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight select-none">
-              Portfolio Showcase
+              {t("portfolio_showcase", "Portfolio Showcase")}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium select-none">
-              Explore works, designs, implementations, and archives completed by the professional.
+              {t("portfolio_showcase_desc", "Explore works, designs, implementations, and archives completed by the professional.")}
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
@@ -863,7 +887,7 @@ export default function FreelancerProfileClient() {
 
                     {docsArr.length > 0 && (
                       <div className="px-6 pb-6 pt-2 border-t border-slate-55 flex flex-col gap-2">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Attached Scope Documents</span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("attached_scope_documents", "Attached Scope Documents")}</span>
                         {docsArr.map((doc: string, dIdx: number) => {
                           const docName = doc.split("/").pop() || `Attachment_${dIdx + 1}`;
                           return (
@@ -892,10 +916,10 @@ export default function FreelancerProfileClient() {
         {gigs && gigs.length > 0 && (
           <div className="mt-20 border-t border-slate-100 pt-12 text-left">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight select-none">
-              Active Gigs & Services
+              {t("active_gigs_services", "Active Gigs & Services")}
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium select-none">
-              Pre-packaged services available to purchase directly from this freelancer.
+              {t("active_gigs_services_desc", "Pre-packaged services available to purchase directly from this freelancer.")}
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-8">
               {gigs.map((gig: any, idx: number) => {
@@ -922,19 +946,19 @@ export default function FreelancerProfileClient() {
                         </div>
                       ) : (
                         <div className="w-full h-44 bg-gradient-to-tr from-slate-50 to-slate-100 flex items-center justify-center border-b border-slate-200 text-slate-400 select-none">
-                          💼 Pre-packaged Service Preview
+                          {t("prepackaged_service_preview", "Pre-packaged Service Preview")}
                         </div>
                       )}
                       <div className="p-6">
                         <span className="text-[10px] font-black text-teal-800 bg-teal-50 border border-teal-100/70 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                          {gig.category_name || "Service"}
+                          {t(gig.category_name) || t("service", "Service")}
                         </span>
                         <h3 className="text-sm font-black text-slate-900 mt-3 line-clamp-2 leading-snug group-hover:text-teal-900 transition-colors">{gig.title}</h3>
                         <p className="text-xs text-slate-500 leading-relaxed font-semibold mt-2 line-clamp-3">{gig.description}</p>
                       </div>
                     </div>
                     <div className="px-6 py-4 bg-slate-50/40 border-t border-slate-100 flex items-center justify-between">
-                      <span className="text-xxs uppercase tracking-wider text-slate-400 font-bold">Starting At</span>
+                      <span className="text-xxs uppercase tracking-wider text-slate-400 font-bold">{t("starting_at", "Starting At")}</span>
                       <span className="text-sm font-extrabold text-slate-900">${parseFloat(gig.price).toFixed(0)}</span>
                     </div>
                   </div>
@@ -950,10 +974,10 @@ export default function FreelancerProfileClient() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
-                  Client Reviews & Ratings
+                  {t("client_reviews_ratings", "Client Reviews & Ratings")}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                  Verified feedback submitted by clients who hired this freelancer.
+                  {t("verified_feedback_desc", "Verified feedback submitted by clients who hired this freelancer.")}
                 </p>
               </div>
               <div className="flex items-center gap-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700/60 px-4 py-3 rounded-2xl shadow-xs shrink-0 self-start sm:self-center">
@@ -964,9 +988,9 @@ export default function FreelancerProfileClient() {
                   </span>
                 </div>
                 <div>
-                  <p className="text-xs font-black text-slate-800 dark:text-slate-100">Average Rating</p>
+                  <p className="text-xs font-black text-slate-800 dark:text-slate-100">{t("average_rating", "Average Rating")}</p>
                   <p className="text-[10px] text-slate-400 dark:text-slate-400 font-extrabold uppercase tracking-wider mt-0.5">
-                    {reviews.length} TOTAL REVIEW{reviews.length > 1 ? 'S' : ''}
+                    {reviews.length} {t("total_reviews", "TOTAL REVIEWS")}
                   </p>
                 </div>
               </div>
@@ -993,7 +1017,7 @@ export default function FreelancerProfileClient() {
                         <div>
                           <h4 className="text-xs font-black text-slate-800">{rev.reviewer_name || "Client"}</h4>
                           <p className="text-[9px] text-teal-600 font-extrabold uppercase tracking-wider mt-0.5">
-                            Client Review • {rev.review_type === 'gig' ? 'Gig Service' : 'Project Contract'}
+                            {t("client_review_badge", "Client Review")} • {rev.review_type === 'gig' ? t("gig_service", "Gig Service") : t("project_contract", "Project Contract")}
                           </p>
                         </div>
                       </div>
@@ -1006,7 +1030,10 @@ export default function FreelancerProfileClient() {
                     </p>
                   </div>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider self-start">
-                    {new Date(rev.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    {new Date(rev.created_at).toLocaleDateString(
+                      lang === "FR" ? "fr-FR" : lang === "ES" ? "es-ES" : lang === "AR" ? "ar-EG" : lang === "DE" ? "de-DE" : "en-US", 
+                      { year: 'numeric', month: 'short', day: 'numeric' }
+                    )}
                   </p>
                 </div>
               ))}
@@ -1204,7 +1231,7 @@ export default function FreelancerProfileClient() {
                         window.dispatchEvent(new Event("storage"));
                       } catch (e) {}
                       setShowHireModal(false);
-                      router.push("/dashboard?tab=my-projects&action=create");
+                      router.push("/dashboard/my-projects?action=create");
                     }}
                     className="w-full sm:w-2/3 py-3 bg-gradient-to-r from-primary to-cyan-600 hover:brightness-110 text-white rounded-xl text-xs font-extrabold shadow-md transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 border-0"
                   >

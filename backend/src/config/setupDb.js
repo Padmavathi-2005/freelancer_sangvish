@@ -1473,7 +1473,24 @@ async function setupTables() {
         PRIMARY KEY ("commission_id")
       )
     `);
-    console.log("✅ 'affiliate_commissions' table ready.");
+    await pool.query(`
+      ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "affiliate_clicks" INTEGER DEFAULT 0;
+    `);
+    console.log("✅ 'users.affiliate_clicks' column ready.");
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS "affiliate_click_logs" (
+        "click_id" SERIAL NOT NULL,
+        "affiliate_id" INTEGER,
+        "referral_code" CHARACTER VARYING NOT NULL,
+        "target_url" TEXT DEFAULT '/register',
+        "ip_address" CHARACTER VARYING NOT NULL,
+        "user_agent" TEXT,
+        "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY ("click_id")
+      );
+    `);
+    console.log("✅ 'affiliate_click_logs' table ready.");
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS "blogs" (
@@ -1493,6 +1510,55 @@ async function setupTables() {
       )
     `);
     console.log("✅ 'blogs' table ready.");
+
+    const blogCountRes = await pool.query(`SELECT COUNT(*) FROM "blogs"`);
+    if (parseInt(blogCountRes.rows[0].count) === 0) {
+      await pool.query(`
+        INSERT INTO "blogs" ("title", "slug", "summary", "content", "category", "is_published", "author_name", "cover_image")
+        VALUES 
+        (
+          '10 Proven Strategies to Win High-Paying Freelance Clients in 2026',
+          '10-proven-strategies-to-win-high-paying-freelance-clients-in-2026',
+          'Learn how to position your freelance services, optimize your profile, write winning proposals, and command premium rates on Buy2Lancer.',
+          '<h2>Introduction</h2><p>Landing high-ticket freelance projects requires more than just technical skill—it requires strategic positioning, a compelling portfolio, and persuasive communication.</p><h3>1. Specialize in a Niche</h3><p>Generalists compete on price; specialists compete on value. By focusing on specific industries or stacks, you instantly become the go-to expert.</p><h3>2. Optimize Your Public Profile</h3><p>Your profile is your landing page. Highlight concrete results, client testimonials, and clear service deliverables.</p><h3>3. Write Tailored Proposals</h3><p>Avoid copy-pasting generic templates. Address the client''s exact problem points and outline a clear action plan.</p>',
+          'Career & Growth',
+          true,
+          'Sarah Jenkins',
+          '/public/images/blogs/blog_1_freelance_clients.jpg'
+        ),
+        (
+          'The Complete Guide to Building Scalable Web Applications with Modern Stacks',
+          'the-complete-guide-to-building-scalable-web-applications',
+          'Architecting modern full-stack web applications using React, Next.js, Node.js, and PostgreSQL for high performance and seamless user experience.',
+          '<h2>Overview</h2><p>Scalability is key for high-growth digital platforms. In this guide, we dive into state management, database query optimization, and caching strategies.</p><h3>Key Pillars of Scalability</h3><ul><li><strong>Database Indexing:</strong> Speed up database lookups with strategic indices.</li><li><strong>Asynchronous Processing:</strong> Use message queues for heavy background tasks.</li><li><strong>Global CDN Caching:</strong> Serve static assets lightning fast.</li></ul>',
+          'Engineering',
+          true,
+          'Alex Rivera',
+          '/public/images/blogs/blog_2_web_development.jpg'
+        ),
+        (
+          'UI/UX Masterclass: Designing Seamless Digital Experiences That Convert',
+          'ui-ux-masterclass-designing-seamless-digital-experiences',
+          'Discover essential design principles, accessibility guidelines, micro-interactions, and visual hierarchy techniques for modern web interfaces.',
+          '<h2>The Power of Great UX</h2><p>Great design is invisible—it guides users effortlessly through complex flows while delighting them with subtle micro-animations and intuitive layouts.</p><h3>Core Principles</h3><p>Focus on contrast, readability, spatial harmony, and responsive adaptability across all viewports.</p>',
+          'Design',
+          true,
+          'Elena Rostova',
+          '/public/images/blogs/blog_3_ui_ux_design.jpg'
+        ),
+        (
+          'Escrow & Secure Payments: How Buy2Lancer Protects Clients and Contractors',
+          'escrow-and-secure-payments-how-buy2lancer-protects-clients-and-contractors',
+          'Explore how milestone-based escrow payments, timecards, and dispute protection keep your funds safe during remote working contracts.',
+          '<h2>Trust & Financial Security</h2><p>Working remotely with global talent requires ironclad payment security. Buy2Lancer escrow ensures funds are safely deposited prior to contract execution and released upon successful project delivery.</p>',
+          'Platform News',
+          true,
+          'Buy2Lancer Team',
+          '/public/images/blogs/blog_4_escrow_payments.jpg'
+        )
+      `);
+      console.log("✅ Default seed blogs inserted.");
+    }
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS "career_applications" (

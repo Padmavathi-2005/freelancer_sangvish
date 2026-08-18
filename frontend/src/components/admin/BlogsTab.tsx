@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useAdmin } from "../../app/admin/AdminContext";
 import { API_URL } from "@/config/api";
 import CustomSelect from "@/components/CustomSelect";
@@ -17,6 +18,14 @@ interface Block {
   data: Record<string, any>;
 }
 
+interface ModalState {
+  isOpen: boolean;
+  type: "success" | "error" | "warning" | "confirm";
+  title: string;
+  message: string;
+  onConfirm?: () => void;
+}
+
 export default function BlogsTab() {
   const {
     adminTheme,
@@ -29,6 +38,56 @@ export default function BlogsTab() {
   } = useAdmin();
 
   const isDark = adminTheme === "dark";
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const [modal, setModal] = useState<ModalState>({
+    isOpen: false,
+    type: "success",
+    title: "",
+    message: ""
+  });
+
+  const showModal = (
+    type: "success" | "error" | "warning",
+    title: string,
+    message: string,
+    onConfirm?: () => void
+  ) => {
+    setModal({
+      isOpen: true,
+      type,
+      title,
+      message,
+      onConfirm
+    });
+  };
+
+  const showConfirm = (
+    title: string,
+    message: string,
+    onConfirm: () => void
+  ) => {
+    setModal({
+      isOpen: true,
+      type: "confirm",
+      title,
+      message,
+      onConfirm
+    });
+  };
+
+  const closeModal = () => {
+    setModal(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const resolveImageUrl = (url?: string) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    if (url.startsWith("/public/")) return `${API_URL.replace(/\/api\/?$/, "")}${url}`;
+    return url;
+  };
 
   // View state
   const [editorMode, setEditorMode] = useState<"list" | "create" | "edit">("list");
@@ -152,10 +211,10 @@ export default function BlogsTab() {
       } else {
         updateBlockData(target, "url", data.url);
       }
-      alert("Image uploaded successfully!");
+      showModal("success", "Image Uploaded", "Cover image uploaded successfully!");
     } catch (error: any) {
       console.error(error);
-      alert(error.message || "Failed to upload image.");
+      showModal("error", "Upload Failed", error.message || "Failed to upload image.");
     } finally {
       setUploadingField(null);
     }
@@ -356,7 +415,7 @@ export default function BlogsTab() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!blogTitle) {
-      alert("Title is required.");
+      showModal("error", "Validation Error", "Title is required for the blog post.");
       return;
     }
 
@@ -364,13 +423,13 @@ export default function BlogsTab() {
     let compiledHtml = "";
     if (editorType === "blocks") {
       if (blogBlocks.length === 0) {
-        alert("Please add at least one content block to your blog post.");
+        showModal("error", "Validation Error", "Please add at least one content block to your blog post.");
         return;
       }
       compiledHtml = compileBlocksToHtml(blogBlocks);
     } else {
       if (!blogContent) {
-        alert("Content is required in raw HTML mode.");
+        showModal("error", "Validation Error", "Content is required in raw HTML mode.");
         return;
       }
       compiledHtml = blogContent;
@@ -397,17 +456,22 @@ export default function BlogsTab() {
     }
 
     if (result && (result.blog || result.message?.includes("success"))) {
-      alert(result.message || "Blog post saved successfully!");
-      setEditorMode("list");
+      showModal("success", "Blog Saved", result.message || "Blog post saved successfully!", () => {
+        setEditorMode("list");
+      });
     } else {
-      alert(result?.message || "Failed to save blog post");
+      showModal("error", "Save Failed", result?.message || "Failed to save blog post.");
     }
   };
 
   const confirmDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this blog post? This action cannot be undone.")) {
-      await handleDeleteBlog(id);
-    }
+    showConfirm(
+      "Delete Blog Post",
+      "Are you sure you want to delete this blog post? This action cannot be undone.",
+      async () => {
+        await handleDeleteBlog(id);
+      }
+    );
   };
 
   // Styling helper classes
@@ -531,7 +595,7 @@ export default function BlogsTab() {
                         <td className="px-6 py-4 text-xs font-bold text-slate-450 align-middle">
                           {blog.cover_image ? (
                             <img
-                              src={blog.cover_image}
+                              src={resolveImageUrl(blog.cover_image)}
                               alt=""
                               className="w-12 h-8 rounded object-cover border border-slate-200 dark:border-slate-800"
                             />
@@ -1476,6 +1540,90 @@ export default function BlogsTab() {
             </button>
           </div>
         </form>
+      )}
+
+      {/* FULL-SCREEN OVERLAY PORTAL MODAL */}
+      {mounted && modal.isOpen && createPortal(
+        <div className="fixed inset-0 z-[999999] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fadeIn">
+          <div 
+            className={`w-full max-w-md rounded-2xl shadow-2xl border p-6 flex flex-col gap-5 text-center items-center transform transition-all animate-scaleUp ${
+              isDark 
+                ? "bg-slate-900 border-slate-800 text-white" 
+                : "bg-white border-slate-200 text-slate-900"
+            }`}
+          >
+            {/* Status Icon Header */}
+            {modal.type === "success" && (
+              <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
+                <FiCheck className="w-7 h-7 stroke-[3]" />
+              </div>
+            )}
+            {modal.type === "error" && (
+              <div className="w-14 h-14 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center shrink-0">
+                <FiAlertCircle className="w-7 h-7 stroke-[2.5]" />
+              </div>
+            )}
+            {(modal.type === "warning" || modal.type === "confirm") && (
+              <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                <FiAlertCircle className="w-7 h-7 stroke-[2.5]" />
+              </div>
+            )}
+
+            {/* Title & Message */}
+            <div className="flex flex-col gap-1.5 max-w-xs">
+              <h3 className="text-lg font-black tracking-tight font-display">
+                {modal.title}
+              </h3>
+              <p className={`text-xs font-semibold leading-relaxed ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                {modal.message}
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-center gap-3 w-full mt-1">
+              {modal.type === "confirm" ? (
+                <>
+                  <button
+                    onClick={closeModal}
+                    className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                      isDark 
+                        ? "border-slate-700 text-slate-300 hover:bg-slate-800" 
+                        : "border-slate-200 text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      const cb = modal.onConfirm;
+                      closeModal();
+                      if (cb) cb();
+                    }}
+                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all shadow-md shadow-rose-600/20 cursor-pointer"
+                  >
+                    Yes, Delete
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    const cb = modal.onConfirm;
+                    closeModal();
+                    if (cb) cb();
+                  }}
+                  className={`w-full py-2.5 px-6 rounded-xl text-xs font-extrabold text-white transition-all shadow-md cursor-pointer ${
+                    modal.type === "error" 
+                      ? "bg-rose-600 hover:bg-rose-700 shadow-rose-600/20" 
+                      : "bg-teal-700 hover:bg-teal-600 shadow-teal-700/20"
+                  }`}
+                >
+                  OK
+                </button>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

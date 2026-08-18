@@ -18,12 +18,21 @@ export default function BlogsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [allCategories, setAllCategories] = useState<string[]>([]);
-  const [siteName, setSiteName] = useState(() => {
+  const [siteName, setSiteName] = useState("Buy2Lancer");
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("cached_site_name") || "Buy2Lancer";
+      const cached = localStorage.getItem("cached_site_name");
+      if (cached) setSiteName(cached);
     }
-    return "Buy2Lancer";
-  });
+  }, []);
+
+  const resolveImageUrl = (url?: string) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    if (url.startsWith("/public/")) return `${API_URL.replace(/\/api\/?$/, "")}${url}`;
+    return url;
+  };
 
   useEffect(() => {
     fetch(`${API_URL}/settings`)
@@ -264,7 +273,7 @@ export default function BlogsPage() {
                 <div className="relative aspect-video w-full overflow-hidden bg-slate-100">
                   {blog.cover_image ? (
                     <img
-                      src={blog.cover_image}
+                      src={resolveImageUrl(blog.cover_image)}
                       alt={blog.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />

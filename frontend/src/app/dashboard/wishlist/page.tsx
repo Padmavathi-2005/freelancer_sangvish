@@ -100,16 +100,6 @@ export default function WishlistPage() {
             {t("wishlist_desc", "Keep track of services, projects, and freelancers you want to hire, collaborate with, or bid on in the future.")}
           </p>
         </div>
-        {userRole !== "freelancer" && (
-          <div className="flex gap-2 self-start sm:self-center">
-            <button
-              onClick={() => router.push("/dashboard/explore-gigs")}
-              className="bg-teal-700 hover:bg-teal-650 text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer"
-            >
-              {t("explore_gigs_btn", "Explore Gigs")}
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Tab Switchers */}

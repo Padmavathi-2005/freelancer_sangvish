@@ -118,7 +118,7 @@ export const Gig = {
     let query = `
       SELECT 
         g.*,
-        u.first_name || COALESCE(' ' || u.last_name, '') as freelancer_name,
+        COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email, 'Freelancer #' || g.freelancer_id::text) as freelancer_name,
         u.slug as freelancer_slug,
         u.profile_image as freelancer_image,
         c.code as currency_code,
@@ -219,7 +219,7 @@ export const Gig = {
         g.plans as gig_plans,
         g.discount_percent as gig_discount_percent,
         g.freelancer_id,
-        u.first_name || COALESCE(' ' || u.last_name, '') as freelancer_name,
+        COALESCE(NULLIF(TRIM(CONCAT_WS(' ', u.first_name, u.last_name)), ''), u.email, 'Freelancer #' || g.freelancer_id::text) as freelancer_name,
         u.email as freelancer_email,
         c.code as currency_code,
         c.symbol as currency_symbol,

@@ -22,7 +22,6 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
   const [signupBonus, setSignupBonus] = useState<number>(5.00);
   const [enableSignupBonus, setEnableSignupBonus] = useState<boolean>(true);
   const [completionWindowDays, setCompletionWindowDays] = useState<number>(30);
-  const [minWithdrawalAmount, setMinWithdrawalAmount] = useState<number>(10.00);
 
   // Approval requirement toggles (Auto-credit vs Manual Admin Approval)
   const [requireSignupBonusApproval, setRequireSignupBonusApproval] = useState<boolean>(true);
@@ -101,7 +100,6 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
               setSignupBonus(val.signup_bonus !== undefined ? parseFloat(val.signup_bonus) : 5.00);
               setEnableSignupBonus(val.enable_signup_bonus !== undefined ? val.enable_signup_bonus === true || val.enable_signup_bonus === "true" : true);
               setCompletionWindowDays(val.completion_window_days !== undefined ? parseInt(val.completion_window_days) || 30 : 30);
-              setMinWithdrawalAmount(val.min_withdrawal_amount !== undefined ? parseFloat(val.min_withdrawal_amount) || 10.00 : 10.00);
               
               setRequireSignupBonusApproval(val.require_signup_bonus_approval !== undefined ? val.require_signup_bonus_approval === true || val.require_signup_bonus_approval === "true" : true);
               setRequireReferralRewardApproval(val.require_referral_reward_approval !== undefined ? val.require_referral_reward_approval === true || val.require_referral_reward_approval === "true" : true);
@@ -199,7 +197,6 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
         signup_bonus: signupBonus,
         enable_signup_bonus: enableSignupBonus,
         completion_window_days: completionWindowDays,
-        min_withdrawal_amount: minWithdrawalAmount,
         require_signup_bonus_approval: requireSignupBonusApproval,
         require_referral_reward_approval: requireReferralRewardApproval,
         require_affiliate_approval: requireAffiliateApproval,
@@ -357,29 +354,6 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
           </span>
         </div>
 
-        {/* Minimum Withdrawal Amount ($) */}
-        <div className="flex flex-col gap-1.5 border-t pt-3.5 mt-1">
-          <label className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-            Minimum Withdrawal Amount ($)
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min="1"
-              step="0.01"
-              required
-              value={minWithdrawalAmount}
-              onChange={(e) => setMinWithdrawalAmount(parseFloat(e.target.value) || 0)}
-              className={`border rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none focus:border-teal-700 transition w-36 ${
-                isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
-              }`}
-            />
-            <span className={`text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-600"}`}>USD Minimum Threshold</span>
-          </div>
-          <span className={`text-[9px] font-semibold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-            Minimum wallet balance amount required before users, referrers, or affiliates can submit a withdrawal request to their bank account.
-          </span>
-        </div>
       </div>
 
       {/* Row 2: Approval Requirement Toggles (Auto-Credit vs Manual Admin Approval) */}

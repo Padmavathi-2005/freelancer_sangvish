@@ -7,7 +7,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { API_URL } from "@/config/api";
 import { useLanguage } from "@/context/LanguageContext";
-import { FiCalendar, FiUser, FiClock, FiChevronLeft, FiFolder, FiFacebook, FiTwitter, FiLinkedin, FiLink, FiAlertCircle } from "react-icons/fi";
+import { FiCalendar, FiUser, FiClock, FiChevronLeft, FiFolder, FiLink, FiAlertCircle } from "react-icons/fi";
+import { FaFacebookF, FaXTwitter, FaLinkedinIn } from "react-icons/fa6";
 
 interface BlogDetailClientProps {
   initialBlog: any;
@@ -23,6 +24,20 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
   const [loading, setLoading] = useState(initialBlog ? false : true);
   const [copied, setCopied] = useState(false);
   const [relatedBlogs, setRelatedBlogs] = useState<any[]>([]);
+  const [currentUrl, setCurrentUrl] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setCurrentUrl(window.location.href);
+    }
+  }, []);
+
+  const resolveImageUrl = (url?: string) => {
+    if (!url) return "";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    if (url.startsWith("/public/")) return `${API_URL.replace(/\/api\/?$/, "")}${url}`;
+    return url;
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -265,17 +280,17 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
 
         {/* COVER IMAGE */}
         {blog.cover_image && (
-          <div className="relative aspect-[21/9] w-full rounded-3xl overflow-hidden border border-slate-200 bg-slate-100 shadow-md">
+          <div className="w-full rounded-2xl md:rounded-3xl overflow-hidden border border-slate-200/80 bg-slate-100/50 shadow-sm flex items-center justify-center">
             <img
-              src={blog.cover_image}
+              src={resolveImageUrl(blog.cover_image)}
               alt={blog.title}
-              className="w-full h-full object-cover"
+              className="w-full h-auto max-h-[550px] object-cover rounded-2xl md:rounded-3xl"
             />
           </div>
         )}
 
         {/* ARTICLE BODY */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-10 mt-2">
           
           {/* Main Article Content */}
           <article className="lg:col-span-3 blog-post-content">
@@ -290,35 +305,35 @@ export default function BlogDetailClient({ initialBlog }: BlogDetailClientProps)
               <div className="flex items-center gap-2">
                 {/* Facebook Share */}
                 <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  href={currentUrl ? `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}` : "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl border border-slate-200 hover:border-teal-500 hover:text-teal-650 flex items-center justify-center text-slate-500 transition-all shadow-sm"
+                  className="w-9 h-9 rounded-xl border border-slate-200 hover:border-teal-500 hover:text-teal-650 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all shadow-xs"
                   title="Share on Facebook"
                 >
-                  <FiFacebook className="w-4 h-4" />
+                  <FaFacebookF className="w-3.5 h-3.5" />
                 </a>
 
-                {/* Twitter Share */}
+                {/* X / Twitter Share */}
                 <a
-                  href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}&text=${encodeURIComponent(blog.title)}`}
+                  href={currentUrl ? `https://twitter.com/intent/tweet?url=${encodeURIComponent(currentUrl)}&text=${encodeURIComponent(blog.title)}` : "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl border border-slate-200 hover:border-teal-500 hover:text-teal-650 flex items-center justify-center text-slate-500 transition-all shadow-sm"
-                  title="Share on Twitter"
+                  className="w-9 h-9 rounded-xl border border-slate-200 hover:border-teal-500 hover:text-teal-650 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all shadow-xs"
+                  title="Share on X (Twitter)"
                 >
-                  <FiTwitter className="w-4 h-4" />
+                  <FaXTwitter className="w-3.5 h-3.5" />
                 </a>
 
                 {/* LinkedIn Share */}
                 <a
-                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`}
+                  href={currentUrl ? `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}` : "#"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-9 h-9 rounded-xl border border-slate-200 hover:border-teal-500 hover:text-teal-650 flex items-center justify-center text-slate-500 transition-all shadow-sm"
+                  className="w-9 h-9 rounded-xl border border-slate-200 hover:border-teal-500 hover:text-teal-650 flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-all shadow-xs"
                   title="Share on LinkedIn"
                 >
-                  <FiLinkedin className="w-4 h-4" />
+                  <FaLinkedinIn className="w-3.5 h-3.5" />
                 </a>
 
                 {/* Copy Link */}

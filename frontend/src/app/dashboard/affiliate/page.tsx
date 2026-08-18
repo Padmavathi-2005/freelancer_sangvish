@@ -3,7 +3,7 @@ import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { FiCopy, FiCheck, FiUsers, FiDollarSign, FiAward, FiInfo, FiActivity, FiArrowRight } from "react-icons/fi";
+import { FiCopy, FiCheck, FiUsers, FiDollarSign, FiAward, FiInfo, FiActivity, FiArrowRight, FiBriefcase, FiTrendingUp, FiMousePointer, FiExternalLink } from "react-icons/fi";
 
 interface LedgerEntry {
   commission_id: number;
@@ -15,10 +15,24 @@ interface LedgerEntry {
   referred_user_email: string;
 }
 
+interface LinkBreakdownItem {
+  target_url: string;
+  unique_ips: number | string;
+  total_clicks: number | string;
+  last_visited_at: string;
+  orders_count?: number;
+  sales_count?: number;
+}
+
 interface AffiliateData {
   referral_code: string;
-  is_affiliate: boolean;
+  is_affiliate: boolean | number | string;
   total_referred: number;
+  orders_placed?: number;
+  total_sales?: number;
+  affiliate_clicks?: number;
+  unique_clicks?: number;
+  link_breakdown?: LinkBreakdownItem[];
   pending_commissions: number;
   approved_commissions: number;
   ledger: LedgerEntry[];
@@ -303,47 +317,86 @@ export default function AffiliatePortalPage() {
         </div>
       </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {/* Total Invited */}
-        <div className="bg-white border border-slate-200/80 p-6 rounded-xl flex items-center gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 text-xl shadow-sm shrink-0">
-            <FiUsers />
-          </div>
+      {/* MASTER AFFILIATE PERFORMANCE TABLE (ADMIN VIEW STYLE) */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs text-left">
+        <div className="p-5 sm:p-6 border-b border-slate-150 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Referred Users</span>
-            <span className="text-2xl font-black text-slate-805 leading-none mt-1 block">
-              {data?.total_referred || 0}
+            <h3 className="text-base font-black text-slate-855 tracking-tight">Affiliate Link Traffic & Conversion Table</h3>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+              Admin-style detailed view of link visits, orders placed, completed sales, and earnings per link
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="bg-teal-50 border border-teal-200 text-teal-700 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full">
+              {data?.link_breakdown?.length || 0} Links Active
             </span>
           </div>
         </div>
 
-        {/* Pending Payouts */}
-        <div className="bg-white border border-slate-200/80 p-6 rounded-xl flex items-center gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 text-xl shadow-sm shrink-0">
-            <FiActivity />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Pending Commissions</span>
-            <span className="text-2xl font-black text-slate-805 leading-none mt-1 block">
-              ${data?.pending_commissions.toFixed(2) || "0.00"}
-            </span>
-            <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">Awaiting admin review</span>
-          </div>
-        </div>
-
-        {/* Total Earned */}
-        <div className="bg-white border border-slate-200/80 p-6 rounded-xl flex items-center gap-5 shadow-sm">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 text-xl shadow-sm shrink-0">
-            <FiAward />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Approved & Paid Out</span>
-            <span className="text-2xl font-black text-slate-805 leading-none mt-1 block">
-              ${data?.approved_commissions.toFixed(2) || "0.00"}
-            </span>
-            <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">Credited to your main wallet</span>
-          </div>
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-100/60 select-none">
+                <th className="py-3.5 px-5">Target Page / Project Link</th>
+                <th className="py-3.5 px-4 text-center">Stage 1: Link Visits</th>
+                <th className="py-3.5 px-4 text-center">Stage 2: Orders Placed</th>
+                <th className="py-3.5 px-4 text-center">Stage 3: Completed Sales</th>
+                <th className="py-3.5 px-4 text-right">Commission Paid</th>
+                <th className="py-3.5 px-5 text-right">Last Visit Date</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {data?.link_breakdown && data.link_breakdown.length > 0 ? (
+                data.link_breakdown.map((item, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-4 px-5 font-bold text-slate-800">
+                      <a
+                        href={item.target_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 font-mono text-xs text-teal-800 hover:text-teal-950 font-extrabold bg-teal-50 border border-teal-200/80 px-2.5 py-1 rounded-lg hover:underline transition-all"
+                        title="Click to open page link"
+                      >
+                        <span>{item.target_url}</span>
+                        <FiExternalLink className="w-3 h-3 text-teal-600 shrink-0" />
+                      </a>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-extrabold border border-indigo-200/60">
+                        {item.unique_ips} Visitors
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-700 font-extrabold border border-amber-200/60">
+                        {item.orders_count !== undefined ? item.orders_count : (data?.orders_placed || 0)} Orders
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-center">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-extrabold border border-emerald-200/60">
+                        {item.sales_count !== undefined ? item.sales_count : (data?.total_sales || 0)} Sales
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 text-right font-black text-slate-900">
+                      ${(data?.approved_commissions || 0).toFixed(2)}
+                    </td>
+                    <td className="py-4 px-5 text-right font-semibold text-slate-500">
+                      {new Date(item.last_visited_at).toLocaleDateString()} {new Date(item.last_visited_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center bg-slate-50/40">
+                    <div className="flex flex-col items-center justify-center gap-2">
+                      <FiMousePointer className="w-8 h-8 text-slate-350" />
+                      <p className="text-xs font-bold text-slate-500">No referral link traffic recorded yet.</p>
+                      <p className="text-[11px] text-slate-400">Share your referral or product links to start tracking link visits and orders!</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -376,6 +429,7 @@ export default function AffiliatePortalPage() {
                   <th className="px-6 py-3.5">Referred User</th>
                   <th className="px-6 py-3.5">Platform Fee</th>
                   <th className="px-6 py-3.5">Your Commission (10%)</th>
+                  <th className="px-6 py-3.5">3-Stage Conversion Funnel</th>
                   <th className="px-6 py-3.5">Created Date</th>
                   <th className="px-6 py-3.5 text-center">Status</th>
                 </tr>
@@ -394,6 +448,17 @@ export default function AffiliatePortalPage() {
                     </td>
                     <td className="px-6 py-4.5 text-xs font-black text-slate-800">
                       ${parseFloat(entry.amount).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4.5">
+                      <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-full text-[9px] font-black uppercase shadow-2xs">
+                        <span className="text-indigo-600">✓ 1. Link Clicked</span>
+                        <span className="text-slate-300">→</span>
+                        <span className="text-amber-600">✓ 2. Order Placed</span>
+                        <span className="text-slate-300">→</span>
+                        <span className={entry.status === "approved" ? "text-emerald-700 font-extrabold" : "text-amber-600"}>
+                          {entry.status === "approved" ? "✓ 3. Payment Paid" : "⏳ 3. Pending Review"}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4.5 text-xs font-bold text-slate-500">
                       {new Date(entry.created_at).toLocaleDateString(undefined, {

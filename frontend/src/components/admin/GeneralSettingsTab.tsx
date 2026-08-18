@@ -78,6 +78,8 @@ export default function GeneralSettingsTab({
   const [clientVetting, setLocalClientVetting] = useState(enableClientVetting);
   const [projectVetting, setLocalProjectVetting] = useState(enableProjectVetting);
 
+  const [minWithdrawalAmount, setMinWithdrawalAmount] = useState<number>(10.00);
+
   const [availLanguages, setAvailLanguages] = useState<{ name: string; code: string }[]>([]);
   const [availCurrencies, setAvailCurrencies] = useState<{ name: string; code: string; symbol: string }[]>([]);
 
@@ -104,6 +106,29 @@ export default function GeneralSettingsTab({
         
         const currRes = await fetch(`${API_URL}/freelancer/currencies`);
         if (currRes.ok) setAvailCurrencies(await currRes.json());
+
+        const settingsRes = await fetch(`${API_URL}/settings`);
+        if (settingsRes.ok) {
+          const settingsData = await settingsRes.json();
+          const minWithdrawalSet = settingsData.find((s: any) => s.setting_key === "min_withdrawal_amount");
+          if (minWithdrawalSet) {
+            let val = minWithdrawalSet.setting_value;
+            if (typeof val === "string") { try { val = JSON.parse(val); } catch (e) {} }
+            const amount = typeof val === "object" ? parseFloat(val.amount || val.min_withdrawal_amount) : parseFloat(val);
+            if (!isNaN(amount) && amount > 0) {
+              setMinWithdrawalAmount(amount);
+            }
+          } else {
+            const refSet = settingsData.find((s: any) => s.setting_key === "referral_settings");
+            if (refSet) {
+              let val = refSet.setting_value;
+              if (typeof val === "string") { try { val = JSON.parse(val); } catch (e) {} }
+              if (val && val.min_withdrawal_amount !== undefined) {
+                setMinWithdrawalAmount(parseFloat(val.min_withdrawal_amount) || 10.00);
+              }
+            }
+          }
+        }
       } catch (e) {
         console.error("Failed to load settings options", e);
       }
@@ -190,6 +215,7 @@ export default function GeneralSettingsTab({
       await handleSaveSetting("default_currency", { code: localCurrency }, "site_settings");
       await handleSaveSetting("default_language", { code: localLanguage }, "site_settings");
       await handleSaveSetting("pagination_limit", { limit: localLimit }, "site_settings");
+      await handleSaveSetting("min_withdrawal_amount", { amount: minWithdrawalAmount }, "site_settings");
 
       // Propagate settings to AdminContext global state instantly
       setPlatformFee(fee);
@@ -268,6 +294,26 @@ export default function GeneralSettingsTab({
               value={fee}
               onChange={(e) => setLocalFee(Number(e.target.value))}
               className="w-full h-5 bg-transparent appearance-none cursor-pointer"
+            />
+          </div>
+        </div>
+
+        {/* Minimum Withdrawal Amount configuration */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-slate-100 pb-6 text-slate-805">
+          <div className="max-w-md">
+            <h4 className="text-sm font-extrabold text-slate-850">Minimum Withdrawal Amount ($)</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">Minimum wallet balance threshold required before users, freelancers, or affiliates can submit payout withdrawal requests.</p>
+          </div>
+          
+          <div className="w-full sm:w-64 flex items-center gap-2">
+            <span className="text-xs font-extrabold text-slate-500">$</span>
+            <input
+              type="number"
+              min="1"
+              step="0.01"
+              value={minWithdrawalAmount}
+              onChange={(e) => setMinWithdrawalAmount(parseFloat(e.target.value) || 0)}
+              className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-950 dark:border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-teal-700 transition font-bold"
             />
           </div>
         </div>

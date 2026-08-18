@@ -92,7 +92,7 @@ export default function Hero() {
                 professional_title: f.professional_title || "Freelancer Specialist",
                 rating: parseFloat(f.rating || 0),
                 hourly_rate: f.hourly_rate ? parseFloat(f.hourly_rate).toFixed(0) : "N/A",
-                profile_image: f.profile_image 
+                profile_image: f.profile_image
                   ? (f.profile_image.startsWith("http") ? f.profile_image : `${apiUrl.replace("/api", "")}${f.profile_image.startsWith("/") ? f.profile_image : `/${f.profile_image}`}`)
                   : "",
                 slug: f.slug || f.user_id.toString()
@@ -352,9 +352,9 @@ export default function Hero() {
                         {getInitials(topFreelancers[0].name)}
                       </div>
                     ) : (
-                      <img 
-                        src={topFreelancers[0].profile_image} 
-                        alt={topFreelancers[0].name} 
+                      <img
+                        src={topFreelancers[0].profile_image}
+                        alt={topFreelancers[0].name}
                         className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0"
                         onError={() => {
                           setImageErrors(prev => ({ ...prev, [topFreelancers[0].slug]: true }));
@@ -372,8 +372,8 @@ export default function Hero() {
                       <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
                         <span className="text-primary flex items-center gap-0.5">★ <span className="text-slate-800">{topFreelancers[0].rating}</span></span>
                         <span className="text-slate-700">
-                          {topFreelancers[0].hourly_rate 
-                            ? `${formatPrice(topFreelancers[0].hourly_rate)}/hr` 
+                          {topFreelancers[0].hourly_rate
+                            ? `${formatPrice(topFreelancers[0].hourly_rate)}/hr`
                             : "N/A"}
                         </span>
                       </div>
@@ -403,9 +403,9 @@ export default function Hero() {
                         {getInitials(topFreelancers[1].name)}
                       </div>
                     ) : (
-                      <img 
-                        src={topFreelancers[1].profile_image} 
-                        alt={topFreelancers[1].name} 
+                      <img
+                        src={topFreelancers[1].profile_image}
+                        alt={topFreelancers[1].name}
                         className="w-10 h-10 rounded-full object-cover border border-emerald-500/10 shrink-0"
                         onError={() => {
                           setImageErrors(prev => ({ ...prev, [topFreelancers[1].slug]: true }));
@@ -423,8 +423,8 @@ export default function Hero() {
                       <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-slate-100 text-[10px] font-bold">
                         <span className="text-primary flex items-center gap-0.5">★ <span className="text-slate-800">{topFreelancers[1].rating}</span></span>
                         <span className="text-slate-700">
-                          {topFreelancers[1].hourly_rate 
-                            ? `${formatPrice(topFreelancers[1].hourly_rate)}/hr` 
+                          {topFreelancers[1].hourly_rate
+                            ? `${formatPrice(topFreelancers[1].hourly_rate)}/hr`
                             : "N/A"}
                         </span>
                       </div>

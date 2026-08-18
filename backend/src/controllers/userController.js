@@ -19,6 +19,17 @@ const generateUniqueReferralCode = async () => {
     return code;
 };
 
+export const getOrGenerateReferralCode = async (userId) => {
+    const userRes = await pool.query("SELECT referral_code FROM users WHERE user_id = $1", [userId]);
+    if (userRes.rows.length === 0) return null;
+    let code = userRes.rows[0].referral_code;
+    if (!code || !code.trim()) {
+        code = await generateUniqueReferralCode();
+        await pool.query("UPDATE users SET referral_code = $1 WHERE user_id = $2", [code, userId]);
+    }
+    return code;
+};
+
 export const register = async (req, res) => {
 
     try {
@@ -815,7 +826,10 @@ export const getReferrals = async (req, res) => {
         if (userRes.rows.length === 0) {
             return res.status(404).json({ message: "User not found" });
         }
-        const referralCode = userRes.rows[0].referral_code;
+        let referralCode = userRes.rows[0].referral_code;
+        if (!referralCode || !referralCode.trim()) {
+            referralCode = await getOrGenerateReferralCode(userId);
+        }
 
         // 2. Fetch settings configurations first
         let signupBonusAmount = 5.00;
@@ -927,12 +941,15 @@ export const getAffiliateStats = async (req, res) => {
     try {
         const userId = req.user.user_id;
 
-        // 1. Get referral code and affiliate status
-        const userRes = await pool.query("SELECT referral_code, is_affiliate FROM users WHERE user_id = $1", [userId]);
+        // 1. Get referral code, affiliate status, and link click metrics
+        const userRes = await pool.query("SELECT referral_code, is_affiliate, COALESCE(affiliate_clicks, 0) as affiliate_clicks FROM users WHERE user_id = $1", [userId]);
         if (userRes.rows.length === 0) {
             return res.status(404).json({ message: "User not found" });
         }
-        const referralCode = userRes.rows[0].referral_code;
+        let referralCode = userRes.rows[0].referral_code;
+        if (!referralCode || !referralCode.trim()) {
+            referralCode = await getOrGenerateReferralCode(userId);
+        }
         const rawIsAffiliate = userRes.rows[0].is_affiliate;
         const isAffiliate = rawIsAffiliate === true || rawIsAffiliate === 1 || rawIsAffiliate === "true" || rawIsAffiliate === "t" || Boolean(rawIsAffiliate);
 
@@ -966,14 +983,140 @@ export const getAffiliateStats = async (req, res) => {
             ORDER BY ac.created_at DESC
         `, [userId]);
 
+        // 5. Unique IP Clicks & Link Breakdown
+        const uniqueClicksRes = await pool.query(
+            "SELECT COUNT(DISTINCT ip_address) as count FROM affiliate_click_logs WHERE referral_code = $1",
+            [referralCode]
+        );
+        const totalUniqueClicks = parseInt(uniqueClicksRes.rows[0]?.count || 0);
+
+        const totalClicksRes = await pool.query(
+            "SELECT COUNT(*) as count FROM affiliate_click_logs WHERE referral_code = $1",
+            [referralCode]
+        );
+        const totalClicks = parseInt(totalClicksRes.rows[0]?.count || 0);
+
+        const linkBreakdownRes = await pool.query(
+            `SELECT 
+                target_url,
+                COUNT(DISTINCT ip_address) as unique_ips,
+                COUNT(*) as total_clicks,
+                MAX(created_at) as last_visited_at
+             FROM affiliate_click_logs
+             WHERE referral_code = $1
+             GROUP BY target_url
+             ORDER BY last_visited_at DESC`,
+            [referralCode]
+        );
+
+        // 6. Count total contracts, gig applications, and proposals placed by referred users
+        let totalOrdersPlaced = 0;
+        try {
+            const ordersPlacedRes = await pool.query(
+                `SELECT 
+                    (SELECT COUNT(*) FROM contracts c JOIN users u ON (c.client_id = u.user_id OR c.freelancer_id = u.user_id) WHERE u.referred_by = $1)
+                    +
+                    (SELECT COUNT(*) FROM gig_applications ga JOIN users u ON ga.client_id = u.user_id WHERE u.referred_by = $1)
+                    +
+                    (SELECT COUNT(*) FROM proposals p JOIN users u ON p.freelancer_id = u.user_id WHERE u.referred_by = $1)
+                 AS count`,
+                [userId]
+            );
+            totalOrdersPlaced = parseInt(ordersPlacedRes.rows[0]?.count || 0);
+        } catch (e) {
+            console.error("Orders placed count error:", e.message);
+            totalOrdersPlaced = referredCount;
+        }
+
+        const linkBreakdownRows = await Promise.all((linkBreakdownRes.rows || []).map(async (item) => {
+            let ordersCount = 0;
+            let salesCount = 0;
+            const targetUrl = item.target_url || '';
+
+            // Extract gig_id if URL format is /gigs/:id
+            const gigMatch = targetUrl.match(/\/gigs\/(\d+)/);
+            if (gigMatch && gigMatch[1]) {
+                const gigId = parseInt(gigMatch[1]);
+                try {
+                    const oRes = await pool.query("SELECT COUNT(*) as count FROM gig_applications WHERE gig_id = $1", [gigId]);
+                    ordersCount = parseInt(oRes.rows[0]?.count || 0);
+
+                    const sRes = await pool.query("SELECT COUNT(*) as count FROM gig_applications WHERE gig_id = $1 AND status IN ('Completed', 'Accepted', 'Approved')", [gigId]);
+                    salesCount = parseInt(sRes.rows[0]?.count || 0);
+                } catch (e) {
+                    console.error("Error querying gig orders count for gig #", gigId, e);
+                }
+            } else {
+                ordersCount = totalOrdersPlaced;
+                salesCount = ledgerRes.rows.length;
+            }
+
+            return {
+                ...item,
+                orders_count: ordersCount,
+                sales_count: salesCount
+            };
+        }));
+
+        if (totalOrdersPlaced === 0 && linkBreakdownRows.length > 0) {
+            totalOrdersPlaced = linkBreakdownRows.reduce((acc, row) => acc + (row.orders_count || 0), 0);
+        }
+
         res.status(200).json({
             referral_code: referralCode,
             is_affiliate: isAffiliate,
             total_referred: referredCount,
+            orders_placed: totalOrdersPlaced,
+            total_sales: ledgerRes.rows.length,
+            affiliate_clicks: totalClicks > 0 ? totalClicks : parseInt(userRes.rows[0].affiliate_clicks || 0),
+            unique_clicks: totalUniqueClicks,
+            link_breakdown: linkBreakdownRows,
             pending_commissions: parseFloat(earnings.pending_commissions),
             approved_commissions: parseFloat(earnings.approved_commissions),
             ledger: ledgerRes.rows
         });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// POST /api/users/affiliate/track-click (Public / Unauthenticated)
+export const trackAffiliateClick = async (req, res) => {
+    try {
+        const { referral_code, target_url } = req.body;
+        if (!referral_code || !referral_code.trim()) {
+            return res.status(400).json({ message: "Referral code is required" });
+        }
+
+        const clientIp = (
+            req.headers['x-forwarded-for'] ||
+            req.headers['x-real-ip'] ||
+            req.socket?.remoteAddress ||
+            '127.0.0.1'
+        ).toString().split(',')[0].trim();
+
+        const cleanRef = referral_code.trim();
+        const cleanTarget = (target_url && target_url.trim()) ? target_url.trim() : '/register';
+        const userAgent = req.headers['user-agent'] || '';
+
+        // Find owner affiliate_id
+        const userRes = await pool.query("SELECT user_id FROM users WHERE referral_code = $1", [cleanRef]);
+        const affiliateId = userRes.rows[0]?.user_id || null;
+
+        // Log the click with IP address
+        await pool.query(
+            `INSERT INTO affiliate_click_logs (affiliate_id, referral_code, target_url, ip_address, user_agent)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [affiliateId, cleanRef, cleanTarget, clientIp, userAgent]
+        );
+
+        // Update overall aggregate count
+        await pool.query(
+            "UPDATE users SET affiliate_clicks = COALESCE(affiliate_clicks, 0) + 1 WHERE referral_code = $1",
+            [cleanRef]
+        );
+
+        res.status(200).json({ message: "Affiliate click logged successfully", ip: clientIp });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -1190,6 +1333,11 @@ export const getUserProfile = async (req, res) => {
         }
 
         const userData = userRes.rows[0];
+
+        if (!userData.referral_code || !userData.referral_code.trim()) {
+            const newCode = await getOrGenerateReferralCode(userId);
+            userData.referral_code = newCode;
+        }
 
         // Fetch wallet balance
         const walletRes = await pool.query("SELECT balance FROM wallets WHERE user_id = $1", [userId]);

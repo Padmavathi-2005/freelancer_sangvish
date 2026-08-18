@@ -13,6 +13,7 @@ import {
   FiAlertTriangle, 
   FiCheckCircle, 
   FiCheck, 
+  FiCopy, 
   FiX, 
   FiFileText, 
   FiClock, 
@@ -99,6 +100,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
   // Share link copy state & handler
   const [copiedShare, setCopiedShare] = useState(false);
+  const [copiedAffiliate, setCopiedAffiliate] = useState(false);
   const [currentUrl, setCurrentUrl] = useState("");
   const [origin, setOrigin] = useState("");
 
@@ -952,7 +954,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
           <h2 className="text-xl font-extrabold text-slate-800 mt-4">Gig Not Found</h2>
           <p className="text-sm text-slate-500 max-w-sm mt-2">{error || "The service you are looking for does not exist."}</p>
           <a
-            href="/dashboard?tab=explore_gigs"
+            href="/dashboard/explore-gigs"
             className="mt-6 bg-teal-700 hover:bg-teal-600 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md transition-all"
           >
             Browse Explore Services
@@ -1513,24 +1515,60 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 <p className="text-[11px] font-semibold text-slate-500 leading-normal">
                   Share this gig service link. If a client registers and buys this gig service, you will earn a recurring 10% commission on the platform service fee!
                 </p>
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5 mt-2">
+                <div className="flex items-center gap-2 bg-slate-100/80 border border-slate-200 rounded-xl p-1.5 pl-3 mt-1">
                   <input
                     type="text"
                     readOnly
-                    value={`${origin}/gigs/${gig?.gig_id}?ref=${userReferralCode}`}
-                    className="flex-1 bg-transparent text-xs font-bold text-slate-805 outline-none select-all"
+                    value={`${origin || (typeof window !== "undefined" ? window.location.origin : "")}/gigs/${gig?.gig_id}?ref=${userReferralCode || "REF_USER"}`}
+                    style={{ outline: "none", border: "none", boxShadow: "none" }}
+                    className="flex-1 min-w-0 bg-transparent text-xs font-mono font-semibold text-slate-700 select-all truncate border-0 outline-none ring-0 focus:outline-none focus:ring-0 focus:border-0 shadow-none p-0"
                   />
                   <button
+                    type="button"
                     onClick={() => {
-                      const link = `${origin || (typeof window !== "undefined" ? window.location.origin : "")}/gigs/${gig?.gig_id}?ref=${userReferralCode}`;
+                      const link = `${origin || (typeof window !== "undefined" ? window.location.origin : "")}/gigs/${gig?.gig_id}?ref=${userReferralCode || "REF_USER"}`;
                       navigator.clipboard.writeText(link);
-                      setToast({ type: "success", message: "Affiliate link copied!" });
+                      setCopiedAffiliate(true);
+                      setToast({ type: "success", message: "Affiliate referral link copied!" });
+                      setTimeout(() => setCopiedAffiliate(false), 2000);
                     }}
-                    className="bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition-all text-white p-2 rounded-lg cursor-pointer flex items-center justify-center shrink-0 border-none"
+                    className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0 border-none text-white shadow-xs ${
+                      copiedAffiliate
+                        ? "bg-emerald-700 hover:bg-emerald-800"
+                        : "bg-teal-700 hover:bg-teal-800 active:scale-95"
+                    }`}
                     title="Copy affiliate link"
                   >
-                    Copy
+                    {copiedAffiliate ? (
+                      <>
+                        <FiCheck className="w-3.5 h-3.5" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiCopy className="w-3.5 h-3.5" />
+                        <span>Copy</span>
+                      </>
+                    )}
                   </button>
+                </div>
+
+                {/* Direct Social Share Options with Affiliate Link */}
+                <div className="pt-2.5 border-t border-slate-100 flex flex-col gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Quick Social Share:
+                  </span>
+                  <ShareSection
+                    type="gig"
+                    itemTitle={gig?.title || ""}
+                    itemDescription={gig?.description || ""}
+                    customUrl={currentUrl}
+                    isAffiliate={isAffiliate}
+                    referralCode={userReferralCode}
+                    onToast={(type, message) => setToast({ type, message })}
+                    hideHeader={true}
+                    className="flex flex-col gap-2"
+                  />
                 </div>
               </div>
             )}

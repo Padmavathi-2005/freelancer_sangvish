@@ -789,7 +789,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
                           window.dispatchEvent(new Event("storage"));
                         } catch (e) {}
                         setSelectedFreelancerForInvite(null);
-                        window.location.href = "/dashboard?tab=my-projects&action=create";
+                        window.location.href = "/dashboard/my-projects?action=create";
                       }}
                       className="w-full sm:w-2/3 py-3 bg-gradient-to-r from-primary to-cyan-600 hover:brightness-110 text-white rounded-xl text-xs font-extrabold shadow-md transition-all cursor-pointer active:scale-95 flex items-center justify-center gap-2 border-0"
                     >

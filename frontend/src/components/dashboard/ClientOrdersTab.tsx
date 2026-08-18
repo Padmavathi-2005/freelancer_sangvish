@@ -19,31 +19,32 @@ interface ClientOrdersTabProps {
   setActiveTab: (val: any) => void;
 }
 
-export const getOrderStatusPill = (app: any) => {
-  if (!app) return { text: "Pending", style: "bg-amber-50 text-amber-700 border-amber-200" };
+export const getOrderStatusPill = (app: any, t?: (key: string, fallback: string) => string) => {
+  const translate = t || ((_, fallback) => fallback);
+  if (!app) return { text: translate("pending_status", "PENDING"), style: "bg-amber-50 text-amber-700 border-amber-200" };
 
   if (app.contract_status === "Disputed" || app.dispute_status === "Open" || app.dispute_status === "Escalated") {
-    return { text: "Disputed / Under Mediation", style: "bg-rose-50 text-rose-700 border-rose-200" };
+    return { text: translate("status_disputed", "Disputed / Under Mediation"), style: "bg-rose-50 text-rose-700 border-rose-200" };
   }
   if (app.contract_status === "Completed" || app.status === "Completed") {
-    return { text: "Completed", style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    return { text: translate("status_completed", "Completed"), style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   }
   if (app.contract_status === "Under Review") {
-    return { text: "Under Review", style: "bg-amber-50 text-amber-700 border-amber-200" };
+    return { text: translate("status_under_review", "Under Review"), style: "bg-amber-50 text-amber-700 border-amber-200" };
   }
   if (app.status === "Rejected") {
-    return { text: "Declined", style: "bg-rose-50 text-rose-700 border-rose-200" };
+    return { text: translate("status_declined", "Declined"), style: "bg-rose-50 text-rose-700 border-rose-200" };
   }
   if (app.contract_status === "Cancelled" || app.status === "Cancelled") {
-    return { text: "Cancelled", style: "bg-rose-50 text-rose-700 border-rose-200" };
+    return { text: translate("status_cancelled", "Cancelled"), style: "bg-rose-50 text-rose-700 border-rose-200" };
   }
   if ((app.contract_id && app.contract_status !== "Cancelled") || app.contract_status === "In Progress" || app.contract_status === "Work Started" || app.payment_status === "Paid") {
-    return { text: "Work Started", style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    return { text: translate("status_work_started", "Work Started"), style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   }
   if (app.status === "Accepted") {
-    return { text: "Accepted", style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+    return { text: translate("status_accepted", "Accepted"), style: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   }
-  return { text: app.status || "Pending", style: "bg-amber-50 text-amber-700 border-amber-200" };
+  return { text: translate("pending_status", app.status || "PENDING"), style: "bg-amber-50 text-amber-700 border-amber-200" };
 };
 
 export const resolveDownloadUrl = (url: string) => {
@@ -201,7 +202,7 @@ export const renderOrderBreakdown = (app: any, t?: any) => {
         <div className="flex items-center gap-1.5 bg-white border border-slate-200/90 px-3 py-1.5 rounded-lg shadow-2xs">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{translate("base_project_cost_label", "Base Project Cost:")}</span>
           <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
-            {planName ? translate("plan_ordered_label", "{{plan}} Plan").replace("{{plan}}", planName.toUpperCase()) : translate("base_service_label", "Base Service")} ({app.currency_symbol || "$"}{baseCost.toLocaleString()})
+            {planName ? translate("plan_ordered_label", "{{plan}} Plan").replace("{{plan}}", translate(`plan_${planName.toLowerCase()}`, planName.toUpperCase())) : translate("base_service_label", "Base Service")} ({app.currency_symbol || "$"}{baseCost.toLocaleString()})
             {(() => {
               const isNegotiated = checkIsNegotiated(app);
               const origPrice = getOriginalPackagePrice(app);
@@ -790,10 +791,9 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 flex items-start gap-3">
           <FiAlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs font-black text-amber-800">Awaiting Freelancer Acceptance</p>
+            <p className="text-xs font-black text-amber-800">{t("awaiting_freelancer_acceptance", "Awaiting Freelancer Acceptance")}</p>
             <p className="text-[10px] text-amber-700 font-semibold mt-0.5 leading-relaxed">
-              Your order has been sent to the freelancer. Payment will be requested once they accept.
-              <br />No charges have been made yet.
+              {t("awaiting_acceptance_msg", "Your order has been sent to the freelancer. Payment will be requested once they accept. No charges have been made yet.")}
             </p>
           </div>
         </div>
@@ -805,9 +805,9 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-5 flex items-start gap-3">
           <FiAlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs font-black text-rose-800">Order Declined by Freelancer</p>
+            <p className="text-xs font-black text-rose-800">{t("order_declined_by_freelancer", "Order Declined by Freelancer")}</p>
             <p className="text-[10px] text-rose-700 font-semibold mt-0.5">
-              The freelancer declined this order. No payment was charged.
+              {t("order_declined_msg", "The freelancer declined this order. No payment was charged.")}
             </p>
           </div>
         </div>
@@ -1053,14 +1053,14 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
               onClick={() => { setSelectedGigOrderDetails(null); setPayError(""); setPaySuccess(false); }}
               className="text-slate-500 hover:text-slate-800 text-[10px] font-bold bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-slate-200 hover:bg-slate-200/60 mb-2.5 inline-flex items-center gap-1.5"
             >
-              ← Back to My Orders
+              ← {t("back_to_my_orders", "Back to My Orders")}
             </button>
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <FiBriefcase className="w-5 h-5 text-primary shrink-0" />
-              <span>{selectedGigOrderDetails.gig_title}</span>
+              <span dir="auto">{t(selectedGigOrderDetails.gig_title, selectedGigOrderDetails.gig_title)}</span>
             </h2>
             <p className="text-slate-500 text-xs mt-1 font-semibold">
-              Order #{selectedGigOrderDetails.application_id} · by {selectedGigOrderDetails.freelancer_name}
+              {t("order_by_label", "Order")} #{selectedGigOrderDetails.application_id} · {t("by_label", "by")} {selectedGigOrderDetails.freelancer_name}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -1068,7 +1068,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
               onClick={() => handleOpenChat(selectedGigOrderDetails.freelancer_id)}
               className="text-[10px] font-bold text-white bg-teal-600 hover:bg-teal-700 flex items-center gap-1.5 cursor-pointer py-2.5 px-4 rounded-xl border-0 transition-all shadow-sm"
             >
-              <FiMessageSquare className="w-3.5 h-3.5" /> Open Chat
+              <FiMessageSquare className="w-3.5 h-3.5" /> {t("open_chat_btn", "Open Chat")}
             </button>
             <button
               onClick={() => fetchClientApplications().then(() => {
@@ -1079,7 +1079,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
               })}
               className="text-[10px] font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1.5 bg-slate-100 px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-200 transition-all cursor-pointer"
             >
-              <FiRefreshCw className="w-3 h-3" /> Refresh
+              <FiRefreshCw className="w-3 h-3" /> {t("refresh_btn", "Refresh")}
             </button>
           </div>
         </div>
@@ -1087,31 +1087,33 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         {/* Overview */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
-          <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Order Specifications</h3>
+          <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">{t("order_specifications", "Order Specifications")}</h3>
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3.5 border-b border-slate-100/80 pb-4">
             <div className="space-y-1">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Order ID: #{selectedGigOrderDetails.application_id}</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t("order_id_label", "Order ID:")} #{selectedGigOrderDetails.application_id}</span>
               <p className="text-xs text-slate-500 font-bold">
-                Freelancer:{" "}
+                {t("freelancer_label", "Freelancer:")}{" "}
                 <button
                   onClick={() => setSelectedFreelancerProfile({
                     user_id: selectedGigOrderDetails.freelancer_id,
-                    name: selectedGigOrderDetails.freelancer_name,
+                    name: selectedGigOrderDetails.freelancer_name || selectedGigOrderDetails.freelancer_email || `Freelancer #${selectedGigOrderDetails.freelancer_id || ''}`,
                     role: "Gig Service Provider",
-                    email: selectedGigOrderDetails.freelancer_email,
+                    email: selectedGigOrderDetails.freelancer_email || "",
                     skills: [], hourlyRate: 50, rating: 4.9, completedJobs: 15,
                     bio: "Hired service provider partner.",
                   })}
                   className="text-primary font-black hover:underline cursor-pointer"
                 >
-                  {selectedGigOrderDetails.freelancer_name}
-                </button>{" "}
-                <span className="text-[11px] text-slate-450 font-normal">({selectedGigOrderDetails.freelancer_email})</span>
+                  {selectedGigOrderDetails.freelancer_name || selectedGigOrderDetails.freelancer_email || (selectedGigOrderDetails.freelancer_id ? `Freelancer #${selectedGigOrderDetails.freelancer_id}` : "Assigned Freelancer")}
+                </button>
+                {selectedGigOrderDetails.freelancer_email && selectedGigOrderDetails.freelancer_name && (
+                  <span className="text-[11px] text-slate-450 font-normal"> ({selectedGigOrderDetails.freelancer_email})</span>
+                )}
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Price:</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("price_label", "Price:")}</span>
                 <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
                   {selectedGigOrderDetails.currency_symbol || "$"}{parseFloat(selectedGigOrderDetails.price).toLocaleString()}
                   {(() => {
@@ -1129,7 +1131,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 </span>
               </div>
               {(() => {
-                const badge = getOrderStatusPill(selectedGigOrderDetails);
+                const badge = getOrderStatusPill(selectedGigOrderDetails, t);
                 return (
                   <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap ${badge.style}`}>
                     {badge.text}
@@ -1147,9 +1149,9 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         {selectedGigOrderDetails.status === "Accepted" && selectedGigOrderDetails.payment_status === "Paid" && selectedGigOrderDetails.contract_status === "Under Review" && (
           <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-left">
-              <p className="text-xs font-black text-slate-800">Is the service work completed?</p>
+              <p className="text-xs font-black text-slate-800">{t("is_service_completed_q", "Is the service work completed?")}</p>
               <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-relaxed">
-                If the freelancer has delivered all milestone files and finished the project scope, you can mark the order as Completed.
+                {t("is_service_completed_desc", "If the freelancer has delivered all milestone files and finished the project scope, you can mark the order as Completed.")}
               </p>
             </div>
             <button
@@ -1178,7 +1180,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
               }}
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-sm transition-all shrink-0 cursor-pointer border-0"
             >
-              Mark as Completed
+              {t("mark_as_completed_btn", "Mark as Completed")}
             </button>
           </div>
         )}
@@ -1192,7 +1194,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         {selectedGigOrderDetails.status !== "Rejected" && selectedGigOrderDetails.status !== "Cancelled" && selectedGigOrderDetails.contract_status !== "Cancelled" && (
           <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
-            <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">Milestones Tracker</h3>
+            <h3 className="text-sm font-extrabold text-slate-850 border-b border-slate-100 pb-2">{t("milestones_tracker_header", "Milestones Tracker")}</h3>
             <GigMilestoneTracker
               application={selectedGigOrderDetails}
               onUpdateApplication={(updatedApp) => {
@@ -1271,7 +1273,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100/80 pb-4">
                   <div className="cursor-pointer space-y-0.5 min-w-0" onClick={() => setSelectedGigOrderDetails(app)}>
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t("order_hash_indicator", "Order #")}{app.application_id}</span>
-                    <h3 className="text-sm sm:text-base font-black text-slate-800 hover:text-primary transition-colors truncate">{app.gig_title}</h3>
+                    <h3 className="text-sm sm:text-base font-black text-slate-800 hover:text-primary transition-colors truncate">{t(app.gig_title, app.gig_title)}</h3>
                     <p className="text-xs text-slate-400 font-bold mt-1 truncate">{app.freelancer_name} · <span className="font-normal text-slate-450">{app.freelancer_email}</span></p>
                   </div>
 
@@ -1362,7 +1364,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
             <div className="bg-gradient-to-r from-teal-700 to-cyan-600 px-6 py-5 flex justify-between items-start rounded-t-2xl shrink-0">
               <div>
                 <p className="text-[9px] font-black text-teal-200 uppercase tracking-widest">Order Details</p>
-                <h3 className="text-base font-extrabold text-white mt-1 leading-snug">{selectedGigOrderDetails.gig_title}</h3>
+                <h3 className="text-base font-extrabold text-white mt-1 leading-snug">{t(selectedGigOrderDetails.gig_title, selectedGigOrderDetails.gig_title)}</h3>
                 <div className="flex items-center gap-2 mt-2">
                   <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider ${
                     selectedGigOrderDetails.status === "Completed" ? "bg-emerald-50/20 border-emerald-300/40 text-emerald-100"

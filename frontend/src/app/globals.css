@@ -37,6 +37,14 @@
 }
 
 /* Explicit Dynamic Brand Color Utilities */
+/* Hide browser default password reveal icon (Edge, IE, Chrome) to avoid duplicate toggle icons */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .bg-primary {
   background-color: var(--color-primary, #0F766E);
 }

@@ -95,6 +95,26 @@ export default function Header() {
     }
   };
 
+  // Track affiliate referral link clicks automatically
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const refCode = params.get("ref") || params.get("referral_code");
+      if (refCode) {
+        const targetPath = window.location.pathname || "/register";
+        const trackedKey = `tracked_ref_click_${refCode}_${targetPath}`;
+        if (!sessionStorage.getItem(trackedKey)) {
+          sessionStorage.setItem(trackedKey, "1");
+          fetch(`${API_URL}/users/affiliate/track-click`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ referral_code: refCode, target_url: targetPath }),
+          }).catch((err) => console.error("Failed to track affiliate click:", err));
+        }
+      }
+    }
+  }, []);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -505,7 +525,7 @@ export default function Header() {
               <div className="relative group/home py-2">
                 <a
                   href="/"
-                  className={`font-bold text-sm leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer ${
+                  className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer ${
                     isHome1Active || isHome2Active || isHome3Active
                       ? "text-teal-700 dark:text-teal-400 font-black"
                       : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
@@ -555,7 +575,7 @@ export default function Header() {
 
               {/* Categories Dropdown (Triggers mega dropdown on hover) */}
               <div className="group/mega py-2">
-                <button className="text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400 font-bold text-sm leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer">
+                <button className="text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400 font-bold text-sm tracking-wide leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer">
                   {t("nav_categories", "Categories")}
                   <FiChevronDown className="w-3.5 h-3.5 text-slate-450 transition-transform duration-250 group-hover/mega:rotate-180" />
                 </button>
@@ -654,7 +674,7 @@ export default function Header() {
               <a
                 href="/talent"
                 onClick={handleTalentClick}
-                className={`font-bold text-sm leading-none transition-all duration-200 ${
+                className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${
                   isTalentActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
               >
@@ -663,7 +683,7 @@ export default function Header() {
               <a
                 href="/projects"
                 onClick={handleProjectsClick}
-                className={`font-bold text-sm leading-none transition-all duration-200 ${
+                className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${
                   isProjectsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
               >
@@ -671,7 +691,7 @@ export default function Header() {
               </a>
               <a
                 href="/gigs"
-                className={`font-bold text-sm leading-none transition-all duration-200 ${
+                className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${
                   isGigsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
               >
@@ -679,7 +699,7 @@ export default function Header() {
               </a>
               <a
                 href="/blogs"
-                className={`font-bold text-sm leading-none transition-all duration-200 ${
+                className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${
                   isBlogsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
                 }`}
               >
@@ -741,22 +761,24 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Theme Switcher */}
-            <button
-              onClick={toggleTheme}
-              className="text-slate-650 hover:text-teal-750 font-bold text-xs flex items-center justify-center cursor-pointer bg-slate-100 hover:bg-slate-200/60 p-1.5 rounded-xl border border-slate-200/50 transition-all duration-200"
-              aria-label="Toggle theme"
-            >
-              {siteTheme === "dark" ? (
-                <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                </svg>
-              )}
-            </button>
+            {/* Theme Switcher (Only shown in header for logged out users) */}
+            {!isLoggedIn && (
+              <button
+                onClick={toggleTheme}
+                className="text-slate-650 hover:text-teal-750 font-bold text-xs flex items-center justify-center cursor-pointer bg-slate-100 hover:bg-slate-200/60 p-1.5 rounded-xl border border-slate-200/50 transition-all duration-200"
+                aria-label="Toggle theme"
+              >
+                {siteTheme === "dark" ? (
+                  <svg className="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                  </svg>
+                )}
+              </button>
+            )}
 
             {isLoggedIn && (
               <NotificationsDropdown
@@ -796,13 +818,28 @@ export default function Header() {
                 {/* Dropdown Menu (visible on hover) */}
                 <div className="absolute right-0 mt-3 w-64 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.12)] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
                   {/* User Badge */}
-                  <div className="px-3.5 py-2 border-b border-slate-100 dark:border-zinc-800 mb-1">
-                    <p className="text-xs font-black text-slate-800 dark:text-zinc-100 truncate">
-                      {userFirstName} {userLastName}
-                    </p>
-                    <p className="text-[10px] font-semibold text-slate-400 dark:text-zinc-400 capitalize truncate">
-                      {userRole || "Member"}
-                    </p>
+                  <div className="px-3.5 py-2 border-b border-slate-100 dark:border-zinc-800 mb-1 flex items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-black text-slate-800 dark:text-zinc-100 truncate">
+                        {userFirstName} {userLastName}
+                      </p>
+                    </div>
+                    {/* Theme Switcher Button */}
+                    <button
+                      onClick={toggleTheme}
+                      className="text-slate-600 hover:text-teal-750 dark:text-zinc-400 dark:hover:text-amber-500 font-bold text-xs flex items-center justify-center cursor-pointer bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200/60 dark:hover:bg-zinc-700/60 p-1.5 rounded-xl border border-slate-200/50 dark:border-zinc-700 transition-all duration-200 shrink-0"
+                      aria-label="Toggle theme"
+                    >
+                      {siteTheme === "dark" ? (
+                        <svg className="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                        </svg>
+                      )}
+                    </button>
                   </div>
 
                   <div className="flex flex-col gap-0.5">
@@ -816,7 +853,7 @@ export default function Header() {
                     </a>
 
                     {/* Refer & Earn */}
-                    <a href="/dashboard?tab=referrals" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
+                    <a href="/dashboard/referrals" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
                       <div className="flex items-center gap-2.5">
                         <FiGift className="w-4 h-4 text-amber-500 group-hover:text-primary" />
                         <span>{t("refer_and_earn", "Refer & Earn")}</span>
@@ -836,7 +873,7 @@ export default function Header() {
                     </a>
 
                     {/* Wallet & Earnings */}
-                    <a href="/dashboard?tab=wallet" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
+                    <a href="/dashboard/wallet" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
                       <div className="flex items-center gap-2.5">
                         <FiCreditCard className="w-4 h-4 text-emerald-500 group-hover:text-primary" />
                         <span>{t("wallet_earnings", "Wallet & Earnings")}</span>
@@ -845,7 +882,7 @@ export default function Header() {
                     </a>
 
                     {/* My Orders / Projects */}
-                    <a href={userRole === "client" ? "/dashboard?tab=orders" : "/dashboard?tab=proposals"} className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
+                    <a href={userRole === "client" ? "/dashboard/orders" : "/dashboard/proposals"} className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
                       <div className="flex items-center gap-2.5">
                         <FiBriefcase className="w-4 h-4 text-indigo-500 group-hover:text-primary" />
                         <span>{userRole === "client" ? t("my_orders", "My Orders") : t("my_proposals", "My Proposals")}</span>
@@ -854,7 +891,7 @@ export default function Header() {
                     </a>
 
                     {/* Settings / Account */}
-                    <a href="/dashboard?tab=settings" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
+                    <a href="/dashboard/settings" className="flex items-center justify-between px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-200 hover:bg-primary-light dark:hover:bg-zinc-800 hover:text-primary dark:hover:text-primary font-bold rounded-xl transition-all duration-200 group/item">
                       <div className="flex items-center gap-2.5">
                         <FiSettings className="w-4 h-4 text-slate-400 dark:text-zinc-400 group-hover:text-primary" />
                         <span>{t("account_settings", "Account Settings")}</span>

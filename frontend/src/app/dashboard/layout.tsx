@@ -3948,7 +3948,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 <button
                   type="submit"
                   disabled={proposalSubmitting}
-                  className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                  className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50"
                 >
                   {proposalSubmitting ? (
                     t("submitting_status", "Submitting...")
@@ -3976,225 +3976,238 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               }}
               className="absolute top-6 sm:top-8 right-6 sm:right-8 font-black text-xs px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-800 hover:text-slate-950 transition-all cursor-pointer z-10 shadow-xs"
             >
-              Close
+              {t("close_btn", "Close")}
             </button>
 
             {!showHireWizard ? (
-              <div className="flex-1 flex flex-col overflow-y-auto pr-1">
-                {/* 1. Header Profile details */}
-                <div className="flex flex-col sm:flex-row gap-5 border-b border-slate-100 pb-5">
-                  <div className="w-24 h-24 bg-teal-50 border border-teal-100 text-teal-700 rounded-full flex items-center justify-center text-4xl font-black shrink-0 shadow-sm">
-                    {selectedFreelancerProfile.profile_image ? (
-                      <img
-                        src={selectedFreelancerProfile.profile_image}
-                        alt={selectedFreelancerProfile.name}
-                        className="w-full h-full rounded-full object-cover"
-                      />
-                    ) : (
-                      selectedFreelancerProfile.name ? selectedFreelancerProfile.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) : "FL"
-                    )}
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-black tracking-tight text-slate-850 flex items-center gap-2">
-                      <span>{selectedFreelancerProfile.name}</span>
-                      <span className="bg-teal-100 text-teal-800 text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">Verified</span>
-                    </h2>
-                    <p className="text-slate-500 font-bold text-sm mt-0.5">{selectedFreelancerProfile.role || "Professional Freelancer"}</p>
-                    
-                    <div className="flex flex-wrap gap-3 mt-2 text-[10px] font-bold text-slate-450 uppercase tracking-wider">
-                      <div className="flex items-center gap-1">
-                        <i className="fa-solid fa-dollar-sign text-teal-600 text-[10px]"></i>
-                        <span>Rate: <strong className="text-slate-700">${selectedFreelancerProfile.hourlyRate || selectedFreelancerProfile.hourly_rate || "45"}/hr</strong></span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <i className="fa-solid fa-star text-amber-500 text-[10px]"></i>
-                        <span>Rating: <strong className="text-slate-700">5.0 (14 completed jobs)</strong></span>
-                      </div>
+              <div className="flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-y-auto pr-2 space-y-6 text-left">
+                  {/* 1. Header Profile details */}
+                  <div className="flex flex-col sm:flex-row gap-5 border-b border-slate-100 pb-5">
+                    <div className="w-24 h-24 bg-teal-50 border border-teal-100 text-teal-700 rounded-full flex items-center justify-center text-4xl font-black shrink-0 shadow-sm overflow-hidden">
+                      {selectedFreelancerProfile.profile_image || selectedFreelancerFullProfile?.user?.profile_image ? (
+                        <img
+                          src={selectedFreelancerProfile.profile_image || selectedFreelancerFullProfile?.user?.profile_image}
+                          alt={selectedFreelancerFullProfile?.user?.first_name || selectedFreelancerProfile.name || "Freelancer"}
+                          className="w-full h-full rounded-full object-cover"
+                        />
+                      ) : (
+                        (() => {
+                          const displayName = selectedFreelancerFullProfile?.user?.first_name 
+                            ? `${selectedFreelancerFullProfile.user.first_name} ${selectedFreelancerFullProfile.user.last_name || ''}`.trim()
+                            : (selectedFreelancerProfile.name || selectedFreelancerProfile.freelancer_name || "FL");
+                          return displayName.split(" ").filter(Boolean).map((n: string) => n[0]).join("").toUpperCase().slice(0, 2) || "FL";
+                        })()
+                      )}
                     </div>
-                  </div>
-                </div>
-
-                {loadingFullProfile ? (
-                  <div className="py-12 flex flex-col items-center justify-center gap-3">
-                    <div className="w-8 h-8 border-3 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-slate-400 font-semibold text-xs">Fetching portfolio and qualifications...</p>
-                  </div>
-                ) : (
-                  <div className="mt-5 space-y-6">
-                    {/* Bio / Description */}
                     <div>
-                      <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">About & Overview</h4>
-                      <p className="text-xs leading-relaxed font-medium text-slate-650">
-                        {selectedFreelancerFullProfile?.profile?.description || selectedFreelancerProfile.description || "Top rated developer specialized in modern web applications, scalable database systems, API integrations, and premium UI designs."}
-                      </p>
-                    </div>
-
-                    {/* Skills section */}
-                    {selectedFreelancerFullProfile?.skills && selectedFreelancerFullProfile.skills.length > 0 && (
-                      <div>
-                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Primary Skills</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedFreelancerFullProfile.skills.map((s: any) => (
-                            <span key={s.skill_id} className="bg-slate-50 border border-slate-200/60 text-slate-650 text-[10px] font-bold px-3 py-1.5 rounded-xl">
-                              {s.skill_name}
-                            </span>
-                          ))}
+                      <h2 className="text-xl font-black tracking-tight text-slate-850 flex items-center gap-2">
+                        <span>
+                          {selectedFreelancerFullProfile?.user?.first_name 
+                            ? `${selectedFreelancerFullProfile.user.first_name} ${selectedFreelancerFullProfile.user.last_name || ''}`.trim()
+                            : (selectedFreelancerProfile.name && selectedFreelancerProfile.name !== "Freelancer #" && !selectedFreelancerProfile.name.startsWith("Freelancer #")
+                                ? selectedFreelancerProfile.name 
+                                : (selectedFreelancerProfile.freelancer_name || selectedFreelancerProfile.email || (selectedFreelancerProfile.user_id ? `Freelancer #${selectedFreelancerProfile.user_id}` : "Assigned Freelancer")))}
+                        </span>
+                        <span className="bg-teal-100 text-teal-800 text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">{t("verified_badge", "Verified")}</span>
+                      </h2>
+                      <p className="text-slate-500 font-bold text-sm mt-0.5">{selectedFreelancerProfile.role ? t("gig_service_provider", selectedFreelancerProfile.role) : t("professional_freelancer", "Professional Freelancer")}</p>
+                      
+                      <div className="flex flex-wrap gap-3 mt-2 text-[10px] font-bold text-slate-450 uppercase tracking-wider">
+                        <div className="flex items-center gap-1">
+                          <i className="fa-solid fa-dollar-sign text-teal-600 text-[10px]"></i>
+                          <span>{t("rate_label", "Rate:")} <strong className="text-slate-700">${selectedFreelancerProfile.hourlyRate || selectedFreelancerProfile.hourly_rate || "45"}/hr</strong></span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <i className="fa-solid fa-star text-amber-500 text-[10px]"></i>
+                          <span>{t("rating_label", "Rating:")} <strong className="text-slate-700">5.0 (14 {t("completed_jobs_suffix", "completed jobs")})</strong></span>
                         </div>
                       </div>
-                    )}
-
-                    {/* Portfolio / Projects */}
-                    {selectedFreelancerFullProfile?.projects && selectedFreelancerFullProfile.projects.length > 0 && (
-                      <div>
-                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Portfolio Projects</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {selectedFreelancerFullProfile.projects.map((p: any, idx: number) => (
-                            <div key={idx} className="border border-slate-200 p-4 rounded-xl bg-slate-50 flex flex-col justify-between">
-                              <div>
-                                <h5 className="text-xs font-black text-slate-800 truncate">{p.title}</h5>
-                                <p className="text-xxs font-medium text-slate-500 mt-1 line-clamp-3">{p.description}</p>
-                              </div>
-                              
-                              {p.live_url && (
-                                <div className="mt-3.5 pt-3 border-t border-slate-100 flex justify-between items-center">
-                                  <span className="text-[9px] font-extrabold text-slate-400 uppercase">Project Link:</span>
-                                  <a
-                                    href={p.live_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-teal-700 hover:text-teal-800 text-xxs font-black flex items-center gap-1 hover:underline cursor-pointer"
-                                  >
-                                    <span>View Live Project</span>
-                                    <i className="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
-                                  </a>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Timeline section: Experience, Education, Certifications */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
-                      {/* Experience */}
-                      <div>
-                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Experience</h4>
-                        {selectedFreelancerFullProfile?.experiences && selectedFreelancerFullProfile.experiences.length > 0 ? (
-                          <div className="space-y-3.5">
-                            {selectedFreelancerFullProfile.experiences.map((exp: any, idx: number) => (
-                              <div key={idx} className="border-l-2 border-teal-500/50 pl-3">
-                                <h5 className="text-xxs font-black text-slate-850 truncate">{exp.title}</h5>
-                                <p className="text-[10px] font-bold text-slate-500 mt-0.5">{exp.company_name}</p>
-                                <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">{formatExpDate(exp.start_date) || "N/A"} - {exp.current_job || exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xxs font-bold text-slate-400 italic">No experience logged.</p>
-                        )}
-                      </div>
-
-                      {/* Education */}
-                      <div>
-                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Education</h4>
-                        {selectedFreelancerFullProfile?.education && selectedFreelancerFullProfile.education.length > 0 ? (
-                          <div className="space-y-3.5">
-                            {selectedFreelancerFullProfile.education.map((edu: any, idx: number) => (
-                              <div key={idx} className="border-l-2 border-slate-300 pl-3">
-                                <h5 className="text-xxs font-black text-slate-850 truncate">{edu.degree}</h5>
-                                <p className="text-[10px] font-bold text-slate-500 mt-0.5">{edu.institution}</p>
-                                <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">Graduated {edu.end_date}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xxs font-bold text-slate-400 italic">No education logged.</p>
-                        )}
-                      </div>
-
-                      {/* Certifications */}
-                      <div>
-                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Certifications</h4>
-                        {selectedFreelancerFullProfile?.certifications && selectedFreelancerFullProfile.certifications.length > 0 ? (
-                          <div className="space-y-3.5">
-                            {selectedFreelancerFullProfile.certifications.map((c: any, idx: number) => (
-                              <div key={idx} className="border-l-2 border-slate-350 pl-3">
-                                <h5 className="text-xxs font-black text-slate-850 truncate">{c.name}</h5>
-                                <p className="text-[10px] font-bold text-slate-500 mt-0.5">{c.issuing_organization}</p>
-                                <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">Issued {c.issue_date}</span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-xxs font-bold text-slate-400 italic">No certifications logged.</p>
-                        )}
-                      </div>
                     </div>
+                  </div>
 
-                    {/* Engagements / Projects with You */}
-                    {selectedFreelancerFullProfile?.clientContracts && selectedFreelancerFullProfile.clientContracts.length > 0 && (
-                      <div className="pt-6 border-t border-slate-150">
-                        <h4 className="text-[10px] font-extrabold text-slate-450 uppercase tracking-widest mb-3.5 flex items-center gap-1.5">
-                          <i className="fa-solid fa-handshake text-teal-600 text-xs"></i>
-                          <span>Engagements with You</span>
-                        </h4>
-                        <div className="grid grid-cols-1 gap-3.5">
-                          {selectedFreelancerFullProfile.clientContracts.map((c: any, idx: number) => {
-                            const isGig = c.type === "gig";
-                            let statusColor = "bg-slate-100 text-slate-700 border-slate-200";
-                            if (c.status === "Completed") statusColor = "bg-emerald-50 text-emerald-700 border-emerald-150/70";
-                            else if (c.status === "In Progress" || c.status === "Work Started") statusColor = "bg-blue-50 text-blue-700 border-blue-150/70";
-                            else if (c.status === "Disputed") statusColor = "bg-amber-50 text-amber-700 border-amber-150/70";
-                            else if (c.status === "Cancelled") statusColor = "bg-rose-50 text-rose-700 border-rose-150/70";
+                  {loadingFullProfile ? (
+                    <div className="py-12 flex flex-col items-center justify-center gap-3">
+                      <div className="w-8 h-8 border-3 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-slate-400 font-semibold text-xs">Fetching portfolio and qualifications...</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6 pt-2">
+                      {/* Bio / Description */}
+                      <div>
+                        <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-1.5">{t("about_overview_header", "About & Overview")}</h4>
+                        <p className="text-xs leading-relaxed font-medium text-slate-650">
+                          {selectedFreelancerFullProfile?.profile?.description || selectedFreelancerProfile.description || t("default_freelancer_bio", "Top rated developer specialized in modern web applications, scalable database systems, API integrations, and premium UI designs.")}
+                        </p>
+                      </div>
 
-                            return (
-                              <div key={idx} className="flex flex-col gap-2 p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all text-left">
-                                <div className="flex justify-between items-start gap-3">
-                                  <div className="flex items-start gap-2 min-w-0">
-                                    {isGig ? (
-                                      <i className="fa-solid fa-store text-slate-400 mt-1 text-[11px] shrink-0"></i>
-                                    ) : (
-                                      <i className="fa-solid fa-briefcase text-slate-400 mt-1 text-[11px] shrink-0"></i>
-                                    )}
-                                    <div>
-                                      <h5 className="text-xs font-black text-slate-800 line-clamp-1">{c.title}</h5>
-                                      <p className="text-[9px] font-bold text-slate-450 uppercase mt-0.5">{isGig ? "Gig Order" : "Project Contract"}</p>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-2 shrink-0 select-none">
-                                    <span className={`text-[8.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${statusColor}`}>
-                                      {c.status}
-                                    </span>
-                                    <span className="text-xs font-black text-slate-700">
-                                      ${parseFloat(c.budget || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                    </span>
-                                  </div>
+                      {/* Skills section */}
+                      {selectedFreelancerFullProfile?.skills && selectedFreelancerFullProfile.skills.length > 0 && (
+                        <div>
+                          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Primary Skills</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedFreelancerFullProfile.skills.map((s: any) => (
+                              <span key={s.skill_id} className="bg-slate-50 border border-slate-200/60 text-slate-650 text-[10px] font-bold px-3 py-1.5 rounded-xl">
+                                {s.skill_name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Portfolio / Projects */}
+                      {selectedFreelancerFullProfile?.projects && selectedFreelancerFullProfile.projects.length > 0 && (
+                        <div>
+                          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">Portfolio Projects</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {selectedFreelancerFullProfile.projects.map((p: any, idx: number) => (
+                              <div key={idx} className="border border-slate-200 p-4 rounded-xl bg-slate-50 flex flex-col justify-between">
+                                <div>
+                                  <h5 className="text-xs font-black text-slate-800 truncate">{p.title}</h5>
+                                  <p className="text-xxs font-medium text-slate-500 mt-1 line-clamp-3">{p.description}</p>
                                 </div>
-
-                                {/* Review Section */}
-                                {c.rating !== null && (
-                                  <div className="text-[10px] text-slate-600 font-semibold bg-white border border-slate-100 rounded-lg p-2.5 flex flex-col gap-1 mt-1">
-                                    <div className="flex items-center gap-1.5 text-amber-500 font-bold">
-                                      <span>Your Review:</span>
-                                      <span>{"★".repeat(c.rating)}{"☆".repeat(5 - c.rating)}</span>
-                                      <span className="text-slate-400">({c.rating}.0)</span>
-                                    </div>
-                                    {c.comment && <p className="italic text-slate-500 font-medium">"{c.comment}"</p>}
+                                
+                                {p.live_url && (
+                                  <div className="mt-3.5 pt-3 border-t border-slate-100 flex justify-between items-center">
+                                    <span className="text-[9px] font-extrabold text-slate-400 uppercase">Project Link:</span>
+                                    <a
+                                      href={p.live_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-teal-700 hover:text-teal-800 text-xxs font-black flex items-center gap-1 hover:underline cursor-pointer"
+                                    >
+                                      <span>View Live Project</span>
+                                      <i className="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                                    </a>
                                   </div>
                                 )}
                               </div>
-                            );
-                          })}
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Timeline section: Experience, Education, Certifications */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+                        {/* Experience */}
+                        <div>
+                          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">{t("experience_header", "Experience")}</h4>
+                          {selectedFreelancerFullProfile?.experiences && selectedFreelancerFullProfile.experiences.length > 0 ? (
+                            <div className="space-y-3.5">
+                              {selectedFreelancerFullProfile.experiences.map((exp: any, idx: number) => (
+                                <div key={idx} className="border-l-2 border-teal-500/50 pl-3">
+                                  <h5 className="text-xxs font-black text-slate-850 truncate">{exp.title}</h5>
+                                  <p className="text-[10px] font-bold text-slate-500 mt-0.5">{exp.company_name}</p>
+                                  <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">{formatExpDate(exp.start_date) || "N/A"} - {exp.current_job || exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xxs font-bold text-slate-400 italic">{t("no_experience_logged", "No experience logged.")}</p>
+                          )}
+                        </div>
+
+                        {/* Education */}
+                        <div>
+                          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">{t("education_header", "Education")}</h4>
+                          {selectedFreelancerFullProfile?.education && selectedFreelancerFullProfile.education.length > 0 ? (
+                            <div className="space-y-3.5">
+                              {selectedFreelancerFullProfile.education.map((edu: any, idx: number) => (
+                                <div key={idx} className="border-l-2 border-slate-300 pl-3">
+                                  <h5 className="text-xxs font-black text-slate-850 truncate">{edu.degree}</h5>
+                                  <p className="text-[10px] font-bold text-slate-500 mt-0.5">{edu.institution}</p>
+                                  <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">Graduated {edu.end_date}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xxs font-bold text-slate-400 italic">{t("no_education_logged", "No education logged.")}</p>
+                          )}
+                        </div>
+
+                        {/* Certifications */}
+                        <div>
+                          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-3">{t("certifications_header", "Certifications")}</h4>
+                          {selectedFreelancerFullProfile?.certifications && selectedFreelancerFullProfile.certifications.length > 0 ? (
+                            <div className="space-y-3.5">
+                              {selectedFreelancerFullProfile.certifications.map((c: any, idx: number) => (
+                                <div key={idx} className="border-l-2 border-slate-350 pl-3">
+                                  <h5 className="text-xxs font-black text-slate-850 truncate">{c.name}</h5>
+                                  <p className="text-[10px] font-bold text-slate-500 mt-0.5">{c.issuing_organization}</p>
+                                  <span className="text-[9px] font-semibold text-slate-400 mt-0.5 block">Issued {c.issue_date}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xxs font-bold text-slate-400 italic">{t("no_certifications_logged", "No certifications logged.")}</p>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
-                )}
 
-                {/* Footer Action buttons */}
-                <div className="mt-8 pt-4 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+                      {/* Engagements / Projects with You */}
+                      {selectedFreelancerFullProfile?.clientContracts && selectedFreelancerFullProfile.clientContracts.length > 0 && (
+                        <div className="pt-6 border-t border-slate-150">
+                          <h4 className="text-[10px] font-extrabold text-slate-450 uppercase tracking-widest mb-3.5 flex items-center gap-1.5">
+                            <i className="fa-solid fa-handshake text-teal-600 text-xs"></i>
+                            <span>Engagements with You</span>
+                          </h4>
+                          <div className="grid grid-cols-1 gap-3.5">
+                            {selectedFreelancerFullProfile.clientContracts.map((c: any, idx: number) => {
+                              const isGig = c.type === "gig";
+                              let statusColor = "bg-slate-100 text-slate-700 border-slate-200";
+                              if (c.status === "Completed") statusColor = "bg-emerald-50 text-emerald-700 border-emerald-150/70";
+                              else if (c.status === "In Progress" || c.status === "Work Started") statusColor = "bg-blue-50 text-blue-700 border-blue-150/70";
+                              else if (c.status === "Disputed") statusColor = "bg-amber-50 text-amber-700 border-amber-150/70";
+                              else if (c.status === "Cancelled") statusColor = "bg-rose-50 text-rose-700 border-rose-150/70";
+
+                              return (
+                                <div key={idx} className="flex flex-col gap-2 p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all text-left">
+                                  <div className="flex justify-between items-start gap-3">
+                                    <div className="flex items-start gap-2 min-w-0">
+                                      {isGig ? (
+                                        <i className="fa-solid fa-store text-slate-400 mt-1 text-[11px] shrink-0"></i>
+                                      ) : (
+                                        <i className="fa-solid fa-briefcase text-slate-400 mt-1 text-[11px] shrink-0"></i>
+                                      )}
+                                      <div>
+                                        <h5 className="text-xs font-black text-slate-800 line-clamp-1">{c.title}</h5>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{isGig ? "Gig Order" : "Project Contract"}</p>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2 shrink-0 select-none">
+                                      <span className={`text-[8.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded border ${statusColor}`}>
+                                        {c.status}
+                                      </span>
+                                      <span className="text-xs font-black text-slate-700">
+                                        ${parseFloat(c.budget || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Review Section */}
+                                  {c.rating !== null && (
+                                    <div className="text-[10px] text-slate-600 font-semibold bg-white border border-slate-100 rounded-lg p-2.5 flex flex-col gap-1 mt-1">
+                                      <div className="flex items-center gap-1.5 text-amber-500 font-bold">
+                                        <span>Your Review:</span>
+                                        <span>{"★".repeat(c.rating)}{"☆".repeat(5 - c.rating)}</span>
+                                        <span className="text-slate-400">({c.rating}.0)</span>
+                                      </div>
+                                      {c.comment && <p className="italic text-slate-500 font-medium">"{c.comment}"</p>}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Fixed Footer Action buttons */}
+                <div className="pt-4 mt-4 border-t border-slate-150 flex justify-end gap-3 shrink-0 bg-white">
                   <button
                     onClick={() => {
                       setSelectedFreelancerProfile(null);
@@ -4202,7 +4215,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     }}
                     className="px-5 py-2.5 rounded-xl font-bold text-xs border border-slate-200 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200/60 transition-all cursor-pointer"
                   >
-                    Cancel
+                    {t("cancel_btn", "Cancel")}
                   </button>
                   {userRole === "client" && (
                     <button
@@ -4222,9 +4235,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           setHireJobMode("new");
                         }
                       }}
-                      className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 hover:scale-[1.02] active:scale-95"
+                      className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 hover:shadow-lg"
                     >
-                      <span>Hire Freelancer</span>
+                      <span>{t("hire_freelancer_btn", "Hire Freelancer")}</span>
                       <i className="fa-solid fa-briefcase"></i>
                     </button>
                   )}
@@ -4470,7 +4483,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <button
                     type="submit"
                     disabled={submittingDirectHire}
-                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2 hover:scale-[1.02] active:scale-95 disabled:opacity-50"
+                    className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2 active:scale-95 disabled:opacity-50"
                   >
                     {submittingDirectHire ? "Sending Request..." : "Send Hire Offer"}
                     <FiCheck className="w-3.5 h-3.5" />

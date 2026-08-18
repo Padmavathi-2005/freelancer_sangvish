@@ -258,7 +258,8 @@ export default function AdminLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-300 rounded-xl pl-4 pr-12 py-3 text-sm text-slate-800 focus:outline-none focus:border-primary/50 focus:bg-white transition-all duration-200"
+                  style={{ WebkitAppearance: "none" }}
+                  className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-300 rounded-xl pl-4 pr-12 py-3 text-sm text-slate-800 focus:outline-none focus:border-primary/50 focus:bg-white transition-all duration-200 [::-ms-reveal:none] [::-ms-clear:none]"
                 />
                 <button
                   type="button"

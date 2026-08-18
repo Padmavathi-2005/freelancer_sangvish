@@ -13,7 +13,8 @@ interface SiteSettingsTabProps {
 export default function SiteSettingsTab({
   handleSaveSetting
 }: SiteSettingsTabProps) {
-  const { isDark } = useAdmin();
+  const { adminTheme } = useAdmin();
+  const isDark = adminTheme === "dark";
 
   // Site name/logo/favicon/OG details states
   const [siteName, setSiteName] = useState("Buy2Lancer");
@@ -245,6 +246,9 @@ export default function SiteSettingsTab({
       }, "site_settings");
 
       if (typeof window !== "undefined") {
+        localStorage.setItem("cached_site_logo", siteLogo);
+        localStorage.setItem("cached_site_logo_dark", siteLogoDark);
+        localStorage.setItem("cached_site_name", siteName);
         localStorage.setItem("cached_site_chatbot_avatar", siteChatbotAvatar);
       }
 
