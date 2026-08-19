@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { FiCheckCircle, FiXCircle } from "react-icons/fi";
 import { useAdmin } from "@/app/admin/AdminContext";
 import Table from "@/components/Table";
 
@@ -31,6 +33,14 @@ export default function WalletManagementTab() {
   const [transferError, setTransferError] = useState<string>("");
   const [transferSuccessMsg, setTransferSuccessMsg] = useState<string>("");
   const [searchUserQuery, setSearchUserQuery] = useState<string>("");
+  const [pendingAction, setPendingAction] = useState<{
+    id: number;
+    type: "approve_withdrawal" | "reject_withdrawal" | "approve_referral" | "reject_referral";
+    amount: number;
+    userName: string;
+    email: string;
+    method?: string;
+  } | null>(null);
 
   // Pagination & Search states
   const itemsPerPage = 10;
@@ -171,13 +181,27 @@ export default function WalletManagementTab() {
       accessor: (req: any) => req.status === "Pending" ? (
         <div className="flex gap-1.5 justify-end">
           <button
-            onClick={() => handleApproveWithdrawal(req.request_id)}
+            onClick={() => setPendingAction({
+              id: req.request_id,
+              type: "approve_withdrawal",
+              amount: parseFloat(req.amount),
+              userName: req.user_name,
+              email: req.email,
+              method: req.payment_method
+            })}
             className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition shadow-sm"
           >
             Approve
           </button>
           <button
-            onClick={() => handleRejectWithdrawal(req.request_id)}
+            onClick={() => setPendingAction({
+              id: req.request_id,
+              type: "reject_withdrawal",
+              amount: parseFloat(req.amount),
+              userName: req.user_name,
+              email: req.email,
+              method: req.payment_method
+            })}
             className="bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition border border-rose-100"
           >
             Reject
@@ -246,13 +270,25 @@ export default function WalletManagementTab() {
       accessor: (p: any) => (p.status === "pending" || p.status === "Pending") ? (
         <div className="flex gap-1.5 justify-end">
           <button
-            onClick={() => handleApproveReferralPayout(p.payout_id)}
+            onClick={() => setPendingAction({
+              id: p.payout_id,
+              type: "approve_referral",
+              amount: parseFloat(p.amount || "0"),
+              userName: p.referred_name || p.referrer_name || "User",
+              email: p.referred_email || p.referrer_email
+            })}
             className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition shadow-sm"
           >
             Approve
           </button>
           <button
-            onClick={() => handleRejectReferralPayout(p.payout_id)}
+            onClick={() => setPendingAction({
+              id: p.payout_id,
+              type: "reject_referral",
+              amount: parseFloat(p.amount || "0"),
+              userName: p.referred_name || p.referrer_name || "User",
+              email: p.referred_email || p.referrer_email
+            })}
             className="bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition border border-rose-100"
           >
             Reject
@@ -361,7 +397,7 @@ export default function WalletManagementTab() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-8 bg-slate-50/50 scrollbar-thin">
+    <div className="space-y-8">
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -461,7 +497,7 @@ export default function WalletManagementTab() {
                   : "text-purple-600 hover:text-purple-900 bg-purple-50/50"
               }`}
             >
-              🎁 Referral & Signup Bonuses ({pendingReferralsCount})
+              Referral & Signup Bonuses ({pendingReferralsCount})
             </button>
             <button
               onClick={() => setActiveSubTab("ledger")}
@@ -498,7 +534,7 @@ export default function WalletManagementTab() {
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              💸 Pay to Someone
+              Pay to Someone
             </button>
           </div>
         </div>
@@ -830,6 +866,67 @@ export default function WalletManagementTab() {
         </div>
       </div>
 
+      {pendingAction && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-[1px] animate-fadeIn overflow-y-auto">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 sm:p-8 max-w-md w-full border border-slate-200 dark:border-zinc-800 shadow-2xl relative flex flex-col items-center text-center gap-5">
+            {pendingAction.type.startsWith("approve") ? (
+              <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-2xl border border-emerald-200 dark:border-emerald-900/50 shadow-sm shrink-0">
+                <FiCheckCircle className="w-6 h-6 animate-pulse" />
+              </div>
+            ) : (
+              <div className="w-14 h-14 rounded-full bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center text-rose-600 dark:text-rose-400 text-2xl border border-rose-250 dark:border-rose-900/50 shadow-sm shrink-0">
+                <FiXCircle className="w-6 h-6 animate-pulse" />
+              </div>
+            )}
+
+            <div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">
+                {pendingAction.type.startsWith("approve") ? "Confirm Approval" : "Confirm Rejection"}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-zinc-400 font-semibold mt-2.5 leading-relaxed">
+                Are you sure you want to {pendingAction.type.startsWith("approve") ? "approve" : "reject"} the payout request of{" "}
+                <strong className="text-slate-800 dark:text-zinc-200 font-black">${pendingAction.amount.toFixed(2)}</strong> for{" "}
+                <span className="font-bold text-slate-700 dark:text-zinc-300">
+                  {pendingAction.userName} ({pendingAction.email})
+                </span>
+                ? {pendingAction.method && ` (Method: ${pendingAction.method})`}
+              </p>
+            </div>
+
+            <div className="flex gap-3 w-full mt-2">
+              <button
+                onClick={() => setPendingAction(null)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 font-extrabold text-xs py-3 rounded-xl transition cursor-pointer border border-slate-200 dark:border-zinc-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const action = pendingAction;
+                  setPendingAction(null);
+                  if (action.type === "approve_withdrawal") {
+                    await handleApproveWithdrawal(action.id);
+                  } else if (action.type === "reject_withdrawal") {
+                    await handleRejectWithdrawal(action.id);
+                  } else if (action.type === "approve_referral") {
+                    await handleApproveReferralPayout(action.id);
+                  } else if (action.type === "reject_referral") {
+                    await handleRejectReferralPayout(action.id);
+                  }
+                }}
+                className={`flex-1 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition cursor-pointer border-0 ${
+                  pendingAction.type.startsWith("approve")
+                    ? "bg-emerald-600 hover:bg-emerald-700"
+                    : "bg-rose-600 hover:bg-rose-700"
+                }`}
+              >
+                Yes, {pendingAction.type.startsWith("approve") ? "Approve" : "Reject"}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

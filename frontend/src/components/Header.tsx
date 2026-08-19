@@ -621,7 +621,7 @@ export default function Header() {
                               >
                                 <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                                 <h4 className="text-[13px] font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest">
-                                  {activeCat?.category_name} Subcategories &rarr;
+                                  {activeCat?.category_name}{" "}Subcategories &rarr;
                                 </h4>
                               </a>
 

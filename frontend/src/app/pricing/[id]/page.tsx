@@ -671,7 +671,7 @@ export default function PlanDetailsPage() {
 
       {/* PayPal Sandbox Pop-up Modal Simulation */}
       {showPaypalModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[999] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl rounded-xl overflow-y-auto max-h-[90vh] w-full max-w-md animate-scaleUp">
             
             {/* Paypal Modal Header */}

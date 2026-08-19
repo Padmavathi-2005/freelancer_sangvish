@@ -374,7 +374,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
               onClick={() => { setSelectedGigOrder(null); }}
               className="text-slate-500 hover:text-slate-800 text-[10px] font-bold bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-slate-200 hover:bg-slate-200/60 mb-2.5 inline-flex items-center gap-1.5"
             >
-              ← Back to My Orders
+              ← {t("back_to_gig_orders", "Back to Gig Orders")}
             </button>
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <FiBriefcase className="w-5 h-5 text-primary shrink-0" />

@@ -198,7 +198,7 @@ export default function Table<T>({
 
       {/* Pagination Bar */}
       {totalPages > 0 && (
-        <div className="px-6 py-4.5 bg-slate-50/40 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="px-6 pr-20 py-4.5 bg-slate-50/40 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-xs text-slate-500 font-bold select-none whitespace-nowrap">
             Showing <span className="text-slate-700">{startIdx}</span> to <span className="text-slate-700">{endIdx}</span> of <span className="text-slate-700">{totalItems}</span> entries
           </div>

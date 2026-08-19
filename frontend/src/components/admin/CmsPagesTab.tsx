@@ -72,7 +72,7 @@ export default function CmsPagesTab() {
   const [seoImgError, setSeoImgError] = useState("");
 
   const uploadCmsSeoImage = async (file: File) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
     setSeoImgError("");
     try {
       setUploadingSeoImg(true);

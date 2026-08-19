@@ -29,6 +29,15 @@ import {
   FiUser
 } from "react-icons/fi";
 
+const ensureAbsoluteUrl = (url?: string | null) => {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
+
 export default function FreelancerProfileClient() {
   const { t, formatPrice, lang } = useLanguage();
   const params = useParams();
@@ -691,7 +700,7 @@ export default function FreelancerProfileClient() {
                         )}
                         {cert.credential_url && (
                           <a
-                            href={cert.credential_url}
+                            href={ensureAbsoluteUrl(cert.credential_url)}
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex items-center gap-1 text-[10px] font-black text-teal-700 hover:text-teal-800 cursor-pointer mt-2 group-hover:underline"

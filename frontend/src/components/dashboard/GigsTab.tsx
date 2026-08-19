@@ -25,6 +25,16 @@ const stripHtml = (html: string) => {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 };
 
+const resolveMediaUrl = (url: string) => {
+  if (!url || !url.trim()) return "";
+  const trimmed = url.split(",")[0].trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  const base = API_URL.replace(/\/api\/?$/, "");
+  return `${base}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
+};
+
 const handleDownloadVideo = async (rawUrl: string, filename = "showcase-video.mp4") => {
   if (!rawUrl || !rawUrl.trim()) return;
 
@@ -411,6 +421,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
       const urls: string[] = [];
       for (let i = 0; i < e.target.files.length; i++) {
         const file = e.target.files[i];
+        if (!file.type.startsWith("image/")) {
+          triggerToast("error", `Only image files are allowed for showcase images. Blocked file: ${file.name}`);
+          setUploadingImages(false);
+          return;
+        }
         const url = await uploadFile(file);
         urls.push(url);
       }
@@ -428,7 +443,13 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
     if (!e.target.files || e.target.files.length === 0) return;
     try {
       setUploadingVideo(true);
-      const url = await uploadFile(e.target.files[0]);
+      const file = e.target.files[0];
+      if (!file.type.startsWith("video/")) {
+        triggerToast("error", `Only video files are allowed for showcase video. Blocked file: ${file.name}`);
+        setUploadingVideo(false);
+        return;
+      }
+      const url = await uploadFile(file);
       setGigVideoUrl(url);
       triggerToast("success", "Video uploaded successfully!");
     } catch (err: any) {
@@ -442,7 +463,13 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
     if (!e.target.files || e.target.files.length === 0) return;
     try {
       setUploadingSeoImage(true);
-      const url = await uploadFile(e.target.files[0]);
+      const file = e.target.files[0];
+      if (!file.type.startsWith("image/")) {
+        triggerToast("error", `Only image files are allowed for SEO social preview. Blocked file: ${file.name}`);
+        setUploadingSeoImage(false);
+        return;
+      }
+      const url = await uploadFile(file);
       setSeoImage(url);
       triggerToast("success", "SEO social preview image uploaded successfully!");
     } catch (err: any) {
@@ -456,9 +483,15 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
     if (!e.target.files || e.target.files.length === 0) return;
     try {
       setUploadingDocs(true);
+      const allowedExtensions = /(\.pdf|\.doc|\.docx|\.txt|\.zip)$/i;
       const urls: string[] = [];
       for (let i = 0; i < e.target.files.length; i++) {
         const file = e.target.files[i];
+        if (!allowedExtensions.exec(file.name)) {
+          triggerToast("error", `Only PDF, Word, Text, and Zip files are allowed for documents. Blocked file: ${file.name}`);
+          setUploadingDocs(false);
+          return;
+        }
         const url = await uploadFile(file);
         urls.push(url);
       }
@@ -1988,7 +2021,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     <div className="flex flex-wrap gap-3 items-center min-h-[5rem]">
                       {gigVideoUrl ? (
                         <div className="relative w-28 h-20 border border-slate-200 rounded-xl overflow-hidden group/vid bg-slate-950 flex items-center justify-center shadow-xs">
-                          <video src={gigVideoUrl} className="w-full h-full object-cover" />
+                          <video src={resolveMediaUrl(gigVideoUrl)} controls className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/vid:opacity-100 transition-opacity flex items-center justify-center gap-2 p-1">
                             <button
                               type="button"
@@ -2754,7 +2787,7 @@ export function GigConsoleModal({
                 </button>
               </div>
               <div className="w-full max-w-md rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm relative aspect-video">
-                <video src={selectedGigForDetails.video_url} controls className="w-full h-full object-cover" />
+                <video src={resolveMediaUrl(selectedGigForDetails.video_url)} controls className="w-full h-full object-cover" />
               </div>
             </div>
           )}

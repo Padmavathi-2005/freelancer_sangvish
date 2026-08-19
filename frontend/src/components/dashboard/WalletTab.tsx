@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { FaStripe, FaPaypal, FaWallet } from "react-icons/fa";
+import { FaStripe, FaPaypal, FaWallet, FaCreditCard } from "react-icons/fa";
 import { API_URL } from "@/config/api";
 
 export default function WalletTab() {
@@ -28,6 +28,7 @@ export default function WalletTab() {
   const [depositMethod, setDepositMethod] = useState<"stripe" | "paypal" | "simulated">("stripe");
   const [depositLoading, setDepositLoading] = useState(false);
   const [stripeReturnHandled, setStripeReturnHandled] = useState(false);
+  const stripeLockRef = React.useRef(false);
 
   const [holderName, setHolderName] = useState("");
   const [bankName, setBankName] = useState("");
@@ -43,9 +44,10 @@ export default function WalletTab() {
   }, [setWithdrawMethod]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || stripeReturnHandled) return;
+    if (typeof window === "undefined" || stripeReturnHandled || stripeLockRef.current) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("stripe_deposit_success") === "1") {
+      stripeLockRef.current = true;
       setStripeReturnHandled(true);
       const sessionId = params.get("session_id");
       const amount = params.get("amount");
@@ -63,9 +65,9 @@ export default function WalletTab() {
             });
             const data = await res.json();
             if (res.ok) {
-              triggerToast("success", `Stripe deposit of $${parseFloat(amount).toFixed(2)} confirmed!`);
+              triggerToast("success", `Fund added successfully into ${siteName || "Buy2Lancer"} wallet!`, `$${parseFloat(amount).toFixed(2)} has been credited to your active balance.`);
               // Clear search params
-              window.history.replaceState({}, document.title, window.location.pathname + "?tab=wallet");
+              window.history.replaceState({}, document.title, window.location.pathname);
               if (fetchWalletInfo) fetchWalletInfo();
             } else {
               triggerToast("error", data.message || "Failed to confirm Stripe deposit.");
@@ -79,7 +81,7 @@ export default function WalletTab() {
     } else if (params.get("stripe_deposit_cancel") === "1") {
       setStripeReturnHandled(true);
       triggerToast("warning", "Stripe deposit cancelled.");
-      window.history.replaceState({}, document.title, window.location.pathname + "?tab=wallet");
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [stripeReturnHandled, triggerToast, fetchWalletInfo]);
 
@@ -221,7 +223,7 @@ export default function WalletTab() {
   const availableBalance = Math.max(0, balance - pendingTotal);
 
   return (
-    <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-5 sm:space-y-8 bg-slate-50/50 scrollbar-thin">
+    <div className="space-y-5 sm:space-y-8 w-full">
       
       {/* HEADER SECTION */}
       <div className="flex flex-col gap-1.5">
@@ -305,7 +307,7 @@ export default function WalletTab() {
 
             <div className="flex justify-between items-center text-[10px] text-white/90 font-black z-10 mt-3.5">
               <span>ACC #### #### {wallet?.wallet_id || "0"}</span>
-              <span className="inline-flex items-center gap-1.5 uppercase bg-white text-teal-900 px-2.5 py-0.5 rounded-md text-[9px] font-black tracking-wider shadow-sm">
+              <span className="inline-flex items-center gap-1.5 uppercase bg-white !text-teal-900 px-2.5 py-0.5 rounded-md text-[9px] font-black tracking-wider shadow-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 {t("wallet_status_active", "STATUS: ACTIVE")}
               </span>
@@ -376,7 +378,9 @@ export default function WalletTab() {
                   </>
                 ) : (
                   <>
-                    <i className="fa-solid fa-plus-circle"></i>
+                    {depositMethod === "stripe" && <FaCreditCard className="w-3.5 h-3.5" />}
+                    {depositMethod === "paypal" && <FaPaypal className="w-3.5 h-3.5" />}
+                    {depositMethod === "simulated" && <FaWallet className="w-3.5 h-3.5" />}
                     <span>
                       {depositMethod === "stripe"
                         ? t("btn_deposit_stripe", "Pay with Stripe")

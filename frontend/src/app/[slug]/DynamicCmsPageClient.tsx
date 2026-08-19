@@ -53,21 +53,29 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phone.trim()) {
-      const digits = phone.replace(/\D/g, "");
-      if (digits.length < 7) {
-        setErrorMsg("Phone number is too short. Must contain at least 7 digits.");
-        return;
-      }
-      if (digits.length > 15) {
-        setErrorMsg("Phone number is too long. Maximum 15 digits allowed.");
-        return;
-      }
-      if (!/^\+?[0-9\s\-\(\)]{7,20}$/.test(phone.trim())) {
-        setErrorMsg("Invalid phone number format. Use e.g. +1 (555) 000-0000");
-        return;
-      }
+
+    // 1. Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setErrorMsg("Please enter a valid email address (e.g. name@domain.com).");
+      return;
     }
+
+    // 2. Phone number validation (Required and must be exactly 10 digits)
+    if (!phone.trim()) {
+      setErrorMsg("Phone number is required.");
+      return;
+    }
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length !== 10) {
+      setErrorMsg("Phone number must contain exactly 10 digits.");
+      return;
+    }
+    if (!/^\+?[0-9\s\-\(\)]{7,20}$/.test(phone.trim())) {
+      setErrorMsg("Invalid phone number format. Use e.g. +1 (555) 000-0000");
+      return;
+    }
+
     if (!resumeUrl) {
       setErrorMsg("Please upload your resume (PDF/Doc) before submitting.");
       return;
@@ -101,7 +109,7 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[99999] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-scaleUp text-left">
         <button
           onClick={onClose}
@@ -166,12 +174,13 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Phone Number</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Phone Number *</label>
                 <input
                   type="tel"
+                  required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/[^\d\s\-\+\(\)]/g, ""))}
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="e.g. 5550000000"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-teal-600"
                 />
               </div>

@@ -1,11 +1,25 @@
 import type { Metadata } from "next";
 import GigDetailsClient from "./GigDetailsClient";
 import { API_URL } from "@/config/api";
+import { headers } from "next/headers";
 
 async function getGigDetails(id: string) {
   try {
+    const headersList = await headers();
+    const clientHeaders: Record<string, string> = {};
+
+    const ip = headersList.get("x-forwarded-for");
+    if (ip) clientHeaders["x-forwarded-for"] = ip;
+
+    const userAgent = headersList.get("user-agent");
+    if (userAgent) clientHeaders["user-agent"] = userAgent;
+
+    const cookie = headersList.get("cookie");
+    if (cookie) clientHeaders["cookie"] = cookie;
+
     const res = await fetch(`${API_URL}/freelancer/client/gigs/${id}`, {
       cache: "no-store",
+      headers: clientHeaders,
     });
     if (!res.ok) return null;
     return await res.json();
@@ -17,8 +31,21 @@ async function getGigDetails(id: string) {
 
 async function getSimilarGigs(id: string) {
   try {
+    const headersList = await headers();
+    const clientHeaders: Record<string, string> = {};
+
+    const ip = headersList.get("x-forwarded-for");
+    if (ip) clientHeaders["x-forwarded-for"] = ip;
+
+    const userAgent = headersList.get("user-agent");
+    if (userAgent) clientHeaders["user-agent"] = userAgent;
+
+    const cookie = headersList.get("cookie");
+    if (cookie) clientHeaders["cookie"] = cookie;
+
     const res = await fetch(`${API_URL}/freelancer/client/gigs/${id}/similar`, {
       cache: "no-store",
+      headers: clientHeaders,
     });
     if (!res.ok) return [];
     return await res.json();

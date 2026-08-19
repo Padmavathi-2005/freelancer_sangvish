@@ -350,8 +350,8 @@ export const createStripeDepositSession = async (req, res) => {
         },
       ],
       mode: "payment",
-      success_url: `${FRONTEND_URL}/dashboard?tab=wallet&stripe_deposit_success=1&session_id={CHECKOUT_SESSION_ID}&amount=${amount}`,
-      cancel_url:  `${FRONTEND_URL}/dashboard?tab=wallet&stripe_deposit_cancel=1`,
+      success_url: `${FRONTEND_URL}/dashboard/wallet?stripe_deposit_success=1&session_id={CHECKOUT_SESSION_ID}&amount=${amount}`,
+      cancel_url:  `${FRONTEND_URL}/dashboard/wallet?stripe_deposit_cancel=1`,
       metadata: {
         user_id: userId.toString(),
         amount: amount.toString(),
@@ -401,19 +401,26 @@ export const confirmStripeDepositPayment = async (req, res) => {
       return res.status(400).json({ message: "Stripe payment has not been completed." });
     }
 
-    // Check if this session was already processed to prevent duplicate deposit
-    const checkTx = await pool.query(
-      "SELECT * FROM wallet_transactions WHERE description = $1",
-      [`Stripe Deposit (Session: ${session_id})`]
-    );
-    if (checkTx.rows.length > 0) {
-      return res.status(400).json({ message: "This deposit has already been processed." });
-    }
-
     const wallet = await getOrCreateWallet(userId);
 
     await pool.query("BEGIN");
     try {
+      // Lock the wallet row to serialize concurrent deposit confirmation requests for this wallet
+      await pool.query(
+        "SELECT * FROM wallets WHERE wallet_id = $1 FOR UPDATE",
+        [wallet.wallet_id]
+      );
+
+      // Check if this session was already processed inside the transaction lock to prevent duplicate deposit
+      const checkTx = await pool.query(
+        "SELECT * FROM wallet_transactions WHERE description = $1",
+        [`Stripe Deposit (Session: ${session_id})`]
+      );
+      if (checkTx.rows.length > 0) {
+        await pool.query("ROLLBACK");
+        return res.status(400).json({ message: "This deposit has already been processed." });
+      }
+
       // Update user wallet balance
       await pool.query(
         "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
@@ -434,6 +441,38 @@ export const confirmStripeDepositPayment = async (req, res) => {
     }
 
     const updatedWallet = await getOrCreateWallet(userId);
+
+    // Fetch site name dynamically
+    let siteName = "Buy2Lancer";
+    const siteSettingsRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'site_settings'");
+    if (siteSettingsRes.rows.length > 0) {
+      let val = siteSettingsRes.rows[0].setting_value;
+      if (typeof val === "string") {
+        try { val = JSON.parse(val); } catch {}
+      }
+      if (val?.site_name) {
+        siteName = val.site_name;
+      }
+    }
+
+    // Send in-app notification to user
+    try {
+      const depositNotif = await pool.query(
+        `INSERT INTO notifications (user_id, title, message, type, reference_id, target_tab)
+         VALUES ($1, $2, $3, 'wallet_deposit', $4, 'wallet') RETURNING *`,
+        [
+          userId,
+          "Funds Deposited Successfully 💰",
+          `$${depositAmt.toFixed(2)} has been successfully added into your ${siteName} wallet balance.`,
+          wallet.wallet_id.toString()
+        ]
+      );
+      if (req.io && depositNotif.rows.length > 0) {
+        req.io.to(`user_${userId}`).emit("new_notification", depositNotif.rows[0]);
+      }
+    } catch (notifErr) {
+      console.error("Failed to send notification for deposit:", notifErr);
+    }
 
     return res.status(200).json({
       message: "Stripe deposit confirmed successfully.",

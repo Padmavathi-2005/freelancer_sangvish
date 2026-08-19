@@ -284,7 +284,7 @@ export default function ProposalsTab({
 
   const [selectedProposalDetails, setSelectedProposalDetails] = useState<any | null>(null);
   const [projectFilter, setProjectFilter] = useState<"all" | "pending" | "ongoing" | "dispute" | "completed" | "draft" | "hired" | "proposals_arrived" | "proposals_not_arrived" | "suspended">("all");
-  const [freelancerFilter, setFreelancerFilter] = useState<"all" | "pending" | "accepted" | "declined">("all");
+  const [freelancerFilter, setFreelancerFilter] = useState<"all" | "pending" | "accepted" | "declined" | "completed">("all");
 
   const [searchProjectQuery, setSearchProjectQuery] = useState("");
   const [projectPage, setProjectPage] = useState(1);
@@ -305,9 +305,10 @@ export default function ProposalsTab({
           proposal.status === "Accepted" ||
           proposal.status === "Accepted_By_Freelancer" ||
           contractStatus === "Hired" ||
-          contractStatus === "Work Started" ||
-          contractStatus === "Completed"
+          contractStatus === "Work Started"
         );
+      } else if (freelancerFilter === "completed") {
+        matchStatus = contractStatus === "Completed";
       } else if (freelancerFilter === "declined") {
         matchStatus = (
           proposal.status === "Declined" ||
@@ -2018,7 +2019,7 @@ export default function ProposalsTab({
         )}
 
         {totalProjectPages > 1 && (
-          <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 text-xs font-bold select-none">
+          <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 text-xs font-bold select-none pr-20">
             <span className="text-slate-400">
               {t("showing_projects_count", "Showing {{start}} - {{end}} of {{total}} projects")
                 .replace("{{start}}", String((projectPage - 1) * projectsPerPage + 1))
@@ -2286,7 +2287,7 @@ export default function ProposalsTab({
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {[
           {
             labelKey: "total_submitted_metric",
@@ -2308,6 +2309,13 @@ export default function ProposalsTab({
             value: freelancerProposals.filter((p) => p.status === "Pending").length,
             color: "from-amber-500 to-orange-500",
             icon: "fa-clock"
+          },
+          {
+            labelKey: "completed_metric",
+            label: "Completed",
+            value: freelancerProposals.filter((p) => p.contract_status === "Completed").length,
+            color: "from-purple-500 to-indigo-500",
+            icon: "fa-check-double"
           },
           {
             labelKey: "declined_metric",
@@ -2361,7 +2369,17 @@ export default function ProposalsTab({
                   : "text-slate-500 hover:text-slate-800 bg-transparent"
               }`}
             >
-              {t("accepted_hired_filter", "Accepted & Hired")} ({freelancerProposals.filter((p) => p.status === "Accepted" || p.status === "Accepted_By_Freelancer" || p.contract_status === "Hired" || p.contract_status === "Work Started" || p.contract_status === "Completed").length})
+              {t("accepted_hired_filter", "Accepted & Hired")} ({freelancerProposals.filter((p) => p.status === "Accepted" || p.status === "Accepted_By_Freelancer" || p.contract_status === "Hired" || p.contract_status === "Work Started").length})
+            </button>
+            <button
+              onClick={() => setFreelancerFilter("completed")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
+                freelancerFilter === "completed" 
+                  ? "bg-white text-slate-805 shadow-sm border border-slate-200/50" 
+                  : "text-slate-500 hover:text-slate-800 bg-transparent"
+              }`}
+            >
+              {t("completed_filter", "Completed")} ({freelancerProposals.filter((p) => p.contract_status === "Completed").length})
             </button>
             <button
               onClick={() => setFreelancerFilter("declined")}
@@ -2543,7 +2561,7 @@ export default function ProposalsTab({
       )}
 
       {totalProposalPages > 1 && (
-        <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 text-xs font-bold select-none">
+        <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100 text-xs font-bold select-none pr-20">
           <span className="text-slate-400">
             {t("showing", "Showing")} {(proposalPage - 1) * proposalsPerPage + 1} - {Math.min(proposalPage * proposalsPerPage, filteredFreelancerProposals.length)} {t("of", "of")} {filteredFreelancerProposals.length} {t("proposals_label_pagination", "proposals")}
           </span>

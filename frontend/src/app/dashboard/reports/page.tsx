@@ -252,21 +252,20 @@ export default function ReportsPage() {
       {/* Grid Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:grid-cols-3 print:gap-4 print:mb-6">
         {/* Main metric card */}
-        <div className="bg-gradient-to-br from-teal-800 to-teal-650 rounded-xl p-6 text-white shadow-lg relative overflow-hidden flex flex-col justify-between min-h-[140px] border border-teal-700 print:bg-slate-900 print:text-white print:border-slate-800 print:break-inside-avoid">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.04] rounded-full filter blur-xl print:hidden"></div>
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col justify-between min-h-[140px] print:border-2 print:border-slate-300 print:shadow-none print:break-inside-avoid">
           <div className="flex justify-between items-start">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/95 print:text-white">
+            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest print:text-slate-900">
               {userRole === "client" ? t("total_expenditures", "Total Expenditures") : t("total_net_earnings", "Total Net Earnings")}
             </span>
-            <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center text-white shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-650 border border-teal-100 flex items-center justify-center shrink-0">
               <FiTrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-4">
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white print:text-white">
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight print:text-slate-900">
               ${(userRole === "client" ? clientStats.spent : freelancerStats.released).toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </h2>
-            <p className="text-white/85 text-[10px] font-bold mt-1 print:text-white">
+            <p className="text-slate-500 text-[10px] font-bold mt-1 print:text-slate-700">
               {t("total_expenditures_desc", "Confirmed cash released from completed contracts & services")}
             </p>
           </div>

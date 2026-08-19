@@ -689,7 +689,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       )}
 
       {/* LEFT SIDEBAR PANEL */}
-      <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col h-screen lg:h-screen z-40 transition-transform duration-300 transform lg:transform-none print:hidden ${
+      <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-white border-r border-slate-200 shrink-0 flex flex-col h-screen lg:h-screen z-40 lg:z-0 transition-transform duration-300 transform lg:transform-none print:hidden ${
         isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       }`}>
         <div className="h-16 px-6 border-b border-slate-200 flex items-center justify-between shrink-0">
@@ -1593,7 +1593,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* MAIN CONTAINER */}
       <div className="flex-1 flex flex-col max-w-full lg:h-screen lg:overflow-hidden relative z-10 print:h-auto print:overflow-visible print:block">
-        <header className="h-16 w-full bg-white border-b border-slate-200 px-6 flex flex-row items-center justify-between relative z-30 shrink-0 shadow-sm print:hidden">
+        <header className="h-16 w-full bg-white border-b border-slate-200 px-6 flex flex-row items-center justify-between relative z-30 lg:z-0 shrink-0 shadow-sm print:hidden">
           {/* Left: Mobile hamburger menu toggle & role switch */}
           <div className="flex items-center gap-3">
             <button
@@ -2205,12 +2205,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                                     <input
                                       type="file"
-                                      accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
+                                      accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '.pdf,.png,.jpg,.jpeg,.doc,.docx'}
                                       className="hidden"
                                       disabled={isUploading || status === "Approved"}
                                       onChange={async (e) => {
                                         const file = e.target.files?.[0];
                                         if (!file) return;
+
+                                        // Validate file extension to prevent uploading video/non-doc files
+                                        const allowedExtensions = /(\.pdf|\.jpg|\.jpeg|\.png|\.doc|\.docx)$/i;
+                                        if (!allowedExtensions.exec(file.name)) {
+                                          setFieldErrors({ ...fieldErrors, [field.field_id]: "Invalid file type. Only PDF, JPG, JPEG, PNG, DOC, and DOCX are allowed." });
+                                          triggerToast("error", "Invalid file type. Only PDF, JPG, JPEG, PNG, DOC, and DOCX are allowed.");
+                                          return;
+                                        }
+
                                         const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
                                         if (field.has_expiry && !expDate) {
                                           setFieldErrors({ ...fieldErrors, [field.field_id]: "Please select document expiration date first." });
@@ -3457,12 +3466,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                                     <input
                                       type="file"
-                                      accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
+                                      accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '.pdf,.png,.jpg,.jpeg,.doc,.docx'}
                                       className="hidden"
                                       disabled={isUploading || status === "Approved"}
                                       onChange={async (e) => {
                                         const file = e.target.files?.[0];
                                         if (!file) return;
+
+                                        // Validate file extension to prevent uploading video/non-doc files
+                                        const allowedExtensions = /(\.pdf|\.jpg|\.jpeg|\.png|\.doc|\.docx)$/i;
+                                        if (!allowedExtensions.exec(file.name)) {
+                                          setFieldErrors({ ...fieldErrors, [field.field_id]: "Invalid file type. Only PDF, JPG, JPEG, PNG, DOC, and DOCX are allowed." });
+                                          triggerToast("error", "Invalid file type. Only PDF, JPG, JPEG, PNG, DOC, and DOCX are allowed.");
+                                          return;
+                                        }
+
                                         const expDate = expiryDates[field.field_id] || (userDoc?.expiry_date ? userDoc.expiry_date.substring(0, 10) : "");
                                         if (field.has_expiry && !expDate) {
                                           setFieldErrors({ ...fieldErrors, [field.field_id]: "Please select document expiration date first." });

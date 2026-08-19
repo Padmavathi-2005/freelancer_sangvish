@@ -931,7 +931,6 @@ const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
     attached_scope_documents: "Documents de cadrage joints",
     active_gigs_services: "Micro-services actifs",
     active_gigs_services_desc: "Services pré-packagés disponibles à l'achat direct auprès de ce freelance.",
-    starting_at: "À partir de",
     client_reviews_ratings: "Avis et Évaluations des Clients",
     verified_feedback_desc: "Retours d'expérience vérifiés soumis par les clients qui ont engagé ce freelance.",
     average_rating: "Évaluation moyenne",
@@ -2043,7 +2042,6 @@ const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
     attached_scope_documents: "وثائق نطاق العمل المرفقة",
     active_gigs_services: "الخدمات النشطة",
     active_gigs_services_desc: "خدمات جاهزة ومحددة السعر متاحة للشراء المباشر من هذا المستقل.",
-    starting_at: "يبدأ من",
     client_reviews_ratings: "آراء وتقييمات العملاء",
     verified_feedback_desc: "آراء موثقة ومقدمة من العملاء الذين قاموا بتوظيف هذا المستقل.",
     average_rating: "متوسط التقييم",
@@ -2548,25 +2546,25 @@ const STATIC_FALLBACK_DICTIONARY: Record<string, Record<string, string>> = {
     const activeLang = lang ? lang.toUpperCase() : "EN";
 
     // 1. Check API loaded translations map by key
-    if (translations[cleanKey]) return translations[cleanKey];
-    if (translations[trimmed]) return translations[trimmed];
+    if (translations[cleanKey] && translations[cleanKey].trim() !== "") return translations[cleanKey];
+    if (translations[trimmed] && translations[trimmed].trim() !== "") return translations[trimmed];
 
     // 2. Check Static Fallback Dictionary for active lang by key
     const langDict = STATIC_FALLBACK_DICTIONARY[activeLang];
     if (langDict) {
-      if (langDict[cleanKey]) return langDict[cleanKey];
-      if (langDict[trimmed]) return langDict[trimmed];
+      if (langDict[cleanKey] && langDict[cleanKey].trim() !== "") return langDict[cleanKey];
+      if (langDict[trimmed] && langDict[trimmed].trim() !== "") return langDict[trimmed];
     }
 
     // 3. If key translation wasn't found, check if defaultVal itself has a translation mapping
     if (defaultVal && defaultVal !== key) {
       const trimmedVal = defaultVal.trim();
       const cleanVal = trimmedVal.toLowerCase();
-      if (translations[cleanVal]) return translations[cleanVal];
-      if (translations[trimmedVal]) return translations[trimmedVal];
+      if (translations[cleanVal] && translations[cleanVal].trim() !== "") return translations[cleanVal];
+      if (translations[trimmedVal] && translations[trimmedVal].trim() !== "") return translations[trimmedVal];
       if (langDict) {
-        if (langDict[cleanVal]) return langDict[cleanVal];
-        if (langDict[trimmedVal]) return langDict[trimmedVal];
+        if (langDict[cleanVal] && langDict[cleanVal].trim() !== "") return langDict[cleanVal];
+        if (langDict[trimmedVal] && langDict[trimmedVal].trim() !== "") return langDict[trimmedVal];
       }
     }
 

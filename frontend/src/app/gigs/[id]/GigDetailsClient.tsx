@@ -78,6 +78,15 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
   const [isAffiliate, setIsAffiliate] = useState(false);
   const [userReferralCode, setUserReferralCode] = useState("");
 
+  // Showcase Video Ref & Unmuting Effect
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+      videoRef.current.volume = 1.0;
+    }
+  }, [gig?.video_url]);
+
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem("token");
@@ -1374,7 +1383,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                      <div className="text-left">
                        <h3 className="text-sm font-black text-slate-900 mb-3 uppercase tracking-wider">{t("showcase_video", "Showcase Video")}</h3>
                        <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-200 shadow-inner">
-                         <video src={resolveMediaUrl(gig.video_url)} controls className="w-full h-full object-cover" />
+                         <video ref={videoRef} src={resolveMediaUrl(gig.video_url)} controls className="w-full h-full object-cover" />
                        </div>
                      </div>
                    )}

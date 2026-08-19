@@ -956,6 +956,21 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     "AWS", "Docker", "Git", "Figma", "UI/UX Design", "Rust", "Go", "Prisma"
   ];
 
+  // Sync selectedSkills (strings) with selectedSkillIds (numbers)
+  useEffect(() => {
+    if (availableSkills && availableSkills.length > 0) {
+      const mappedIds = selectedSkills
+        .map((name) => {
+          const found = availableSkills.find(
+            (s) => s.skill_name?.toLowerCase() === name.toLowerCase()
+          );
+          return found ? found.skill_id : null;
+        })
+        .filter((id): id is number => id !== null);
+      setSelectedSkillIds(mappedIds);
+    }
+  }, [selectedSkills, availableSkills]);
+
   // API Integration Alerts
   const [apiAlert, setApiAlert] = useState<{
     show: boolean;
@@ -1599,7 +1614,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem("profile_basics", JSON.stringify(loadedBasics));
         }
         if (data.skills) {
-          setSelectedSkillIds(data.skills.map((s: any) => s.skill_id));
+          const ids = data.skills.map((s: any) => s.skill_id);
+          setSelectedSkillIds(ids);
+          const names = data.skills.map((s: any) => s.skill_name || s.name).filter(Boolean);
+          setSelectedSkills(names);
+          localStorage.setItem("profile_skills", JSON.stringify(names));
         }
         if (data.languages) {
           const loadedLangs = data.languages.map((l: any) => ({
@@ -3438,6 +3457,31 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("profile_certifications", JSON.stringify(savedList));
         triggerToast("success", "Certifications saved successfully!");
       } else if (stepNum === 5) {
+        // Map selectedSkills to IDs directly from availableSkills
+        let idsToSave = selectedSkillIds;
+        if (idsToSave.length === 0 && selectedSkills.length > 0) {
+          let skillsPool = availableSkills;
+          if (skillsPool.length === 0) {
+            try {
+              const fetchRes = await fetch(`${API_URL}/admin/skills`);
+              if (fetchRes.ok) {
+                const data = await fetchRes.json();
+                skillsPool = (Array.isArray(data) ? data : []).filter((sk: any) =>
+                  sk.status === undefined || sk.status === null || sk.status === true || sk.status === 1 || String(sk.status).toLowerCase() === "active" || String(sk.status).toLowerCase() === "true"
+                );
+              }
+            } catch (err) {
+              console.error("Failed to fetch skills pool during save", err);
+            }
+          }
+          idsToSave = selectedSkills
+            .map(name => {
+              const found = skillsPool.find(s => s.skill_name?.toLowerCase() === name.toLowerCase());
+              return found ? found.skill_id : null;
+            })
+            .filter((id): id is number => id !== null);
+        }
+
         // Save skills selector
         const res = await fetch(`${API_URL}/freelancer/onboarding/skills`, {
           method: "POST",
@@ -3446,7 +3490,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             Authorization: `Bearer ${token}`
           },
           body: JSON.stringify({
-            skill_ids: selectedSkillIds
+            skill_ids: idsToSave
           })
         });
 

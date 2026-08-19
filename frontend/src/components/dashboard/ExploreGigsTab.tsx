@@ -531,7 +531,7 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
           {/* Pagination Controls */}
           {filteredGigs.length > ITEMS_PER_PAGE && (
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm mt-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white border border-slate-200/80 rounded-xl p-5 pr-20 shadow-sm mt-6">
               <p className="text-slate-500 text-xs font-semibold">
                 Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to{" "}
                 <span className="font-bold text-slate-800">

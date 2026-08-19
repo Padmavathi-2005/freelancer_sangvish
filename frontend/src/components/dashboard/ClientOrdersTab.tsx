@@ -1053,7 +1053,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
               onClick={() => { setSelectedGigOrderDetails(null); setPayError(""); setPaySuccess(false); }}
               className="text-slate-500 hover:text-slate-800 text-[10px] font-bold bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-slate-200 hover:bg-slate-200/60 mb-2.5 inline-flex items-center gap-1.5"
             >
-              ← {t("back_to_my_orders", "Back to My Orders")}
+              ← {t("back_to_your_gig_orders", "Back to Your Gig Orders")}
             </button>
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <FiBriefcase className="w-5 h-5 text-primary shrink-0" />

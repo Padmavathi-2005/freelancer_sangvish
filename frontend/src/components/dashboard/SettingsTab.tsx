@@ -8,6 +8,15 @@ const formatExpDate = (dateStr?: string | null) => {
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 };
+
+const ensureAbsoluteUrl = (url?: string | null) => {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+};
 import { FiSettings, FiUser, FiBriefcase, FiAlertTriangle, FiCheckCircle, FiCheck, FiTrash2, FiPlus, FiCircle, FiFileText, FiUpload, FiShield, FiPhone, FiMail, FiSend, FiKey, FiLoader } from "react-icons/fi";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -1470,8 +1479,8 @@ export default function SettingsTab({
                       <label className="text-[10px] font-extrabold text-slate-400 uppercase">End Date</label>
                       <input
                         type="date"
-                        disabled={newExp.currently_working}
-                        value={newExp.currently_working ? "" : newExp.end_date}
+                        disabled={!!newExp.currently_working}
+                        value={newExp.currently_working ? "" : (newExp.end_date || "")}
                         onChange={(e) => setNewExp({ ...newExp, end_date: e.target.value })}
                         className="bg-white border border-slate-255 rounded-xl px-3 py-2 text-xs text-slate-850 font-bold disabled:opacity-50"
                       />
@@ -1482,7 +1491,7 @@ export default function SettingsTab({
                     <input
                       type="checkbox"
                       id="currently_working"
-                      checked={newExp.currently_working}
+                      checked={!!newExp.currently_working}
                       onChange={(e) => setNewExp({ ...newExp, currently_working: e.target.checked })}
                       className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary cursor-pointer"
                     />
@@ -1689,7 +1698,7 @@ export default function SettingsTab({
                             <h4 className="text-sm font-extrabold text-slate-800">{cert.certificate_name}</h4>
                             <p className="text-xs text-slate-505 font-bold mt-0.5">{cert.issuing_organization} • Issued: {cert.issue_date}</p>
                             {cert.credential_url && (
-                              <a href={cert.credential_url} target="_blank" rel="noreferrer" className="text-xxs text-primary font-bold hover:underline block mt-1">
+                              <a href={ensureAbsoluteUrl(cert.credential_url)} target="_blank" rel="noreferrer" className="text-xxs text-primary font-bold hover:underline block mt-1">
                                 Verification URL Link ↗
                               </a>
                             )}
@@ -3146,8 +3155,8 @@ export default function SettingsTab({
                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">End Date</span>
                             <input
                               type="date"
-                              disabled={tempExp.currently_working}
-                              value={tempExp.currently_working ? "" : tempExp.end_date}
+                              disabled={!!tempExp.currently_working}
+                              value={tempExp.currently_working ? "" : (tempExp.end_date || "")}
                               onChange={(e) => setTempExp({ ...tempExp, end_date: e.target.value })}
                               className="bg-white border border-slate-255 rounded-xl px-3 py-1.5 text-xs text-slate-855 font-bold disabled:opacity-50"
                             />
@@ -3158,7 +3167,7 @@ export default function SettingsTab({
                           <input
                             type="checkbox"
                             id="currently_working_direct"
-                            checked={tempExp.currently_working}
+                            checked={!!tempExp.currently_working}
                             onChange={(e) => setTempExp({ ...tempExp, currently_working: e.target.checked })}
                             className="w-4 h-4 text-primary border-slate-300 rounded cursor-pointer"
                           />
@@ -3190,7 +3199,10 @@ export default function SettingsTab({
                           ← Previous Step
                         </button>
                         <button
-                          onClick={() => setFreelancerSettingsStep(3)}
+                          onClick={async () => {
+                            await handleSaveStep(2);
+                            setFreelancerSettingsStep(3);
+                          }}
                           className="bg-primary hover:bg-primary-hover text-white text-xs font-black px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer"
                         >
                           Continue →
@@ -3293,7 +3305,10 @@ export default function SettingsTab({
                           ← Previous Step
                         </button>
                         <button
-                          onClick={() => setFreelancerSettingsStep(4)}
+                          onClick={async () => {
+                            await handleSaveStep(3);
+                            setFreelancerSettingsStep(4);
+                          }}
                           className="bg-primary hover:bg-primary-hover text-white text-xs font-black px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer"
                         >
                           Continue →
@@ -3315,7 +3330,7 @@ export default function SettingsTab({
                                   <h4 className="text-xs font-black text-slate-805 uppercase tracking-wide">{cert.certificate_name}</h4>
                                   <p className="text-xs font-bold text-slate-500 mt-0.5">{cert.issuing_organization} • Issued: {cert.issue_date}</p>
                                   {cert.credential_url && (
-                                    <a href={cert.credential_url} target="_blank" rel="noreferrer" className="text-xxs text-primary font-bold hover:underline block mt-1">
+                                    <a href={ensureAbsoluteUrl(cert.credential_url)} target="_blank" rel="noreferrer" className="text-xxs text-primary font-bold hover:underline block mt-1">
                                       Verification Link ↗
                                     </a>
                                   )}
@@ -3394,7 +3409,10 @@ export default function SettingsTab({
                           ← Previous Step
                         </button>
                         <button
-                          onClick={() => setFreelancerSettingsStep(5)}
+                          onClick={async () => {
+                            await handleSaveStep(4);
+                            setFreelancerSettingsStep(5);
+                          }}
                           className="bg-primary hover:bg-primary-hover text-white text-xs font-black px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer"
                         >
                           Continue →

@@ -170,7 +170,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     isDark ? "dark bg-slate-900 text-slate-100" : "light bg-slate-50 text-slate-800"
   }`;
 
-  const sidebarClass = `fixed lg:static inset-y-0 left-0 w-64 shrink-0 flex flex-col h-screen lg:h-screen z-45 transition-transform duration-300 transform lg:transform-none ${
+  const sidebarClass = `fixed lg:static inset-y-0 left-0 w-64 shrink-0 flex flex-col h-screen lg:h-screen z-45 lg:z-0 transition-transform duration-300 transform lg:transform-none ${
     isDark ? "bg-slate-950 border-r border-slate-800" : "bg-white border-r border-slate-200"
   } ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`;
 
@@ -236,7 +236,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-slate-50"
   }`;
 
-  const headerClass = `h-16 w-full border-b px-6 lg:px-10 flex flex-row items-center justify-between gap-4 relative z-30 shrink-0 shadow-sm transition-colors duration-300 ${
+  const headerClass = `h-16 w-full border-b px-6 lg:px-10 flex flex-row items-center justify-between gap-4 relative z-30 lg:z-0 shrink-0 shadow-sm transition-colors duration-300 ${
     isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"
   }`;
 
@@ -762,7 +762,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Workspace Area */}
-      <div className="flex-1 flex flex-col max-w-full lg:h-screen lg:overflow-hidden relative z-10">
+      <div className="flex-grow flex flex-col max-w-full lg:h-screen lg:overflow-hidden relative z-10">
         
         {/* Dashboard Top Header Bar */}
         <header className={headerClass}>

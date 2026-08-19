@@ -183,7 +183,7 @@ export default function PaymentSettingsTab() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 lg:p-10 space-y-8 bg-slate-50/50">
+    <div className="space-y-8">
 
       {/* HEADER */}
       <div className="space-y-1">

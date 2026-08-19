@@ -70,6 +70,7 @@ export default function ProjectMilestoneTracker({
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [activeRevisionId, setActiveRevisionId] = useState<number | null>(null);
   const [milestoneFeedback, setMilestoneFeedback] = useState("");
+  const [confirmFundingMilestoneId, setConfirmFundingMilestoneId] = useState<number | null>(null);
   const [milestoneActionLoading, setMilestoneActionLoading] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
@@ -3291,8 +3292,8 @@ export default function ProjectMilestoneTracker({
                                 </span>
                                 {isNextToFund && (
                                   <button
-                                    onClick={async () => {
-                                      await requestMilestoneFunding(m.milestone_id);
+                                    onClick={() => {
+                                      setConfirmFundingMilestoneId(m.milestone_id);
                                     }}
                                     className="text-[9px] font-extrabold text-white bg-amber-600 hover:bg-amber-700 px-3 py-1.5 rounded-lg cursor-pointer border-0 shadow-sm transition-all"
                                   >
@@ -5131,6 +5132,45 @@ export default function ProjectMilestoneTracker({
 
             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
               <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 animate-shrinkWidth" />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {confirmFundingMilestoneId && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-[1px] animate-fadeIn overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full border border-slate-200 shadow-2xl relative flex flex-col items-center text-center gap-5">
+            <div className="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 text-2xl border border-amber-200 shadow-sm shrink-0">
+              <FiClock className="w-6 h-6 animate-pulse" />
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black text-slate-900">
+                Confirm Funding Request
+              </h2>
+              <p className="text-xs text-slate-500 font-semibold mt-2 leading-relaxed">
+                Are you sure you want to request escrow funding for this milestone? An in-app notification will be sent to the client requesting them to deposit the milestone budget.
+              </p>
+            </div>
+
+            <div className="flex gap-3 w-full mt-2">
+              <button
+                onClick={() => setConfirmFundingMilestoneId(null)}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs py-3 rounded-xl transition cursor-pointer border border-slate-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const mId = confirmFundingMilestoneId;
+                  setConfirmFundingMilestoneId(null);
+                  await requestMilestoneFunding(mId);
+                }}
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs py-3 rounded-xl shadow-md transition cursor-pointer border-0"
+              >
+                Yes, Request Funding
+              </button>
             </div>
           </div>
         </div>,

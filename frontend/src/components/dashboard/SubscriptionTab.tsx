@@ -3,6 +3,7 @@ import Link from "next/link";
 import { FiCheck, FiInfo, FiLayers, FiCalendar, FiCreditCard, FiDownload, FiFileText, FiPrinter } from "react-icons/fi";
 import { useLanguage } from "@/context/LanguageContext";
 import { API_URL } from "@/config/api";
+import { useDashboard } from "@/app/dashboard/DashboardContext";
 
 interface SubscriptionInfo {
   active_plan_id: number | null;
@@ -41,6 +42,7 @@ interface Invoice {
 
 export default function SubscriptionTab() {
   const { t } = useLanguage();
+  const { siteName } = useDashboard();
   const [subInfo, setSubInfo] = useState<SubscriptionInfo | null>(null);
   const [limitInfo, setLimitInfo] = useState<LimitInfo | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -153,7 +155,7 @@ export default function SubscriptionTab() {
   const progressPercent = Math.min(100, (usedBids / totalBids) * 100);
 
   return (
-    <div className="flex-1 overflow-y-auto p-3.5 sm:p-6 space-y-5 sm:space-y-8 bg-slate-50/50 scrollbar-thin">
+    <div className="space-y-5 sm:space-y-8 w-full">
       
       {/* HEADER SECTION */}
       <div className="flex flex-col gap-1.5">
@@ -392,11 +394,11 @@ export default function SubscriptionTab() {
             <div className="flex-1 overflow-y-auto p-8 text-left" id="printable-subscription-invoice">
               <div className="flex justify-between items-start border-b border-slate-200 pb-6">
                 <div>
-                  <h1 className="text-xl font-black text-teal-800 tracking-tight">LANCERFLOW, INC.</h1>
+                  <h1 className="text-xl font-black text-teal-800 tracking-tight">{siteName ? siteName.toUpperCase() : "BUY2LANCER"}</h1>
                   <p className="text-[10px] text-slate-450 font-semibold mt-1 leading-normal">
                     100 Pine Street, Suite 1250<br />
                     San Francisco, CA 94111<br />
-                    billing@lancerflow.com
+                    billing@{(siteName || "buy2lancer").toLowerCase().replace(/\s+/g, "")}.com
                   </p>
                 </div>
                 <div className="text-right">
@@ -412,7 +414,7 @@ export default function SubscriptionTab() {
               <div className="grid grid-cols-2 gap-8 py-6 border-b border-slate-100">
                 <div>
                   <span className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">{t("billed_to_label", "Billed To")}</span>
-                  <p className="text-xs font-black text-slate-800 mt-1.5">{selectedInvoice.billing_name || "LancerFlow Member"}</p>
+                  <p className="text-xs font-black text-slate-800 mt-1.5">{selectedInvoice.billing_name || (siteName ? `${siteName} Member` : "Buy2Lancer Member")}</p>
                   <p className="text-xs font-semibold text-slate-500 mt-0.5">{selectedInvoice.billing_email || ""}</p>
                 </div>
                 <div>
@@ -467,8 +469,8 @@ export default function SubscriptionTab() {
 
               {/* Thank you note */}
               <div className="mt-12 bg-slate-50 rounded-xl p-4 border border-slate-150 text-center">
-                <p className="text-xs font-bold text-slate-650">{t("thank_you_subscribing", "Thank you for subscribing to LancerFlow!")}</p>
-                <p className="text-[10px] text-slate-400 font-semibold mt-1">{t("billing_inquiries_desc", "If you have any billing inquiries, please reach out to billing@lancerflow.com.")}</p>
+                <p className="text-xs font-bold text-slate-650">{t("thank_you_subscribing", `Thank you for subscribing to ${siteName || "Buy2Lancer"}!`)}</p>
+                <p className="text-[10px] text-slate-400 font-semibold mt-1">{t("billing_inquiries_desc", `If you have any billing inquiries, please reach out to billing@${(siteName || "buy2lancer").toLowerCase().replace(/\s+/g, "")}.com.`)}</p>
               </div>
             </div>
 
@@ -478,12 +480,21 @@ export default function SubscriptionTab() {
                 onClick={() => {
                   const printContent = document.getElementById("printable-subscription-invoice")?.innerHTML;
                   if (printContent) {
-                    const printWindow = window.open("", "_blank");
-                    if (printWindow) {
-                      printWindow.document.write(`
+                    const iframe = document.createElement("iframe");
+                    iframe.style.position = "fixed";
+                    iframe.style.right = "0";
+                    iframe.style.bottom = "0";
+                    iframe.style.width = "0";
+                    iframe.style.height = "0";
+                    iframe.style.border = "none";
+                    document.body.appendChild(iframe);
+                    
+                    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+                    if (doc) {
+                      doc.write(`
                         <html>
                           <head>
-                            <title>Subscription Invoice - LancerFlow</title>
+                            <title>Subscription Invoice - ${siteName || "Buy2Lancer"}</title>
                             <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
                             <style>
                               body { font-family: sans-serif; padding: 40px; }
@@ -497,13 +508,16 @@ export default function SubscriptionTab() {
                             <script>
                               window.onload = function() {
                                 window.print();
-                                setTimeout(function() { window.close(); }, 500);
                               };
                             </script>
                           </body>
                         </html>
                       `);
-                      printWindow.document.close();
+                      doc.close();
+                      
+                      setTimeout(() => {
+                        document.body.removeChild(iframe);
+                      }, 1000);
                     }
                   }
                 }}

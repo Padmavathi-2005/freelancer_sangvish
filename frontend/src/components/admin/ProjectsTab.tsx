@@ -90,7 +90,7 @@ export default function ProjectsTab({
     try {
       setSavingFields(true);
       setFieldsStatus(null);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
       const res = await fetch(`${API_URL}/admin/form-field-options`, {
         method: "POST",
         headers: {
@@ -126,7 +126,7 @@ export default function ProjectsTab({
     try {
       setSavingFields(true);
       setFieldsStatus(null);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("adminToken") || localStorage.getItem("token") || "";
       const res = await fetch(`${API_URL}/admin/form-field-options/${optionId}`, {
         method: "DELETE",
         headers: {
