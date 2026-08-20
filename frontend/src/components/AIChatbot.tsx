@@ -978,7 +978,7 @@ export default function AIChatbot() {
 
   const pathname = usePathname();
 
-  if (!mounted || pathname?.startsWith("/admin")) return null;
+  if (!mounted || pathname?.startsWith("/admin") || pathname?.startsWith("/dashboard/inbox")) return null;
 
   return (
     <>
@@ -1026,7 +1026,7 @@ export default function AIChatbot() {
       {isOpen && (
         <div className={isFullscreen 
           ? "fixed inset-0 z-[9999] w-screen h-screen bg-white dark:bg-[#121214] flex flex-col overflow-hidden animate-fadeIn font-sans"
-          : "fixed bottom-24 right-6 z-[9999] w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-8rem)] bg-white dark:bg-[#121214] border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slideUp transition-all duration-300 font-sans"
+          : "fixed bottom-24 right-6 z-[9999] w-[380px] max-w-[calc(100vw-2rem)] h-[450px] max-h-[calc(100vh-11rem)] bg-white dark:bg-[#121214] border border-slate-200/80 dark:border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-slideUp transition-all duration-300 font-sans"
         }>
           
           {/* Header */}

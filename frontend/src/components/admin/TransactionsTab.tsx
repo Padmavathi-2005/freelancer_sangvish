@@ -409,13 +409,13 @@ export default function TransactionsTab({
                       <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => resolveDispute(disp.id, "Resolved (Refunded Client)")}
-                          className="px-3 py-1.5 bg-cyan-50 hover:bg-cyan-500 border border-cyan-200 text-cyan-700 hover:text-white transition-all text-xs font-bold rounded-lg cursor-pointer"
+                          className="px-3 py-1.5 bg-cyan-50 hover:bg-cyan-500 active:bg-cyan-600 focus:bg-cyan-500 focus:text-white active:text-white border border-cyan-200 text-cyan-700 hover:text-white transition-all text-xs font-bold rounded-lg cursor-pointer focus:outline-none"
                         >
                           Refund Client (100%)
                         </button>
                         <button
                           onClick={() => resolveDispute(disp.id, "Resolved (Released to Freelancer)")}
-                          className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-500 border border-emerald-200 text-emerald-700 hover:text-white transition-all text-xs font-bold rounded-lg cursor-pointer"
+                          className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-500 active:bg-emerald-600 focus:bg-emerald-500 focus:text-white active:text-white border border-emerald-200 text-emerald-700 hover:text-white transition-all text-xs font-bold rounded-lg cursor-pointer focus:outline-none"
                         >
                           Payout Freelancer (100%)
                         </button>

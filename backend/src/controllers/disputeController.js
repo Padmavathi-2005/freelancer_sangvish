@@ -800,8 +800,15 @@ export const adminResolve = async (req, res) => {
 
     const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
     const sysWallet = sysRes.rows[0];
+    if (!sysWallet) {
+      return res.status(550).json({ message: "System escrow wallet not found." });
+    }
     const clientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [dispute.client_id]);
-    const clientWallet = clientWalletRes.rows[0];
+    let clientWallet = clientWalletRes.rows[0];
+    if (!clientWallet) {
+      const ins = await pool.query("INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *", [dispute.client_id]);
+      clientWallet = ins.rows[0];
+    }
     let freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [dispute.freelancer_id]);
     let freelancerWallet = freelancerWalletRes.rows[0];
 

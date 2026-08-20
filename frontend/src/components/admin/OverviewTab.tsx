@@ -293,7 +293,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 1: Platform Revenue */}
         <div 
           onClick={() => navigateToTab("wallet_management")}
-          className="bg-white border border-slate-200 hover:border-emerald-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-emerald-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
@@ -303,7 +303,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-black text-slate-800">
+            <h3 className="text-lg xl:text-2xl font-black text-slate-800 tracking-tight whitespace-nowrap">
               ${totalCommissionsVal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h3>
             <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5">
@@ -317,7 +317,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 2: Neutral Escrow Holding */}
         <div 
           onClick={() => navigateToTab("wallet_management")}
-          className="bg-white border border-slate-200 hover:border-blue-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-blue-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
@@ -327,7 +327,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-black text-slate-800">
+            <h3 className="text-lg xl:text-2xl font-black text-slate-800 tracking-tight whitespace-nowrap">
               ${totalEscrowVal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h3>
             <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5">
@@ -339,7 +339,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 3: Ongoing Projects */}
         <div 
           onClick={() => navigateToTab("projects")}
-          className="bg-white border border-slate-200 hover:border-teal-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-teal-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-teal-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
@@ -349,7 +349,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-black text-slate-800">
+            <h3 className="text-lg xl:text-2xl font-black text-slate-800 tracking-tight whitespace-nowrap">
               {ongoingProjectsCount}
             </h3>
             <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5">
@@ -361,7 +361,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 4: Disputes Cases */}
         <div 
           onClick={() => navigateToTab("transactions", "disputes")}
-          className="bg-white border border-slate-200 hover:border-rose-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-rose-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-rose-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
@@ -374,7 +374,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
             </div>
           </div>
           <div>
-            <h3 className="text-2xl font-black text-slate-800">
+            <h3 className="text-lg xl:text-2xl font-black text-slate-800 tracking-tight whitespace-nowrap">
               {activeDisputesCount}
             </h3>
             <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5">

@@ -80,6 +80,7 @@ export interface Skill {
   skill_id?: string | number;
   subcategoryId?: string;
   subcategory_id?: string | number;
+  sub_category_id?: string | number;
   subcategoryName?: string;
   sub_category_name?: string;
   name?: string;
@@ -1767,7 +1768,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setEditingSkill(sk);
     setSkillModalMode("edit");
     setSkillFormName(sk.skill_name || sk.name || "");
-    setSkillFormSubcategoryId(String(sk.subcategory_id || sk.subcategoryId || ""));
+    setSkillFormSubcategoryId(String(sk.sub_category_id || sk.subcategory_id || sk.subcategoryId || ""));
     const isActive = sk.status === true || sk.status === 1 || String(sk.status).toLowerCase() === "active" || String(sk.status).toLowerCase() === "true";
     setSkillFormStatus(isActive ? "Active" : "Inactive");
     setSkillFormError(null);
@@ -2298,6 +2299,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       "/admin/seo-settings": "seo_settings",
       "/admin/referrals": "referrals",
       "/admin/affiliate": "affiliate",
+      "/admin/subscription-plans": "subscription_plans",
     };
     return routeMap[pathname] || "overview";
   }, [pathname]);
@@ -2573,6 +2575,31 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setSelectedSkillIds([]);
     }, 0);
   }, [categoriesSearch, categoriesSubTab]);
+
+  // Reset pages to 1 when their respective searches or sub-tabs change
+  useEffect(() => {
+    setUsersPage(1);
+  }, [usersSearch, usersSubTab]);
+
+  useEffect(() => {
+    setOnboardedPage(1);
+  }, [onboardedSearch]);
+
+  useEffect(() => {
+    setProjectsPage(1);
+  }, [projectsSearch, projectsSubTab]);
+
+  useEffect(() => {
+    setGigsPage(1);
+  }, [gigsSearch]);
+
+  useEffect(() => {
+    setGigOrdersPage(1);
+  }, [gigOrdersSearch]);
+
+  useEffect(() => {
+    setTransactionsPage(1);
+  }, [transactionsSearch, transactionsSubTab]);
 
   return (
     <AdminContext.Provider value={{

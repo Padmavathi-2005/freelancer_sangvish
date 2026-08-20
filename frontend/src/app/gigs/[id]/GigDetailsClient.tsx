@@ -24,7 +24,8 @@ import {
   FiSend,
   FiArrowLeft,
   FiInfo,
-  FiExternalLink
+  FiExternalLink,
+  FiDownload
 } from "react-icons/fi";
 import { createPortal } from "react-dom";
 
@@ -813,11 +814,48 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
   // Helper to resolve media URLs to backend host if relative
   const resolveMediaUrl = (url: string) => {
     if (!url) return "";
-    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
-      return url;
+    if (url.startsWith("data:")) return url;
+    let cleaned = url;
+    if (cleaned.includes("localhost:5000")) {
+      cleaned = cleaned.replace(/https?:\/\/localhost:5000/, API_BASE_URL);
     }
-    const cleanPath = url.startsWith("/") ? url : `/${url}`;
+    if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+      return cleaned;
+    }
+    const cleanPath = cleaned.startsWith("/") ? cleaned : `/${cleaned}`;
     return `${API_BASE_URL}${cleanPath}`;
+  };
+
+  const handleDownloadVideo = async (rawUrl: string, filename = "showcase-video.mp4") => {
+    if (!rawUrl || !rawUrl.trim()) return;
+    const cleanUrlStr = rawUrl.split(",")[0].trim();
+    if (!cleanUrlStr) return;
+    const downloadUrl = resolveMediaUrl(cleanUrlStr);
+    const cleanFilename = filename || downloadUrl.split("/").pop()?.split("?")[0] || "showcase-video.mp4";
+
+    try {
+      const response = await fetch(downloadUrl, { mode: "cors" });
+      if (!response.ok) throw new Error("Network response was not ok");
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = cleanFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+    } catch (err) {
+      console.warn("Blob download failed, triggering fallback download/open link:", err);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.download = cleanFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   // Helper to parse images array safely
@@ -1382,8 +1420,24 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                    {gig.video_url && (
                      <div className="text-left">
                        <h3 className="text-sm font-black text-slate-900 mb-3 uppercase tracking-wider">{t("showcase_video", "Showcase Video")}</h3>
-                       <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-200 shadow-inner">
-                         <video ref={videoRef} src={resolveMediaUrl(gig.video_url)} controls className="w-full h-full object-cover" />
+                       <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-200 shadow-inner relative group">
+                         <video 
+                           ref={videoRef} 
+                           src={resolveMediaUrl(gig.video_url)} 
+                           controls 
+                           crossOrigin="anonymous" 
+                           className="w-full h-full object-cover" 
+                         />
+                       </div>
+                       <div className="mt-2.5 flex justify-end">
+                         <button
+                           type="button"
+                           onClick={() => handleDownloadVideo(gig.video_url, "gig-showcase-video.mp4")}
+                           className="text-teal-700 hover:text-white hover:bg-teal-800 text-[10px] font-black bg-white border border-slate-200/80 px-3 py-1.5 rounded-lg shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+                         >
+                           <FiDownload className="w-3.5 h-3.5" />
+                           <span>{t("download_video", "Download Video")}</span>
+                         </button>
                        </div>
                      </div>
                    )}

@@ -1005,8 +1005,8 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
       )}
 
       {/* GIG DETAILS MODAL */}
-      {isViewingDetails && selectedGigForDetails && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[3px] z-50 flex items-center justify-center p-4">
+      {isViewingDetails && selectedGigForDetails && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-[3px] z-[10000] flex items-center justify-center p-4">
           <div className="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl animate-scaleIn flex flex-col">
             {/* Modal Header */}
             <div className="border-b border-slate-100 p-6 flex justify-between items-start sticky top-0 bg-white z-10">
@@ -1202,7 +1202,8 @@ const ExploreGigsTab: React.FC<ExploreGigsTabProps> = ({ triggerToast, fetchClie
 
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

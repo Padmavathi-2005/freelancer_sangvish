@@ -217,11 +217,15 @@ export const updateJob = async (req, res) => {
       if (!description || !description.trim()) {
         return res.status(400).json({ message: "Project description is required to publish." });
       }
-      const finalBudget = max_budget ? parseFloat(max_budget) : (budget ? parseFloat(budget) : 0);
-      if (finalBudget <= 0) {
+      const validatedBudget = max_budget ? parseFloat(max_budget) : (budget ? parseFloat(budget) : 0);
+      if (validatedBudget <= 0) {
         return res.status(400).json({ message: "A valid positive project budget is required to publish." });
       }
     }
+
+    const finalBudget = max_budget ? parseFloat(max_budget) : (budget ? parseFloat(budget) : 0);
+    const finalTitle = title && title.trim() ? title.trim() : "Untitled Project Draft";
+    const finalDescription = description && description.trim() ? description.trim() : "";
 
     let finalStatus = status || "Draft";
     let isVetted = false;

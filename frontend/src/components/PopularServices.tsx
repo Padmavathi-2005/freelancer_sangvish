@@ -3,8 +3,15 @@ import { API_URL, API_BASE_URL } from "@/config/api";
 
 const resolveMediaUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+  if (url.startsWith("data:")) return url;
+  let cleaned = url;
+  if (cleaned.includes("localhost:5000")) {
+    cleaned = cleaned.replace(/https?:\/\/localhost:5000/, API_BASE_URL);
+  }
+  if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+    return cleaned;
+  }
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${cleaned.startsWith("/") ? "" : "/"}${cleaned}`;
 };
 
 
@@ -118,7 +125,7 @@ export default function PopularServices() {
         {loading ? (
           <div
             className="grid gap-5"
-            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))" }}
           >
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="border border-slate-200/60 rounded-xl overflow-hidden flex flex-col animate-pulse bg-white">
@@ -142,7 +149,7 @@ export default function PopularServices() {
         ) : (
           <div
             className="grid gap-5"
-            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))" }}
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))" }}
           >
             {activeGigsList.map((gig) => (
               <GigCard key={gig.gig_id} gig={gig} router={router} />

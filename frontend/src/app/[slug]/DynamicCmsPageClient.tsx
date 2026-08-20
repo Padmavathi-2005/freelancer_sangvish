@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from "@/config/api";
+import { API_URL, API_BASE_URL } from "@/config/api";
 
 
 import React, { useState, useEffect } from "react";
@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FiSearch, FiChevronDown, FiHelpCircle, FiMail, FiMapPin, FiClock, FiBriefcase, FiActivity, FiSliders, FiX, FiUpload, FiCheckCircle, FiFileText } from "react-icons/fi";
+import CustomSelect from "@/components/CustomSelect";
 
 interface BuilderBlock {
   id: string;
@@ -186,22 +187,20 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               </div>
               <div>
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Target Position / Role</label>
-                <div className="relative">
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-4 pr-10 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500 appearance-none cursor-pointer"
-                  >
-                    <option value="Full Stack Developer">Full Stack Developer</option>
-                    <option value="Senior Frontend Engineer">Senior Frontend Engineer</option>
-                    <option value="Backend / Systems Architect">Backend / Systems Architect</option>
-                    <option value="UI/UX Product Designer">UI/UX Product Designer</option>
-                    <option value="Mobile App Developer">Mobile App Developer</option>
-                    <option value="DevOps / Cloud Engineer">DevOps / Cloud Engineer</option>
-                    <option value="General Candidate">General Candidate</option>
-                  </select>
-                  <FiChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                <CustomSelect
+                  value={role}
+                  onChange={(val) => setRole(val)}
+                  options={[
+                    { value: "Full Stack Developer", label: "Full Stack Developer" },
+                    { value: "Senior Frontend Engineer", label: "Senior Frontend Engineer" },
+                    { value: "Backend / Systems Architect", label: "Backend / Systems Architect" },
+                    { value: "UI/UX Product Designer", label: "UI/UX Product Designer" },
+                    { value: "Mobile App Developer", label: "Mobile App Developer" },
+                    { value: "DevOps / Cloud Engineer", label: "DevOps / Cloud Engineer" },
+                    { value: "General Candidate", label: "General Candidate" }
+                  ]}
+                  placeholder="Select Position / Role"
+                />
               </div>
             </div>
 
@@ -601,11 +600,16 @@ export default function DynamicCmsPageClient() {
 
     const resolveMediaUrl = (url: string) => {
       if (!url) return "";
-      if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
-        return url;
+      if (url.startsWith("data:")) return url;
+      let cleaned = url;
+      if (cleaned.includes("localhost:5000")) {
+        cleaned = cleaned.replace(/https?:\/\/localhost:5000/, API_BASE_URL);
       }
-      const cleanPath = url.startsWith("/") ? url : `/${url}`;
-      return `https://freelancer.sangvish.com${cleanPath}`;
+      if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+        return cleaned;
+      }
+      const cleanPath = cleaned.startsWith("/") ? cleaned : `/${cleaned}`;
+      return `${API_BASE_URL}${cleanPath}`;
     };
 
     let seoTitle = pageData.title || "Buy2Lancer Page";

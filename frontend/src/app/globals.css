@@ -18,6 +18,11 @@
   --font-display: 'Plus Jakarta Sans', sans-serif;
   --font-mono: var(--font-geist-mono);
   --font-size-xxs: 0.625rem;
+  --color-teal-650: var(--color-teal-650, #14b8a6);
+  --color-teal-750: var(--color-teal-750, #0f766e);
+  --color-teal-850: var(--color-teal-850, #0a5c56);
+  --color-emerald-750: var(--color-emerald-750, #0f766e);
+  --color-green-750: var(--color-green-750, #0f766e);
 }
 
 :root {
@@ -1479,10 +1484,17 @@ body.dark * {
   }
 }
 
+/* Floating Toast Progress Bar Animation */
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
 
-
-
-
-
-
+.animate-toastProgress {
+  animation: toastProgress linear forwards;
+}
 

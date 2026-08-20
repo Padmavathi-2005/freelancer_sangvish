@@ -166,7 +166,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, [activeTab, pathname]);
 
-  const containerClass = `w-full min-h-screen flex flex-col lg:flex-row max-w-full relative lg:h-screen lg:overflow-hidden ${
+  const containerClass = `w-full min-h-screen flex flex-row max-w-full relative lg:h-screen lg:overflow-hidden ${
     isDark ? "dark bg-slate-900 text-slate-100" : "light bg-slate-50 text-slate-800"
   }`;
 
@@ -236,7 +236,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     isDark ? "border-slate-800 bg-slate-950" : "border-slate-200 bg-slate-50"
   }`;
 
-  const headerClass = `h-16 w-full border-b px-6 lg:px-10 flex flex-row items-center justify-between gap-4 relative z-30 lg:z-0 shrink-0 shadow-sm transition-colors duration-300 ${
+  const headerClass = `h-16 w-full border-b px-6 lg:px-10 flex flex-row items-center justify-between gap-4 relative z-50 shrink-0 shadow-sm transition-colors duration-300 ${
     isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"
   }`;
 
@@ -262,7 +262,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     isDark ? "text-slate-200" : "text-slate-900"
   }`;
 
-  const statsSubValueClass = `text-xs font-semibold ${
+  const statsSubValueClass = `text-[10px] font-bold ${
     isDark ? "text-slate-400" : "text-slate-500"
   }`;
 
@@ -926,42 +926,42 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Scrollable Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-10 overflow-y-visible lg:overflow-y-auto relative w-full flex flex-col gap-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-10 overflow-y-visible lg:overflow-y-auto relative z-10 w-full flex flex-col gap-8">
           
           {/* Stats metrics widgets row */}
           {pathname === "/admin" && (
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className={statsCardClass}>
                 <span className={statsTitleClass}>Active Talent Pool</span>
-                <div className="flex items-baseline justify-between mt-2">
+                <div className="flex flex-col mt-1.5">
                   <span className={statsValueClass}>
                     {usersList.filter((u: any) => u.freelancer_onboarding).length}
                   </span>
-                  <span className="text-xs text-emerald-600 font-semibold">Registered Contractors</span>
+                  <span className="text-[10px] text-emerald-600 font-bold mt-1">Registered Contractors</span>
                 </div>
               </div>
               
               <div className={statsCardClass}>
                 <span className={statsTitleClass}>Vetting Applications</span>
-                <div className="flex items-baseline justify-between mt-2">
+                <div className="flex flex-col mt-1.5">
                   <span className={statsValueClass}>{pendingVettingCount}</span>
-                  <span className={statsSubValueClass}>in review queue</span>
+                  <span className={statsSubValueClass + " mt-1"}>in review queue</span>
                 </div>
               </div>
 
               <div className={statsCardClass}>
                 <span className={statsTitleClass}>Total User Accounts</span>
-                <div className="flex items-baseline justify-between mt-2">
+                <div className="flex flex-col mt-1.5">
                   <span className={statsValueClass}>{usersList?.length || 0}</span>
-                  <span className={statsSubValueClass}>registered members</span>
+                  <span className={statsSubValueClass + " mt-1"}>registered members</span>
                 </div>
               </div>
 
               <div className={statsCardClass}>
                 <span className={statsTitleClass}>Dispute Cases</span>
-                <div className="flex items-baseline justify-between mt-2">
+                <div className="flex flex-col mt-1.5">
                   <span className={statsValueClass}>{activeDisputesCount}</span>
-                  <span className={`text-xs font-semibold ${activeDisputesCount > 0 ? "text-rose-500" : (isDark ? "text-slate-400" : "text-slate-500")}`}>
+                  <span className={`text-[10px] font-bold mt-1 ${activeDisputesCount > 0 ? "text-rose-500" : (isDark ? "text-slate-400" : "text-slate-500")}`}>
                     {activeDisputesCount > 0 ? "requires resolution" : "clear slate"}
                   </span>
                 </div>

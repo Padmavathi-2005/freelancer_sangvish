@@ -28,11 +28,16 @@ const stripHtml = (html: string) => {
 const resolveMediaUrl = (url: string) => {
   if (!url || !url.trim()) return "";
   const trimmed = url.split(",")[0].trim();
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
-  }
+  if (trimmed.startsWith("data:")) return trimmed;
+  let cleaned = trimmed;
   const base = API_URL.replace(/\/api\/?$/, "");
-  return `${base}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
+  if (cleaned.includes("localhost:5000")) {
+    cleaned = cleaned.replace(/https?:\/\/localhost:5000/, base);
+  }
+  if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+    return cleaned;
+  }
+  return `${base}${cleaned.startsWith("/") ? "" : "/"}${cleaned}`;
 };
 
 const handleDownloadVideo = async (rawUrl: string, filename = "showcase-video.mp4") => {
@@ -989,13 +994,13 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-6 text-slate-800">
           
           {/* Form Header */}
-          <div className="border-b border-slate-100 pb-4 flex items-center justify-between">
+          <div className="border-b border-slate-100 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center text-sm shrink-0">
                 <i className="fa-solid fa-briefcase"></i>
               </div>
               <div>
-                <h2 className="text-base font-extrabold text-slate-800">
+                <h2 className="text-base font-extrabold text-slate-800 whitespace-nowrap" style={{ whiteSpace: 'nowrap' }}>
                   {editingGig ? `Edit Gig Settings` : `Create a Service Gig`}
                 </h2>
                 <p className="text-slate-404 text-xs mt-0.5">
@@ -1012,7 +1017,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 setActiveFormStep(1);
                 setGigAddons([]);
               }}
-              className="text-xs font-bold text-slate-505 hover:text-slate-855 bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-slate-200 hover:bg-slate-200/60"
+              className="text-xs font-bold text-slate-505 hover:text-slate-855 bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-slate-200 hover:bg-slate-200/60 whitespace-nowrap shrink-0"
+              style={{ whiteSpace: 'nowrap' }}
             >
               ← Back to Gigs
             </button>
@@ -1035,38 +1041,46 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 </span>
               </div>
             )}
+
+
             {/* Step progress bar */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-5 mb-2">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-5 mb-4 w-full gap-2 sm:gap-4">
               {[
                 { num: 1, label: "Overview", desc: "Basic details & skills" },
                 { num: 2, label: "Pricing & Logistics", desc: "Rates & delivery days" },
                 { num: 3, label: "Media & Description", desc: "Showcases & service info" }
-              ].map((s) => {
+              ].map((s, idx, arr) => {
                 const completed = isStepCompleted(s.num);
                 const isActive = activeFormStep === s.num;
                 return (
-                  <button
-                    type="button"
-                    key={s.num}
-                    onClick={() => setActiveFormStep(s.num)}
-                    className="flex items-center gap-2.5 flex-1 justify-center first:justify-start last:justify-end cursor-pointer bg-transparent border-0 outline-none p-0 text-slate-800 transition-opacity hover:opacity-85 select-none"
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
-                      isActive
-                        ? "bg-primary text-white ring-4 ring-primary/20 font-black"
-                        : completed
-                        ? "bg-emerald-500 text-white"
-                        : "bg-slate-150 text-slate-400"
-                    }`}>
-                      {completed && !isActive ? "✓" : s.num}
-                    </div>
-                    <div className="hidden md:flex flex-col text-left">
-                      <span className={`text-xs font-extrabold leading-none ${isActive ? "text-slate-800" : "text-slate-400"}`}>
-                        {s.label}
-                      </span>
-                      <span className="text-[10px] text-slate-400 mt-0.5 font-medium">{s.desc}</span>
-                    </div>
-                  </button>
+                  <React.Fragment key={s.num}>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFormStep(s.num)}
+                      className="flex items-center gap-2.5 shrink-0 cursor-pointer bg-transparent border-0 outline-none p-0 text-slate-800 transition-opacity hover:opacity-85 select-none"
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                        isActive
+                          ? "bg-primary text-white ring-4 ring-primary/20 font-black"
+                          : completed
+                          ? "bg-emerald-500 text-white"
+                          : "bg-slate-150 text-slate-400"
+                      }`}>
+                        {completed && !isActive ? "✓" : s.num}
+                      </div>
+                      <div className="hidden md:flex flex-col text-left">
+                        <span className={`text-xs font-extrabold leading-none ${isActive ? "text-slate-800" : "text-slate-400"}`}>
+                          {s.label}
+                        </span>
+                        <span className="text-[10px] text-slate-400 mt-0.5 font-medium">{s.desc}</span>
+                      </div>
+                    </button>
+                    {idx < arr.length - 1 && (
+                      <div className={`flex-1 h-0.5 min-w-[20px] transition-all duration-300 ${
+                        activeFormStep > s.num ? "bg-primary" : "bg-slate-200"
+                      }`} />
+                    )}
+                  </React.Fragment>
                 );
               })}
             </div>
@@ -1262,7 +1276,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                             }}
                             className="sr-only peer"
                           />
-                          <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                          <div className="relative w-9 h-5 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                           <span className="ml-2 text-xs font-bold text-slate-700">Tiered Packages</span>
                         </label>
                       </div>
@@ -1940,8 +1954,9 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       }
                     }}
                     className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+                    style={{ whiteSpace: 'nowrap' }}
                   >
-                    <span>Continue to Media & Details</span>
+                    <span>Continue to Media</span>
                     <FiArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -2562,9 +2577,9 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       </button>
                     </div>
                     
-                    <div className="flex items-baseline gap-0.5">
-                      <span className="text-[10px] font-bold text-slate-400">STARTING AT</span>
-                      <span className="text-sm font-black text-slate-900">
+                    <div className="flex flex-col items-end text-right min-w-0">
+                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Starting At</span>
+                      <span className="text-xs sm:text-sm font-black text-slate-900 mt-1 block leading-none">
                         {formatPrice(parseFloat(gig.price || 0))}
                       </span>
                     </div>

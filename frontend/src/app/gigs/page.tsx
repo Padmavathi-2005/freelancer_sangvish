@@ -3,8 +3,15 @@ import { API_URL, API_BASE_URL } from "@/config/api";
 
 const resolveMediaUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+  if (url.startsWith("data:")) return url;
+  let cleaned = url;
+  if (cleaned.includes("localhost:5000")) {
+    cleaned = cleaned.replace(/https?:\/\/localhost:5000/, API_BASE_URL);
+  }
+  if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+    return cleaned;
+  }
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${cleaned.startsWith("/") ? "" : "/"}${cleaned}`;
 };
 
 
@@ -15,7 +22,7 @@ import Footer from "@/components/Footer";
 import CustomSelect from "@/components/CustomSelect";
 import ShareSection from "@/components/ShareSection";
 import { useLanguage } from "@/context/LanguageContext";
-import { FiStar, FiHeart, FiClock, FiSearch, FiSliders, FiRefreshCw, FiChevronRight, FiGrid, FiX } from "react-icons/fi";
+import { FiStar, FiHeart, FiClock, FiSearch, FiSliders, FiRefreshCw, FiChevronRight, FiGrid, FiX, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 
 function GigsSearchContent() {
   const { t, formatPrice } = useLanguage();
@@ -310,7 +317,16 @@ function GigsSearchContent() {
         const matchCategory = gig.category_name?.toLowerCase().includes(query);
         const matchSubCat = gig.sub_category_name?.toLowerCase().includes(query);
         const matchFreelancer = (gig.freelancer_name || gig.seller_name || gig.username || "")?.toLowerCase().includes(query);
-        const matchPrice = gig.price ? `${gig.price}` === query || `$${gig.price}` === query : false;
+        
+        const cleanQuery = query.replace(/[^0-9]/g, "");
+        const formattedPrice = gig.price ? formatPrice(gig.price) : "";
+        const cleanFormattedPrice = formattedPrice.replace(/[^0-9]/g, "");
+        const matchPrice = gig.price ? (
+          `${gig.price}` === query || 
+          `$${gig.price}` === query ||
+          (cleanQuery !== "" && cleanFormattedPrice.includes(cleanQuery))
+        ) : false;
+
         const matchLevel = gig.experience_level?.toLowerCase().includes(query);
         const matchLocation = (gig.location || gig.country || "")?.toLowerCase().includes(query);
         const matchSkills = Array.isArray(gig.skills) && gig.skills.some((s: any) => {
@@ -318,8 +334,9 @@ function GigsSearchContent() {
           return str.toLowerCase().includes(query);
         });
         const matchTags = Array.isArray(gig.tags) && gig.tags.some((t: any) => `${t}`.toLowerCase().includes(query));
+        const matchId = (gig.gig_id ? String(gig.gig_id).includes(query) : false) || (gig.id ? String(gig.id).includes(query) : false);
 
-        if (!matchTitle && !matchDesc && !matchCategory && !matchSubCat && !matchFreelancer && !matchPrice && !matchLevel && !matchLocation && !matchSkills && !matchTags) {
+        if (!matchTitle && !matchDesc && !matchCategory && !matchSubCat && !matchFreelancer && !matchPrice && !matchLevel && !matchLocation && !matchSkills && !matchTags && !matchId) {
           return false;
         }
       }
@@ -457,7 +474,7 @@ function GigsSearchContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative">
+    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative overflow-x-hidden">
       <Header />
 
       {/* Search Type Switcher */}
@@ -503,7 +520,7 @@ function GigsSearchContent() {
       </div>
 
       {/* Main Grid Workspace */}
-      <main className="max-w-[1600px] mx-auto w-full py-6 sm:py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+      <main className="flex-1 max-w-[1600px] mx-auto w-full py-6 sm:py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
         
         {/* Mobile Filter Toggle Button */}
         <div className="lg:hidden col-span-1">
@@ -645,7 +662,7 @@ function GigsSearchContent() {
         </aside>
 
         {/* Right Side: Gig Grid Content */}
-        <section className="lg:col-span-9 space-y-6">
+        <section className="lg:col-span-9 w-full min-w-0 space-y-6">
           
           {/* Grid control bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
@@ -658,8 +675,8 @@ function GigsSearchContent() {
                 type="text"
                 placeholder={t("search_gigs_placeholder", "Search for service gigs...")}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value.replace(/\d{3,}/g, ""))}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-808 placeholder-slate-450 outline-none focus:border-primary transition-all"
               />
             </div>
 
@@ -670,16 +687,17 @@ function GigsSearchContent() {
               </p>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">{t("sort_by", "Sort by")}</span>
-                <select
+                <CustomSelect
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-750 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
-                >
-                  <option value="popular">{t("sort_popular", "Recommended / Popular")}</option>
-                  <option value="rating">{t("sort_rating", "Top Rated Status")}</option>
-                  <option value="price_asc">{t("price_low_high", "Price: Low to High")}</option>
-                  <option value="price_desc">{t("price_high_low", "Price: High to Low")}</option>
-                </select>
+                  onChange={(val) => setSortBy(val)}
+                  options={[
+                    { value: "popular", label: t("sort_popular", "Recommended / Popular") },
+                    { value: "rating", label: t("sort_rating", "Top Rated Status") },
+                    { value: "price_asc", label: t("price_low_high", "Price: Low to High") },
+                    { value: "price_desc", label: t("price_high_low", "Price: High to Low") },
+                  ]}
+                  className="w-52"
+                />
               </div>
             </div>
           </div>
@@ -923,9 +941,16 @@ function GigsSearchContent() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border bg-white animate-slideIn">
-          <FiHeart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0 animate-pulse" />
+        <div className="fixed top-24 right-6 z-[999999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border border-slate-200 bg-white animate-fadeIn overflow-hidden">
+          {toast.type === "error" ? (
+            <FiAlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+          ) : toast.type === "success" && toast.message.toLowerCase().includes("wishlist") ? (
+            <FiHeart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0 animate-pulse" />
+          ) : (
+            <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+          )}
           <span className="text-xs font-bold text-slate-800">{toast.message}</span>
+          <div className="absolute bottom-0 left-0 h-0.75 bg-teal-600 rounded-b-xl animate-toastProgress" style={{ animationDuration: '3000ms' }} />
         </div>
       )}
 

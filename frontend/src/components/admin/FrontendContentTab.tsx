@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import LandingSectionsEditor from "./LandingSectionsEditor";
 import FaqEditor from "./FaqEditor";
 import CustomSelect from "@/components/CustomSelect";
@@ -88,14 +89,15 @@ export default function FrontendContentTab({
       </div>
 
       {/* FLOATING SUCCESS TOAST */}
-      {showToast && (
-        <div className="fixed top-6 right-6 z-50 bg-[#0c1312] border border-[#14322e] text-white px-5 py-3 rounded-xl shadow-xl shadow-teal-950/10 flex items-center gap-3 animate-slideIn">
+      {showToast && typeof document !== "undefined" && createPortal(
+        <div className="fixed top-20 right-5 z-[999999] bg-[#0c1312] border border-[#14322e] text-white px-5 py-3 rounded-xl shadow-xl shadow-teal-950/10 flex items-center gap-3 animate-slideIn">
           <span className="text-emerald-400 font-bold text-base">✓</span>
           <div className="flex flex-col">
             <span className="text-xs font-black text-white">{toastTitle}</span>
             <span className="text-[10px] text-slate-300 font-semibold mt-0.5">{toastText}</span>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

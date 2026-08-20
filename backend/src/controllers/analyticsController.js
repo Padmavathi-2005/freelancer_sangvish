@@ -87,7 +87,11 @@ export const getSearchLogsSummary = async (req, res) => {
         const talentCheck = await pool.query(
           `SELECT COUNT(*) FROM freelancer_profiles fp 
            JOIN users u ON u.user_id = fp.user_id 
-           WHERE (u.first_name ILIKE $1 OR u.last_name ILIKE $1 OR fp.bio ILIKE $1 OR fp.skills::text ILIKE $1)`,
+           WHERE (u.first_name ILIKE $1 OR u.last_name ILIKE $1 OR fp.bio ILIKE $1 OR EXISTS (
+             SELECT 1 FROM user_skills us 
+             JOIN skills s ON s.skill_id = us.skill_id 
+             WHERE us.user_id = fp.user_id AND s.skill_name ILIKE $1
+           ))`,
           [`%${q}%`]
         );
         supplyCount = parseInt(talentCheck.rows[0].count);

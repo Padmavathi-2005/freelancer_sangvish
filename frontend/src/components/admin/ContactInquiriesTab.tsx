@@ -580,7 +580,12 @@ export default function ContactInquiriesTab({ isDark = false }: ContactInquiries
             <div className="flex items-center justify-between gap-3 border-t pt-4 border-slate-100 dark:border-slate-850 mt-2">
               <a
                 href={`mailto:${replyingInquiry.email}?subject=${encodeURIComponent(replySubject)}&body=${encodeURIComponent(replyMessage)}`}
-                rel="noreferrer"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.open(`mailto:${replyingInquiry.email}?subject=${encodeURIComponent(replySubject)}&body=${encodeURIComponent(replyMessage)}`, "_blank");
+                }}
                 className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center gap-1.5"
               >
                 <FiExternalLink className="w-3.5 h-3.5" /> Open in Desktop Email App

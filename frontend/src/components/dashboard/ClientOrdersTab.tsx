@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { FiBriefcase, FiCreditCard, FiCheckCircle, FiAlertTriangle, FiExternalLink, FiRefreshCw, FiStar, FiMessageSquare, FiX, FiUser, FiUnlock, FiClock, FiChevronDown } from "react-icons/fi";
 import { FaWallet, FaStripe, FaPaypal } from "react-icons/fa";
 import GigMilestoneTracker from "./GigMilestoneTracker";
+import CustomSelect from "../CustomSelect";
 import { useDashboard } from "../../app/dashboard/DashboardContext";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -420,20 +421,12 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
           <form onSubmit={handleRaiseDispute} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Reason for Dispute</label>
-              <div className="relative">
-                <select
-                  value={disputeReason}
-                  onChange={(e) => setDisputeReason(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-3 pr-10 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-teal-700 transition appearance-none cursor-pointer"
-                >
-                  {disputeReasons.map((r, i) => (
-                    <option key={i} value={r}>{r}</option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
-                  <FiChevronDown className="w-4 h-4" />
-                </div>
-              </div>
+              <CustomSelect
+                options={disputeReasons.map((r) => ({ value: r, label: r }))}
+                value={disputeReason}
+                onChange={(val: any) => setDisputeReason(val as string)}
+                placeholder="Select a reason"
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">

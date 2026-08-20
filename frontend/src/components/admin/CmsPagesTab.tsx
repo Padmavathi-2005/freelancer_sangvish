@@ -5,6 +5,7 @@ import { API_URL } from "@/config/api";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useAdmin } from "../../app/admin/AdminContext";
 import { FiPlus, FiTrash2, FiEdit2, FiChevronUp, FiChevronDown, FiGlobe, FiEye, FiSettings } from "react-icons/fi";
+import CustomSelect from "@/components/CustomSelect";
 
 interface BuilderBlock {
   id: string;
@@ -495,31 +496,33 @@ export default function CmsPagesTab() {
 
               <div>
                 <label className={labelClass}>Status</label>
-                <select
+                <CustomSelect
+                  options={[
+                    { value: "Draft", label: "Draft" },
+                    { value: "Published", label: "Published" }
+                  ]}
                   value={pageStatus}
-                  onChange={(e) => setPageStatus(e.target.value)}
-                  className={textInputClass}
-                >
-                  <option value="Draft">Draft</option>
-                  <option value="Published">Published</option>
-                </select>
+                  onChange={(val) => setPageStatus(val)}
+                  placeholder="Select Status"
+                />
               </div>
 
               <div>
                 <label className={labelClass}>Editor Mode</label>
-                <select
+                <CustomSelect
+                  options={[
+                    { value: "Builder", label: "Visual Element Builder" },
+                    { value: "HTML", label: "Raw HTML Editor" }
+                  ]}
                   value={contentType}
-                  onChange={(e) => {
-                    setContentType(e.target.value);
-                    if (e.target.value === "HTML" && builderBlocks.length > 0) {
+                  onChange={(val) => {
+                    setContentType(val);
+                    if (val === "HTML" && builderBlocks.length > 0) {
                       setHtmlContent("<!-- Paste custom HTML code here -->");
                     }
                   }}
-                  className={textInputClass}
-                >
-                  <option value="Builder">Visual Element Builder</option>
-                  <option value="HTML">Raw HTML Editor</option>
-                </select>
+                  placeholder="Select Editor Mode"
+                />
               </div>
             </div>
           </div>
@@ -915,10 +918,23 @@ export default function CmsPagesTab() {
                                   <div>
                                     <label className={labelClass}>Questions List</label>
                                     {block.data.items?.map((item: any, qIdx: number) => (
-                                      <div key={qIdx} className="p-3 border rounded-lg bg-slate-900/5 mb-3 flex flex-col gap-2 relative">
+                                      <div key={qIdx} className="p-3 border border-slate-200 rounded-lg bg-slate-900/5 mb-2.5 flex flex-col gap-2">
+                                        <div className="flex justify-between items-center border-b border-slate-200/50 pb-1.5 mb-0.5">
+                                          <span className="text-[9px] font-black uppercase text-slate-450 tracking-wider">FAQ Item #{qIdx + 1}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newItems = block.data.items.filter((_: any, iIdx: number) => iIdx !== qIdx);
+                                              updateBlockData(block.id, "items", newItems);
+                                            }}
+                                            className="text-rose-500 hover:text-rose-700 text-xs font-bold cursor-pointer transition-colors"
+                                          >
+                                            Remove
+                                          </button>
+                                        </div>
                                         <input
                                           type="text"
-                                          placeholder="Question"
+                                          placeholder="Question title"
                                           value={item.q}
                                           onChange={(e) => {
                                             const newItems = [...block.data.items];
@@ -938,16 +954,6 @@ export default function CmsPagesTab() {
                                           }}
                                           className={textInputClass}
                                         />
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newItems = block.data.items.filter((_: any, iIdx: number) => iIdx !== qIdx);
-                                            updateBlockData(block.id, "items", newItems);
-                                          }}
-                                          className="text-rose-500 hover:text-rose-700 text-xs font-bold absolute right-3 top-3"
-                                        >
-                                          Remove
-                                        </button>
                                       </div>
                                     ))}
                                     <button
@@ -1033,7 +1039,20 @@ export default function CmsPagesTab() {
                                   <div>
                                     <label className={labelClass}>Slides list</label>
                                     {block.data.slides?.map((slide: any, sIdx: number) => (
-                                      <div key={sIdx} className="p-4 border rounded-xl bg-slate-900/5 mb-3 flex flex-col gap-3 relative">
+                                      <div key={sIdx} className="p-4 border border-slate-200 rounded-xl bg-slate-900/5 mb-3 flex flex-col gap-3">
+                                        <div className="flex justify-between items-center border-b border-slate-200/50 pb-2">
+                                          <span className="text-[9px] font-black uppercase text-slate-455 tracking-wider">Slide #{sIdx + 1}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newSlides = block.data.slides.filter((_: any, iIdx: number) => iIdx !== sIdx);
+                                              updateBlockData(block.id, "slides", newSlides);
+                                            }}
+                                            className="text-rose-500 hover:text-rose-700 text-xs font-bold cursor-pointer transition-colors"
+                                          >
+                                            Remove
+                                          </button>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-3">
                                           <div>
                                             <label className={labelClass}>Slide Title</label>
@@ -1103,16 +1122,6 @@ export default function CmsPagesTab() {
                                             className={textInputClass}
                                           />
                                         </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newSlides = block.data.slides.filter((_: any, iIdx: number) => iIdx !== sIdx);
-                                            updateBlockData(block.id, "slides", newSlides);
-                                          }}
-                                          className="text-rose-500 hover:text-rose-700 text-xs font-bold absolute right-4 top-4"
-                                        >
-                                          Remove
-                                        </button>
                                       </div>
                                     ))}
                                     <button
@@ -1154,7 +1163,20 @@ export default function CmsPagesTab() {
                                   <div>
                                     <label className={labelClass}>Feature Cards List</label>
                                     {block.data.features?.map((feat: any, fIdx: number) => (
-                                      <div key={fIdx} className="p-3 border rounded-lg bg-slate-900/5 mb-2.5 flex flex-col gap-2 relative">
+                                      <div key={fIdx} className="p-3 border border-slate-200 rounded-lg bg-slate-900/5 mb-2.5 flex flex-col gap-2">
+                                        <div className="flex justify-between items-center border-b border-slate-200/50 pb-1.5 mb-0.5">
+                                          <span className="text-[9px] font-black uppercase text-slate-450 tracking-wider">Feature Card #{fIdx + 1}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newFeats = block.data.features.filter((_: any, iIdx: number) => iIdx !== fIdx);
+                                              updateBlockData(block.id, "features", newFeats);
+                                            }}
+                                            className="text-rose-500 hover:text-rose-700 text-xs font-bold cursor-pointer transition-colors"
+                                          >
+                                            Remove
+                                          </button>
+                                        </div>
                                         <input
                                           type="text"
                                           placeholder="Feature Title"
@@ -1177,16 +1199,6 @@ export default function CmsPagesTab() {
                                           }}
                                           className={textInputClass}
                                         />
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newFeats = block.data.features.filter((_: any, iIdx: number) => iIdx !== fIdx);
-                                            updateBlockData(block.id, "features", newFeats);
-                                          }}
-                                          className="text-rose-500 hover:text-rose-700 text-xs font-bold absolute right-3 top-3"
-                                        >
-                                          Remove
-                                        </button>
                                       </div>
                                     ))}
                                     <button
@@ -1228,7 +1240,20 @@ export default function CmsPagesTab() {
                                   <div>
                                     <label className={labelClass}>Pricing Plans</label>
                                     {block.data.tiers?.map((tier: any, tIdx: number) => (
-                                      <div key={tIdx} className="p-3 border rounded-lg bg-slate-900/5 mb-3 flex flex-col gap-2 relative">
+                                      <div key={tIdx} className="p-3 border border-slate-200 rounded-lg bg-slate-900/5 mb-3 flex flex-col gap-2">
+                                        <div className="flex justify-between items-center border-b border-slate-200/50 pb-1.5 mb-0.5">
+                                          <span className="text-[9px] font-black uppercase text-slate-450 tracking-wider">Pricing Plan #{tIdx + 1}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newTiers = block.data.tiers.filter((_: any, iIdx: number) => iIdx !== tIdx);
+                                              updateBlockData(block.id, "tiers", newTiers);
+                                            }}
+                                            className="text-rose-500 hover:text-rose-700 text-xs font-bold cursor-pointer transition-colors"
+                                          >
+                                            Remove Plan
+                                          </button>
+                                        </div>
                                         <div className="grid grid-cols-3 gap-2">
                                           <input
                                             type="text"
@@ -1277,16 +1302,6 @@ export default function CmsPagesTab() {
                                             className={textInputClass}
                                           />
                                         </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newTiers = block.data.tiers.filter((_: any, iIdx: number) => iIdx !== tIdx);
-                                            updateBlockData(block.id, "tiers", newTiers);
-                                          }}
-                                          className="text-rose-500 hover:text-rose-700 text-xs font-bold absolute right-3 top-3"
-                                        >
-                                          Remove Plan
-                                        </button>
                                       </div>
                                     ))}
                                     <button
@@ -1328,7 +1343,20 @@ export default function CmsPagesTab() {
                                   <div>
                                     <label className={labelClass}>User Testimonials</label>
                                     {block.data.reviews?.map((rev: any, rIdx: number) => (
-                                      <div key={rIdx} className="p-3 border rounded-lg bg-slate-900/5 mb-3 flex flex-col gap-2 relative">
+                                      <div key={rIdx} className="p-3 border border-slate-200 rounded-lg bg-slate-900/5 mb-3 flex flex-col gap-2">
+                                        <div className="flex justify-between items-center border-b border-slate-200/50 pb-1.5 mb-0.5">
+                                          <span className="text-[9px] font-black uppercase text-slate-450 tracking-wider">Testimonial #{rIdx + 1}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const newReviews = block.data.reviews.filter((_: any, iIdx: number) => iIdx !== rIdx);
+                                              updateBlockData(block.id, "reviews", newReviews);
+                                            }}
+                                            className="text-rose-500 hover:text-rose-700 text-xs font-bold cursor-pointer transition-colors"
+                                          >
+                                            Remove Review
+                                          </button>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-2">
                                           <input
                                             type="text"
@@ -1364,16 +1392,6 @@ export default function CmsPagesTab() {
                                           rows={2}
                                           className={textInputClass}
                                         />
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newReviews = block.data.reviews.filter((_: any, iIdx: number) => iIdx !== rIdx);
-                                            updateBlockData(block.id, "reviews", newReviews);
-                                          }}
-                                          className="text-rose-500 hover:text-rose-700 text-xs font-bold absolute right-3 top-3"
-                                        >
-                                          Remove Review
-                                        </button>
                                       </div>
                                     ))}
                                     <button
@@ -1441,7 +1459,7 @@ export default function CmsPagesTab() {
                               <div className="p-6 bg-teal-800/10 rounded-xl border border-teal-750/10 text-center flex flex-col items-center gap-2">
                                 <h3 className="font-black text-teal-750">{block.data.title}</h3>
                                 <p className="text-[10px] text-slate-450">{block.data.description}</p>
-                                <span className="bg-teal-750 text-white font-bold px-4 py-1.5 rounded-lg mt-1 select-none pointer-events-none">
+                                <span className="bg-primary text-white font-bold px-4 py-1.5 rounded-lg mt-1 select-none pointer-events-none">
                                   {block.data.buttonText}
                                 </span>
                               </div>

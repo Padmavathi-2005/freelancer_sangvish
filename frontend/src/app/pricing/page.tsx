@@ -79,7 +79,7 @@ export default function PricingPage() {
 
   const hasBuyerPlans = allPlans.some((p) => p.plan_role === "buyer");
   const plans = allPlans.filter((p) => (p.plan_role || "seller") === roleTab);
-  const colClass = plans.length <= 2 ? "grid-cols-1 sm:grid-cols-2 max-w-3xl mx-auto" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3";
+  const colClass = plans.length <= 2 ? "grid-cols-1 md:grid-cols-2 max-w-3xl mx-auto" : "grid-cols-1 md:grid-cols-3";
 
   return (
     <>
@@ -257,7 +257,7 @@ export default function PricingPage() {
                         <img src={plan.badge_image} alt={plan.name} className="w-10 h-10 rounded-xl object-cover mb-4 border border-white/10 shadow-md"
                           onError={(e) => ((e.target as HTMLImageElement).style.display = "none")} />
                       )}
-                      <p className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-teal-300" : isLight ? "text-teal-300" : "text-amber-400"}`}>
+                      <p className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-[#5eead4]" : isLight ? "text-[#5eead4]" : "text-amber-400"}`}>
                         {plan.name}
                       </p>
                       <div className="mt-3.5 flex items-baseline gap-1.5">

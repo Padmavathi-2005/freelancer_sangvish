@@ -140,7 +140,7 @@ export default function FeaturedFreelancers() {
         </div>
 
         {/* Cards Grid */}
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))" }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))" }}>
           {loading
             ? [0, 1, 2, 3].map((i) => (
                 <div key={i} className="bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 rounded-2xl p-5 flex flex-col gap-4 animate-pulse">

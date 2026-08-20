@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import Table from "@/components/Table";
 import { FiEye, FiEdit, FiTrash2, FiX, FiCheck, FiImage, FiPlus, FiExternalLink, FiUser, FiClock, FiRefreshCw, FiDollarSign } from "react-icons/fi";
 import { API_BASE_URL } from "@/config/api";
@@ -355,7 +356,7 @@ export default function GigsTab({
       {/* ========================================================================= */}
       {/* 1. VIEW GIG DETAILS MODAL */}
       {/* ========================================================================= */}
-      {selectedViewGig && (
+      {selectedViewGig && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
             
@@ -563,13 +564,14 @@ export default function GigsTab({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* 2. EDIT GIG DETAILS MODAL */}
       {/* ========================================================================= */}
-      {selectedEditGig && (
+      {selectedEditGig && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
           <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto flex flex-col">
             
@@ -799,7 +801,8 @@ export default function GigsTab({
 
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

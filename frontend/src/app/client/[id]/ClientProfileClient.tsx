@@ -115,10 +115,11 @@ export default function ClientProfileClient() {
                     router.push("/projects");
                   }
                 }}
-                className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 text-xxs font-black tracking-wider uppercase px-3.5 py-2.5 rounded-xl transition cursor-pointer border border-slate-200/60 shadow-sm"
+                className="flex items-center gap-1.5 bg-white hover:bg-slate-100 text-slate-800 text-xxs font-black tracking-wider uppercase px-3.5 py-2.5 rounded-xl transition cursor-pointer border border-slate-300 shadow-sm"
+                style={{ color: '#1e293b' }}
               >
-                <FiChevronLeft className="w-3.5 h-3.5 text-slate-500" />
-                <span>Back</span>
+                <FiChevronLeft className="w-3.5 h-3.5" style={{ color: '#475569' }} />
+                <span style={{ color: '#1e293b' }}>Back</span>
               </button>
             </div>
 
@@ -139,10 +140,10 @@ export default function ClientProfileClient() {
 
                 <div>
                   <h1 className="text-xl md:text-2xl font-black tracking-tight text-slate-900">{profile?.company_name || "Independent Client Partner"}</h1>
-                  <p className="text-slate-500 font-bold text-xs mt-1.5 flex flex-wrap items-center justify-center md:justify-start gap-1.5">
-                    <span>Hired by <strong className="text-slate-700 font-bold">{user.name}</strong></span>
+                  <p className="font-bold text-xs mt-1.5 flex flex-wrap items-center justify-center md:justify-start gap-1.5" style={{ color: '#475569' }}>
+                    <span>Hired by <strong className="font-bold" style={{ color: '#0f172a' }}>{user.name}</strong></span>
                     <span>• {profile?.industry || "Enterprise Management"}</span>
-                    <span>• <FiMapPin className="inline w-3 h-3 text-slate-400" /> Remote / Global</span>
+                    <span>• <FiMapPin className="inline w-3 h-3" style={{ color: '#64748b' }} /> Remote / Global</span>
                   </p>
                   <div className="flex items-center justify-center md:justify-start gap-2 mt-3.5 flex-wrap text-slate-600 font-bold text-xs">
                     <div className="flex items-center text-amber-400">
@@ -164,11 +165,11 @@ export default function ClientProfileClient() {
               <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full md:w-auto shrink-0">
                 <div className="bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-xs">
                   <span className="text-[9px] sm:text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 tracking-wider block truncate">Active Jobs</span>
-                  <span className="text-sm sm:text-lg font-black text-[#0a5a54] dark:text-teal-400 mt-0.5 sm:mt-1 block truncate">{stats.open_jobs} Open</span>
+                  <span className="text-sm sm:text-lg font-black mt-0.5 sm:mt-1 block truncate" style={{ color: '#0a5a54' }}>{stats.open_jobs} Open</span>
                 </div>
                 <div className="bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-xs">
                   <span className="text-[9px] sm:text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 tracking-wider block truncate">Rating Avg</span>
-                  <span className="text-sm sm:text-lg font-black text-amber-500 mt-0.5 sm:mt-1 block truncate">{ratingAvg > 0 ? `${ratingAvg}/5.0` : "—"}</span>
+                  <span className="text-sm sm:text-lg font-black mt-0.5 sm:mt-1 block truncate" style={{ color: '#d97706' }}>{ratingAvg > 0 ? `${ratingAvg}/5.0` : "—"}</span>
                 </div>
                 <div className="bg-white dark:bg-zinc-800 border border-slate-300 dark:border-zinc-700 rounded-xl px-2 py-3 sm:px-5 sm:py-3.5 text-center shadow-xs">
                   <span className="text-[9px] sm:text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 tracking-wider block truncate">Joined On</span>

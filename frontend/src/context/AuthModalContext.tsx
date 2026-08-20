@@ -331,7 +331,10 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
 export function useAuthModal() {
   const context = useContext(AuthModalContext);
   if (context === undefined) {
-    throw new Error("useAuthModal must be used within an AuthModalProvider");
+    return {
+      openLoginModal: (redirectUrl?: string, onSuccess?: () => void) => {},
+      closeLoginModal: () => {}
+    };
   }
   return context;
 }

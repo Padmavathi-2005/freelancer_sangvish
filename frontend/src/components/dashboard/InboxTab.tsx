@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { FiMessageSquare, FiChevronDown } from "react-icons/fi";
 import { useDashboard } from "../../app/dashboard/DashboardContext";
+import CustomSelect from "../CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface InboxTabProps {
@@ -333,9 +334,9 @@ export default function InboxTab({
   };
 
   return (
-    <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch w-full animate-fadeIn min-h-[480px]">
+    <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch w-full animate-fadeIn min-h-[480px] md:min-h-[600px] lg:min-h-[calc(100vh-210px)]">
       {/* CONVERSATION LIST (4 cols) */}
-      <div className="md:col-span-4 bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex flex-col gap-4 overflow-hidden max-h-[580px]">
+      <div className="md:col-span-4 bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm flex flex-col gap-4 overflow-hidden max-h-[580px] md:max-h-[720px] lg:max-h-[calc(100vh-210px)] lg:h-[calc(100vh-210px)]">
         <div className="border-b border-slate-100 pb-2">
           <h3 className="text-xs font-black text-slate-800 uppercase tracking-wide">{t("conversations_sidebar_header", "Conversations")}</h3>
         </div>
@@ -443,7 +444,7 @@ export default function InboxTab({
       </div>
 
       {/* CHAT ROOM (8 cols) */}
-      <div className="md:col-span-8 bg-white border border-slate-200/80 rounded-xl shadow-sm flex flex-col overflow-hidden max-h-[580px]">
+      <div className="md:col-span-8 bg-white border border-slate-200/80 rounded-xl shadow-sm flex flex-col overflow-hidden max-h-[580px] md:max-h-[720px] lg:max-h-[calc(100vh-210px)] lg:h-[calc(100vh-210px)]">
         {selectedConvId ? (
           <>
             {/* Header */}
@@ -751,7 +752,7 @@ export default function InboxTab({
                       >
                         <div className="bg-gradient-to-br from-amber-50 to-orange-50/30 border border-amber-200/80 rounded-xl p-4 shadow-sm text-left max-w-md">
                           <div className="flex items-center justify-between border-b border-amber-200 pb-2 mb-2">
-                            <div className="text-[9px] font-black text-amber-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded uppercase tracking-wider">
+                            <div className="text-[9px] font-black text-[#b45309] bg-[#fef3c7] border border-[#fde68a] px-2 py-0.5 rounded uppercase tracking-wider">
                               {t("custom_payment_offer_label", "Custom Payment Offer")}
                             </div>
                             <div className="text-xs font-black text-slate-800">
@@ -1125,19 +1126,15 @@ export default function InboxTab({
 
               <div>
                 <label className="text-xs font-bold block mb-1 text-slate-600">Select Associated Gig *</label>
-                <div className="relative">
-                  <select
-                    value={offerGigId}
-                    onChange={(e) => setOfferGigId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none font-bold appearance-none pr-10 cursor-pointer transition-all shadow-xs"
-                  >
-                    <option value="">-- Choose Gig --</option>
-                    {gigs.map((g: any) => (
-                      <option key={g.gig_id} value={g.gig_id}>{g.title}</option>
-                    ))}
-                  </select>
-                  <FiChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                <CustomSelect
+                  value={offerGigId}
+                  onChange={(val: any) => setOfferGigId(val as string)}
+                  options={gigs.map((g: any) => ({
+                    value: g.gig_id.toString(),
+                    label: g.title
+                  }))}
+                  placeholder="-- Choose Gig --"
+                />
               </div>
 
               <div>

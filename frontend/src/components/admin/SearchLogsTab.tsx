@@ -13,6 +13,10 @@ export default function SearchLogsTab() {
     supplyDemandMatrix: any[];
   } | null>(null);
 
+  // Pagination states for supply-demand health matrix
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
@@ -59,6 +63,22 @@ export default function SearchLogsTab() {
   const totalSearches = data?.topQueries.reduce((acc, q) => acc + parseInt(q.search_count), 0) || 0;
   const desktopCount = data?.devices.find(d => d.device_type?.toLowerCase() === 'desktop')?.count || 0;
   const mobileCount = data?.devices.find(d => d.device_type?.toLowerCase() === 'mobile')?.count || 0;
+
+  // Supply-Demand Health Matrix pagination calculations
+  const supplyDemandData = data?.supplyDemandMatrix || [];
+  const totalItems = supplyDemandData.length;
+  const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginatedMatrix = supplyDemandData.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   return (
     <div className="flex flex-col gap-8 text-slate-800 animate-fadeIn">
@@ -230,12 +250,12 @@ export default function SearchLogsTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-xs">
-              {data?.supplyDemandMatrix.length === 0 ? (
+              {totalItems === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">Insufficient logs to compile matrix.</td>
                 </tr>
               ) : (
-                data?.supplyDemandMatrix.map((matrix, idx) => {
+                paginatedMatrix.map((matrix, idx) => {
                   const searches = parseInt(matrix.searches);
                   const supply = parseInt(matrix.active_supply);
                   
@@ -276,6 +296,62 @@ export default function SearchLogsTab() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Controls */}
+        {totalItems > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 border-t border-slate-100 pt-5">
+            <div className="flex items-center gap-2 text-slate-500 font-semibold text-xs select-none">
+              <span>Show</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-slate-700 outline-none focus:border-teal-700 transition"
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+              </select>
+              <span>entries</span>
+              <span className="text-slate-400 ml-2 font-bold">
+                Showing {Math.min(totalItems, (currentPage - 1) * pageSize + 1)} to{" "}
+                {Math.min(totalItems, currentPage * pageSize)} of {totalItems} entries
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold cursor-pointer text-xs"
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`px-3 py-1.5 rounded-lg border transition-all font-bold cursor-pointer text-xs ${
+                    page === currentPage
+                      ? "bg-teal-700 border-teal-700 text-white"
+                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold cursor-pointer text-xs"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

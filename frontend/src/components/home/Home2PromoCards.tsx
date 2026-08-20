@@ -106,14 +106,14 @@ export default function Home2PromoCards() {
 
   return (
     <section className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full select-none">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {cards.map((card, index) => {
           const isSlate = card.card_theme === "slate" || index === 0;
           return (
             <div
               key={card.id || index}
               onClick={(e) => handleCardClick(e, card, index)}
-              className={`group relative rounded-3xl p-6 sm:p-8 border border-dashed transition-all duration-300 shadow-xs hover:shadow-md flex items-center justify-between gap-4 overflow-hidden cursor-pointer ${
+              className={`group relative rounded-3xl p-6 sm:p-8 border border-dashed transition-all duration-300 shadow-xs hover:shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-6 overflow-hidden cursor-pointer ${
                 isSlate
                   ? "bg-[#e2e8f0]/40 dark:bg-slate-800/40 border-slate-300 dark:border-slate-700 hover:border-slate-400"
                   : "bg-[#eadecc]/50 dark:bg-amber-950/20 border-amber-300/80 dark:border-amber-800/60 hover:border-amber-400"

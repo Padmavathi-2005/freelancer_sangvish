@@ -1,8 +1,9 @@
 "use client";
 import { API_URL } from "@/config/api";
+import CustomSelect from "@/components/CustomSelect";
 
 import React, { useState, useEffect } from "react";
-import { FiGlobe, FiUploadCloud, FiExternalLink, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiGlobe, FiUploadCloud, FiExternalLink, FiPlus, FiTrash2, FiUpload } from "react-icons/fi";
 import { Home3HeroSlide, DEFAULT_HOME3_HERO_SLIDES } from "@/components/home/Home3Hero";
 import { useAdmin } from "@/app/admin/AdminContext";
 
@@ -329,17 +330,17 @@ export default function SiteSettingsTab({
         <p className="text-xs text-slate-505 mb-5 font-semibold">Select the active landing page layout presented to visitors on the website home route (/)</p>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          <div className="md:col-span-7 flex flex-col gap-1">
+          <div className="md:col-span-7 flex flex-col gap-1.5">
             <label className={labelClass}>Active Default Layout</label>
-            <select
+            <CustomSelect
               value={defaultHomePage}
-              onChange={(e) => setDefaultHomePage(e.target.value)}
-              className={inputClass}
-            >
-              <option value="home_1">Home 1 — Classic Marketplace (Services, Projects, Pricing & FAQ)</option>
-              <option value="home_2">Home 2 — Modern Talent Portal (Vetted Freelancers & Top Services)</option>
-              <option value="home_3">Home 3 — Enterprise Hub (Dual Search, Live Tenders & Escrow)</option>
-            </select>
+              onChange={setDefaultHomePage}
+              options={[
+                { value: "home_1", label: "Home 1 — Classic Marketplace (Services, Projects, Pricing & FAQ)" },
+                { value: "home_2", label: "Home 2 — Modern Talent Portal (Vetted Freelancers & Top Services)" },
+                { value: "home_3", label: "Home 3 — Enterprise Hub (Dual Search, Live Tenders & Escrow)" }
+              ]}
+            />
           </div>
 
           <div className="md:col-span-5 flex flex-wrap items-center gap-2.5 pt-2 sm:pt-0">
@@ -397,8 +398,12 @@ export default function SiteSettingsTab({
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
-                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
-                      {uploadingField === "logo" ? "Uploading..." : "Change Logo"}
+                    <span className="text-white bg-teal-650 p-2.5 rounded-full shadow-md cursor-pointer hover:bg-teal-700 hover:scale-105 transition-all flex items-center justify-center">
+                      {uploadingField === "logo" ? (
+                        <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                      ) : (
+                        <FiUpload className="w-5 h-5" />
+                      )}
                     </span>
                   </div>
                 </div>
@@ -411,6 +416,7 @@ export default function SiteSettingsTab({
               <input
                 type="file"
                 accept="image/*"
+                title=""
                 disabled={uploadingField !== null}
                 onChange={(e) => handleImageUpload(e, "logo")}
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
@@ -442,8 +448,12 @@ export default function SiteSettingsTab({
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
-                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
-                      {uploadingField === "logo_dark" ? "Uploading..." : "Change Dark Logo"}
+                    <span className="text-white bg-teal-650 p-2.5 rounded-full shadow-md cursor-pointer hover:bg-teal-700 hover:scale-105 transition-all flex items-center justify-center">
+                      {uploadingField === "logo_dark" ? (
+                        <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                      ) : (
+                        <FiUpload className="w-5 h-5" />
+                      )}
                     </span>
                   </div>
                 </div>
@@ -456,6 +466,7 @@ export default function SiteSettingsTab({
               <input
                 type="file"
                 accept="image/*"
+                title=""
                 disabled={uploadingField !== null}
                 onChange={(e) => handleImageUpload(e, "logo_dark")}
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
@@ -488,8 +499,12 @@ export default function SiteSettingsTab({
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
-                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
-                      {uploadingField === "favicon" ? "Uploading..." : "Change Favicon"}
+                    <span className="text-white bg-teal-650 p-2.5 rounded-full shadow-md cursor-pointer hover:bg-teal-700 hover:scale-105 transition-all flex items-center justify-center">
+                      {uploadingField === "favicon" ? (
+                        <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                      ) : (
+                        <FiUpload className="w-5 h-5" />
+                      )}
                     </span>
                   </div>
                 </div>
@@ -502,6 +517,7 @@ export default function SiteSettingsTab({
               <input
                 type="file"
                 accept="image/*"
+                title=""
                 disabled={uploadingField !== null}
                 onChange={(e) => handleImageUpload(e, "favicon")}
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
@@ -533,8 +549,12 @@ export default function SiteSettingsTab({
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
-                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
-                      {uploadingField === "og_image" ? "Uploading..." : "Change OG Image"}
+                    <span className="text-white bg-teal-650 p-2.5 rounded-full shadow-md cursor-pointer hover:bg-teal-700 hover:scale-105 transition-all flex items-center justify-center">
+                      {uploadingField === "og_image" ? (
+                        <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                      ) : (
+                        <FiUpload className="w-5 h-5" />
+                      )}
                     </span>
                   </div>
                 </div>
@@ -547,6 +567,7 @@ export default function SiteSettingsTab({
               <input
                 type="file"
                 accept="image/*"
+                title=""
                 disabled={uploadingField !== null}
                 onChange={(e) => handleImageUpload(e, "og_image")}
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
@@ -578,8 +599,12 @@ export default function SiteSettingsTab({
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
-                    <span className="text-white text-[10px] font-black uppercase tracking-wider bg-teal-650 px-3.5 py-2 rounded-xl shadow-sm cursor-pointer hover:bg-teal-700">
-                      {uploadingField === "chatbot_avatar" ? "Uploading..." : "Change Avatar"}
+                    <span className="text-white bg-teal-650 p-2.5 rounded-full shadow-md cursor-pointer hover:bg-teal-700 hover:scale-105 transition-all flex items-center justify-center">
+                      {uploadingField === "chatbot_avatar" ? (
+                        <div className="w-5 h-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                      ) : (
+                        <FiUpload className="w-5 h-5" />
+                      )}
                     </span>
                   </div>
                 </div>
@@ -592,6 +617,7 @@ export default function SiteSettingsTab({
               <input
                 type="file"
                 accept="image/*"
+                title=""
                 disabled={uploadingField !== null}
                 onChange={(e) => handleImageUpload(e, "chatbot_avatar")}
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"

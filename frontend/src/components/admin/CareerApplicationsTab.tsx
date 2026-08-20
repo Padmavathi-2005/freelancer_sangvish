@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { 
   FiFileText, 
   FiClock, 
@@ -268,7 +269,7 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
                       </div>
                     </td>
                     <td className="py-3.5 px-4.5">
-                      <span className="bg-teal-50 dark:bg-teal-950/45 border border-teal-100 dark:border-teal-900 text-teal-800 dark:text-teal-400 px-2.5 py-0.5 rounded-full font-bold text-[10px]">
+                      <span className="inline-block whitespace-nowrap bg-teal-50 dark:bg-teal-950/45 border border-teal-100 dark:border-teal-900 text-teal-800 dark:text-teal-400 px-2.5 py-0.5 rounded-full font-bold text-[10px]">
                         {app.role}
                       </span>
                     </td>
@@ -329,8 +330,8 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
       )}
 
       {/* DETAIL MODAL OVERLAY */}
-      {selectedApp && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[9999] flex items-center justify-center p-4">
+      {selectedApp && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[10000] flex items-center justify-center p-4">
           <div className={`rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border relative animate-scaleUp text-left ${
             isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
           }`}>
@@ -405,7 +406,8 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

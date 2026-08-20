@@ -305,10 +305,10 @@ export default function WalletTab() {
               )}
             </div>
 
-            <div className="flex justify-between items-center text-[10px] text-white/90 font-black z-10 mt-3.5">
-              <span>ACC #### #### {wallet?.wallet_id || "0"}</span>
-              <span className="inline-flex items-center gap-1.5 uppercase bg-white !text-teal-900 px-2.5 py-0.5 rounded-md text-[9px] font-black tracking-wider shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <div className="flex justify-between items-center gap-2 flex-wrap text-[10px] text-white/90 font-black z-10 mt-3.5">
+              <span className="whitespace-nowrap shrink-0">ACC #### #### {wallet?.wallet_id || "0"}</span>
+              <span className="inline-flex items-center gap-1.5 uppercase bg-white !text-teal-900 px-2.5 py-0.5 rounded-md text-[9px] font-black tracking-wider shadow-sm shrink-0">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
                 {t("wallet_status_active", "STATUS: ACTIVE")}
               </span>
             </div>

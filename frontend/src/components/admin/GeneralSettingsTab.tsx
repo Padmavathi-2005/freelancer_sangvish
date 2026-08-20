@@ -343,7 +343,7 @@ export default function GeneralSettingsTab({
             <p className="text-xs text-slate-550 mt-1 font-semibold">Customize the primary (base accent) and secondary (complementary accent) brand colors used in the layout.</p>
           </div>
           
-          <div className="w-full lg:w-auto flex flex-col sm:flex-row gap-5 sm:items-center shrink-0">
+          <div className="w-full lg:w-auto flex flex-col xl:flex-row gap-5 xl:items-center shrink-0">
             {/* Primary Color */}
             <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[220px]">
               <label className="text-[11px] font-extrabold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">

@@ -176,8 +176,8 @@ export default function Pricing() {
   const planCount = filteredPlans.length;
   const containerMaxWidth = planCount === 2 || planCount === 4 ? "max-w-4xl" : "max-w-7xl";
   const cardWidthClass = planCount === 2 || planCount === 4 
-    ? "w-full sm:w-[calc(50%-12px)] max-w-[360px]" 
-    : "w-full md:w-[calc(33.33%-16px)] min-w-[280px] max-w-[340px]";
+    ? "w-full md:w-[calc(50%-12px)] max-w-[360px]" 
+    : "w-full md:w-[calc(33.33%-16px)] min-w-[210px] max-w-[340px]";
 
   const FAQs = [
     {
@@ -391,7 +391,7 @@ export default function Pricing() {
                   <div>
                     {/* Card Header */}
                     <div className="mb-6">
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-teal-300" : isLight ? "text-teal-300" : "text-amber-400"}`}>
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-[#5eead4]" : isLight ? "text-[#5eead4]" : "text-amber-400"}`}>
                         {t("plan_name_label", "{{name}} Plan").replace("{{name}}", dbPlan.name)}
                       </span>
                       <p className="text-xs mt-2 font-semibold leading-relaxed text-white/70">

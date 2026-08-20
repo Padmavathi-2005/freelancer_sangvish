@@ -287,6 +287,24 @@ export const payToUser = async (req, res) => {
       throw txErr;
     }
 
+    // Notify recipient of manual platform payout
+    try {
+      const payNotif = await pool.query(
+        `INSERT INTO notifications (user_id, title, message, type, reference_id, target_tab)
+         VALUES ($1, 'Funds Received 💰', $2, 'payment_received', $3, 'wallet') RETURNING *`,
+        [
+          recipient_user_id,
+          `You have received a platform payout of $${payAmt.toFixed(2)} from the administrator. Reason: ${description || "Manual platform wallet release payout"}.`,
+          recipientWallet.wallet_id.toString()
+        ]
+      );
+      if (req.io && payNotif.rows.length > 0) {
+        req.io.to(`user_${recipient_user_id}`).emit("new_notification", payNotif.rows[0]);
+      }
+    } catch (notifErr) {
+      console.error("Error creating payout notification:", notifErr);
+    }
+
     return res.status(200).json({
       message: `Successfully paid $${payAmt.toFixed(2)} to user #${recipient_user_id}.`
     });

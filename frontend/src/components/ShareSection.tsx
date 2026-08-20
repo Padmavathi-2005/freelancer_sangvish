@@ -247,10 +247,10 @@ export default function ShareSection({
           onClick={handleEmailShare}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-9 h-9 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white flex items-center justify-center transition-all duration-300 border border-indigo-100/70 hover:border-indigo-600 shadow-sm hover:shadow-indigo-100 hover:-translate-y-0.5 group cursor-pointer"
+          className="w-9 h-9 rounded-xl bg-indigo-50 hover:bg-indigo-600 active:bg-indigo-700 text-indigo-600 hover:text-white active:text-white flex items-center justify-center transition-all duration-300 border border-indigo-100/70 hover:border-indigo-600 active:border-indigo-700 shadow-sm hover:shadow-indigo-100 hover:-translate-y-0.5 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
           title="Share via Email (Gmail / Mail App)"
         >
-          <i className="fa-solid fa-envelope text-sm group-hover:text-white transition-colors"></i>
+          <i className="fa-solid fa-envelope text-sm text-indigo-600 group-hover:text-white group-active:text-white transition-colors"></i>
         </a>
 
         {/* Facebook */}
@@ -259,10 +259,10 @@ export default function ShareSection({
           onClick={handleFacebookShare}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-9 h-9 rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] text-[#1877F2] hover:text-white flex items-center justify-center transition-all duration-300 border border-[#1877F2]/20 hover:border-[#1877F2] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5 group cursor-pointer"
+          className="w-9 h-9 rounded-xl bg-[#1877F2]/10 hover:bg-[#1877F2] active:bg-[#1877F2]/90 text-[#1877F2] hover:text-white active:text-white flex items-center justify-center transition-all duration-300 border border-[#1877F2]/20 hover:border-[#1877F2] active:border-[#1877F2] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
           title="Share on Facebook"
         >
-          <i className="fa-brands fa-facebook-f text-sm group-hover:text-white transition-colors"></i>
+          <i className="fa-brands fa-facebook-f text-sm text-[#1877F2] group-hover:text-white group-active:text-white transition-colors"></i>
         </a>
 
         {/* WhatsApp */}
@@ -271,10 +271,10 @@ export default function ShareSection({
           onClick={handleWhatsAppShare}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-9 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white flex items-center justify-center transition-all duration-300 border border-emerald-100/70 hover:border-emerald-500 shadow-sm hover:shadow-emerald-100 hover:-translate-y-0.5 group cursor-pointer"
+          className="w-9 h-9 rounded-xl bg-emerald-50 hover:bg-emerald-500 active:bg-emerald-600 text-emerald-600 hover:text-white active:text-white flex items-center justify-center transition-all duration-300 border border-emerald-100/70 hover:border-emerald-500 active:border-emerald-600 shadow-sm hover:shadow-emerald-100 hover:-translate-y-0.5 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
           title="Share on WhatsApp"
         >
-          <i className="fa-brands fa-whatsapp text-sm group-hover:text-white transition-colors"></i>
+          <i className="fa-brands fa-whatsapp text-sm text-emerald-600 group-hover:text-white group-active:text-white transition-colors"></i>
         </a>
 
         {/* LinkedIn */}
@@ -283,10 +283,10 @@ export default function ShareSection({
           onClick={handleLinkedInShare}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-9 h-9 rounded-xl bg-[#0077b5]/10 hover:bg-[#0077b5] text-[#0077b5] hover:text-white flex items-center justify-center transition-all duration-300 border border-[#0077b5]/20 hover:border-[#0077b5] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5 group cursor-pointer"
+          className="w-9 h-9 rounded-xl bg-[#0077b5]/10 hover:bg-[#0077b5] active:bg-[#0077b5]/90 text-[#0077b5] hover:text-white active:text-white flex items-center justify-center transition-all duration-300 border border-[#0077b5]/20 hover:border-[#0077b5] active:border-[#0077b5] shadow-sm hover:shadow-blue-50 hover:-translate-y-0.5 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500"
           title="Share on LinkedIn"
         >
-          <i className="fa-brands fa-linkedin-in text-sm group-hover:text-white transition-colors"></i>
+          <i className="fa-brands fa-linkedin-in text-sm text-[#0077b5] group-hover:text-white group-active:text-white transition-colors"></i>
         </a>
 
         {/* Twitter / X */}
@@ -295,10 +295,10 @@ export default function ShareSection({
           onClick={handleTwitterShare}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-9 h-9 rounded-xl bg-slate-900/10 hover:bg-slate-900 text-slate-900 hover:text-white flex items-center justify-center transition-all duration-300 border border-slate-900/20 hover:border-slate-900 shadow-sm hover:shadow-slate-100 hover:-translate-y-0.5 group cursor-pointer"
+          className="w-9 h-9 rounded-xl bg-slate-900/10 hover:bg-slate-900 active:bg-black text-slate-900 hover:text-white active:text-white flex items-center justify-center transition-all duration-300 border border-slate-900/20 hover:border-slate-900 active:border-black shadow-sm hover:shadow-slate-100 hover:-translate-y-0.5 group cursor-pointer focus:outline-none focus:ring-2 focus:ring-slate-900"
           title="Share on X"
         >
-          <svg className="w-3.5 h-3.5 fill-slate-800 group-hover:fill-white transition-colors shrink-0" viewBox="0 0 24 24">
+          <svg className="w-3.5 h-3.5 fill-slate-900 group-hover:fill-white group-active:fill-white transition-colors shrink-0" viewBox="0 0 24 24">
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
           </svg>
         </a>
@@ -307,16 +307,16 @@ export default function ShareSection({
         <button
           onClick={handleCopy}
           disabled={loading || copied}
-          className="w-9 h-9 rounded-xl bg-teal-50 hover:bg-teal-700 text-teal-700 hover:text-white flex items-center justify-center transition-all duration-300 border border-teal-100 hover:border-teal-700 shadow-sm hover:shadow-teal-100 hover:-translate-y-0.5 cursor-pointer group disabled:opacity-85"
+          className="w-9 h-9 rounded-xl bg-teal-50 hover:bg-teal-700 active:bg-teal-800 text-teal-700 hover:text-white active:text-white flex items-center justify-center transition-all duration-300 border border-teal-100 hover:border-teal-700 active:border-teal-800 shadow-sm hover:shadow-teal-100 hover:-translate-y-0.5 cursor-pointer group disabled:opacity-85 focus:outline-none focus:ring-2 focus:ring-teal-500"
           title="Copy Link"
         >
           <i className={`fa-solid ${
             loading 
               ? 'fa-spinner fa-spin' 
               : copied 
-                ? 'fa-circle-check text-emerald-500 group-hover:text-white' 
-                : 'fa-copy'
-          } text-sm group-hover:text-white transition-colors`}></i>
+                ? 'fa-circle-check text-emerald-500 group-hover:text-white group-active:text-white' 
+                : 'fa-copy text-teal-700 group-hover:text-white group-active:text-white'
+          } text-sm transition-colors`}></i>
         </button>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { FiCheck, FiInfo, FiLayers, FiCalendar, FiCreditCard, FiDownload, FiFileText, FiPrinter } from "react-icons/fi";
 import { useLanguage } from "@/context/LanguageContext";
@@ -198,19 +199,27 @@ export default function SubscriptionTab() {
               </p>
             </div>
 
-            <div className="flex justify-between items-center text-[10px] font-extrabold z-10 mt-4 border-t border-white/20 pt-3" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
+            <div className="flex justify-between items-center gap-2 flex-wrap text-[10px] font-extrabold z-10 mt-4 border-t border-white/20 pt-3" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
               {subInfo.active_plan_expires_at && subInfo.active_plan_id !== 1 && subInfo.active_plan_id !== 5 ? (
-                <div className="flex items-center gap-1" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
-                  <FiCalendar /> {t("expires_days_left", "Expires: {{date}} ({{days}} Days Left)")
-                    .replace("{{date}}", new Date(subInfo.active_plan_expires_at).toLocaleDateString())
-                    .replace("{{days}}", String(Math.max(0, Math.ceil((new Date(subInfo.active_plan_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))))}
+                <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
+                  <FiCalendar className="shrink-0" />
+                  <span>
+                    {t("expires_days_left", "Expires: {{date}} ({{days}} Days Left)")
+                      .replace("{{date}}", new Date(subInfo.active_plan_expires_at).toLocaleDateString())
+                      .replace("{{days}}", String(Math.max(0, Math.ceil((new Date(subInfo.active_plan_expires_at).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))))}
+                  </span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
-                  <FiCalendar /> {t("cycle_limit_days", "Cycle Limit: {{duration}} Days").replace("{{duration}}", String(duration))}
+                <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
+                  <FiCalendar className="shrink-0" />
+                  <span>
+                    {t("cycle_limit_days", "Cycle Limit: {{duration}} Days").replace("{{duration}}", String(duration))}
+                  </span>
                 </div>
               )}
-              <div className="uppercase font-black" style={{ color: "rgba(255, 255, 255, 0.9)" }}>{t("role_label", "Role: {{role}}").replace("{{role}}", subInfo.plan_role || "Seller")}</div>
+              <div className="uppercase font-black whitespace-nowrap shrink-0" style={{ color: "rgba(255, 255, 255, 0.9)" }}>
+                {t("role_label", "Role: {{role}}").replace("{{role}}", subInfo.plan_role || "Seller")}
+              </div>
             </div>
           </div>
 
@@ -371,8 +380,8 @@ export default function SubscriptionTab() {
       </div>
 
       {/* INVOICE MODAL */}
-      {showInvoiceModal && selectedInvoice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      {showInvoiceModal && selectedInvoice && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             {/* Modal header */}
             <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-slate-50/50">
@@ -536,7 +545,8 @@ export default function SubscriptionTab() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

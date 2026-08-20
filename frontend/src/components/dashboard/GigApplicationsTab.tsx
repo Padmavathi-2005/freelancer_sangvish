@@ -641,7 +641,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
 
         {/* Dispute Modal Portal */}
         {showDisputeModal && typeof document !== "undefined" && createPortal(
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[0.5px] p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-slate-900/40 backdrop-blur-[0.5px] p-4 overflow-y-auto">
             <div className="relative bg-white border border-slate-200 shadow-2xl rounded-xl max-w-md w-full animate-fadeIn text-left text-slate-800 p-5 sm:p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto scrollbar-thin">
               <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">

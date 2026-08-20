@@ -180,7 +180,7 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
       {/* Toast — rendered via Portal to escape overflow-y-auto stacking context */}
       {toast && typeof document !== "undefined" && ReactDOM.createPortal(
         <div
-          className={`fixed top-5 right-5 z-[99999] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-xl text-sm font-bold border ${
+          className={`fixed top-20 right-5 z-[999999] flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-xl text-sm font-bold border ${
             toast.type === "success"
               ? "bg-emerald-50 text-emerald-800 border-emerald-200"
               : toast.type === "error"
@@ -200,7 +200,7 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
 
       {/* Confirm Delete Modal — portal to cover sidebar & header */}
       {confirmDelete && typeof document !== "undefined" && ReactDOM.createPortal(
-        <div className="fixed inset-0 bg-black/40 z-[99999] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/40 z-[999999] flex items-center justify-center p-4">
           <div
             className={`w-full max-w-md rounded-xl border p-6 shadow-2xl ${
               isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"

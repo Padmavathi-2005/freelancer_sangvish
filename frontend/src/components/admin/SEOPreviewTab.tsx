@@ -252,9 +252,9 @@ export default function SEOPreviewTab() {
       );
 
   return (
-    <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 animate-fadeIn ${isDark ? "text-slate-200" : "text-slate-800"}`}>
+    <div className={`grid grid-cols-1 xl:grid-cols-12 gap-8 animate-fadeIn ${isDark ? "text-slate-200" : "text-slate-800"}`}>
       {/* Route Selector & Input Forms */}
-      <div className="lg:col-span-7 flex flex-col gap-6">
+      <div className="xl:col-span-7 flex flex-col gap-6">
         {/* Route Selector Card */}
         <div className={`rounded-3xl p-6 shadow-sm border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/80"}`}>
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-3.5 select-none">
@@ -449,7 +449,7 @@ export default function SEOPreviewTab() {
       </div>
 
       {/* Preview Snippets */}
-      <div className="lg:col-span-5 flex flex-col gap-6">
+      <div className="xl:col-span-5 flex flex-col gap-6">
         {/* Google Snippet Preview */}
         <div className={`rounded-3xl p-6 shadow-sm border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/80"}`}>
           <div className={`flex items-center gap-2 border-b pb-3.5 mb-4 select-none ${isDark ? "border-slate-800" : "border-slate-100"}`}>
@@ -500,7 +500,9 @@ export default function SEOPreviewTab() {
               <img 
                 src={resolvedPreviewImage} 
                 alt="OG Card Preview" 
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                className={`w-full h-full transition-transform duration-300 group-hover:scale-105 ${
+                  ogImage ? "object-cover" : "object-contain p-4"
+                }`}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=1200";
                 }}

@@ -17,6 +17,17 @@ const resolveLogoUrl = (url: string) => {
 
 const formatExpDate = (dateStr?: string | null) => {
   if (!dateStr) return "";
+  
+  const isoMatch = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [_, year, month] = isoMatch;
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthIndex = parseInt(month, 10) - 1;
+    if (monthIndex >= 0 && monthIndex < 12) {
+      return `${months[monthIndex]} ${year}`;
+    }
+  }
+
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
@@ -155,6 +166,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     expDesc,
     setExpDesc,
     handleAddExperience,
+    handleRemoveExperience,
     eduInst,
     setEduInst,
     eduDegree,
@@ -166,6 +178,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     eduEnd,
     setEduEnd,
     handleAddEducation,
+    handleRemoveEducation,
     certName,
     setCertName,
     certOrg,
@@ -175,6 +188,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     certCredUrl,
     setCertCredUrl,
     handleAddCertification,
+    handleRemoveCertification,
     handleSkipStep2,
     updateOnboardingStep,
     userEmail,
@@ -1157,7 +1171,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   }`}
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 01-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
                 {t("workspace_hub_menu", "Workspace Hub")}
               </button>
@@ -1593,7 +1607,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* MAIN CONTAINER */}
       <div className="flex-1 flex flex-col max-w-full lg:h-screen lg:overflow-hidden relative z-10 print:h-auto print:overflow-visible print:block">
-        <header className="h-16 w-full bg-white border-b border-slate-200 px-6 flex flex-row items-center justify-between relative z-30 lg:z-0 shrink-0 shadow-sm print:hidden">
+        <header className="h-16 w-full bg-white border-b border-slate-200 px-6 flex flex-row items-center justify-between relative z-50 shrink-0 shadow-sm print:hidden">
           {/* Left: Mobile hamburger menu toggle & role switch */}
           <div className="flex items-center gap-3">
             <button
@@ -1662,7 +1676,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* SCROLLABLE MAIN CONTENT AREA */}
-        <div className="flex-1 py-3 sm:py-8 px-2 sm:px-6 overflow-y-auto relative w-full flex flex-col gap-4 sm:gap-8 print:p-0 print:overflow-visible print:block print:gap-4">
+        <div className="flex-1 py-3 sm:py-8 px-2 sm:px-6 overflow-y-auto relative z-10 w-full flex flex-col gap-4 sm:gap-8 print:p-0 print:overflow-visible print:block print:gap-4">
           {/* Background Decorative Pattern */}
           <div className="absolute inset-0 bg-grid-pattern opacity-30 pointer-events-none z-0"></div>
 
@@ -1717,7 +1731,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Onboarding Popup Overlay */}
       {(showOnboardingModal || forceShowOnboarding) && (
-        <div className={`fixed inset-0 z-50 ${modalOverlayClass} flex items-center justify-center p-4 overflow-y-auto select-none`}>
+        <div className={`fixed inset-0 z-[10000] ${modalOverlayClass} flex items-center justify-center p-4 overflow-y-auto select-none`}>
           
           {/* STEP 1: ROLE SELECTION MODAL */}
           {onboardingStep === "role_selection" && (
@@ -2832,9 +2846,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {experiences.length > 0 && (
                         <div className={listBgClass}>
                           {experiences.map((exp, idx) => (
-                            <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0">
-                              <p className="font-extrabold text-slate-900">{exp.job_title} @ {exp.company_name}</p>
-                              <p className="text-slate-400 text-xxs">{formatExpDate(exp.start_date) || "N/A"} - {exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}</p>
+                            <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0 flex items-center justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-extrabold text-slate-900 truncate">{exp.job_title} @ {exp.company_name}</p>
+                                <p className="text-slate-400 text-xxs">{formatExpDate(exp.start_date) || "N/A"} - {exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveExperience(exp.experience_id!, idx)}
+                                className="w-6 h-6 rounded-lg hover:bg-rose-50 text-rose-500 flex items-center justify-center transition border-none cursor-pointer shrink-0"
+                                title="Remove Experience"
+                              >
+                                <FiX className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -2915,9 +2939,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {educations.length > 0 && (
                         <div className={listBgClass}>
                           {educations.map((edu, idx) => (
-                            <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0">
-                              <p className="font-extrabold text-slate-900">{edu.degree} in {edu.field_of_study}</p>
-                              <p className="text-slate-400 text-xxs">{edu.institution_name} ({edu.start_year} - {edu.end_year || "N/A"})</p>
+                            <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0 flex items-center justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-extrabold text-slate-900 truncate">{edu.degree} in {edu.field_of_study}</p>
+                                <p className="text-slate-400 text-xxs">{edu.institution_name} ({edu.start_year} - {edu.end_year || "N/A"})</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveEducation(edu.education_id!, idx)}
+                                className="w-6 h-6 rounded-lg hover:bg-rose-50 text-rose-500 flex items-center justify-center transition border-none cursor-pointer shrink-0"
+                                title="Remove Education"
+                              >
+                                <FiX className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -2976,9 +3010,19 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {certifications.length > 0 && (
                         <div className={listBgClass}>
                           {certifications.map((c, idx) => (
-                            <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0">
-                              <p className="font-extrabold text-slate-900">{c.certificate_name} - {c.issuing_organization}</p>
-                              {c.credential_url && <p className="text-emerald-500 text-xxs truncate">{c.credential_url}</p>}
+                            <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0 flex items-center justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <p className="font-extrabold text-slate-900 truncate">{c.certificate_name} - {c.issuing_organization}</p>
+                                {c.credential_url && <p className="text-emerald-500 text-xxs truncate">{c.credential_url}</p>}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCertification(c.certification_id!, idx)}
+                                className="w-6 h-6 rounded-lg hover:bg-rose-50 text-rose-500 flex items-center justify-center transition border-none cursor-pointer shrink-0"
+                                title="Remove Certification"
+                              >
+                                <FiX className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -3662,7 +3706,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Publish Profile Confirmation Modal */}
       {showPublishConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[10000] bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-md overflow-hidden p-6 sm:p-8 animate-fadeIn text-center relative text-slate-800">
             <div className="w-16 h-16 bg-emerald-50 border border-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4 shadow-sm select-none">
               🚀
@@ -3706,7 +3750,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
       {/* Submit Job Proposal Modal */}
       {showProposalModal && applyingJob && (
-        <div className="fixed inset-0 z-50 bg-slate-900/25 backdrop-blur-[0.5px] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[10000] bg-slate-900/25 backdrop-blur-[0.5px] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left max-h-[90vh] flex flex-col relative my-8">
             <button
               onClick={() => {
@@ -3984,7 +4028,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       )}
       {/* Freelancer Profile details & Hire request modal */}
       {selectedFreelancerProfile && (
-        <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-[1px] flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[10000] bg-slate-900/35 backdrop-blur-[1px] flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white border border-slate-200 shadow-2xl rounded-xl w-full max-w-3xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-slate-800 my-8 max-h-[90vh] flex flex-col relative">
             <button
               onClick={() => {
@@ -4317,22 +4361,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide">Select Open Project *</label>
                       {clientJobs.filter((j) => j.status === "Open" && !j.contract_id).length > 0 ? (
-                        <div className="relative w-full">
-                          <select
-                            value={selectedExistingJobId}
-                            onChange={(e) => setSelectedExistingJobId(e.target.value)}
-                            className="w-full bg-slate-50 border border-slate-250 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-slate-800 focus:border-teal-700/50 focus:bg-white focus:outline-none appearance-none cursor-pointer font-semibold"
-                          >
-                            {clientJobs
-                              .filter((j) => j.status === "Open" && !j.contract_id)
-                              .map((job) => (
-                                <option key={job.job_id} value={job.job_id}>
-                                  {job.title} (${parseFloat(job.budget).toLocaleString()})
-                                </option>
-                              ))}
-                          </select>
-                          <FiChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                        </div>
+                        <CustomSelect
+                          value={selectedExistingJobId}
+                          onChange={(val) => setSelectedExistingJobId(val as string)}
+                          options={clientJobs
+                            .filter((j) => j.status === "Open" && !j.contract_id)
+                            .map((job) => ({
+                              value: job.job_id.toString(),
+                              label: `${job.title} ($${parseFloat(job.budget).toLocaleString()})`
+                            }))}
+                          placeholder="Select Open Project"
+                        />
                       ) : (
                         <div className="p-3 bg-amber-50 border border-amber-200/50 text-amber-700 text-xxs font-bold rounded-xl flex items-center gap-1.5">
                           <span>You have no open projects. Please select "Create New Project Inline" instead.</span>

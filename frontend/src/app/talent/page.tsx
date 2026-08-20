@@ -9,7 +9,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import CustomSelect from "@/components/CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
-import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiStar, FiCheckCircle, FiUser, FiHeart } from "react-icons/fi";
+import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiStar, FiCheckCircle, FiUser, FiHeart, FiAlertTriangle } from "react-icons/fi";
 import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
 function TalentSearchContent() {
@@ -226,7 +226,7 @@ function TalentSearchContent() {
 
   // Filter Logic
   const filteredFreelancers = freelancers.filter((f) => {
-    // 1. Text search across ALL details (name, username, title, bio, category, subcategory, hourly rate, experience level, country/location, skills)
+    // 1. Text search across ALL details (name, username, title, bio, category, subcategory, hourly rate, experience level, country/location, skills, ID)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       const matchName = (f.name || f.username || f.full_name || "")?.toLowerCase().includes(query);
@@ -234,15 +234,26 @@ function TalentSearchContent() {
       const matchBio = f.bio?.toLowerCase().includes(query);
       const matchCategory = f.category_name?.toLowerCase().includes(query);
       const matchSubCat = f.sub_category_name?.toLowerCase().includes(query);
-      const matchRate = f.hourly_rate ? `${f.hourly_rate}`.includes(query) || `$${f.hourly_rate}`.includes(query) || `${f.hourly_rate}/hr`.toLowerCase().includes(query) : false;
+      
+      const cleanQuery = query.replace(/[^0-9]/g, "");
+      const formattedRate = f.hourly_rate ? formatPrice(f.hourly_rate) : "";
+      const cleanFormattedRate = formattedRate.replace(/[^0-9]/g, "");
+      const matchRate = f.hourly_rate ? (
+        `${f.hourly_rate}`.includes(query) || 
+        `$${f.hourly_rate}`.includes(query) || 
+        `${f.hourly_rate}/hr`.toLowerCase().includes(query) ||
+        (cleanQuery !== "" && cleanFormattedRate.includes(cleanQuery))
+      ) : false;
+
       const matchLevel = f.experience_level?.toLowerCase().includes(query);
       const matchCountry = (f.country || f.location || "")?.toLowerCase().includes(query);
       const matchSkills = Array.isArray(f.skills) && f.skills.some((s: any) => {
         const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
         return str.toLowerCase().includes(query);
       });
+      const matchId = (f.user_id ? String(f.user_id).includes(query) : false) || (f.id ? String(f.id).includes(query) : false);
 
-      if (!matchName && !matchTitle && !matchBio && !matchCategory && !matchSubCat && !matchRate && !matchLevel && !matchCountry && !matchSkills) {
+      if (!matchName && !matchTitle && !matchBio && !matchCategory && !matchSubCat && !matchRate && !matchLevel && !matchCountry && !matchSkills && !matchId) {
         return false;
       }
     }
@@ -369,7 +380,7 @@ function TalentSearchContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative">
+    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative overflow-x-hidden">
       <Header />
 
       {/* Search Type Switcher */}
@@ -415,7 +426,7 @@ function TalentSearchContent() {
       </div>
 
       {/* Main Grid Workspace */}
-      <main className="max-w-[1600px] mx-auto w-full py-6 sm:py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+      <main className="flex-1 max-w-[1600px] mx-auto w-full py-6 sm:py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
         
         {/* Mobile Filter Toggle Button */}
         <div className="lg:hidden col-span-1">
@@ -502,16 +513,16 @@ function TalentSearchContent() {
             {/* Experience Level */}
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("experience_level", "Experience Level")}</label>
-              <select
+              <CustomSelect
+                placeholder={t("any_level", "Any Level")}
                 value={experienceLevel}
-                onChange={(e) => setExperienceLevel(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">{t("any_level", "Any Level")}</option>
-                <option value="Beginner">{t("entry_level", "Entry Level")}</option>
-                <option value="Intermediate">{t("intermediate", "Intermediate")}</option>
-                <option value="Expert">{t("expert", "Expert")}</option>
-              </select>
+                options={[
+                  { value: "Beginner", label: t("entry_level", "Entry Level") },
+                  { value: "Intermediate", label: t("intermediate", "Intermediate") },
+                  { value: "Expert", label: t("expert", "Expert") },
+                ]}
+                onChange={(val) => setExperienceLevel(val)}
+              />
             </div>
 
             {/* Specific Skill Filter */}
@@ -542,7 +553,7 @@ function TalentSearchContent() {
         </aside>
 
         {/* Right Side: Search Results Listing */}
-        <section className="lg:col-span-9 space-y-6">
+        <section className="lg:col-span-9 w-full min-w-0 space-y-6">
           {/* Top Panel bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
             {/* Search Input */}
@@ -566,15 +577,16 @@ function TalentSearchContent() {
               </p>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none">{t("sort_by", "Sort By")}</span>
-                <select
+                <CustomSelect
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-                >
-                  <option value="recommended">{t("sort_recommended", "Recommended")}</option>
-                  <option value="rate_desc">{t("sort_rate_high_low", "Hourly Rate: High to Low")}</option>
-                  <option value="rate_asc">{t("sort_rate_low_high", "Hourly Rate: Low to High")}</option>
-                </select>
+                  onChange={(val) => setSortBy(val)}
+                  options={[
+                    { value: "recommended", label: t("sort_recommended", "Recommended") },
+                    { value: "rate_desc", label: t("sort_rate_high_low", "Hourly Rate: High to Low") },
+                    { value: "rate_asc", label: t("sort_rate_low_high", "Hourly Rate: Low to High") },
+                  ]}
+                  className="w-48"
+                />
               </div>
             </div>
           </div>
@@ -765,9 +777,16 @@ function TalentSearchContent() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border bg-white animate-slideIn">
-          <FiHeart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0 animate-pulse" />
+        <div className="fixed top-24 right-6 z-[999999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border border-slate-200 bg-white animate-fadeIn overflow-hidden">
+          {toast.type === "error" ? (
+            <FiAlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+          ) : toast.type === "success" && toast.message.toLowerCase().includes("wishlist") ? (
+            <FiHeart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0 animate-pulse" />
+          ) : (
+            <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+          )}
           <span className="text-xs font-bold text-slate-800">{toast.message}</span>
+          <div className="absolute bottom-0 left-0 h-0.75 bg-teal-600 rounded-b-xl animate-toastProgress" style={{ animationDuration: '3000ms' }} />
         </div>
       )}
 

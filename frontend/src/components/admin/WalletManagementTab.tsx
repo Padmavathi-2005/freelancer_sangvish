@@ -87,12 +87,29 @@ export default function WalletManagementTab() {
   const filteredWallets = useMemo(() => {
     const q = ledgerSearch.toLowerCase().trim();
     if (!q) return wallets;
-    return wallets.filter((w: any) =>
-      (w.user_name || "").toLowerCase().includes(q) ||
-      (w.email || "").toLowerCase().includes(q) ||
-      (w.wallet_id || "").toString().includes(q) ||
-      (w.role || "").toLowerCase().includes(q)
-    );
+    return wallets.filter((w: any) => {
+      const walletId = (w.wallet_id || "").toString();
+      const formattedWalletId = `w-ldt-${walletId}`;
+      const name = (w.user_name || "Platform User").toLowerCase();
+      const email = (w.email || "").toLowerCase();
+      const role = (w.role || "").toLowerCase();
+      const setupStatus = (w.is_onboarded ? "onboarding complete" : "draft").toLowerCase();
+      const balanceRaw = (w.balance || 0).toString();
+      const balanceFormatted = parseFloat(w.balance || 0).toFixed(2);
+      const balanceWithDollar = `$${balanceFormatted}`;
+
+      return (
+        walletId.includes(q) ||
+        formattedWalletId.includes(q) ||
+        name.includes(q) ||
+        email.includes(q) ||
+        role.includes(q) ||
+        setupStatus.includes(q) ||
+        balanceRaw.includes(q) ||
+        balanceFormatted.includes(q) ||
+        balanceWithDollar.includes(q)
+      );
+    });
   }, [wallets, ledgerSearch]);
 
   const paginatedWallets = useMemo(() => {
@@ -105,14 +122,40 @@ export default function WalletManagementTab() {
   const filteredTransactionsLog = useMemo(() => {
     const q = transactionsSearch.toLowerCase().trim();
     if (!q) return transactions;
-    return transactions.filter((tx: any) =>
-      (tx.transaction_id || "").toString().includes(q) ||
-      (tx.sender_name || "").toLowerCase().includes(q) ||
-      (tx.receiver_name || "").toLowerCase().includes(q) ||
-      (tx.type || "").toLowerCase().includes(q) ||
-      (tx.description || "").toLowerCase().includes(q) ||
-      (tx.amount || "").toString().includes(q)
-    );
+    return transactions.filter((tx: any) => {
+      const txId = (tx.transaction_id || "").toString();
+      const formattedTxId = `tx-${txId}`;
+      const sender = (tx.sender_name || "External Deposit").toLowerCase();
+      const receiver = (tx.receiver_name || "Platform Escrow").toLowerCase();
+      const type = (tx.type || "").toLowerCase();
+      const desc = (tx.description || "").toLowerCase();
+      
+      const amountRaw = (tx.amount || 0).toString();
+      const amountFormatted = parseFloat(tx.amount || 0).toFixed(2);
+      const amountWithDollar = `$${amountFormatted}`;
+
+      const commissionRaw = (tx.commission_amount || 0).toString();
+      const commissionFormatted = parseFloat(tx.commission_amount || 0).toFixed(2);
+      const commissionWithDollar = `$${commissionFormatted}`;
+
+      const timestamp = tx.created_at ? new Date(tx.created_at).toLocaleString().toLowerCase() : "";
+
+      return (
+        txId.includes(q) ||
+        formattedTxId.includes(q) ||
+        sender.includes(q) ||
+        receiver.includes(q) ||
+        type.includes(q) ||
+        desc.includes(q) ||
+        amountRaw.includes(q) ||
+        amountFormatted.includes(q) ||
+        amountWithDollar.includes(q) ||
+        commissionRaw.includes(q) ||
+        commissionFormatted.includes(q) ||
+        commissionWithDollar.includes(q) ||
+        timestamp.includes(q)
+      );
+    });
   }, [transactions, transactionsSearch]);
 
   const paginatedTransactionsLog = useMemo(() => {
@@ -303,11 +346,11 @@ export default function WalletManagementTab() {
   const ledgerColumns = [
     {
       header: "Wallet ID",
-      accessor: (w: any) => <span className="text-slate-400 font-bold">W-LDT-{w.wallet_id}</span>
+      accessor: (w: any) => <span className="text-slate-400 font-bold whitespace-nowrap">W-LDT-{w.wallet_id}</span>
     },
     {
       header: "User",
-      accessor: (w: any) => <span className="font-black text-slate-850">{w.user_name || "Platform User"}</span>
+      accessor: (w: any) => <span className="font-black text-slate-850 whitespace-nowrap">{w.user_name || "Platform User"}</span>
     },
     {
       header: "Email Address",
@@ -316,7 +359,7 @@ export default function WalletManagementTab() {
     {
       header: "Workspace Role",
       accessor: (w: any) => (
-        <span className={`uppercase text-[10px] font-black px-2 py-0.5 rounded-md ${w.role === "client" ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-teal-50 text-teal-600 border border-teal-100"}`}>
+        <span className={`uppercase text-[10px] font-black px-2 py-0.5 rounded-md whitespace-nowrap ${w.role === "client" ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-teal-50 text-teal-600 border border-teal-100"}`}>
           {w.role}
         </span>
       )
@@ -324,7 +367,7 @@ export default function WalletManagementTab() {
     {
       header: "Account Setup",
       accessor: (w: any) => (
-        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${w.is_onboarded ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"}`}>
+        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${w.is_onboarded ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"}`}>
           {w.is_onboarded ? "Onboarding complete" : "Draft"}
         </span>
       )
@@ -332,7 +375,7 @@ export default function WalletManagementTab() {
     {
       header: "Virtual Balance (USD)",
       className: "text-right",
-      accessor: (w: any) => <span className="font-black text-slate-850 text-sm">${parseFloat(w.balance).toFixed(2)}</span>
+      accessor: (w: any) => <span className="font-black text-slate-850 text-sm whitespace-nowrap">${parseFloat(w.balance).toFixed(2)}</span>
     }
   ];
 

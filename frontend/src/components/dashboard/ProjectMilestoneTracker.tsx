@@ -2735,18 +2735,18 @@ export default function ProjectMilestoneTracker({
                         )}
                       </div>
 
-                      <div className={`flex-1 ${isLast ? "pb-0" : "pb-5"}`}>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-left">
-                          <div>
+                      <div className={`flex-1 ${isLast ? "pb-0" : "pb-5"} min-w-0`}>
+                        <div className="flex flex-col gap-1.5 text-left w-full min-w-0">
+                          <div className="min-w-0">
                             <p className={`text-xs font-extrabold transition-colors duration-200 ${
                               ev.done 
                                 ? "text-slate-800" 
                                 : isNextStage 
                                   ? "text-teal-700 font-black" 
                                   : "text-slate-400"
-                            }`}>{ev.label}</p>
+                            } truncate`}>{ev.label}</p>
                             {ev.sub && (
-                              <p className={`text-[10px] font-semibold mt-0.5 transition-colors duration-200 ${
+                              <p className={`text-[10px] font-semibold mt-0.5 transition-colors duration-200 leading-normal ${
                                 ev.done 
                                   ? c.sub 
                                   : isNextStage 
@@ -2755,9 +2755,9 @@ export default function ProjectMilestoneTracker({
                               }`}>{ev.sub}</p>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0 flex-wrap">
                             {ev.amount && (
-                              <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-lg border transition-all duration-200 ${
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border transition-all duration-200 ${
                                 ev.done 
                                   ? c.badge 
                                   : isNextStage 

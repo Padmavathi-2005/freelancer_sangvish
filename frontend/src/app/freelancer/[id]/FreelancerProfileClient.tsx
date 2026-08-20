@@ -1,5 +1,5 @@
 "use client";
-import { API_URL } from "@/config/api";
+import { API_URL, API_BASE_URL } from "@/config/api";
 
 
 import React, { useState, useEffect } from "react";
@@ -8,6 +8,7 @@ import { useAuthModal } from "@/context/AuthModalContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ShareSection from "@/components/ShareSection";
+import CustomSelect from "@/components/CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
 import {
   FiMail,
@@ -235,11 +236,16 @@ export default function FreelancerProfileClient() {
 
     const resolveMediaUrl = (url: string) => {
       if (!url) return "";
-      if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
-        return url;
+      if (url.startsWith("data:")) return url;
+      let cleaned = url;
+      if (cleaned.includes("localhost:5000")) {
+        cleaned = cleaned.replace(/https?:\/\/localhost:5000/, API_BASE_URL);
       }
-      const cleanPath = url.startsWith("/") ? url : `/${url}`;
-      return `https://freelancer.sangvish.com${cleanPath}`;
+      if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+        return cleaned;
+      }
+      const cleanPath = cleaned.startsWith("/") ? cleaned : `/${cleaned}`;
+      return `${API_BASE_URL}${cleanPath}`;
     };
 
     const userObj = data.user;
@@ -413,13 +419,14 @@ export default function FreelancerProfileClient() {
 
       {/* Floating Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border bg-white animate-slideIn">
+        <div className="fixed top-24 right-6 z-[999999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border border-slate-200 bg-white animate-fadeIn overflow-hidden">
           {toast.type === "success" ? (
             <FiCheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
           ) : (
             <FiAlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
           )}
-          <span className="text-xs font-bold text-slate-850">{toast.message}</span>
+          <span className="text-xs font-bold text-slate-855">{toast.message}</span>
+          <div className="absolute bottom-0 left-0 h-0.75 bg-teal-600 rounded-b-xl animate-toastProgress" style={{ animationDuration: '3500ms' }} />
         </div>
       )}
 
@@ -1057,7 +1064,7 @@ export default function FreelancerProfileClient() {
       {/* Hire Modal Portal */}
       {showHireModal && (
         <div className="fixed inset-0 z-[99999] bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-lg overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative flex flex-col">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-lg overflow-visible p-6 sm:p-8 animate-fadeIn text-left relative flex flex-col">
             <button
               onClick={() => {
                 setShowHireModal(false);
@@ -1106,21 +1113,14 @@ export default function FreelancerProfileClient() {
                   <>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Select Project *</label>
-                      <div className="relative w-full">
-                        <select
-                          required
-                          value={selectedJobForInvite}
-                          onChange={(e) => setSelectedJobForInvite(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-205 hover:border-slate-350 rounded-xl pl-4 pr-10 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-semibold appearance-none cursor-pointer"
-                        >
-                          {openJobs.map((job: any) => (
-                            <option key={job.job_id} value={job.job_id}>
-                              {job.title} (${parseFloat(job.budget).toFixed(2)})
-                            </option>
-                          ))}
-                        </select>
-                        <FiChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                      </div>
+                      <CustomSelect
+                        value={selectedJobForInvite}
+                        options={openJobs.map((job: any) => ({
+                          value: job.job_id.toString(),
+                          label: `${job.title} ($${parseFloat(job.budget).toFixed(2)})`
+                        }))}
+                        onChange={(val) => setSelectedJobForInvite(val)}
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

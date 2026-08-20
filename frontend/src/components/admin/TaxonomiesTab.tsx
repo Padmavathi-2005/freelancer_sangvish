@@ -1,7 +1,6 @@
 "use client";
 import { API_URL } from "@/config/api";
-
-
+import { FiUpload } from "react-icons/fi";
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Table from "@/components/Table";
@@ -793,27 +792,22 @@ export default function TaxonomiesTab({
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Category Cover Image</label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="text"
-                      value={categoryFormImage}
-                      onChange={(e) => setCategoryFormImage(e.target.value)}
-                      placeholder="Paste image URL or upload file"
-                      className="flex-1 bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800"
-                    />
-                    <label className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition-all shrink-0">
-                      {uploadingImage ? "Uploading..." : "Upload"}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        disabled={uploadingImage}
-                      />
-                    </label>
-                  </div>
-                  {categoryFormImage && (
-                    <div className="mt-2 w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-50 relative p-2 flex flex-col gap-1.5 animate-fadeIn">
+                  {!categoryFormImage ? (
+                    <div className="flex items-center gap-3">
+                      <label className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 hover:bg-slate-100 border border-dashed border-slate-350 hover:border-slate-450 text-slate-650 rounded-xl text-xs font-bold cursor-pointer transition-all">
+                        <FiUpload className="w-4 h-4 text-slate-450" />
+                        <span>{uploadingImage ? "Uploading Image..." : "Select Cover Image to Upload"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          disabled={uploadingImage}
+                        />
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="w-full rounded-xl overflow-hidden border border-slate-200 bg-slate-50 relative p-2 flex flex-col gap-1.5 animate-fadeIn">
                       <div className="relative w-full h-36 rounded-lg overflow-hidden bg-slate-100 border border-slate-200/60 flex items-center justify-center">
                         <img 
                           src={

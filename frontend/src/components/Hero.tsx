@@ -304,15 +304,22 @@ export default function Hero() {
               {(t("hero_popular_label", heroContent.hero_popular_label).includes(":")
                 ? t("hero_popular_label", heroContent.hero_popular_label).split(":")[1]
                 : t("hero_popular_label", heroContent.hero_popular_label)
-              ).split(",").map(s => s.trim()).filter(Boolean).map((skill) => (
-                <button
-                  key={skill}
-                  onClick={() => handleQuickTagClick(skill)}
-                  className="border border-teal-700/20 dark:border-zinc-700 bg-teal-50 dark:bg-zinc-800/80 text-[#0a5a54] dark:text-white hover:bg-[#0a5a54] hover:text-white dark:hover:bg-white dark:hover:text-slate-900 px-3.5 py-1 rounded-full transition-all duration-150 active:scale-95 cursor-pointer text-xs font-extrabold"
-                >
-                  {skill}
-                </button>
-              ))}
+              ).split(",").map(s => s.trim()).filter(Boolean).map((skill) => {
+                const isSelected = searchQuery.trim().toLowerCase() === skill.toLowerCase();
+                return (
+                  <button
+                    key={skill}
+                    onClick={() => handleQuickTagClick(skill)}
+                    className={`border border-teal-700/20 dark:border-zinc-700 rounded-full transition-all duration-150 active:scale-95 cursor-pointer text-xs font-extrabold px-3.5 py-1 ${
+                      isSelected
+                        ? "bg-primary text-white border-primary hover:bg-primary-hover shadow-sm"
+                        : "bg-teal-50 dark:bg-zinc-800/80 text-[#0a5a54] dark:text-white hover:bg-primary hover:text-white dark:hover:bg-white dark:hover:text-slate-900"
+                    }`}
+                  >
+                    {skill}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

@@ -11,14 +11,14 @@ import CustomSelect from "@/components/CustomSelect";
 import ShareSection from "@/components/ShareSection";
 import { useLanguage } from "@/context/LanguageContext";
 import { convertPrice } from "@/utils/currencyHelper";
-import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiClock, FiActivity, FiUser, FiBriefcase, FiHeart, FiStar, FiCpu, FiX } from "react-icons/fi";
+import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiClock, FiActivity, FiUser, FiBriefcase, FiHeart, FiStar, FiCpu, FiX, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
 function ProjectsSearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { openLoginModal } = useAuthModal();
-  const { currency, t } = useLanguage();
+  const { currency, t, formatPrice } = useLanguage();
 
   useEffect(() => {
     const handleRoleVerification = async () => {
@@ -443,7 +443,7 @@ function ProjectsSearchContent() {
 
   // Filter Logic
   const filteredJobs = jobs.filter((job) => {
-    // 1. Text search across ALL details (title, description, category, subcategory, client name/username, budget, project type, duration/days, experience level, skills)
+    // 1. Text search across ALL details (title, description, category, subcategory, client name/username, budget, project type, duration/days, experience level, skills, ID)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       const matchTitle = job.title?.toLowerCase().includes(query);
@@ -451,7 +451,17 @@ function ProjectsSearchContent() {
       const matchCategory = job.category_name?.toLowerCase().includes(query);
       const matchSubCat = job.sub_category_name?.toLowerCase().includes(query);
       const matchClient = (job.client_name || job.username || job.posted_by || "")?.toLowerCase().includes(query);
-      const matchBudget = (job.budget || job.max_budget) ? `${job.budget || job.max_budget}`.includes(query) || `$${job.budget || job.max_budget}`.includes(query) : false;
+      
+      const cleanQuery = query.replace(/[^0-9]/g, "");
+      const budgetVal = job.budget || job.max_budget || job.min_budget;
+      const formattedBudget = budgetVal ? formatPrice(budgetVal) : "";
+      const cleanFormattedBudget = formattedBudget.replace(/[^0-9]/g, "");
+      const matchBudget = budgetVal ? (
+        `${budgetVal}`.includes(query) || 
+        `$${budgetVal}`.includes(query) ||
+        (cleanQuery !== "" && cleanFormattedBudget.includes(cleanQuery))
+      ) : false;
+
       const matchType = job.project_type?.toLowerCase().includes(query);
       const matchDuration = job.duration?.toLowerCase().includes(query) || (job.delivery_days ? `${job.delivery_days}`.includes(query) || `${job.delivery_days} days`.toLowerCase().includes(query) : false);
       const matchLevel = job.experience_level?.toLowerCase().includes(query);
@@ -459,8 +469,9 @@ function ProjectsSearchContent() {
         const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
         return str.toLowerCase().includes(query);
       });
+      const matchId = (job.job_id ? String(job.job_id).includes(query) : false) || (job.id ? String(job.id).includes(query) : false);
 
-      if (!matchTitle && !matchDesc && !matchCategory && !matchSubCat && !matchClient && !matchBudget && !matchType && !matchDuration && !matchLevel && !matchSkills) {
+      if (!matchTitle && !matchDesc && !matchCategory && !matchSubCat && !matchClient && !matchBudget && !matchType && !matchDuration && !matchLevel && !matchSkills && !matchId) {
         return false;
       }
     }
@@ -587,7 +598,7 @@ function ProjectsSearchContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative">
+    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative overflow-x-hidden">
       <Header />
 
       {/* Search Type Switcher */}
@@ -633,7 +644,7 @@ function ProjectsSearchContent() {
       </div>
 
       {/* Main Grid Workspace */}
-      <main className="max-w-[1600px] mx-auto w-full py-6 sm:py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
+      <main className="flex-1 max-w-[1600px] mx-auto w-full py-6 sm:py-12 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-8 text-left">
 
         {/* Mobile Filter Toggle Button */}
         <div className="lg:hidden col-span-1">
@@ -723,51 +734,51 @@ function ProjectsSearchContent() {
             {/* Experience Level */}
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("experience_level_label", "Experience Level")}</label>
-              <select
+              <CustomSelect
+                placeholder={t("any_level_opt", "Any Level")}
                 value={experienceLevel}
-                onChange={(e) => setExperienceLevel(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">{t("any_level_opt", "Any Level")}</option>
-                <option value="Beginner">{t("entry_level_opt", "Entry Level")}</option>
-                <option value="Intermediate">{t("intermediate_opt", "Intermediate")}</option>
-                <option value="Expert">{t("expert_opt", "Expert")}</option>
-              </select>
+                options={[
+                  { value: "Beginner", label: t("entry_level_opt", "Entry Level") },
+                  { value: "Intermediate", label: t("intermediate_opt", "Intermediate") },
+                  { value: "Expert", label: t("expert_opt", "Expert") },
+                ]}
+                onChange={(val) => setExperienceLevel(val)}
+              />
             </div>
 
             {/* Project Type */}
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("project_type_label", "Project Type")}</label>
-              <select
+              <CustomSelect
+                placeholder={t("all_types_opt", "All Types")}
                 value={projectType}
-                onChange={(e) => setProjectType(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">{t("all_types_opt", "All Types")}</option>
-                <option value="Fixed">{t("fixed_price_opt", "Fixed Price")}</option>
-                <option value="Hourly">{t("hourly_rate_opt", "Hourly Rate")}</option>
-              </select>
+                options={[
+                  { value: "Fixed", label: t("fixed_price_opt", "Fixed Price") },
+                  { value: "Hourly", label: t("hourly_rate_opt", "Hourly Rate") },
+                ]}
+                onChange={(val) => setProjectType(val)}
+              />
             </div>
 
             {/* Project Duration */}
             <div className="space-y-2">
               <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("project_duration_label", "Project Duration")}</label>
-              <select
+              <CustomSelect
+                placeholder={t("all_durations_opt", "All Durations")}
                 value={projectDuration}
-                onChange={(e) => setProjectDuration(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10"
-              >
-                <option value="">{t("all_durations_opt", "All Durations")}</option>
-                <option value="short">{t("short_term_opt", "Short Term (< 1 month)")}</option>
-                <option value="medium">{t("medium_term_opt", "Medium Term (1 - 3 months)")}</option>
-                <option value="long">{t("long_term_opt", "Long Term (> 3 months)")}</option>
-              </select>
+                options={[
+                  { value: "short", label: t("short_term_opt", "Short Term (< 1 month)") },
+                  { value: "medium", label: t("medium_term_opt", "Medium Term (1 - 3 months)") },
+                  { value: "long", label: t("long_term_opt", "Long Term (> 3 months)") },
+                ]}
+                onChange={(val) => setProjectDuration(val)}
+              />
             </div>
           </div>
         </aside>
 
         {/* Right Side: Search Results Listing */}
-        <section className="lg:col-span-9 space-y-6">
+        <section className="lg:col-span-9 w-full min-w-0 space-y-6">
           {/* Top Panel bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200/80 rounded-xl p-4 shadow-xxs">
             {/* Search Input */}
@@ -779,7 +790,7 @@ function ProjectsSearchContent() {
                 type="text"
                 placeholder={t("search_projects_placeholder", "Search for projects...")}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value.replace(/\d{3,}/g, ""))}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-808 placeholder-slate-400 outline-none focus:border-primary focus:bg-white transition-all"
               />
             </div>
@@ -791,15 +802,16 @@ function ProjectsSearchContent() {
               </p>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none">{t("sort_by_label", "Sort By")}</span>
-                <select
+                <CustomSelect
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.5rem_center] bg-no-repeat pr-8"
-                >
-                  <option value="latest">{t("latest_posted_opt", "Latest Posted")}</option>
-                  <option value="budget_desc">{t("budget_high_low_opt", "Budget: High to Low")}</option>
-                  <option value="budget_asc">{t("budget_low_high_opt", "Budget: Low to High")}</option>
-                </select>
+                  onChange={(val) => setSortBy(val)}
+                  options={[
+                    { value: "latest", label: t("latest_posted_opt", "Latest Posted") },
+                    { value: "budget_desc", label: t("budget_high_low_opt", "Budget: High to Low") },
+                    { value: "budget_asc", label: t("budget_low_high_opt", "Budget: Low to High") },
+                  ]}
+                  className="w-48"
+                />
               </div>
               {/* AI Match Tab Button */}
               <button
@@ -1041,7 +1053,7 @@ function ProjectsSearchContent() {
               <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 text-2xl mb-4">
                 💼
               </div>
-              <h3 className="text-base font-black text-slate-855">{t("no_projects_title", "No projects found")}</h3>
+              <h3 className="text-base font-black text-slate-855">{t("no_projects_title", "No project found")}</h3>
               <p className="text-xs text-slate-500 font-bold max-w-sm mt-2">
                 {t("no_projects_desc", "Try checking for other categories, adjusting budget scopes, or resetting filters.")}
               </p>
@@ -1283,9 +1295,16 @@ function ProjectsSearchContent() {
 
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border bg-white animate-slideIn">
-          <FiHeart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0 animate-pulse" />
+        <div className="fixed top-24 right-6 z-[999999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border border-slate-200 bg-white animate-fadeIn overflow-hidden">
+          {toast.type === "error" ? (
+            <FiAlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+          ) : toast.type === "success" && toast.message.toLowerCase().includes("wishlist") ? (
+            <FiHeart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0 animate-pulse" />
+          ) : (
+            <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+          )}
           <span className="text-xs font-bold text-slate-800">{toast.message}</span>
+          <div className="absolute bottom-0 left-0 h-0.75 bg-teal-600 rounded-b-xl animate-toastProgress" style={{ animationDuration: '3000ms' }} />
         </div>
       )}
 

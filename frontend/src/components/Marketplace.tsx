@@ -3,8 +3,10 @@ import { API_URL } from "@/config/api";
 
 
 import React, { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { useLanguage } from "@/context/LanguageContext";
+import CustomSelect from "@/components/CustomSelect";
 
 // Mock Freelancer Data
 interface Freelancer {
@@ -355,13 +357,14 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
   return (
     <div className="w-full min-h-screen py-8 px-4 md:px-8 flex flex-col gap-12 text-slate-800 font-sans" style={lightMeshStyle}>
       {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 bg-white border border-slate-250 border-l-4 border-l-primary text-slate-800 py-4 px-6 rounded-xl shadow-2xl animate-fadeIn flex items-center gap-3">
+      {toastMessage && typeof document !== "undefined" && createPortal(
+        <div className="fixed top-20 right-5 z-[999999] bg-white border border-slate-250 border-l-4 border-l-primary text-slate-800 py-4 px-6 rounded-xl shadow-2xl animate-fadeIn flex items-center gap-3">
           <svg className="w-6 h-6 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           <span className="font-bold text-sm">{toastMessage}</span>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Hero Section */}
@@ -620,7 +623,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
       {/* Send Invite Modal */}
       {selectedFreelancerForInvite && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-xl overflow-hidden shadow-2xl text-slate-800 text-left relative animate-scaleIn">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-xl overflow-visible shadow-2xl text-slate-800 text-left relative animate-scaleIn">
             
             {/* Sticky Close Button */}
             <button
@@ -642,7 +645,7 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
             </div>
 
             {/* Modal Body / Form */}
-            <div className="max-h-[75vh] overflow-y-auto p-6 flex flex-col gap-6">
+            <div className="max-h-[75vh] overflow-visible p-6 flex flex-col gap-6">
               
               {/* Freelancer Profile Summary Card */}
               <div className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl flex gap-4 items-center">
@@ -670,18 +673,14 @@ export default function Marketplace({ onToggleView }: MarketplaceProps) {
                   {/* Select Project */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Select Open Project *</label>
-                    <select
-                      required
+                    <CustomSelect
                       value={selectedJobForInvite}
-                      onChange={(e) => setSelectedJobForInvite(e.target.value)}
-                      className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-800 font-bold"
-                    >
-                      {openJobs.map((job: any) => (
-                        <option key={job.job_id} value={job.job_id}>
-                          {job.title} (${parseFloat(job.budget || 0).toLocaleString()})
-                        </option>
-                      ))}
-                    </select>
+                      options={openJobs.map((job: any) => ({
+                        value: job.job_id.toString(),
+                        label: `${job.title} ($${parseFloat(job.budget || 0).toLocaleString()})`
+                      }))}
+                      onChange={(val) => setSelectedJobForInvite(val)}
+                    />
                   </div>
 
                   {/* Bid Amount & Delivery Days row */}

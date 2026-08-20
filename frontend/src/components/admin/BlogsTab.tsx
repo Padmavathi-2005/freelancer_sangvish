@@ -581,7 +581,7 @@ export default function BlogsTab() {
                   <thead>
                     <tr>
                       <th className={tableHeaderClass}>Cover</th>
-                      <th className={tableHeaderClass}>Blog Title</th>
+                      <th className={`${tableHeaderClass} min-w-[280px] md:min-w-[380px] lg:min-w-[440px]`}>Blog Title</th>
                       <th className={tableHeaderClass}>Category</th>
                       <th className={tableHeaderClass}>Status</th>
                       <th className={tableHeaderClass}>Author</th>
@@ -605,7 +605,7 @@ export default function BlogsTab() {
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 align-middle">
+                        <td className="px-6 py-4 align-middle min-w-[280px] md:min-w-[380px] lg:min-w-[440px]">
                           <div className="text-sm font-extrabold">{blog.title}</div>
                           <div className="text-xs text-slate-455 flex items-center gap-1 mt-0.5">
                             <FiGlobe className="w-3 h-3 text-slate-400" /> /blogs/{blog.slug}
@@ -730,32 +730,25 @@ export default function BlogsTab() {
                 <div>
                   <label className={labelClass}>Category</label>
                   {!isCreatingCategory ? (
-                    <select
+                    <CustomSelect
+                      options={[
+                        ...Array.from(new Set(["General", ...blogsList.map((b: any) => b.category).filter(Boolean)])).map((cat) => ({
+                          value: cat,
+                          label: cat
+                        })),
+                        { value: "__new__", label: "+ Add New Category..." }
+                      ]}
                       value={blogCategory}
-                      onChange={(e) => {
-                        if (e.target.value === "__new__") {
+                      onChange={(val) => {
+                        if (val === "__new__") {
                           setIsCreatingCategory(true);
                           setBlogCategory("");
                         } else {
-                          setBlogCategory(e.target.value);
+                          setBlogCategory(val);
                         }
                       }}
-                      className={`w-full rounded-xl px-4 py-2.5 text-sm transition-all focus:outline-none border ${
-                        isDark
-                          ? "bg-slate-900 border-slate-800 text-white focus:border-teal-500"
-                          : "bg-slate-50 border-slate-200 text-slate-800 focus:border-teal-650"
-                      }`}
-                    >
-                      {/* Gather and render all existing categories */}
-                      {Array.from(new Set(["General", ...blogsList.map((b: any) => b.category).filter(Boolean)])).map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                      <option value="__new__" className="text-teal-650 font-bold">
-                        + Add New Category...
-                      </option>
-                    </select>
+                      placeholder="Select Category"
+                    />
                   ) : (
                     <div className="flex items-center gap-2">
                       <input
@@ -958,17 +951,16 @@ export default function BlogsTab() {
                         <div className="space-y-4">
                           {block.type === "header" && (
                             <div className="flex flex-col sm:flex-row gap-3">
-                              <div className="sm:w-28 shrink-0">
-                                <select
+                              <div className="sm:w-36 shrink-0">
+                                <CustomSelect
+                                  options={[
+                                    { value: "h2", label: "H2 (Heading)" },
+                                    { value: "h3", label: "H3 (Subheading)" }
+                                  ]}
                                   value={block.data.level || "h2"}
-                                  onChange={(e) => updateBlockData(block.id, "level", e.target.value)}
-                                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold border outline-none ${
-                                    isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200"
-                                  }`}
-                                >
-                                  <option value="h2">H2 (Heading)</option>
-                                  <option value="h3">H3 (Subheading)</option>
-                                </select>
+                                  onChange={(val) => updateBlockData(block.id, "level", val)}
+                                  placeholder="Select Heading Level"
+                                />
                               </div>
                               <input
                                 type="text"
@@ -1021,17 +1013,16 @@ export default function BlogsTab() {
                                   </div>
                                 </div>
                                 <div>
-                                  <select
+                                  <CustomSelect
+                                    options={[
+                                      { value: "center", label: "Centered" },
+                                      { value: "left", label: "Left Float" },
+                                      { value: "right", label: "Right Float" }
+                                    ]}
                                     value={block.data.align || "center"}
-                                    onChange={(e) => updateBlockData(block.id, "align", e.target.value)}
-                                    className={`w-full rounded-xl px-3 py-2.5 text-xs font-bold border outline-none ${
-                                      isDark ? "bg-slate-900 border-slate-800 text-white focus:border-teal-500" : "bg-slate-50 border-slate-200 focus:border-teal-650"
-                                    }`}
-                                  >
-                                    <option value="center">Centered</option>
-                                    <option value="left">Left Float</option>
-                                    <option value="right">Right Float</option>
-                                  </select>
+                                    onChange={(val) => updateBlockData(block.id, "align", val)}
+                                    placeholder="Select Alignment"
+                                  />
                                 </div>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1087,20 +1078,19 @@ export default function BlogsTab() {
 
                           {block.type === "code" && (
                             <div className="space-y-3">
-                              <div className="w-44">
-                                <select
+                              <div className="w-48">
+                                <CustomSelect
+                                  options={[
+                                    { value: "javascript", label: "JavaScript / TS" },
+                                    { value: "python", label: "Python" },
+                                    { value: "css", label: "HTML / CSS" },
+                                    { value: "sql", label: "PostgreSQL / SQL" },
+                                    { value: "rust", label: "Rust / C++" }
+                                  ]}
                                   value={block.data.language || "javascript"}
-                                  onChange={(e) => updateBlockData(block.id, "language", e.target.value)}
-                                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold border outline-none ${
-                                    isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200"
-                                  }`}
-                                >
-                                  <option value="javascript">JavaScript / TS</option>
-                                  <option value="python">Python</option>
-                                  <option value="css">HTML / CSS</option>
-                                  <option value="sql">PostgreSQL / SQL</option>
-                                  <option value="rust">Rust / C++</option>
-                                </select>
+                                  onChange={(val) => updateBlockData(block.id, "language", val)}
+                                  placeholder="Select Language"
+                                />
                               </div>
                               <textarea
                                 rows={6}
@@ -1115,18 +1105,17 @@ export default function BlogsTab() {
 
                           {block.type === "callout" && (
                             <div className="space-y-3">
-                              <div className="w-44">
-                                <select
+                              <div className="w-48">
+                                <CustomSelect
+                                  options={[
+                                    { value: "info", label: "Info (Teal)" },
+                                    { value: "tip", label: "Tip (Green)" },
+                                    { value: "warning", label: "Warning (Orange)" }
+                                  ]}
                                   value={block.data.type || "info"}
-                                  onChange={(e) => updateBlockData(block.id, "type", e.target.value)}
-                                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold border outline-none ${
-                                    isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200"
-                                  }`}
-                                >
-                                  <option value="info">Info (Teal)</option>
-                                  <option value="tip">Tip (Green)</option>
-                                  <option value="warning">Warning (Orange)</option>
-                                </select>
+                                  onChange={(val) => updateBlockData(block.id, "type", val)}
+                                  placeholder="Select Callout Type"
+                                />
                               </div>
                               <textarea
                                 rows={2}
@@ -1141,17 +1130,16 @@ export default function BlogsTab() {
 
                           {block.type === "list" && (
                             <div className="space-y-3">
-                              <div className="w-44">
-                                <select
+                              <div className="w-48">
+                                <CustomSelect
+                                  options={[
+                                    { value: "unordered", label: "Bullet Points (ul)" },
+                                    { value: "ordered", label: "Numbered List (ol)" }
+                                  ]}
                                   value={block.data.style || "unordered"}
-                                  onChange={(e) => updateBlockData(block.id, "style", e.target.value)}
-                                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold border outline-none ${
-                                    isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200"
-                                  }`}
-                                >
-                                  <option value="unordered">Bullet Points (ul)</option>
-                                  <option value="ordered">Numbered List (ol)</option>
-                                </select>
+                                  onChange={(val) => updateBlockData(block.id, "style", val)}
+                                  placeholder="Select List Style"
+                                />
                               </div>
 
                               <div className="space-y-2">
@@ -1192,18 +1180,17 @@ export default function BlogsTab() {
 
                           {block.type === "columns" && (
                             <div className="space-y-3">
-                              <div className="w-44">
-                                <select
+                              <div className="w-48">
+                                <CustomSelect
+                                  options={[
+                                    { value: "50-50", label: "50% / 50% Ratio" },
+                                    { value: "60-40", label: "60% / 40% Ratio" },
+                                    { value: "40-60", label: "40% / 60% Ratio" }
+                                  ]}
                                   value={block.data.layout || "50-50"}
-                                  onChange={(e) => updateBlockData(block.id, "layout", e.target.value)}
-                                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold border outline-none ${
-                                    isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200"
-                                  }`}
-                                >
-                                  <option value="50-50">50% / 50% Ratio</option>
-                                  <option value="60-40">60% / 40% Ratio</option>
-                                  <option value="40-60">40% / 60% Ratio</option>
-                                </select>
+                                  onChange={(val) => updateBlockData(block.id, "layout", val)}
+                                  placeholder="Select Layout Ratio"
+                                />
                               </div>
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1269,32 +1256,30 @@ export default function BlogsTab() {
                                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                   Button Alignment
                                 </label>
-                                <select
+                                <CustomSelect
+                                  options={[
+                                    { value: "center", label: "Center" },
+                                    { value: "left", label: "Left" },
+                                    { value: "right", label: "Right" }
+                                  ]}
                                   value={block.data.align || "center"}
-                                  onChange={(e) => updateBlockData(block.id, "align", e.target.value)}
-                                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold border outline-none ${
-                                    isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200"
-                                  }`}
-                                >
-                                  <option value="center">Center</option>
-                                  <option value="left">Left</option>
-                                  <option value="right">Right</option>
-                                </select>
+                                  onChange={(val) => updateBlockData(block.id, "align", val)}
+                                  placeholder="Select Alignment"
+                                />
                               </div>
                               <div>
                                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                   Style Theme
                                 </label>
-                                <select
+                                <CustomSelect
+                                  options={[
+                                    { value: "primary", label: "Primary (Teal Solid)" },
+                                    { value: "secondary", label: "Secondary (Slate Border)" }
+                                  ]}
                                   value={block.data.style || "primary"}
-                                  onChange={(e) => updateBlockData(block.id, "style", e.target.value)}
-                                  className={`w-full rounded-xl px-3 py-2 text-xs font-bold border outline-none ${
-                                    isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50 border-slate-200"
-                                  }`}
-                                >
-                                  <option value="primary">Primary (Teal Solid)</option>
-                                  <option value="secondary">Secondary (Slate Border)</option>
-                                </select>
+                                  onChange={(val) => updateBlockData(block.id, "style", val)}
+                                  placeholder="Select Style Theme"
+                                />
                               </div>
                             </div>
                           )}

@@ -490,7 +490,7 @@ export default function ProjectsTab({
                         ...newOptionInputs,
                         [field.key]: e.target.value
                       })}
-                      className="flex-grow bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-teal-700/50"
+                      className="min-w-0 flex-1 bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-teal-700/50"
                     />
                     <button
                       type="submit"

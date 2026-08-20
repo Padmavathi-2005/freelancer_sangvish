@@ -2,14 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FiHeart, FiStar, FiClock, FiTrash2, FiExternalLink, FiUser, FiBriefcase } from "react-icons/fi";
+import { FiHeart, FiStar, FiClock, FiTrash2, FiExternalLink, FiUser, FiBriefcase, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 import { API_BASE_URL } from "@/config/api";
 import { useLanguage } from "@/context/LanguageContext";
 
 const resolveMediaUrl = (url: string) => {
   if (!url) return "";
-  if (url.startsWith("http://") || url.startsWith("https://")) return url;
-  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${url.startsWith("/") ? "" : "/"}${url}`;
+  if (url.startsWith("data:")) return url;
+  let cleaned = url;
+  if (cleaned.includes("localhost:5000")) {
+    cleaned = cleaned.replace(/https?:\/\/localhost:5000/, API_BASE_URL);
+  }
+  if (cleaned.startsWith("http://") || cleaned.startsWith("https://")) {
+    return cleaned;
+  }
+  return `${API_BASE_URL.replace(/\/api\/?$/, "")}${cleaned.startsWith("/") ? "" : "/"}${cleaned}`;
 };
 
 export default function WishlistPage() {
@@ -85,9 +92,16 @@ export default function WishlistPage() {
     <div className="space-y-8 text-left animate-fadeIn">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border bg-white animate-slideIn">
-          <FiHeart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0 animate-pulse" />
+        <div className="fixed top-24 right-6 z-[999999] flex items-center gap-2 px-5 py-3 rounded-xl shadow-2xl border border-slate-200 bg-white animate-fadeIn overflow-hidden">
+          {toast.type === "error" ? (
+            <FiAlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+          ) : toast.type === "success" && toast.message.toLowerCase().includes("wishlist") ? (
+            <FiHeart className="w-4 h-4 text-rose-500 fill-rose-500 shrink-0 animate-pulse" />
+          ) : (
+            <FiCheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+          )}
           <span className="text-xs font-bold text-slate-800">{toast.message}</span>
+          <div className="absolute bottom-0 left-0 h-0.75 bg-teal-600 rounded-b-xl animate-toastProgress" style={{ animationDuration: '3000ms' }} />
         </div>
       )}
 

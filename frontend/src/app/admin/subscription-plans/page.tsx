@@ -1,7 +1,6 @@
 "use client";
 import { API_URL } from "@/config/api";
-
-
+import CustomSelect from "@/components/CustomSelect";
 import React, { useState, useEffect, useRef } from "react";
 import { FiEdit2, FiEye, FiEyeOff, FiPlus, FiTrash2, FiUpload, FiX, FiSearch, FiCheck } from "react-icons/fi";
 
@@ -354,16 +353,16 @@ export default function SubscriptionPlansPage() {
             <form onSubmit={handleSavePackageSettings} className="flex flex-col gap-3">
               <div>
                 <label className={labelClass}>Package options</label>
-                <select
+                <CustomSelect
                   value={packageOption}
-                  onChange={(e) => setPackageOption(e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="Free listing for both type of users">Free listing for both type of users</option>
-                  <option value="Paid listing for both">Paid listing for both</option>
-                  <option value="Paid listing for sellers">Paid listing for sellers</option>
-                  <option value="Paid listing for buyers">Paid listing for buyers</option>
-                </select>
+                  onChange={setPackageOption}
+                  options={[
+                    { value: "Free listing for both type of users", label: "Free listing for both type of users" },
+                    { value: "Paid listing for both", label: "Paid listing for both" },
+                    { value: "Paid listing for sellers", label: "Paid listing for sellers" },
+                    { value: "Paid listing for buyers", label: "Paid listing for buyers" },
+                  ]}
+                />
               </div>
 
               <div>

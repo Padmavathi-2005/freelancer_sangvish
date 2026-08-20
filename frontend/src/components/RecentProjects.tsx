@@ -173,7 +173,7 @@ export default function RecentProjects() {
         {loading ? (
           <div
             className="grid gap-5"
-            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))" }}
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))" }}
           >
             {Array.from({ length: skeletonCount }).map((_, i) => (
               <div key={i} className="border border-slate-200/60 rounded-xl p-5 flex flex-col gap-3 animate-pulse bg-slate-50">
@@ -194,7 +194,7 @@ export default function RecentProjects() {
         ) : (
           <div
             className="grid gap-5"
-            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))" }}
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 360px), 1fr))" }}
           >
             {activeProjectsList.map((job) => {
               const convMin = convertPrice(job.min_budget || 0, currency);

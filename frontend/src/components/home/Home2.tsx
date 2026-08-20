@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -33,11 +33,22 @@ export default function Home2() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFilter, setSearchFilter] = useState<"sellers" | "services" | "projects">("sellers");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsFilterOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const filterOptions = [
-    { value: "sellers", label: t("home2_filter_label", "Sellers") },
-    { value: "services", label: "Services" },
-    { value: "projects", label: "Projects" },
+    { value: "sellers", label: t("home2_filter_label", "Freelancer") },
+    { value: "services", label: t("home2_filter_services_label", "Gigs") },
+    { value: "projects", label: t("home2_filter_projects_label", "Projects") },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
@@ -51,7 +62,7 @@ export default function Home2() {
     }
   };
 
-  const currentFilterLabel = filterOptions.find((o) => o.value === searchFilter)?.label || "Sellers";
+  const currentFilterLabel = filterOptions.find((o) => o.value === searchFilter)?.label || "Freelancer";
   const chipsRaw = t("home2_category_chips", "Digital marketing, Analytics & Strategy, AI Services");
   const chipsList = chipsRaw ? chipsRaw.split(",").map((s) => s.trim()).filter(Boolean) : [];
 
@@ -102,7 +113,7 @@ export default function Home2() {
             </div>
 
             {/* Custom Filter Dropdown */}
-            <div className="relative shrink-0">
+            <div ref={dropdownRef} className="relative shrink-0">
               <button
                 type="button"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}

@@ -101,8 +101,8 @@ function SettingsPortalContent() {
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Sub-Sidebar Navigation */}
-        <div className="w-full lg:w-64 shrink-0 flex flex-col gap-1.5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-sm text-left backdrop-blur-md">
-          <div className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2.5 px-2 select-none">
+        <div className="w-full lg:w-64 shrink-0 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-2 lg:gap-1.5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 lg:p-4 shadow-sm text-left backdrop-blur-md scrollbar-none whitespace-nowrap">
+          <div className="hidden lg:block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2.5 px-2 select-none">
             Settings Categories
           </div>
           {tabs.map((tab) => {
@@ -112,7 +112,7 @@ function SettingsPortalContent() {
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-3 cursor-pointer border-none relative overflow-hidden isolate group transition-all duration-500 bg-transparent ${
+                className={`w-auto lg:w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2.5 cursor-pointer border-none relative overflow-hidden isolate group transition-all duration-500 bg-transparent shrink-0 ${
                   isTabActive
                     ? "text-white translate-x-0.5"
                     : "text-slate-500 hover:text-teal-900 hover:translate-x-0.5"
@@ -131,7 +131,7 @@ function SettingsPortalContent() {
                 )}
 
                 {/* Active Indicator Left Glow Line */}
-                <div className={`absolute left-0 top-2.5 bottom-2.5 w-1 bg-teal-400 rounded-r-md transition-all duration-500 ${
+                <div className={`hidden lg:block absolute left-0 top-2.5 bottom-2.5 w-1 bg-teal-400 rounded-r-md transition-all duration-500 ${
                   isTabActive ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
                 }`}></div>
 
