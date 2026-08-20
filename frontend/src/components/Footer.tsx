@@ -25,7 +25,7 @@ interface FooterProps {
 export default function Footer({ transparent = false }: FooterProps) {
   const { t } = useLanguage();
   const currentYear = new Date().getFullYear();
-  const [siteLogo, setSiteLogo] = useState<string>("/public/logo.png");
+  const [siteLogo, setSiteLogo] = useState<string>("/logo.png");
   const [siteLogoDark, setSiteLogoDark] = useState<string>("");
   const [siteName, setSiteName] = useState<string>("Buy2Lancer");
   const [mounted, setMounted] = useState(false);
@@ -119,7 +119,7 @@ export default function Footer({ transparent = false }: FooterProps) {
           <div className="md:col-span-5 flex flex-col gap-4 text-left">
             <a href="/" className="inline-flex items-center gap-2 select-none w-fit">
               <img
-                src={resolveLogoUrl(siteLogoDark || siteLogo || "/public/logo.png")}
+                src={resolveLogoUrl(siteLogoDark || siteLogo || "/logo.png")}
                 alt={siteName || "Buy2Lancer"}
                 className="h-9 w-auto max-w-[200px] object-contain shrink-0"
               />

@@ -708,8 +708,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
   });
   const [siteTheme, setSiteThemeState] = useState("light");
   const [siteName, setSiteName] = useState("Buy2Lancer");
-  const [siteLogo, setSiteLogo] = useState("/public/logo.png");
-  const [siteLogoDark, setSiteLogoDark] = useState("/public/logo.png");
+  const [siteLogo, setSiteLogo] = useState("/logo.png");
+  const [siteLogoDark, setSiteLogoDark] = useState("/logo.png");
 
   useEffect(() => {
     if (typeof window !== "undefined") {

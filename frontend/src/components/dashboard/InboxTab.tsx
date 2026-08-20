@@ -858,7 +858,7 @@ export default function InboxTab({
                   }
 
                   const activeLogo = parsedLogoUrl || siteLogo;
-                  const showLogo = activeLogo && activeLogo !== "/public/logo.png" && activeLogo !== "logo.png";
+                  const showLogo = activeLogo && activeLogo !== "/public/logo.png" && activeLogo !== "/logo.png" && activeLogo !== "logo.png";
                   const cleanLogoSrc = showLogo ? getAvatarSrc(activeLogo) : "";
                   const initials = isPlatformMsg ? getInitials(siteName || "Buy2Lancer") : getInitials(msg.sender_name || "User");
                   const displayName = isPlatformMsg ? (siteName || "Buy2Lancer") : (isOwn ? t("you_label", "You") : msg.sender_name || t("user_role_label", "User"));

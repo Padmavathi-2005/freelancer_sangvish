@@ -19,11 +19,11 @@ export default function SiteSettingsTab({
 
   // Site name/logo/favicon/OG details states
   const [siteName, setSiteName] = useState("Buy2Lancer");
-  const [siteLogo, setSiteLogo] = useState("/public/logo.png");
-  const [siteLogoDark, setSiteLogoDark] = useState("/public/logo.png");
-  const [siteFavicon, setSiteFavicon] = useState("/public/favicon.ico");
-  const [siteOgImage, setSiteOgImage] = useState("/public/og-image.png");
-  const [siteChatbotAvatar, setSiteChatbotAvatar] = useState("/public/chatbot-avatar.png");
+  const [siteLogo, setSiteLogo] = useState("/logo.png");
+  const [siteLogoDark, setSiteLogoDark] = useState("/logo.png");
+  const [siteFavicon, setSiteFavicon] = useState("/favicon.ico");
+  const [siteOgImage, setSiteOgImage] = useState("/og-image.png");
+  const [siteChatbotAvatar, setSiteChatbotAvatar] = useState("/chatbot-avatar.png");
   const [siteDescription, setSiteDescription] = useState("LancerFlow Freelance Marketplace");
   const [siteKeywords, setSiteKeywords] = useState("freelance, marketplace, gig, order");
   const [siteShortName, setSiteShortName] = useState("Lancer");
@@ -394,7 +394,7 @@ export default function SiteSettingsTab({
                     className="max-h-full max-w-full object-contain transition group-hover:scale-105"
                     alt="Light Logo Preview" 
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/public/logo.png";
+                      (e.target as HTMLImageElement).src = "/logo.png";
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
@@ -427,7 +427,7 @@ export default function SiteSettingsTab({
               type="text"
               value={siteLogo}
               onChange={(e) => setSiteLogo(e.target.value)}
-              placeholder="/public/logo.png"
+              placeholder="/logo.png"
               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-500 focus:outline-none focus:border-teal-700 transition"
             />
           </div>
@@ -444,7 +444,7 @@ export default function SiteSettingsTab({
                     className="max-h-full max-w-full object-contain transition group-hover:scale-105"
                     alt="Dark Logo Preview" 
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/public/logo.png";
+                      (e.target as HTMLImageElement).src = "/logo.png";
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/70 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">

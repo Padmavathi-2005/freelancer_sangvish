@@ -17,7 +17,7 @@ export default function AdminLoginPage() {
   const [mounted, setMounted] = useState(false);
 
   const resolveLogoUrl = (logoPath: string | null) => {
-    if (!logoPath) return "/public/logo.png";
+    if (!logoPath) return "/logo.png";
     if (logoPath.startsWith("http://") || logoPath.startsWith("https://")) return logoPath;
     const baseUrl = API_URL.replace(/\/api$/, "");
     return `${baseUrl}${logoPath.startsWith("/") ? "" : "/"}${logoPath}`;
