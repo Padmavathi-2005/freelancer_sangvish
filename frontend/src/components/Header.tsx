@@ -727,7 +727,7 @@ export default function Header() {
                   </svg>
                   {lang}
                 </button>
-                <div className="absolute right-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
+                <div dir="ltr" className="absolute right-0 rtl:left-0 rtl:right-auto mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
                   {activeLanguages.map((l, idx) => (
                     <button
                       key={l.code || idx}
@@ -740,7 +740,7 @@ export default function Header() {
                   ))}
                 </div>
               </div>
-
+ 
               {/* Currency Switcher */}
               <div className="relative group/curr">
                 <button
@@ -750,7 +750,7 @@ export default function Header() {
                   <span className="font-extrabold text-primary dark:text-teal-400 mr-0.5">{currencySymbol}</span>
                   {currency}
                 </button>
-                <div className="absolute right-0 mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/curr:opacity-100 group-hover/curr:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
+                <div dir="ltr" className="absolute right-0 rtl:left-0 rtl:right-auto mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/curr:opacity-100 group-hover/curr:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
                   {currencies.map((c, idx) => (
                     <button
                       key={c.code || idx}
