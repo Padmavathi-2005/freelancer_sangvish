@@ -324,7 +324,9 @@ async function setupTables() {
       ADD COLUMN IF NOT EXISTS skills JSONB,
       ADD COLUMN IF NOT EXISTS languages JSONB,
       ADD COLUMN IF NOT EXISTS max_hours INTEGER,
-      ADD COLUMN IF NOT EXISTS payment_mode VARCHAR(50)
+      ADD COLUMN IF NOT EXISTS payment_mode VARCHAR(50),
+      ADD COLUMN IF NOT EXISTS is_featured BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS featured_at TIMESTAMP DEFAULT NULL
     `);
     console.log("✅ 'jobs' table columns migrated successfully.");
 
@@ -388,7 +390,8 @@ async function setupTables() {
     await pool.query(`
       ALTER TABLE proposals 
       ADD COLUMN IF NOT EXISTS milestones JSONB,
-      ADD COLUMN IF NOT EXISTS initiated_by VARCHAR(50) DEFAULT 'freelancer'
+      ADD COLUMN IF NOT EXISTS initiated_by VARCHAR(50) DEFAULT 'freelancer',
+      ADD COLUMN IF NOT EXISTS revisions_limit INTEGER DEFAULT 3
     `);
     console.log("✅ 'proposals' table columns migrated successfully.");
 
@@ -587,7 +590,9 @@ async function setupTables() {
         ADD COLUMN IF NOT EXISTS job_posting_limit INTEGER DEFAULT 3,
         ADD COLUMN IF NOT EXISTS transaction_fee_percent NUMERIC(5,2) DEFAULT 5.00,
         ADD COLUMN IF NOT EXISTS featured_job_allowance BOOLEAN DEFAULT FALSE,
-        ADD COLUMN IF NOT EXISTS gig_discount_percent INTEGER DEFAULT 0
+        ADD COLUMN IF NOT EXISTS gig_discount_percent INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS credits_per_generation INTEGER DEFAULT 1,
+        ADD COLUMN IF NOT EXISTS allowed_models JSONB DEFAULT '["gemini-1.5-flash", "gemini-1.5-pro", "gemini-2.0-flash", "openai-gpt-4o", "openai-gpt-4o-mini", "sdxl-canny-controlnet", "flux-dev-controlnet", "replicate-controlnet"]'::jsonb
       `);
       console.log("✅ 'subscription_plans' SaaS limit columns verified.");
     } catch (e) {
@@ -683,29 +688,40 @@ async function setupTables() {
        ALTER TABLE gig_application_milestones ADD COLUMN IF NOT EXISTS description TEXT;
      `);
       await pool.query(`
-        ALTER TABLE contract_milestones ADD COLUMN IF NOT EXISTS description TEXT;
-      `);
-      await pool.query(`
-        ALTER TABLE contract_milestones ADD COLUMN IF NOT EXISTS submitted_files TEXT;
-      `);
-      await pool.query(`
-        ALTER TABLE contract_milestones ADD COLUMN IF NOT EXISTS revision_count INTEGER DEFAULT 0;
+        ALTER TABLE contract_milestones 
+        ADD COLUMN IF NOT EXISTS description TEXT,
+        ADD COLUMN IF NOT EXISTS submitted_files TEXT,
+        ADD COLUMN IF NOT EXISTS revision_count INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS feedback TEXT,
+        ADD COLUMN IF NOT EXISTS revision_status VARCHAR(50) DEFAULT 'None',
+        ADD COLUMN IF NOT EXISTS extra_revision_fee NUMERIC DEFAULT 0.00,
+        ADD COLUMN IF NOT EXISTS revision_feedback TEXT,
+        ADD COLUMN IF NOT EXISTS revision_submitted_files TEXT;
       `);
       console.log("✅ Milestone description, submitted_files, and revision_count columns migrated successfully.");
 
     // Alter contracts table to add application_id link
     await pool.query(`
       ALTER TABLE contracts
-      ADD COLUMN IF NOT EXISTS application_id INTEGER REFERENCES gig_applications(application_id) ON DELETE SET NULL
+      ADD COLUMN IF NOT EXISTS application_id INTEGER REFERENCES gig_applications(application_id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS revisions_limit INTEGER DEFAULT 3
     `);
     console.log("✅ 'contracts.application_id' column ready.");
 
     // Alter conversations to support admin mediation
     await pool.query(`
       ALTER TABLE conversations
-      ADD COLUMN IF NOT EXISTS admin_id INTEGER REFERENCES users(user_id) DEFAULT NULL
+      ADD COLUMN IF NOT EXISTS admin_id INTEGER REFERENCES users(user_id) DEFAULT NULL,
+      ADD COLUMN IF NOT EXISTS is_group BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS group_name VARCHAR(255) DEFAULT NULL
     `);
     console.log("✅ 'conversations.admin_id' column ready.");
+
+    try {
+      await pool.query(`
+        ALTER TABLE notifications ADD COLUMN IF NOT EXISTS target_tab VARCHAR(255) DEFAULT NULL;
+      `);
+    } catch (e) {}
 
     // Create disputes table
     await pool.query(`
@@ -1203,13 +1219,17 @@ async function setupTables() {
 
     // Add slug column to gigs
     await pool.query(`
-      ALTER TABLE gigs ADD COLUMN IF NOT EXISTS slug VARCHAR(255) UNIQUE;
-    `);
-    console.log("✅ 'gigs.slug' column ready.");
-
-    // Add plans column to gigs
-    await pool.query(`
-      ALTER TABLE gigs ADD COLUMN IF NOT EXISTS plans JSONB;
+      ALTER TABLE gigs 
+      ADD COLUMN IF NOT EXISTS slug VARCHAR(255) UNIQUE,
+      ADD COLUMN IF NOT EXISTS plans JSONB,
+      ADD COLUMN IF NOT EXISTS negotiation BOOLEAN DEFAULT FALSE,
+      ADD COLUMN IF NOT EXISTS wishlist_count INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS reviews_count INTEGER DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS reviews_avg_rating NUMERIC DEFAULT 5.0,
+      ADD COLUMN IF NOT EXISTS payment_type VARCHAR(50) DEFAULT 'fixed',
+      ADD COLUMN IF NOT EXISTS min_price NUMERIC DEFAULT NULL,
+      ADD COLUMN IF NOT EXISTS max_price NUMERIC DEFAULT NULL,
+      ADD COLUMN IF NOT EXISTS addons JSONB DEFAULT NULL;
     `);
     console.log("✅ 'gigs.plans' column ready.");
 
