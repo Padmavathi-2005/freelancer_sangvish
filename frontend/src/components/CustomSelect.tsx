@@ -97,11 +97,11 @@ export default function CustomSelect({
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full max-w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none transition-all cursor-pointer flex items-center justify-between gap-2 shadow-xs text-left ${
+        className={`w-full max-w-full bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 hover:border-slate-350 focus:border-teal-700/50 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none transition-all cursor-pointer flex items-center justify-between gap-2 shadow-xs text-left ${
           disabled ? "opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-800" : ""
         }`}
       >
-        <span className="truncate flex-1 min-w-0">{displayLabel}</span>
+        <span className="truncate flex-1 min-w-0 text-slate-900 dark:text-slate-100 font-bold">{displayLabel}</span>
         <FiChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${isOpen ? "rotate-180 text-teal-700" : ""}`} />
       </button>
 
@@ -138,11 +138,13 @@ export default function CustomSelect({
                 onClick={() => handleSelectOption(opt.value)}
                 className={`w-full flex items-center justify-between truncate px-3 py-2 rounded-lg text-xs font-bold transition cursor-pointer border-none ${
                   selected
-                    ? "bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400"
-                    : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900"
+                    ? "bg-teal-100/90 dark:bg-teal-950/80 text-teal-900 dark:text-teal-200"
+                    : "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
               >
-                <span className="truncate pl-1">{opt.label}</span>
+                <span className={`truncate pl-1 font-bold ${selected ? "text-teal-900 dark:text-teal-200" : "text-slate-900 dark:text-slate-100"}`}>
+                  {opt.label}
+                </span>
                 {multiple && selected && <FiCheck className="w-3.5 h-3.5 text-teal-600 shrink-0 ml-2" />}
               </button>
             );

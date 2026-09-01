@@ -32,6 +32,8 @@ export const saveFreelancerProfile = async (req, res) => {
             availability_status,
             slug,
             display_name,
+            first_name,
+            last_name,
             seo
         } = req.body;
 
@@ -95,13 +97,33 @@ export const saveFreelancerProfile = async (req, res) => {
             profile = stepRes.rows[0];
         }
 
-        if (display_name) {
-            const parts = display_name.trim().split(/\s+/);
-            const firstName = parts[0] || "";
-            const lastName = parts.slice(1).join(" ") || null;
+        if (display_name && display_name.trim()) {
+            const cleanDisplayName = display_name.trim();
+            if (cleanDisplayName.length > 20) {
+                return res.status(400).json({ message: "Display Name cannot exceed 20 characters." });
+            }
+
+            const checkDisp = await pool.query(
+                "SELECT user_id FROM users WHERE LOWER(display_name) = LOWER($1) AND user_id != $2",
+                [cleanDisplayName, userId]
+            );
+            if (checkDisp.rows.length > 0) {
+                return res.status(400).json({ message: "Display Name is already taken by another user." });
+            }
+
+            const fName = first_name && first_name.trim() ? first_name.trim() : null;
+            const lName = last_name && last_name.trim() ? last_name.trim() : null;
+
             await pool.query(
                 "UPDATE users SET display_name = $1, first_name = $2, last_name = $3 WHERE user_id = $4",
-                [display_name, firstName, lastName, userId]
+                [cleanDisplayName, fName, lName, userId]
+            );
+        } else if (first_name !== undefined || last_name !== undefined) {
+            const fName = first_name && first_name.trim() ? first_name.trim() : null;
+            const lName = last_name && last_name.trim() ? last_name.trim() : null;
+            await pool.query(
+                "UPDATE users SET first_name = COALESCE($1, first_name), last_name = COALESCE($2, last_name) WHERE user_id = $3",
+                [fName, lName, userId]
             );
         }
 
@@ -521,8 +543,8 @@ export const getFreelancerOnboardingStatus = async (req, res) => {
         if (!step1Completed) {
             currentStep = 1;
         } else {
-            // Keep current step from DB (2, 3, or 4). If DB step is 1 but profile is saved, move to 2.
-            currentStep = Math.min(Math.max(currentDbStep, 2), 4);
+            // Keep current step from DB (2, 3, 4 or 5). If DB step is 1 but profile is saved, move to 2.
+            currentStep = Math.min(Math.max(currentDbStep, 2), 5);
         }
 
         res.status(200).json({
@@ -1426,8 +1448,8 @@ export const declineTimecard = async (req, res) => {
         if (!timecard) {
             return res.status(404).json({ message: "Timecard not found." });
         }
-        if (timecard.status !== "Requested") {
-            return res.status(400).json({ message: `Only requested timecards can be declined. Status: ${timecard.status}` });
+        if (timecard.status !== "Pending" && timecard.status !== "Requested") {
+            return res.status(400).json({ message: `Only pending or requested timecards can be declined. Status: ${timecard.status}` });
         }
 
         // Update status of timecard to 'Declined'
@@ -1482,8 +1504,8 @@ export const approveTimecard = async (req, res) => {
         if (!timecard) {
             return res.status(404).json({ message: "Timecard not found." });
         }
-        if (timecard.status !== "Requested") {
-            return res.status(400).json({ message: `Timecard is already in status: ${timecard.status} (must be Requested)` });
+        if (timecard.status !== "Pending" && timecard.status !== "Requested") {
+            return res.status(400).json({ message: `Timecard must be in status Pending or Requested. Status: ${timecard.status}` });
         }
 
         const amount = parseFloat(timecard.amount);
@@ -1834,67 +1856,135 @@ export const approveContractCompletion = async (req, res) => {
             return res.status(400).json({ message: `Contract cannot be finalized in status: ${contract.status}. It must be 'Work Completed'.` });
         }
 
-        const escrowAmount = parseFloat(contract.budget || 0);
+        const pendingTimecardsRes = await pool.query(
+            "SELECT * FROM contract_timecards WHERE contract_id = $1 AND status IN ('Pending', 'Requested')",
+            [contract.contract_id]
+        );
+        const pendingTimecards = pendingTimecardsRes.rows;
+
+        const clientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [contract.client_id]);
+        let clientWallet = clientWalletRes.rows[0];
+
+        const sysWalletRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE LIMIT 1");
+        const systemWallet = sysWalletRes.rows[0];
+
+        const freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [contract.freelancer_id]);
+        let freelancerWallet = freelancerWalletRes.rows[0];
+        if (!freelancerWallet) {
+            const insertWallet = await pool.query(
+                "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
+                [contract.freelancer_id]
+            );
+            freelancerWallet = insertWallet.rows[0];
+        }
+
+        let commissionPercent = 0.05;
+        const feeRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'platform_fee'");
+        if (feeRes.rows.length > 0) {
+            let feeVal = feeRes.rows[0].setting_value;
+            if (typeof feeVal === "string") {
+                try { feeVal = JSON.parse(feeVal); } catch {}
+            }
+            if (feeVal?.fee) {
+                commissionPercent = parseFloat(feeVal.fee) / 100;
+            }
+        }
+
+        let currentEscrow = parseFloat(contract.budget || 0);
 
         await pool.query("BEGIN");
         try {
-            if (escrowAmount > 0) {
-                // Get system wallet
-                const sysWalletRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE LIMIT 1");
-                const systemWallet = sysWalletRes.rows[0];
+            for (const tc of pendingTimecards) {
+                const tcAmount = parseFloat(tc.amount);
+                const escrowPayment = Math.min(currentEscrow, tcAmount);
+                const extraPayment = Math.max(0, tcAmount - currentEscrow);
 
-                // Get freelancer wallet
-                const freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [contract.freelancer_id]);
-                let freelancerWallet = freelancerWalletRes.rows[0];
-                if (!freelancerWallet) {
-                    const insertWallet = await pool.query(
-                        "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
-                        [contract.freelancer_id]
-                    );
-                    freelancerWallet = insertWallet.rows[0];
-                }
-
-                // Get commission percent based on standard platform fee
-                let commissionPercent = 0.05; // Default 5%
-                const feeRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'platform_fee'");
-                if (feeRes.rows.length > 0) {
-                    let feeVal = feeRes.rows[0].setting_value;
-                    if (typeof feeVal === "string") {
-                        try { feeVal = JSON.parse(feeVal); } catch {}
-                    }
-                    if (feeVal?.fee) {
-                        commissionPercent = parseFloat(feeVal.fee) / 100;
+                if (extraPayment > 0) {
+                    if (!clientWallet || parseFloat(clientWallet.balance) < extraPayment) {
+                        await pool.query("ROLLBACK");
+                        return res.status(400).json({
+                            message: `Insufficient client wallet balance to pay pending timecard logged on: ${new Date(tc.work_date).toLocaleDateString()}. Total due: $${tcAmount.toFixed(2)} ($${escrowPayment.toFixed(2)} covered by remaining escrow, $${extraPayment.toFixed(2)} due now), but your wallet only has $${clientWallet ? parseFloat(clientWallet.balance).toFixed(2) : '0.00'}. Please deposit funds.`
+                        });
                     }
                 }
 
-                const commissionAmount = escrowAmount * commissionPercent;
-                const freelancerAmount = escrowAmount - commissionAmount;
-
-                // Update system wallet (debit escrowAmount)
-                if (systemWallet) {
+                if (extraPayment > 0 && clientWallet) {
                     await pool.query(
                         "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
-                        [escrowAmount, systemWallet.wallet_id]
+                        [extraPayment, clientWallet.wallet_id]
                     );
+                    clientWallet.balance = parseFloat(clientWallet.balance) - extraPayment;
                 }
 
-                // Update freelancer wallet (credit freelancerAmount)
+                if (escrowPayment > 0 && systemWallet) {
+                    await pool.query(
+                        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+                        [escrowPayment, systemWallet.wallet_id]
+                    );
+                    currentEscrow -= escrowPayment;
+                }
+
+                const commissionAmount = tcAmount * commissionPercent;
+                const freelancerAmount = tcAmount - commissionAmount;
+
                 await pool.query(
                     "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
                     [freelancerAmount, freelancerWallet.wallet_id]
                 );
 
-                // Insert wallet transaction
-                const txQuery = `
+                if (systemWallet) {
+                    await pool.query(
+                        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+                        [commissionAmount, systemWallet.wallet_id]
+                    );
+                }
+
+                const tcTxQuery = `
+                    INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, commission_amount, type, status, description)
+                    VALUES ($1, $2, $3, $4, 'Hourly_Payout', 'Completed', $5)
+                `;
+                const tcTxDesc = `Hourly payout release for timecard logged on ${new Date(tc.work_date).toLocaleDateString()} (contract: ${contract.title})`;
+                const tcSenderWalletId = clientWallet ? clientWallet.wallet_id : null;
+                await pool.query(tcTxQuery, [tcSenderWalletId, freelancerWallet.wallet_id, tcAmount, commissionAmount, tcTxDesc]);
+
+                await pool.query(
+                    "UPDATE contract_timecards SET status = 'Paid', updated_at = CURRENT_TIMESTAMP WHERE timecard_id = $1",
+                    [tc.timecard_id]
+                );
+            }
+
+            if (currentEscrow > 0) {
+                const commissionAmount = currentEscrow * commissionPercent;
+                const freelancerAmount = currentEscrow - commissionAmount;
+
+                if (systemWallet) {
+                    await pool.query(
+                        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+                        [currentEscrow, systemWallet.wallet_id]
+                    );
+                }
+
+                await pool.query(
+                    "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+                    [freelancerAmount, freelancerWallet.wallet_id]
+                );
+
+                if (systemWallet) {
+                    await pool.query(
+                        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+                        [commissionAmount, systemWallet.wallet_id]
+                    );
+                }
+
+                const escTxQuery = `
                     INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, commission_amount, type, status, description)
                     VALUES ($1, $2, $3, $4, 'Milestone_Release', 'Completed', $5)
                 `;
-                const txDesc = `Final escrow release for completed contract: ${contract.title}`;
-                const senderWalletId = systemWallet ? systemWallet.wallet_id : null;
-                await pool.query(txQuery, [senderWalletId, freelancerWallet.wallet_id, escrowAmount, commissionAmount, txDesc]);
+                const escTxDesc = `Final escrow release for completed contract: ${contract.title}`;
+                const escSenderWalletId = systemWallet ? systemWallet.wallet_id : null;
+                await pool.query(escTxQuery, [escSenderWalletId, freelancerWallet.wallet_id, currentEscrow, commissionAmount, escTxDesc]);
             }
 
-            // Update contract status to Completed and budget to 0 (all escrow released)
             await pool.query(
                 `UPDATE contracts 
                  SET status = 'Completed', budget = 0, progress = 100, completed_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP 
@@ -1902,7 +1992,6 @@ export const approveContractCompletion = async (req, res) => {
                 [contract.contract_id]
             );
 
-            // If linked to a gig application, update gig application status to Completed
             if (contract.application_id) {
                 await pool.query(
                     "UPDATE gig_applications SET status = 'Completed', updated_at = CURRENT_TIMESTAMP WHERE application_id = $1",

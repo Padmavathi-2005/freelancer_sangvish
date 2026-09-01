@@ -1,5 +1,6 @@
 "use client";
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -53,6 +54,7 @@ interface ToastState {
 }
 
 export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
+  const { t } = useLanguage();
   const [backups, setBackups] = useState<Backup[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -76,14 +78,14 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
         const data = await res.json();
         setBackups(data);
       } else {
-        showToast("Failed to load backups.", "error");
+        showToast(t("admin_failed_load_backups", "Failed to load backups."), "error");
       }
     } catch {
-      showToast("Network error while fetching backups.", "error");
+      showToast(t("admin_network_error_fetching_backups", "Network error while fetching backups."), "error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchBackups();
@@ -98,13 +100,13 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(`Backup "${data.filename}" created successfully!`, "success");
+        showToast(`${t("admin_backup_created_success", "Backup successfully created!")} (${data.filename})`, "success");
         fetchBackups();
       } else {
-        showToast(data.error || "Failed to create backup.", "error");
+        showToast(data.error || t("admin_failed_create_backup", "Failed to create backup."), "error");
       }
     } catch {
-      showToast("Network error while creating backup.", "error");
+      showToast(t("admin_network_error_creating_backup", "Network error while creating backup."), "error");
     } finally {
       setCreating(false);
     }
@@ -126,12 +128,12 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        showToast(`"${filename}" downloaded.`, "success");
+        showToast(`"${filename}" ${t("admin_downloaded_success", "Downloaded")}.`, "success");
       } else {
-        showToast("Failed to download backup.", "error");
+        showToast(t("admin_failed_download_backup", "Failed to download backup."), "error");
       }
     } catch {
-      showToast("Network error during download.", "error");
+      showToast(t("admin_network_error_download", "Network error during download."), "error");
     } finally {
       setDownloadingFile(null);
     }
@@ -148,13 +150,13 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast("Backup deleted.", "success");
+        showToast(t("admin_backup_deleted_success", "Backup deleted."), "success");
         fetchBackups();
       } else {
-        showToast(data.error || "Failed to delete backup.", "error");
+        showToast(data.error || t("admin_failed_delete_backup", "Failed to delete backup."), "error");
       }
     } catch {
-      showToast("Network error during deletion.", "error");
+      showToast(t("admin_network_error_deletion", "Network error during deletion."), "error");
     } finally {
       setDeletingFile(null);
     }
@@ -176,7 +178,7 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
   const textMuted = isDark ? "text-slate-400" : "text-slate-500";
 
   return (
-    <div className="flex flex-col gap-6 pb-8">
+    <div className="flex flex-col gap-6 pb-8 text-left rtl:text-right">
       {/* Toast — rendered via Portal to escape overflow-y-auto stacking context */}
       {toast && typeof document !== "undefined" && ReactDOM.createPortal(
         <div
@@ -202,7 +204,7 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
       {confirmDelete && typeof document !== "undefined" && ReactDOM.createPortal(
         <div className="fixed inset-0 bg-black/40 z-[999999] flex items-center justify-center p-4">
           <div
-            className={`w-full max-w-md rounded-xl border p-6 shadow-2xl ${
+            className={`w-full max-w-md rounded-xl border p-6 shadow-2xl text-left rtl:text-right ${
               isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"
             }`}
           >
@@ -211,11 +213,11 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
                 <FiTrash2 className="w-5 h-5 text-rose-500" />
               </div>
               <div>
-                <h3 className={`text-sm font-black ${textMain}`}>Delete Backup?</h3>
-                <p className={`text-xs ${textMuted} mt-0.5`}>This action cannot be undone.</p>
+                <h3 className={`text-sm font-black ${textMain}`}>{t("admin_delete_backup_question", "Delete Backup?")}</h3>
+                <p className={`text-xs ${textMuted} mt-0.5`}>{t("admin_action_cannot_be_undone", "This action cannot be undone.")}</p>
               </div>
             </div>
-            <p className={`text-xs font-mono px-3 py-2 rounded-lg truncate mb-5 ${
+            <p className={`text-xs font-mono px-3 py-2 rounded-lg truncate mb-5 text-left rtl:text-right ${
               isDark
                 ? "bg-slate-800 text-slate-200 border border-slate-700"
                 : "bg-slate-100 text-slate-700 border border-slate-200"
@@ -231,13 +233,13 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
                     : "border-slate-200 text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                Cancel
+                {t("cancel", "Cancel")}
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-all cursor-pointer"
+                className="flex-1 py-2.5 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-all cursor-pointer border-0"
               >
-                Yes, Delete
+                {t("admin_yes_delete_btn", "Yes, Delete")}
               </button>
             </div>
           </div>
@@ -252,9 +254,9 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
             <FiDatabase className="w-5 h-5 text-teal-600" />
           </div>
           <div>
-            <h2 className={`text-base font-black ${textMain}`}>Database Backups</h2>
+            <h2 className={`text-base font-black ${textMain}`}>{t("admin_database_backups", "Database Backups")}</h2>
             <p className={`text-xs ${textMuted}`}>
-              {backups.length} backup{backups.length !== 1 ? "s" : ""} stored on server
+              {backups.length} {backups.length === 1 ? t("admin_backup_singular", "backup") : t("admin_backup_plural", "backups")} {t("admin_stored_on_server", "stored on server")}
             </p>
           </div>
         </div>
@@ -270,22 +272,22 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
             }`}
           >
             <FiRefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            {t("admin_refresh_btn", "Refresh")}
           </button>
           <button
             onClick={handleCreate}
             disabled={creating}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md hover:shadow-teal-600/25 transition-all cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-md hover:shadow-teal-600/25 transition-all cursor-pointer disabled:opacity-60 border-0"
           >
             {creating ? (
               <>
                 <FiRefreshCw className="w-3.5 h-3.5 animate-spin" />
-                Creating…
+                {t("admin_creating_progress", "Creating…")}
               </>
             ) : (
               <>
                 <FiPlus className="w-3.5 h-3.5" />
-                Create Backup
+                {t("admin_create_backup_btn", "Create Backup")}
               </>
             )}
           </button>
@@ -295,19 +297,19 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
       {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className={`${card} p-4`}>
-          <p className={`text-[10px] font-black uppercase tracking-wider ${textMuted} mb-1`}>Total Backups</p>
+          <p className={`text-[10px] font-black uppercase tracking-wider ${textMuted} mb-1`}>{t("admin_backup_plural", "Backups")}</p>
           <p className={`text-2xl font-black ${textMain}`}>{backups.length}</p>
         </div>
         <div className={`${card} p-4`}>
-          <p className={`text-[10px] font-black uppercase tracking-wider ${textMuted} mb-1`}>Total Size</p>
+          <p className={`text-[10px] font-black uppercase tracking-wider ${textMuted} mb-1`}>{t("admin_total_size", "Total Size")}</p>
           <p className={`text-2xl font-black ${textMain}`}>
             {formatBytes(backups.reduce((acc, b) => acc + b.sizeBytes, 0))}
           </p>
         </div>
         <div className={`${card} p-4 col-span-2 sm:col-span-1`}>
-          <p className={`text-[10px] font-black uppercase tracking-wider ${textMuted} mb-1`}>Latest Backup</p>
+          <p className={`text-[10px] font-black uppercase tracking-wider ${textMuted} mb-1`}>{t("admin_latest_backup", "Latest Backup")}</p>
           <p className={`text-xs font-bold ${textMain} truncate`}>
-            {backups.length > 0 ? formatDate(backups[0].createdAt) : "None yet"}
+            {backups.length > 0 ? formatDate(backups[0].createdAt) : t("admin_none_yet", "None yet")}
           </p>
         </div>
       </div>
@@ -315,38 +317,38 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
       {/* Backups Table */}
       <div className={card}>
         <div className={`px-5 py-3.5 flex items-center justify-between ${tableHeaderClass} rounded-t-2xl`}>
-          <span className="text-[10px] font-black uppercase tracking-widest">Backup Files</span>
-          <span className={`text-[10px] font-semibold ${textMuted}`}>{backups.length} total</span>
+          <span className="text-[10px] font-black uppercase tracking-widest">{t("admin_backup_files", "Backup Files")}</span>
+          <span className={`text-[10px] font-semibold ${textMuted}`}>{backups.length} {t("admin_total_lowercase", "total")}</span>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-16 gap-3">
             <FiRefreshCw className="w-5 h-5 animate-spin text-teal-500" />
-            <span className={`text-xs font-bold ${textMuted}`}>Loading backups…</span>
+            <span className={`text-xs font-bold ${textMuted}`}>{t("admin_loading_backups", "Loading backups…")}</span>
           </div>
         ) : backups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${isDark ? "bg-slate-800" : "bg-slate-100"}`}>
               <FiHardDrive className={`w-6 h-6 ${textMuted}`} />
             </div>
-            <p className={`text-sm font-bold ${textMain}`}>No backups yet</p>
-            <p className={`text-xs ${textMuted}`}>Click "Create Backup" to generate your first database snapshot.</p>
+            <p className={`text-sm font-bold ${textMain}`}>{t("admin_no_backups_yet", "No backups yet")}</p>
+            <p className={`text-xs ${textMuted}`}>{t("admin_no_backups_yet_desc", 'Click "Create Backup" to generate your first database snapshot.')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className={`${tableHeaderClass} text-left`}>
-                  <th className="px-5 py-3 font-black text-[10px] tracking-wider uppercase">Filename</th>
-                  <th className="px-4 py-3 font-black text-[10px] tracking-wider uppercase">Size</th>
-                  <th className="px-4 py-3 font-black text-[10px] tracking-wider uppercase">Created At</th>
-                  <th className="px-4 py-3 font-black text-[10px] tracking-wider uppercase text-right">Actions</th>
+                <tr className={`${tableHeaderClass} text-left rtl:text-right`}>
+                  <th className="px-5 py-3 font-black text-[10px] tracking-wider uppercase text-left rtl:text-right">{t("admin_filename_header", "Filename")}</th>
+                  <th className="px-4 py-3 font-black text-[10px] tracking-wider uppercase text-left rtl:text-right">{t("admin_size_header", "Size")}</th>
+                  <th className="px-4 py-3 font-black text-[10px] tracking-wider uppercase text-left rtl:text-right">{t("admin_created_at_header", "Created At")}</th>
+                  <th className="px-4 py-3 font-black text-[10px] tracking-wider uppercase text-right rtl:text-left">{t("actions", "Actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {backups.map((backup) => (
                   <tr key={backup.filename} className={rowClass}>
-                    <td className="px-5 py-3.5">
+                    <td className="px-5 py-3.5 text-left rtl:text-right">
                       <div className="flex items-center gap-2.5">
                         <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${isDark ? "bg-slate-800" : "bg-slate-100"}`}>
                           <FiFile className="w-3.5 h-3.5 text-teal-500" />
@@ -354,21 +356,21 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
                         <span className={`font-mono text-[11px] font-bold ${textMain}`}>{backup.filename}</span>
                       </div>
                     </td>
-                    <td className={`px-4 py-3.5 font-semibold ${textMuted}`}>
+                    <td className={`px-4 py-3.5 font-semibold ${textMuted} text-left rtl:text-right`}>
                       {formatBytes(backup.sizeBytes)}
                     </td>
-                    <td className={`px-4 py-3.5`}>
+                    <td className="px-4 py-3.5 text-left rtl:text-right">
                       <div className={`flex items-center gap-1.5 ${textMuted}`}>
                         <FiClock className="w-3 h-3 shrink-0" />
                         <span className="font-semibold">{formatDate(backup.createdAt)}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3.5">
+                    <td className="px-4 py-3.5 text-right rtl:text-left">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleDownload(backup.filename)}
                           disabled={downloadingFile === backup.filename}
-                          title="Download"
+                          title={t("admin_download_btn", "Download")}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border disabled:opacity-50 ${
                             isDark
                               ? "border-teal-800 text-teal-400 hover:bg-teal-900/40"
@@ -380,12 +382,12 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
                           ) : (
                             <FiDownload className="w-3 h-3" />
                           )}
-                          Download
+                          {t("admin_download_btn", "Download")}
                         </button>
                         <button
                           onClick={() => setConfirmDelete(backup.filename)}
                           disabled={deletingFile === backup.filename}
-                          title="Delete"
+                          title={t("admin_delete_btn", "Delete")}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all cursor-pointer border disabled:opacity-50 ${
                             isDark
                               ? "border-rose-900 text-rose-400 hover:bg-rose-950/40"
@@ -397,7 +399,7 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
                           ) : (
                             <FiTrash2 className="w-3 h-3" />
                           )}
-                          Delete
+                          {t("admin_delete_btn", "Delete")}
                         </button>
                       </div>
                     </td>
@@ -417,10 +419,9 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
       >
         <FiAlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
         <div>
-          <p className={`text-xs font-black ${isDark ? "text-amber-400" : "text-amber-700"}`}>Storage Note</p>
+          <p className={`text-xs font-black ${isDark ? "text-amber-400" : "text-amber-700"}`}>{t("admin_storage_note_title", "Storage Note")}</p>
           <p className={`text-xs mt-0.5 ${isDark ? "text-amber-500/80" : "text-amber-600"}`}>
-            Backup files are stored in the <span className="font-mono font-bold">/backups</span> folder on the server. 
-            Download and store copies in a secure location for disaster recovery. Large tables may take a few seconds to dump.
+            {t("admin_storage_note_desc", "Backup files are stored in the /backups folder on the server. Download and store copies in a secure location for disaster recovery. Large tables may take a few seconds to dump.")}
           </p>
         </div>
       </div>
@@ -433,9 +434,9 @@ export default function DatabaseBackupTab({ isDark }: { isDark: boolean }) {
           }`}>
             {toast.type === "success" ? "✓" : "✕"}
           </div>
-          <div className="flex flex-col text-left">
+          <div className="flex flex-col text-left rtl:text-right">
             <span className="text-xs font-black text-white leading-tight">
-              {toast.type === "success" ? "Success" : "Error"}
+              {toast.type === "success" ? t("admin_success_title", "Success") : t("admin_error_title", "Error")}
             </span>
             <span className="text-[11px] font-semibold text-slate-300 mt-0.5 leading-snug">{toast.message}</span>
           </div>

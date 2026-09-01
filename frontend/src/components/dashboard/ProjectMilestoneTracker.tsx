@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { FiCheck, FiDollarSign, FiCheckCircle, FiCreditCard, FiUnlock, FiMessageSquare, FiBriefcase, FiFileText, FiCircle, FiClock } from "react-icons/fi";
 import { FaStripe, FaPaypal, FaWallet, FaCreditCard } from "react-icons/fa";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
+import { useLanguage } from "@/context/LanguageContext";
 import CustomSelect from "@/components/CustomSelect";
 
 const getAvatarSrc = (imagePath: string | null) => {
@@ -43,7 +44,8 @@ export default function ProjectMilestoneTracker({
   triggerToast,
   setSelectedFreelancerProfile,
 }: ProjectMilestoneTrackerProps) {
-  const { approveContractPayment, handleStartConversation, setActiveTab, userRole, startWorkContract, requestMilestoneFunding } = useDashboard();
+  const { t, formatPrice } = useLanguage();
+  const { approveContractPayment, handleStartConversation, setActiveTab, userRole, startWorkContract, requestMilestoneFunding, walletInfo, fetchWalletInfo } = useDashboard();
   const [projectProposals, setProjectProposals] = useState<any[]>([]);
   const [loadingProposals, setLoadingProposals] = useState(false);
   const [expandedProposalId, setExpandedProposalId] = useState<number | null>(null);
@@ -69,6 +71,12 @@ export default function ProjectMilestoneTracker({
   const [selectedInvoiceItem, setSelectedInvoiceItem] = useState<any | null>(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [activeRevisionId, setActiveRevisionId] = useState<number | null>(null);
+  const [activeTimecardRevisionId, setActiveTimecardRevisionId] = useState<number | null>(null);
+  const [activeTimecardSubmitRevisionId, setActiveTimecardSubmitRevisionId] = useState<number | null>(null);
+  const [timecardSubmitNotes, setTimecardSubmitNotes] = useState("");
+  const [customTimecardRevisionFee, setCustomTimecardRevisionFee] = useState<string>("");
+  const [timecardRevisionTypeMap, setTimecardRevisionTypeMap] = useState<Record<number, "free" | "paid">>({});
+  const [expandedRevisionsMap, setExpandedRevisionsMap] = useState<Record<number, boolean>>({});
   const [milestoneFeedback, setMilestoneFeedback] = useState("");
   const [confirmFundingMilestoneId, setConfirmFundingMilestoneId] = useState<number | null>(null);
   const [milestoneActionLoading, setMilestoneActionLoading] = useState(false);
@@ -80,7 +88,7 @@ export default function ProjectMilestoneTracker({
   const [isUploading, setIsUploading] = useState(false);
 
   const [activePaymentModal, setActivePaymentModal] = useState<{
-    type: "milestone" | "revision";
+    type: "milestone" | "revision" | "timecard_revision";
     id: number;
     amount: number;
     title: string;
@@ -126,6 +134,12 @@ export default function ProjectMilestoneTracker({
       return () => clearTimeout(timer);
     }
   }, [congratsModalData]);
+
+  useEffect(() => {
+    if (payingTimecard && !walletInfo) {
+      fetchWalletInfo();
+    }
+  }, [payingTimecard, walletInfo]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1376,6 +1390,12 @@ export default function ProjectMilestoneTracker({
   const totalPaidHours = timecards
     ? timecards.filter((tc: any) => tc.status === "Paid").reduce((sum: number, tc: any) => sum + parseFloat(tc.amount), 0)
     : 0;
+  const totalPaidRevisionFees = timecards
+    ? timecards
+        .filter((tc: any) => tc.revision_status !== "None" && tc.revision_status !== "Pending Acceptance" && tc.revision_status !== "Awaiting Funding")
+        .reduce((sum: number, tc: any) => sum + parseFloat(tc.extra_revision_fee || 0), 0)
+    : 0;
+  const totalPaidContract = totalPaidHours + totalPaidRevisionFees;
   const remainingAmountHours = Math.max(0, (maxHours * hourlyRate) - totalPaidHours);
   const hoursServedDecimal = timecards
     ? timecards.filter((tc: any) => tc.status === "Paid").reduce((sum: number, tc: any) => sum + tc.hours + (tc.minutes / 60), 0)
@@ -1552,6 +1572,148 @@ export default function ProjectMilestoneTracker({
     }
   };
 
+  const handleAcceptTimecardRevision = async (timecardId: number, extraFee: number = 0) => {
+    try {
+      setTimecardActionLoadingId(timecardId);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/timecard/${timecardId}/accept-revision`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ extra_fee: extraFee })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Revision accepted!", data.message);
+        fetchTimecards(activeContract.contract_id);
+      } else {
+        triggerToast("error", data.message || "Failed to accept revision.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Network error. Please try again.");
+    } finally {
+      setTimecardActionLoadingId(null);
+    }
+  };
+
+  const handleFundTimecardRevision = async (timecardId: number) => {
+    try {
+      setTimecardActionLoadingId(timecardId);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/timecard/${timecardId}/fund-revision`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Revision payment funded successfully!", "Work is started.");
+        fetchTimecards(activeContract.contract_id);
+      } else {
+        triggerToast("error", data.message || "Failed to fund revision.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Network error. Please try again.");
+    } finally {
+      setTimecardActionLoadingId(null);
+    }
+  };
+
+  const handleRejectTimecardRevisionProposal = async (timecardId: number) => {
+    if (!confirm("Are you sure you want to decline this revision fee proposal? The timecard will go back to the freelancer to accept or propose a different fee.")) return;
+    try {
+      setTimecardActionLoadingId(timecardId);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/timecard/${timecardId}/reject-revision-proposal`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Revision proposal declined.", data.message);
+        fetchTimecards(activeContract.contract_id);
+      } else {
+        triggerToast("error", data.message || "Failed to decline revision proposal.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Network error. Please try again.");
+    } finally {
+      setTimecardActionLoadingId(null);
+    }
+  };
+
+  const handleSubmitTimecardRevision = async (timecardId: number, feedback: string, files: {name: string, url: string}[] = []) => {
+    try {
+      setTimecardActionLoadingId(timecardId);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/timecard/${timecardId}/revision`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          feedback,
+          submitted_files: JSON.stringify(files)
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Timecard revision requested successfully!", "Freelancer has been notified.");
+        setActiveTimecardRevisionId(null);
+        fetchTimecards(activeContract.contract_id);
+      } else {
+        triggerToast("error", data.message || "Failed to submit revision request.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Network error. Please try again.");
+    } finally {
+      setTimecardActionLoadingId(null);
+    }
+  };
+
+  const handleSubmitRevisedTimecardWork = async (timecardId: number, files: {name: string, url: string}[] = [], description: string = "") => {
+    try {
+      setTimecardActionLoadingId(timecardId);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/payments/contract/timecard/${timecardId}/submit-revision`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          submitted_files: JSON.stringify(files),
+          description
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Revised deliverables submitted successfully!", "Client has been notified.");
+        setActiveTimecardSubmitRevisionId(null);
+        setTimecardSubmitNotes("");
+        setUploadedFiles([]);
+        fetchTimecards(activeContract.contract_id);
+      } else {
+        triggerToast("error", data.message || "Failed to submit revised deliverables.");
+      }
+    } catch (err) {
+      console.error(err);
+      triggerToast("error", "Network error. Please try again.");
+    } finally {
+      setTimecardActionLoadingId(null);
+    }
+  };
+
   const handleProcessModalPayment = async () => {
     if (!activePaymentModal) return;
     try {
@@ -1611,7 +1773,9 @@ export default function ProjectMilestoneTracker({
       // 3. Perform the actual milestone funding call (which is paid from wallet)
       const url = type === "milestone" 
         ? `${API_URL}/payments/contract/milestone/${id}/fund`
-        : `${API_URL}/payments/contract/milestone/${id}/fund-revision`;
+        : type === "timecard_revision"
+          ? `${API_URL}/payments/contract/timecard/${id}/fund-revision`
+          : `${API_URL}/payments/contract/milestone/${id}/fund-revision`;
 
       const res = await fetch(url, {
         method: "POST",
@@ -1629,7 +1793,11 @@ export default function ProjectMilestoneTracker({
           projectId: job?.job_id
         });
         setActivePaymentModal(null);
-        fetchContracts();
+        if (type === "timecard_revision") {
+          fetchTimecards(activeContract.contract_id);
+        } else {
+          fetchContracts();
+        }
       } else {
         setModalPayError(data.message || "Failed to complete payment.");
       }
@@ -2134,7 +2302,7 @@ export default function ProjectMilestoneTracker({
       const opt = {
         margin:       [8, 8, 8, 8] as [number, number, number, number],
         filename:     selectedInvoiceItem 
-          ? `Invoice-${selectedInvoiceItem.type === 'timecard' ? 'TC' : 'MS'}-${selectedInvoiceItem.id}.pdf`
+          ? `Invoice-${selectedInvoiceItem.type === 'timecard' ? 'TC' : selectedInvoiceItem.type === 'timecard_revision' ? 'REV' : 'MS'}-${selectedInvoiceItem.id}.pdf`
           : `Invoice-CON-${activeContract.contract_id}.pdf`,
         image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { 
@@ -2380,28 +2548,28 @@ export default function ProjectMilestoneTracker({
   };
 
   return (
-    <div className="flex flex-col gap-5 text-left">
+    <div className="flex flex-col gap-5 text-left rtl:text-right">
       {userRole === "client" && (jobContracts.length > 0 || acceptedProposal) && (
         <div className="flex border-b border-slate-200 pb-0 gap-6 text-xs font-black uppercase tracking-wider mb-2">
           <button
             onClick={() => setTrackerTab("milestones")}
-            className="pb-2.5 border-b-2 transition-all cursor-pointer border-primary text-slate-850"
+            className="pb-2.5 border-b-2 transition-all cursor-pointer border-primary text-slate-855"
           >
-            <i className="fa-solid fa-clock-rotate-left mr-1.5"></i> Milestones Tracker ({jobContracts.length})
+            <i className="fa-solid fa-clock-rotate-left mr-1.5 rtl:mr-0 rtl:ml-1.5"></i> {t("milestones_tracker_tab", "Milestones Tracker")} ({jobContracts.length})
           </button>
           <button
             onClick={() => setTrackerTab("proposals")}
-            className="pb-2.5 border-b-2 transition-all cursor-pointer border-transparent text-slate-450 hover:text-slate-700"
+            className="pb-2.5 border-b-2 transition-all cursor-pointer border-transparent text-slate-455 hover:text-slate-700"
           >
-            <i className="fa-solid fa-users mr-1.5"></i> Freelancer Proposals ({projectProposals.length})
+            <i className="fa-solid fa-users mr-1.5 rtl:mr-0 rtl:ml-1.5"></i> {t("freelancer_proposals_tab", "Freelancer Proposals")} ({projectProposals.length})
           </button>
         </div>
       )}
 
       {userRole === "client" && jobContracts.length > 1 && (
         <div className="flex flex-col gap-2 mb-2">
-          <span className="text-[10px] font-extrabold text-slate-450 uppercase tracking-widest text-left">
-            Select Freelancer to Track:
+          <span className="text-[10px] font-extrabold text-slate-450 uppercase tracking-widest text-left rtl:text-right">
+            {t("select_freelancer_to_track", "Select Freelancer to Track:")}
           </span>
           <div className="flex flex-wrap gap-2.5">
             {jobContracts.map((c) => {
@@ -2443,15 +2611,14 @@ export default function ProjectMilestoneTracker({
 
       {activeContract?.status === "Cancelled" && (
         <div className="bg-rose-50 border border-rose-200 text-rose-700 p-4 rounded-xl text-xs font-bold flex items-center gap-2 mb-2">
-          <span>⚠ This contract has been cancelled and all escrow funds have been fully refunded to the client's wallet.</span>
+          <span>{t("contract_cancelled_warning", "⚠ This contract has been cancelled and all escrow funds have been fully refunded to the client's wallet.")}</span>
         </div>
       )}
 
-      {/* Active Partner Info Header Card (Unified design to avoid repetitive stacked boxes) */}
       {activeContract && (
-        <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="bg-white border border-slate-200 shadow-xs rounded-2xl p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-center overflow-hidden">
           {/* Hired Freelancer / Client Partner */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-12 h-12 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-slate-700 text-sm uppercase overflow-hidden shadow-xxs shrink-0">
               {partnerImage ? (
                 <img src={partnerImage} className="w-full h-full object-cover" alt="Partner" />
@@ -2461,12 +2628,12 @@ export default function ProjectMilestoneTracker({
                 </div>
               )}
             </div>
-            <div className="text-left">
+            <div className="text-left rtl:text-right min-w-0 flex-1">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
-                {userRole === "client" ? "Hired Freelancer" : "Client Partner"}
+                {userRole === "client" ? t("hired_freelancer_label", "Hired Freelancer") : t("client_partner_label", "Client Partner")}
               </span>
-              <h4 className="text-xs font-black text-slate-800">{partnerName}</h4>
-              <p className="text-[9px] text-slate-455 font-bold mt-0.5">{partnerEmail}</p>
+              <h4 className="text-xs font-black text-slate-800 truncate">{partnerName}</h4>
+              <p className="text-[9px] text-slate-455 font-bold mt-0.5 truncate">{partnerEmail}</p>
             </div>
             {partnerId && (
               <button
@@ -2478,18 +2645,18 @@ export default function ProjectMilestoneTracker({
                     console.error("Error starting chat:", err);
                   }
                 }}
-                className="text-[9px] font-extrabold text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-lg px-2.5 py-1.5 cursor-pointer transition-all flex items-center gap-1 border-0 shrink-0 ml-1.5"
+                className="text-[9px] font-extrabold text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-lg px-2.5 py-1.5 cursor-pointer transition-all flex items-center gap-1 border-0 shrink-0 ml-1.5 rtl:ml-0 rtl:mr-1.5"
                 title="Message Partner"
               >
-                <FiMessageSquare className="w-3 h-3" /> Chat
+                <FiMessageSquare className="w-3 h-3" /> {t("chat_btn", "Chat")}
               </button>
             )}
           </div>
 
           {/* Status & Progress */}
-          <div className="flex flex-col gap-1.5 min-w-[200px] text-left">
+          <div className="flex flex-col gap-1.5 min-w-0 text-left rtl:text-right">
             <div className="flex justify-between items-center text-[9px] font-black uppercase text-slate-400 tracking-wider">
-              <span>Progress</span>
+              <span>{t("progress_label", "Progress")}</span>
               <span className="text-slate-700 font-black">{progressPercent}%</span>
             </div>
             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
@@ -2513,51 +2680,61 @@ export default function ProjectMilestoneTracker({
                 }`}></span>
               </span>
               <span className="text-[9px] font-bold text-slate-500">
-                Status: <span className="uppercase font-black text-slate-750">
-                  {activeContract.status === "Work Completed" ? "Work Completed" :
-                   activeContract.status === "Under Review" ? "Awaiting Approval" :
-                   activeContract.status === "Work Started" ? "In Progress" : activeContract.status}
+                {t("status_label", "Status:")} <span className="uppercase font-black text-slate-750">
+                  {activeContract.status === "Work Completed" ? t("work_completed", "Work Completed") :
+                   activeContract.status === "Under Review" ? t("awaiting_approval", "Awaiting Approval") :
+                   activeContract.status === "Work Started" ? t("in_progress", "In Progress") : t(activeContract.status.toLowerCase().replace(/\s+/g, "_"), activeContract.status)}
                 </span>
               </span>
             </div>
           </div>
 
           {/* Budget & Paid */}
-          <div className="flex gap-6 border-t md:border-t-0 md:border-l border-slate-150 pt-4 md:pt-0 md:pl-6 text-left">
-            <div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Budget</span>
-              <span className="text-xs font-black text-slate-800">${parseFloat(activeContract.budget).toLocaleString()}</span>
-            </div>
-            <div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Paid</span>
-              <span className="text-xs font-black text-emerald-600">${clientPaidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-            </div>
+          <div className="flex gap-6 text-left rtl:text-right shrink-0">
+            {activeContract?.project_type === "Hourly" || job?.project_type === "Hourly" ? (
+              <>
+                <div>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("estimated_budget_label", "Estimated Budget")}</span>
+                  <span className="text-xs font-black text-slate-800">${(maxHours * hourlyRate).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("paid_label", "Paid")}</span>
+                  <span className="text-xs font-black text-emerald-600">${totalPaidContract.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("escrow_balance_label", "Escrow Balance")}</span>
+                  <span className="text-xs font-black text-blue-600">${parseFloat(activeContract.budget || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("budget_label", "Budget")}</span>
+                  <span className="text-xs font-black text-slate-800">${parseFloat(activeContract.budget).toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("paid_label", "Paid")}</span>
+                  <span className="text-xs font-black text-emerald-600">${clientPaidAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 md:justify-end w-full">
             <button
               onClick={() => { setSelectedInvoiceItem(null); setShowInvoiceModal(true); }}
-              className="text-[10px] font-extrabold text-primary bg-primary/[0.04] border border-primary/20 hover:bg-primary/[0.08] rounded-xl px-4 py-2 flex items-center gap-1.5 transition-all cursor-pointer"
+              className="text-[10px] font-extrabold text-primary bg-primary/[0.04] border border-primary/20 hover:bg-primary/[0.08] rounded-xl px-4 py-2 flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
             >
-              <i className="fa-solid fa-file-invoice-dollar"></i> View Invoice
+              <i className="fa-solid fa-file-invoice-dollar"></i> {t("view_invoice_btn", "View Invoice")}
             </button>
             {userRole === "client" && activeContract.status === "Hired" && (
               <button
                 onClick={handleCancelContract}
                 disabled={milestoneActionLoading}
-                className="text-[10px] font-extrabold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl px-4 py-2 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                className="text-[10px] font-extrabold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl px-4 py-2 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 whitespace-nowrap"
               >
-                Cancel Job
-              </button>
-            )}
-            {userRole === "freelancer" && activeContract.status !== "Completed" && activeContract.status !== "Cancelled" && activeContract.status !== "CANCELLED" && (
-              <button
-                onClick={handleFreelancerCancelContract}
-                disabled={milestoneActionLoading}
-                className="text-[10px] font-extrabold text-rose-600 bg-rose-50 border border-rose-100 hover:bg-rose-100 rounded-xl px-4 py-2 flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-              >
-                Cancel Job & Refund Client
+                {t("cancel_job_btn", "Cancel Job")}
               </button>
             )}
           </div>
@@ -2570,7 +2747,7 @@ export default function ProjectMilestoneTracker({
           {/* Left Column: Timeline */}
           <div className="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col gap-6">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Project Timeline</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{t("project_timeline_label", "Project Timeline")}</span>
               <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
                 activeContract.status === "Completed"
                   ? "bg-emerald-50 text-emerald-700 border-emerald-100"
@@ -2584,7 +2761,7 @@ export default function ProjectMilestoneTracker({
                           ? "bg-teal-50 text-teal-700 border-teal-100"
                           : "bg-slate-50 text-slate-700 border-slate-100"
               }`}>
-                {activeContract.status === "Under Review" ? "Awaiting Approval" : activeContract.status}
+                {activeContract.status === "Under Review" ? t("awaiting_approval", "Awaiting Approval") : t(activeContract.status.toLowerCase().replace(/\s+/g, "_"), activeContract.status)}
               </span>
             </div>
 
@@ -2595,8 +2772,8 @@ export default function ProjectMilestoneTracker({
 
             if (job.project_type === "Hourly") {
               events.push({
-                label: "Hired & Payment",
-                sub: `Agreed rate: $${hourlyRate.toFixed(2)}/hr | Limit: ${maxHours} hours`,
+                label: t("hired_payment_event", "Hired & Payment"),
+                sub: t("agreed_rate_sub", "Agreed rate: ${{rate}}/hr | Limit: {{hours}} hours").replace("{{rate}}", hourlyRate.toFixed(2)).replace("{{hours}}", maxHours.toString()),
                 date: activeContract.created_at,
                 done: true,
                 color: "teal",
@@ -2605,28 +2782,28 @@ export default function ProjectMilestoneTracker({
 
               const isHourlyWorkStarted = !!activeContract.work_started_at || activeContract.status !== "Hired";
               events.push({
-                label: "Work Started",
-                sub: isHourlyWorkStarted ? "Freelancer began work on contract" : "Awaiting starting action",
+                label: t("work_started_event", "Work Started"),
+                sub: isHourlyWorkStarted ? t("work_started_freelancer_sub", "Freelancer began work on contract") : t("awaiting_starting_action_sub", "Awaiting starting action"),
                 date: activeContract.work_started_at || (isHourlyWorkStarted ? activeContract.created_at : undefined),
                 done: isHourlyWorkStarted,
                 color: isHourlyWorkStarted ? "teal" : "slate",
               });
 
               events.push({
-                label: "Timecard logging",
-                sub: hoursServedDecimal > 0 ? `${hoursServedStr} hours logged and approved` : "No working hours logged yet",
+                label: t("timecard_logging_event", "Timecard logging"),
+                sub: hoursServedDecimal > 0 ? t("hours_logged_approved_sub", "{{hours}} hours logged and approved").replace("{{hours}}", hoursServedStr) : t("no_hours_logged_sub", "No working hours logged yet"),
                 done: hoursServedDecimal > 0,
                 color: hoursServedDecimal > 0 ? "emerald" : "slate",
               });
 
               if (activeContract.completed_at) {
-                events.push({ label: "Completed", sub: "All timecard payouts resolved", date: activeContract.completed_at, done: true, color: "emerald" });
+                events.push({ label: t("completed_event", "Completed"), sub: t("timecard_resolved_sub", "All timecard payouts resolved"), date: activeContract.completed_at, done: true, color: "emerald" });
               } else if (activeContract.cancelled_at) {
-                events.push({ label: "Cancelled", sub: "Contract ended & final hours processed", date: activeContract.cancelled_at, done: true, color: "rose" });
+                events.push({ label: t("cancelled_event", "Cancelled"), sub: t("contract_ended_sub", "Contract ended & final hours processed"), date: activeContract.cancelled_at, done: true, color: "rose" });
               } else if (activeContract.disputed_at) {
-                events.push({ label: "Disputed", sub: "Under admin arbitration", date: activeContract.disputed_at, done: true, color: "orange" });
+                events.push({ label: t("disputed_event", "Disputed"), sub: t("under_arbitration_sub", "Under admin arbitration"), date: activeContract.disputed_at, done: true, color: "orange" });
               } else {
-                events.push({ label: "Completion / Resolution", sub: "Pending", done: false, color: "slate" });
+                events.push({ label: t("completion_resolution_event", "Completion / Resolution"), sub: t("pending_sub", "Pending"), done: false, color: "slate" });
               }
             } else {
               const firstMilestoneAmt = (milestones && milestones.length > 0)
@@ -2634,8 +2811,8 @@ export default function ProjectMilestoneTracker({
                 : parseFloat(acceptedProposal?.bid_amount || 0);
 
               events.push({
-                label: "Hired & Payment",
-                sub: `You locked ${firstMilestoneAmt.toLocaleString()} into escrow`,
+                label: t("hired_payment_event", "Hired & Payment"),
+                sub: t("locked_escrow_sub", "You locked {{amount}} into escrow").replace("{{amount}}", firstMilestoneAmt.toLocaleString()),
                 date: activeContract.created_at,
                 done: true,
                 color: "teal",
@@ -2644,8 +2821,8 @@ export default function ProjectMilestoneTracker({
 
               const isMilestoneWorkStarted = !!activeContract.work_started_at || activeContract.status !== "Hired";
               events.push({
-                label: "Work Started",
-                sub: isMilestoneWorkStarted ? "Freelancer began work on contract" : "Awaiting starting action",
+                label: t("work_started_event", "Work Started"),
+                sub: isMilestoneWorkStarted ? t("work_started_freelancer_sub", "Freelancer began work on contract") : t("awaiting_starting_action_sub", "Awaiting starting action"),
                 date: activeContract.work_started_at || (isMilestoneWorkStarted ? activeContract.created_at : undefined),
                 done: isMilestoneWorkStarted,
                 color: isMilestoneWorkStarted ? "teal" : "slate",
@@ -2654,8 +2831,8 @@ export default function ProjectMilestoneTracker({
               milestones.forEach((m: any, i: number) => {
                 const paid = m.payment_status === "Paid" || m.status === "Completed" || activeContract.status === "Completed" || !!activeContract.completed_at;
                 events.push({
-                  label: `Milestone ${i + 1}: ${m.title}`,
-                  sub: paid ? "Payment released from escrow" : "Awaiting completion & approval",
+                  label: `${t("milestone_event_label", "Milestone")} ${i + 1}: ${m.title}`,
+                  sub: paid ? t("payment_released_sub", "Payment released from escrow") : t("awaiting_completion_approval_sub", "Awaiting completion & approval"),
                   date: paid ? (m.paid_at || m.updated_at) : undefined,
                   done: paid,
                   color: paid ? "emerald" : "slate",
@@ -2666,31 +2843,31 @@ export default function ProjectMilestoneTracker({
               if (activeContract.submitted_at) {
                 const isCompleted = activeContract.status === "Completed" || !!activeContract.completed_at;
                 events.push({
-                  label: "Work Submitted",
+                  label: t("work_submitted_event", "Work Submitted"),
                   sub: isCompleted 
-                    ? "Work approved and escrow released" 
-                    : (userRole === "client" ? "Awaiting your approval" : "Awaiting client approval"),
+                    ? t("work_approved_escrow_sub", "Work approved and escrow released") 
+                    : (userRole === "client" ? t("awaiting_your_approval_sub", "Awaiting your approval") : t("awaiting_client_approval_sub", "Awaiting client approval")),
                   date: activeContract.submitted_at,
                   done: true,
                   color: isCompleted ? "emerald" : "amber",
                 });
               } else if (!hasMilestones) {
                 events.push({
-                  label: "Work Submission",
-                  sub: "Pending — freelancer hasn't submitted yet",
+                  label: t("work_submission_event", "Work Submission"),
+                  sub: t("pending_submission_sub", "Pending — freelancer hasn't submitted yet"),
                   done: false,
                   color: "slate",
                 });
               }
 
               if (activeContract.completed_at) {
-                events.push({ label: "Completed", sub: "All payments released to freelancer", date: activeContract.completed_at, done: true, color: "emerald" });
+                events.push({ label: t("completed_event", "Completed"), sub: t("payments_released_freelancer_sub", "All payments released to freelancer"), date: activeContract.completed_at, done: true, color: "emerald" });
               } else if (activeContract.cancelled_at) {
-                events.push({ label: "Cancelled", sub: "Contract cancelled & escrow refunded", date: activeContract.cancelled_at, done: true, color: "rose" });
+                events.push({ label: t("cancelled_event", "Cancelled"), sub: t("contract_cancelled_escrow_sub", "Contract cancelled & escrow refunded"), date: activeContract.cancelled_at, done: true, color: "rose" });
               } else if (activeContract.disputed_at) {
-                events.push({ label: "Disputed", sub: "Under admin arbitration", date: activeContract.disputed_at, done: true, color: "orange" });
+                events.push({ label: t("disputed_event", "Disputed"), sub: t("under_arbitration_sub", "Under admin arbitration"), date: activeContract.disputed_at, done: true, color: "orange" });
               } else {
-                events.push({ label: "Completion / Resolution", sub: "Pending", done: false, color: "slate" });
+                events.push({ label: t("completion_resolution_event", "Completion / Resolution"), sub: t("pending_sub", "Pending"), done: false, color: "slate" });
               }
             }
 
@@ -2765,11 +2942,13 @@ export default function ProjectMilestoneTracker({
                                     : "bg-slate-50 border-slate-200 text-slate-400"
                               }`}>{ev.amount}</span>
                             )}
-                            <span className={`text-[10px] font-semibold whitespace-nowrap transition-colors duration-200 ${
-                              isNextStage ? "text-teal-600 font-bold" : "text-slate-400"
-                            }`}>
-                              {ev.date ? new Date(ev.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }) : "Pending"}
-                            </span>
+                            {ev.date && (
+                              <span className={`text-[10px] font-semibold whitespace-nowrap transition-colors duration-200 ${
+                                isNextStage ? "text-teal-600 font-bold" : "text-slate-400"
+                              }`}>
+                                {new Date(ev.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -2829,7 +3008,21 @@ export default function ProjectMilestoneTracker({
 
             {activeTimecardTab === "activities" && (
               <div className="flex flex-col gap-3">
-                <div className="flex flex-wrap gap-2.5 items-center">
+                {activeContract?.status === "Hired" ? (
+                  <div className="p-6 bg-slate-50 border border-dashed border-slate-350 rounded-xl text-center flex flex-col items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg">
+                      <FiClock className="w-5 h-5 text-slate-400" />
+                    </div>
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                      Work Has Not Started Yet
+                    </h4>
+                    <p className="text-[10.5px] text-slate-500 font-medium max-w-xs leading-relaxed">
+                      You must click the "Start Work" button at the bottom of the overview section to begin this contract before you can log working hours.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2.5 items-center">
                   {userRole === "freelancer" && activeContract?.status !== "Completed" && activeContract?.status !== "Cancelled" && activeContract?.status !== "CANCELLED" && (
                     <button
                       onClick={() => {
@@ -2884,157 +3077,623 @@ export default function ProjectMilestoneTracker({
                       const isPending = tc.status === "Pending";
                       const isSelected = selectedPendingTimecards.includes(tc.timecard_id);
 
-                      return (
-                        <div key={idx} className="bg-white border border-slate-205/85 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-350 transition-all text-left">
-                          <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                            {userRole === "freelancer" && isPending && activeContract?.status !== "Completed" && activeContract?.status !== "Cancelled" && activeContract?.status !== "CANCELLED" && (
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedPendingTimecards(prev => [...prev, tc.timecard_id]);
-                                  } else {
-                                    setSelectedPendingTimecards(prev => prev.filter(id => id !== tc.timecard_id));
+                                 return (
+                        <div key={idx} className="bg-white border border-slate-205/85 p-4 rounded-xl flex flex-col gap-4 hover:border-slate-350 transition-all text-left">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full">
+                            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                              {userRole === "freelancer" && isPending && activeContract?.status !== "Completed" && activeContract?.status !== "Cancelled" && activeContract?.status !== "CANCELLED" && (
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedPendingTimecards(prev => [...prev, tc.timecard_id]);
+                                    } else {
+                                      setSelectedPendingTimecards(prev => prev.filter(id => id !== tc.timecard_id));
+                                    }
+                                  }}
+                                  className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary cursor-pointer mt-1 shrink-0"
+                                />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{formattedDate}</span>
+                                <h5 className="text-xs font-extrabold text-slate-808 mt-1 flex items-center gap-2">
+                                  <span>{tc.hours}h {tc.minutes}m worked</span>
+                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
+                                    tc.status === "Paid"
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-100"
+                                      : tc.status === "Requested"
+                                        ? "bg-amber-50 text-amber-700 border-amber-100"
+                                        : tc.status === "Revision Requested"
+                                          ? "bg-rose-50 text-rose-700 border-rose-100 animate-pulse"
+                                          : tc.status === "Declined"
+                                            ? "bg-rose-50 text-rose-700 border-rose-100"
+                                            : "bg-slate-50 text-slate-500 border-slate-200"
+                                  }`}>
+                                    {tc.status === "Pending" ? "Logged" : tc.status}
+                                  </span>
+                                  {(parseInt(tc.revision_count || "0") > 0 || tc.status === "Revision Requested" || tc.revision_status !== "None") && (() => {
+                                    const limit = parseInt(activeContract.revisions_limit || "3");
+                                    const freeUsed = parseInt(tc.free_revision_count || "0");
+                                    const paidUsed = parseInt(tc.paid_revision_count || "0");
+                                    const isExpanded = !!expandedRevisionsMap[tc.timecard_id];
+                                    return (
+                                      <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                                        <span className="text-[9px] font-black uppercase px-2 py-0.5 rounded border bg-amber-50 text-amber-700 border-amber-100 flex items-center gap-1.5">
+                                          <span>Free: {freeUsed}/{limit}</span>
+                                          {paidUsed > 0 && (
+                                            <>
+                                              <span className="text-slate-300 font-normal">•</span>
+                                              <span className="text-primary">Paid: {paidUsed}</span>
+                                            </>
+                                          )}
+                                        </span>
+                                        <button
+                                          onClick={() => setExpandedRevisionsMap(prev => ({ ...prev, [tc.timecard_id]: !prev[tc.timecard_id] }))}
+                                          className="px-2 py-0.5 bg-white hover:bg-slate-50 text-slate-500 text-[9px] font-black uppercase rounded border border-slate-200 transition-all flex items-center gap-1 cursor-pointer select-none"
+                                        >
+                                          <span>{isExpanded ? "Hide Details ▲" : "View Details ▼"}</span>
+                                        </button>
+                                      </div>
+                                    );
+                                  })()}
+                                </h5>
+                                <p className="text-[11px] text-slate-505 font-medium mt-1.5 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                  {tc.description || "No description provided."}
+                                </p>
+                                {tc.submitted_files && (() => {
+                                  let filesList: any[] = [];
+                                  try {
+                                    filesList = typeof tc.submitted_files === "string" ? JSON.parse(tc.submitted_files) : tc.submitted_files;
+                                  } catch (e) {
+                                    if (tc.submitted_files.includes("http")) {
+                                      filesList = tc.submitted_files.split(",").map((url: string) => ({ name: "Submitted Deliverable", url }));
+                                    }
                                   }
-                                }}
-                                className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary cursor-pointer mt-1 shrink-0"
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{formattedDate}</span>
-                              <h5 className="text-xs font-extrabold text-slate-808 mt-1 flex items-center gap-2">
-                                <span>{tc.hours}h {tc.minutes}m worked</span>
-                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${
-                                  tc.status === "Paid"
-                                    ? "bg-emerald-50 text-emerald-700 border-emerald-100"
-                                    : tc.status === "Requested"
-                                      ? "bg-amber-50 text-amber-700 border-amber-100"
-                                      : tc.status === "Declined"
-                                        ? "bg-rose-50 text-rose-700 border-rose-100"
-                                        : "bg-slate-50 text-slate-500 border-slate-200"
-                                }`}>
-                                  {tc.status === "Pending" ? "Logged" : tc.status}
-                                </span>
-                              </h5>
-                              <p className="text-[11px] text-slate-505 font-medium mt-1.5 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-100">
-                                {tc.description || "No description provided."}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3">
-                            <div>
-                              <span className="text-[9px] font-black text-slate-400 uppercase block tracking-wider">Amount</span>
-                              <span className="text-xs font-black text-slate-808">${parseFloat(tc.amount).toFixed(2)}</span>
-                            </div>
-                            {userRole === "client" && tc.status === "Requested" && activeContract?.status !== "Completed" && activeContract?.status !== "Cancelled" && activeContract?.status !== "CANCELLED" && (
-                              <div className="flex flex-col gap-1.5 items-end">
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => {
-                                      const amount = parseFloat(tc.amount);
-                                      if (amount > parseFloat(activeContract.budget || 0)) {
-                                        setPayingTimecard(tc);
-                                      } else {
-                                        if (confirm(`Approve and release payment of $${amount.toFixed(2)} for this timecard?`)) {
-                                          handleApproveTimecard(tc.timecard_id, amount);
-                                        }
-                                      }
-                                    }}
-                                    disabled={timecardActionLoadingId === tc.timecard_id}
-                                    className="bg-emerald-600 hover:bg-emerald-750 text-white text-[10px] font-black px-3.5 py-2 rounded-lg border-0 cursor-pointer shadow-sm disabled:opacity-50 flex items-center gap-1.5 animate-fadeIn"
-                                  >
-                                    {timecardActionLoadingId === tc.timecard_id ? (
-                                      <div className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-                                    ) : (
-                                      <>
-                                        <FiCheck className="w-3 h-3" />
-                                        <span>Approve</span>
-                                      </>
-                                    )}
-                                  </button>
-
-                                  <button
-                                    onClick={() => {
-                                      if (confirm(`Are you sure you want to decline the payment request for this timecard?`)) {
-                                        handleDeclineTimecard(tc.timecard_id);
-                                      }
-                                    }}
-                                    disabled={timecardActionLoadingId === tc.timecard_id}
-                                    className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-655 text-[10px] font-black px-3.5 py-2 rounded-lg cursor-pointer disabled:opacity-50 flex items-center gap-1.5 animate-fadeIn"
-                                  >
-                                    <span>Decline</span>
-                                  </button>
-                                </div>
-                                <span className="text-[8px] font-semibold text-slate-455">
-                                  Read above mentioned details before doing any action
-                                </span>
+                                  if (!Array.isArray(filesList)) return null;
+                                  return (
+                                    <div className="flex flex-col gap-1.5 mt-2 bg-slate-50/50 border border-slate-150 rounded-xl p-3 text-left">
+                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Submitted Deliverables</span>
+                                      <div className="flex flex-wrap gap-2">
+                                        {filesList.map((file, idx) => (
+                                          <a 
+                                            key={idx}
+                                            href={resolveDownloadUrl(file.url)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-[10px] font-bold rounded-lg border border-slate-200 flex items-center gap-1.5 transition-all shadow-xxs decoration-0"
+                                          >
+                                            <i className="fa-solid fa-file text-slate-400 text-xs" />
+                                            <span className="truncate max-w-[150px]">{file.name || "File Link"}</span>
+                                          </a>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+                            </div>
+                            <div className="text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-3">
+                              <div>
+                                <span className="text-[9px] font-black text-slate-400 uppercase block tracking-wider">Amount</span>
+                                <span className="text-xs font-black text-slate-808">${parseFloat(tc.amount).toFixed(2)}</span>
+                              </div>
+                              {userRole === "client" && (tc.status === "Pending" || tc.status === "Requested") && activeContract?.status !== "Completed" && activeContract?.status !== "Cancelled" && activeContract?.status !== "CANCELLED" && (
+                                <div className="flex flex-col gap-1.5 items-end">
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => {
+                                        const amount = parseFloat(tc.amount);
+                                        if (amount > parseFloat(activeContract.budget || 0)) {
+                                          setPayingTimecard(tc);
+                                        } else {
+                                          if (confirm(`Approve and release payment of $${amount.toFixed(2)} for this timecard?`)) {
+                                            handleApproveTimecard(tc.timecard_id, amount);
+                                          }
+                                        }
+                                      }}
+                                      disabled={timecardActionLoadingId === tc.timecard_id}
+                                      className="bg-emerald-600 hover:bg-emerald-755 text-white text-[10px] font-black px-3.5 py-2 rounded-lg border-0 cursor-pointer shadow-sm disabled:opacity-50 flex items-center gap-1.5 animate-fadeIn"
+                                    >
+                                      {timecardActionLoadingId === tc.timecard_id ? (
+                                        <div className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+                                      ) : (
+                                        <>
+                                          <FiCheck className="w-3 h-3" />
+                                          <span>Approve & Pay</span>
+                                        </>
+                                      )}
+                                    </button>
 
-            {activeTimecardTab === "invoices" && (
-              <div className="flex flex-col gap-3">
-                {timecards.filter(tc => tc.status === "Paid").length === 0 ? (
-                  <div className="text-center py-10 bg-slate-50/50 border border-slate-200/40 rounded-xl">
-                    <p className="text-xs font-bold text-slate-400">No paid invoices generated yet.</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    {timecards.filter(tc => tc.status === "Paid").map((tc: any, idx: number) => {
-                      const formattedDate = new Date(tc.work_date).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric"
-                      });
-                      return (
-                        <div key={idx} className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between gap-4 hover:border-slate-350 transition-all text-left shadow-xxs">
-                          <div>
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Invoice INV-{tc.timecard_id}</span>
-                            <h5 className="text-xs font-black text-slate-800 mt-1">Paid on {formattedDate}</h5>
-                            <p className="text-[10px] text-slate-455 font-semibold mt-0.5">{tc.hours}h {tc.minutes}m served</p>
-                          </div>
-                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                            <span className="text-xs font-black text-emerald-600 block">${parseFloat(tc.amount).toFixed(2)}</span>
-                            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                              <button
-                                onClick={() => {
-                                  setSelectedInvoiceItem({
-                                    type: "timecard",
-                                    id: tc.timecard_id,
-                                    title: `Hourly Work (${tc.hours}h ${tc.minutes}m)`,
-                                    amount: parseFloat(tc.amount),
-                                    date: tc.updated_at || tc.created_at,
-                                    hours: tc.hours,
-                                    minutes: tc.minutes,
-                                    description: tc.description || "Logged working hours payment release."
-                                  });
-                                  setShowInvoiceModal(true);
-                                }}
-                                className="text-[9px] font-extrabold text-primary hover:text-primary-hover hover:underline bg-transparent border-0 cursor-pointer p-0"
-                              >
-                                View Invoice
-                              </button>
-                              {userRole === "freelancer" && (
-                                <span className="text-[9px] text-slate-400 font-bold flex items-center gap-1 select-none">
-                                  <span>•</span>
-                                  <span>Platform service fee was deducted from payout</span>
-                                </span>
+                                    <button
+                                      onClick={() => {
+                                        setActiveTimecardRevisionId(tc.timecard_id);
+                                        setMilestoneFeedback("");
+                                        setMilestoneFeedbackFiles([]);
+                                      }}
+                                      disabled={timecardActionLoadingId === tc.timecard_id}
+                                      className="bg-white hover:bg-slate-50 border border-slate-200 text-rose-600 text-[10px] font-black px-3.5 py-2 rounded-lg cursor-pointer disabled:opacity-50 flex items-center gap-1.5 animate-fadeIn"
+                                    >
+                                      <span>Request Revision</span>
+                                    </button>
+                                  </div>
+                                  <span className="text-[8px] font-semibold text-slate-455">
+                                    Read above mentioned details before doing any action
+                                  </span>
+                                </div>
                               )}
                             </div>
                           </div>
+
+                          {/* Timecard Revision Request Form */}
+                          {activeTimecardRevisionId === tc.timecard_id && (
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 text-left animate-fadeIn w-full">
+                              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-rose-700 w-full flex-wrap gap-2">
+                                <span>Submit Revision Request</span>
+                                {(() => {
+                                  const limit = parseInt(activeContract.revisions_limit || "3");
+                                  const freeUsed = parseInt(tc.free_revision_count || "0");
+                                  const paidUsed = parseInt(tc.paid_revision_count || "0");
+                                  return (
+                                    <span className="text-slate-455 font-extrabold text-[9px] uppercase">
+                                      Free Used: {freeUsed}/{limit} | Paid: {paidUsed}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                              {parseInt(tc.free_revision_count || "0") >= parseInt(activeContract.revisions_limit || "3") && (
+                                <div className="bg-amber-50 border border-amber-200/50 rounded-lg p-2.5 text-[10px] text-amber-800 font-semibold leading-normal flex items-start gap-1.5 shadow-xxs">
+                                  <i className="fa-solid fa-circle-exclamation text-amber-600 mt-0.5" />
+                                  <span>Note: The free revision limit has been reached ({activeContract.revisions_limit || "3"}). The freelancer may request an additional fee to complete this revision.</span>
+                                </div>
+                              )}
+                              <textarea
+                                value={milestoneFeedback}
+                                onChange={(e) => setMilestoneFeedback(e.target.value)}
+                                rows={3}
+                                placeholder="Provide detailed feedback on what needs to be changed or fixed before releasing payment..."
+                                className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-rose-550"
+                              />
+                              
+                              <div className="flex items-center gap-3">
+                                <label className="px-3 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-extrabold text-[10px] rounded-lg cursor-pointer transition-all border-0 shadow-sm flex items-center gap-1.5 select-none">
+                                  <i className="fa-solid fa-plus text-xs"></i>
+                                  <span>Add Reference File</span>
+                                  <input 
+                                    type="file" 
+                                    multiple 
+                                    onChange={handleUploadFeedbackFile} 
+                                    disabled={isFeedbackUploading}
+                                    className="hidden" 
+                                  />
+                                </label>
+                                {isFeedbackUploading && (
+                                  <span className="text-[10px] text-slate-400 font-semibold italic animate-pulse">Uploading...</span>
+                                )}
+                              </div>
+
+                              {milestoneFeedbackFiles.length > 0 && (
+                                <div className="border-t border-slate-200/60 pt-2 flex flex-col gap-1.5">
+                                  {milestoneFeedbackFiles.map((file, idx) => (
+                                    <div key={idx} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-2 text-[10px]">
+                                      <span className="font-semibold text-slate-700 truncate max-w-[200px]">{file.name}</span>
+                                      <button 
+                                        type="button"
+                                        onClick={() => setMilestoneFeedbackFiles(prev => prev.filter((_, i) => i !== idx))}
+                                        className="text-rose-650 hover:text-rose-805 font-bold bg-transparent border-0 cursor-pointer text-[10px]"
+                                      >
+                                        Remove
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              <div className="flex justify-end gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveTimecardRevisionId(null)}
+                                  className="px-3 py-1.5 bg-white border border-slate-250 rounded-lg text-[10px] font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSubmitTimecardRevision(tc.timecard_id, milestoneFeedback, milestoneFeedbackFiles)}
+                                  disabled={timecardActionLoadingId === tc.timecard_id || isFeedbackUploading}
+                                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white border-0 shadow-sm rounded-lg text-[10px] font-bold cursor-pointer disabled:opacity-50"
+                                >
+                                  Submit Request
+                                </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Timecard Revision Status Logs & Action Banners */}
+                          {tc.status === "Revision Requested" && !!expandedRevisionsMap[tc.timecard_id] && (() => {
+                            const feedbackText = tc.feedback || "No feedback provided.";
+                            let filesList: any[] = [];
+                            if (tc.revision_submitted_files) {
+                              try {
+                                filesList = typeof tc.revision_submitted_files === "string" ? JSON.parse(tc.revision_submitted_files) : tc.revision_submitted_files;
+                              } catch (e) {}
+                            }
+
+                            return (
+                              <div className="border-t border-slate-150 pt-3 mt-1 flex flex-col gap-3 w-full">
+                                <div className="flex flex-col gap-2 bg-slate-50/80 border border-slate-200/60 rounded-xl p-3.5 text-left w-full">
+                                  <span className="text-[9px] font-black text-rose-700 uppercase tracking-wider block">Revision Request Details</span>
+                                  <p className="text-[10px] text-slate-650 font-semibold leading-relaxed whitespace-pre-wrap">{feedbackText}</p>
+                                  {filesList.length > 0 && (
+                                    <div className="mt-1.5 flex flex-col gap-1 border-t border-slate-200/50 pt-2">
+                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-1">Reference Files:</span>
+                                      {filesList.map((file, fIdx) => (
+                                        <a key={fIdx} href={resolveDownloadUrl(file.url)} target="_blank" rel="noreferrer" className="text-[9px] text-primary font-bold hover:underline flex items-center gap-1">
+                                          📎 {file.name}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {userRole === "client" ? (
+                                  <>
+                                    {tc.revision_status === "Pending Acceptance" && (
+                                      <div className="flex items-center gap-2 bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 text-left w-full">
+                                        <FiClock className="w-4 h-4 text-amber-505 shrink-0" />
+                                        <div className="flex flex-col">
+                                          <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Awaiting Freelancer Acceptance</span>
+                                          <span className="text-[9px] text-slate-450 font-medium">The freelancer has been notified and will review your request.</span>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {tc.revision_status === "Awaiting Funding" && (
+                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 text-left w-full">
+                                        <div className="flex flex-col flex-1">
+                                          <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Paid Revision Proposed</span>
+                                          <span className="text-[9px] text-slate-500 font-semibold mt-0.5 leading-normal">
+                                            Freelancer proposed an extra fee of <strong className="text-slate-800">${parseFloat(tc.extra_revision_fee).toFixed(2)}</strong> (revisions limit of {activeContract.revisions_limit} reached).
+                                          </span>
+                                        </div>
+                                        <div className="flex gap-2 shrink-0">
+                                          <button
+                                            onClick={() => handleRejectTimecardRevisionProposal(tc.timecard_id)}
+                                            disabled={timecardActionLoadingId === tc.timecard_id}
+                                            className="px-3.5 py-2 bg-white hover:bg-slate-50 border border-slate-250 text-slate-600 text-[10px] font-black rounded-lg cursor-pointer whitespace-nowrap"
+                                          >
+                                            Decline Fee
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setActivePaymentModal({
+                                                type: "timecard_revision",
+                                                id: tc.timecard_id,
+                                                amount: parseFloat(tc.extra_revision_fee),
+                                                title: `Revision for Timecard logged on ${formattedDate}`
+                                              });
+                                              setModalPayMethod("stripe");
+                                              setModalPayError("");
+                                            }}
+                                            disabled={timecardActionLoadingId === tc.timecard_id}
+                                            className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-white text-[10px] font-black rounded-lg border-0 cursor-pointer shadow-sm whitespace-nowrap"
+                                          >
+                                            Fund ${parseFloat(tc.extra_revision_fee).toFixed(2)}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {tc.revision_status === "In Progress" && (
+                                      <div className="flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-xl p-3.5 text-left w-full animate-fadeIn">
+                                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
+                                        <div className="flex flex-col">
+                                          <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Revision In Progress</span>
+                                          <span className="text-[9px] text-slate-450 font-medium">
+                                            The freelancer is currently working on your requested changes.
+                                            {parseFloat(tc.extra_revision_fee || 0) > 0 && (
+                                              <span className="block mt-0.5 text-emerald-600 font-extrabold">Paid Revision Fee: ${parseFloat(tc.extra_revision_fee).toFixed(2)}</span>
+                                            )}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    {tc.revision_status === "Pending Acceptance" && (
+                                      <div className="bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 text-left w-full flex flex-col gap-3">
+                                        <div className="flex flex-col">
+                                          <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Accept Revision Request</span>
+                                          {(() => {
+                                            const limit = parseInt(activeContract.revisions_limit || "3");
+                                            const freeUsed = parseInt(tc.free_revision_count || "0");
+                                            const paidUsed = parseInt(tc.paid_revision_count || "0");
+                                            return (
+                                              <span className="text-[9px] text-slate-500 font-semibold mt-0.5">
+                                                Free Revisions Used: <strong className="text-slate-800">{freeUsed}</strong>/{limit} | Paid: <strong className="text-slate-800">{paidUsed}</strong>
+                                              </span>
+                                            );
+                                          })()}
+                                        </div>
+
+                                        <div className="flex flex-col gap-3.5 border-t border-amber-200/40 pt-3">
+                                          <div className="flex items-center gap-4 text-xs font-bold text-slate-700">
+                                            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                              <input
+                                                type="radio"
+                                                name={`rev_type_${tc.timecard_id}`}
+                                                checked={(timecardRevisionTypeMap[tc.timecard_id] || "free") === "free"}
+                                                onChange={() => setTimecardRevisionTypeMap(prev => ({ ...prev, [tc.timecard_id]: "free" }))}
+                                                className="w-4 h-4 text-emerald-600 focus:ring-emerald-500 border-slate-300"
+                                              />
+                                              <span>Free Revision</span>
+                                            </label>
+                                            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                                              <input
+                                                type="radio"
+                                                name={`rev_type_${tc.timecard_id}`}
+                                                checked={timecardRevisionTypeMap[tc.timecard_id] === "paid"}
+                                                onChange={() => setTimecardRevisionTypeMap(prev => ({ ...prev, [tc.timecard_id]: "paid" }))}
+                                                className="w-4 h-4 text-primary focus:ring-primary border-slate-300"
+                                              />
+                                              <span>Paid Revision</span>
+                                            </label>
+                                          </div>
+
+                                          {/* Options rendering */}
+                                          {(timecardRevisionTypeMap[tc.timecard_id] || "free") === "free" ? (
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full animate-fadeIn">
+                                              <span className="text-[10px] text-slate-455 font-medium leading-normal">This revision is offered for free and will start immediately.</span>
+                                              <button
+                                                onClick={() => handleAcceptTimecardRevision(tc.timecard_id, 0)}
+                                                disabled={timecardActionLoadingId === tc.timecard_id}
+                                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black rounded-lg border-0 cursor-pointer shadow-sm whitespace-nowrap self-end sm:self-center"
+                                              >
+                                                Accept Revision (Free)
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full animate-fadeIn">
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[9px] text-slate-550 font-black uppercase whitespace-nowrap">Propose Extra Fee ($):</span>
+                                                <input
+                                                  type="number"
+                                                  value={customTimecardRevisionFee}
+                                                  onChange={(e) => setCustomTimecardRevisionFee(e.target.value)}
+                                                  placeholder="e.g. 50"
+                                                  className="w-20 bg-white border border-slate-200 rounded px-2.5 py-1 text-xs font-bold text-slate-700 focus:outline-none focus:border-primary"
+                                                />
+                                              </div>
+                                              <button
+                                                onClick={() => {
+                                                  const feeVal = parseFloat(customTimecardRevisionFee);
+                                                  if (!feeVal || isNaN(feeVal) || feeVal <= 0) {
+                                                    alert("Please enter a valid extra revision fee.");
+                                                    return;
+                                                  }
+                                                  handleAcceptTimecardRevision(tc.timecard_id, feeVal);
+                                                }}
+                                                disabled={timecardActionLoadingId === tc.timecard_id}
+                                                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-[10px] font-black rounded-lg border-0 cursor-pointer shadow-sm whitespace-nowrap self-end sm:self-center"
+                                              >
+                                                Propose Fee & Accept
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {tc.revision_status === "Awaiting Funding" && (
+                                      <div className="flex items-center gap-2 bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 text-left w-full">
+                                        <FiClock className="w-4 h-4 text-amber-505 shrink-0 animate-pulse" />
+                                        <div className="flex flex-col">
+                                          <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">Awaiting Client Funding</span>
+                                          <span className="text-[9px] text-slate-450 font-medium">You proposed an extra fee of ${parseFloat(tc.extra_revision_fee).toFixed(2)}. Work will begin once funded.</span>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                     {tc.revision_status === "In Progress" && (
+                                       <div className="flex flex-col gap-3 w-full">
+                                         <div className="flex items-center justify-between gap-3 bg-primary/5 border border-primary/20 rounded-xl p-3.5 text-left w-full flex-wrap">
+                                           <div className="flex items-center gap-2 flex-1 min-w-0">
+                                             <div className="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" />
+                                             <div className="flex flex-col min-w-0 flex-1">
+                                               <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Revision in Progress</span>
+                                               <span className="text-[9px] text-slate-455 font-medium leading-relaxed block mt-0.5">
+                                                 Please perform the required fixes and submit revised work files.
+                                                 {parseFloat(tc.extra_revision_fee || 0) > 0 && (
+                                                   <span className="block mt-0.5 text-emerald-600 font-extrabold">Paid Revision Fee: ${parseFloat(tc.extra_revision_fee).toFixed(2)}</span>
+                                                 )}
+                                               </span>
+                                             </div>
+                                           </div>
+                                           <button
+                                             onClick={() => {
+                                               if (activeTimecardSubmitRevisionId === tc.timecard_id) {
+                                                 setActiveTimecardSubmitRevisionId(null);
+                                               } else {
+                                                 setActiveTimecardSubmitRevisionId(tc.timecard_id);
+                                                 setUploadedFiles([]);
+                                               }
+                                             }}
+                                             className="px-3.5 py-2 bg-primary hover:bg-primary-hover text-white text-[10px] font-black rounded-lg border-0 cursor-pointer shadow-sm whitespace-nowrap self-end sm:self-center"
+                                           >
+                                             {activeTimecardSubmitRevisionId === tc.timecard_id ? "Close Uploader" : "Submit Revised Work"}
+                                           </button>
+                                         </div>
+
+                                         {activeTimecardSubmitRevisionId === tc.timecard_id && (
+                                           <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 text-left w-full animate-fadeIn">
+                                             <span className="text-[9px] font-black text-primary uppercase tracking-wider block">Submit Revised Deliverables</span>
+                                             <textarea
+                                               value={timecardSubmitNotes}
+                                               onChange={(e) => setTimecardSubmitNotes(e.target.value)}
+                                               rows={2}
+                                               placeholder="Provide a brief explanation of the fixes performed (optional)..."
+                                               className="w-full bg-white border border-slate-200 rounded-lg p-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-primary"
+                                             />
+                                             
+                                             <div className="flex items-center gap-3">
+                                               <label className="px-3 py-1 bg-slate-200 hover:bg-slate-350 text-slate-700 font-extrabold text-[10px] rounded-lg cursor-pointer transition-all border-0 shadow-sm flex items-center gap-1.5 select-none">
+                                                 <i className="fa-solid fa-plus text-xs"></i>
+                                                 <span>Upload Files / Source Links</span>
+                                                 <input 
+                                                   type="file" 
+                                                   multiple 
+                                                   onChange={handleUploadFile} 
+                                                   disabled={isUploading}
+                                                   className="hidden" 
+                                                 />
+                                               </label>
+                                               {isUploading && (
+                                                 <span className="text-[10px] text-slate-400 font-semibold italic animate-pulse">Uploading...</span>
+                                               )}
+                                             </div>
+
+                                             {uploadedFiles.length > 0 && (
+                                               <div className="border-t border-slate-200/60 pt-2 flex flex-col gap-1.5">
+                                                 {uploadedFiles.map((file, idx) => (
+                                                   <div key={idx} className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-2 text-[10px]">
+                                                     <span className="font-semibold text-slate-700 truncate max-w-[250px]">{file.name}</span>
+                                                     <button 
+                                                       type="button"
+                                                       onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== idx))}
+                                                       className="text-rose-650 hover:text-rose-805 font-bold bg-transparent border-0 cursor-pointer text-[10px]"
+                                                     >
+                                                       Remove
+                                                     </button>
+                                                   </div>
+                                                 ))}
+                                               </div>
+                                             )}
+
+                                             <div className="flex justify-end gap-2 mt-2">
+                                               <button
+                                                 type="button"
+                                                 onClick={() => setActiveTimecardSubmitRevisionId(null)}
+                                                 className="px-3 py-1.5 bg-white border border-slate-250 rounded-lg text-[10px] font-bold text-slate-505 hover:bg-slate-100 cursor-pointer"
+                                               >
+                                                 Cancel
+                                               </button>
+                                               <button
+                                                 type="button"
+                                                 onClick={() => {
+                                                   if (uploadedFiles.length === 0) {
+                                                     alert("Please upload at least one revised work file or document.");
+                                                     return;
+                                                   }
+                                                   handleSubmitRevisedTimecardWork(tc.timecard_id, uploadedFiles, timecardSubmitNotes);
+                                                 }}
+                                                 disabled={timecardActionLoadingId === tc.timecard_id || isUploading}
+                                                 className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-white border-0 shadow-sm rounded-lg text-[10px] font-bold cursor-pointer disabled:opacity-50"
+                                               >
+                                                 Submit Deliverables
+                                               </button>
+                                             </div>
+                                           </div>
+                                         )}
+                                       </div>
+                                     )}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })}
                   </div>
                 )}
+              </>
+            )}
+          </div>
+        )}
+
+            {activeTimecardTab === "invoices" && (
+              <div className="flex flex-col gap-3">
+                {(() => {
+                  const invoiceItems: any[] = [];
+                  (timecards || []).forEach((tc) => {
+                    if (tc.status === "Paid") {
+                      invoiceItems.push({
+                        type: "timecard",
+                        id: tc.timecard_id,
+                        title: `Hourly Work (${tc.hours}h ${tc.minutes}m)`,
+                        amount: parseFloat(tc.amount),
+                        date: tc.updated_at || tc.created_at,
+                        hours: tc.hours,
+                        minutes: tc.minutes,
+                        description: tc.description || "Logged working hours payment release.",
+                        invoiceNo: `INV-TC-${tc.timecard_id}`
+                      });
+                    }
+                    if (tc.revision_status !== "None" && tc.revision_status !== "Pending Acceptance" && tc.revision_status !== "Awaiting Funding" && parseFloat(tc.extra_revision_fee || 0) > 0) {
+                      invoiceItems.push({
+                        type: "timecard_revision",
+                        id: tc.timecard_id,
+                        title: `Extra Revision Fee`,
+                        amount: parseFloat(tc.extra_revision_fee),
+                        date: tc.updated_at || tc.created_at,
+                        description: `Paid revision fee for work logged on ${new Date(tc.work_date).toLocaleDateString()}.`,
+                        invoiceNo: `INV-REV-${tc.timecard_id}`
+                      });
+                    }
+                  });
+
+                  invoiceItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+                  if (invoiceItems.length === 0) {
+                    return (
+                      <div className="text-center py-10 bg-slate-50/50 border border-slate-200/40 rounded-xl">
+                        <p className="text-xs font-bold text-slate-400">No paid invoices generated yet.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="flex flex-col gap-3">
+                      {invoiceItems.map((item, idx) => {
+                        const formattedDate = new Date(item.date).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric"
+                        });
+                        return (
+                          <div key={idx} className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between gap-4 hover:border-slate-350 transition-all text-left shadow-xxs">
+                            <div>
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item.invoiceNo}</span>
+                              <h5 className="text-xs font-black text-slate-800 mt-1">Paid on {formattedDate}</h5>
+                              <p className="text-[10px] text-slate-455 font-semibold mt-0.5">{item.description}</p>
+                            </div>
+                            <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                              <span className="text-xs font-black text-emerald-600 block">${item.amount.toFixed(2)}</span>
+                              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                                <button
+                                  onClick={() => {
+                                    setSelectedInvoiceItem(item);
+                                    setShowInvoiceModal(true);
+                                  }}
+                                  className="text-[9px] font-extrabold text-primary hover:text-primary-hover hover:underline bg-transparent border-0 cursor-pointer p-0"
+                                >
+                                  View Invoice
+                                </button>
+                                {userRole === "freelancer" && (
+                                  <span className="text-[9px] text-slate-400 font-bold flex items-center gap-1 select-none">
+                                    <span>•</span>
+                                    <span>Platform service fee was deducted from payout</span>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -3181,18 +3840,18 @@ export default function ProjectMilestoneTracker({
                               }}
                               className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3 py-1.5 rounded-xl transition-all cursor-pointer shrink-0 text-center shadow-xs"
                             >
-                              <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wider">PAID</span>
+                              <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wider">{t("paid_badge", "PAID")}</span>
                               <span className="text-slate-300 text-[9px]">•</span>
-                              <span className="text-[9px] font-extrabold text-primary hover:underline">Invoice</span>
+                              <span className="text-[9px] font-extrabold text-primary hover:underline">{t("invoice_badge", "Invoice")}</span>
                             </button>
                           ) : userRole === "freelancer" ? (
                             m.status === "Under Review" ? (
                               <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider flex items-center gap-1">
-                                <FiClock className="w-3 h-3 text-amber-500" /> Under Review
+                                <FiClock className="w-3 h-3 text-amber-500" /> {t("under_review_status", "Under Review")}
                               </span>
                             ) : m.revision_status === "Pending Acceptance" ? (
                               <div className="flex flex-col gap-2 bg-amber-50/50 border border-amber-100 rounded-xl p-3.5 text-left max-w-[320px] ml-auto w-full">
-                                <span className="text-[9px] font-black text-amber-800 uppercase tracking-wider">Revision Requested by Client</span>
+                                <span className="text-[9px] font-black text-amber-800 uppercase tracking-wider">{t("revision_requested_client", "Revision Requested by Client")}</span>
                                 <p className="text-[10px] text-slate-600 font-semibold leading-relaxed mt-0.5 whitespace-pre-wrap">{feedbackText}</p>
                                 {filesList.length > 0 && (
                                   <div className="mt-1 flex flex-col gap-1">
@@ -3205,7 +3864,7 @@ export default function ProjectMilestoneTracker({
                                 )}
                                 <div className="border-t border-amber-100/50 pt-2.5 mt-1.5 flex flex-col gap-2">
                                   <div className="flex justify-between text-[9px] font-bold text-slate-455 uppercase">
-                                    <span>Remaining Free Revisions:</span>
+                                    <span>{t("remaining_free_revisions", "Remaining Free Revisions:")}</span>
                                     <span className="text-slate-800 font-extrabold">
                                       {Math.max(0, parseInt(activeContract.revisions_limit || "3") - parseInt(m.revision_count || "0"))}
                                     </span>
@@ -3222,13 +3881,13 @@ export default function ProjectMilestoneTracker({
                                               disabled={milestoneActionLoading}
                                               className="flex-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 py-1.5 rounded-lg cursor-pointer transition-all disabled:opacity-50 text-center"
                                             >
-                                              Accept (Free)
+                                              {t("accept_free_btn", "Accept (Free)")}
                                             </button>
                                             <button
                                               onClick={() => setShowDisputeModal(true)}
                                               className="flex-1 text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 py-1.5 rounded-lg cursor-pointer transition-all text-center"
                                             >
-                                              File a Dispute
+                                              {t("file_a_dispute_btn", "File a Dispute")}
                                             </button>
                                           </div>
                                         ) : (
@@ -3236,7 +3895,7 @@ export default function ProjectMilestoneTracker({
                                             <div className="flex gap-1.5 w-full">
                                               <input
                                                 type="number"
-                                                placeholder="Fee ($)"
+                                                placeholder={t("fee_placeholder", "Fee ($)")}
                                                 min={0}
                                                 value={customRevisionFee}
                                                 onChange={(e) => {
@@ -3250,7 +3909,7 @@ export default function ProjectMilestoneTracker({
                                                 onClick={() => {
                                                   const feeVal = parseFloat(customRevisionFee);
                                                   if (isNaN(feeVal) || feeVal < 0) {
-                                                    alert("Please enter a valid extra fee (0 or greater).");
+                                                    alert(t("valid_extra_fee_alert", "Please enter a valid extra fee (0 or greater)."));
                                                     return;
                                                   }
                                                   handleAcceptRevision(m.milestone_id, feeVal);
@@ -3259,14 +3918,14 @@ export default function ProjectMilestoneTracker({
                                                 disabled={milestoneActionLoading || customRevisionFee === ""}
                                                 className="text-[10px] font-black text-white bg-primary hover:bg-primary-hover px-3.5 py-1.5 rounded-lg cursor-pointer transition-all disabled:opacity-50 border-0 shrink-0"
                                               >
-                                                Set Fee
+                                                {t("set_fee_btn", "Set Fee")}
                                               </button>
                                             </div>
                                             <button
                                               onClick={() => setShowDisputeModal(true)}
                                               className="w-full text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 py-1.5 rounded-lg cursor-pointer transition-all text-center"
                                             >
-                                              File a Dispute
+                                              {t("file_a_dispute_btn", "File a Dispute")}
                                             </button>
                                           </div>
                                         )}
@@ -3278,7 +3937,7 @@ export default function ProjectMilestoneTracker({
                               </div>
                             ) : m.revision_status === "Awaiting Funding" ? (
                               <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-250 px-2.5 py-1.5 rounded-lg uppercase tracking-wider flex items-center gap-1">
-                                <FiClock className="w-3 h-3 text-amber-500" /> Awaiting Client Funding (${parseFloat(m.extra_revision_fee || "0").toFixed(2)})
+                                <FiClock className="w-3 h-3 text-amber-500" /> {t("awaiting_client_funding", "Awaiting Client Funding")} (${parseFloat(m.extra_revision_fee || "0").toFixed(2)})
                               </span>
                             ) : m.payment_status === "Pending" ? (
                               <div className="flex flex-col items-end gap-2">
@@ -3288,7 +3947,7 @@ export default function ProjectMilestoneTracker({
                                     : "text-slate-400 bg-slate-50 border-slate-200"
                                 }`}>
                                   <FiClock className={`w-3.5 h-3.5 ${isNextToFund ? "text-amber-500" : "text-slate-400"}`} />
-                                  {isNextToFund ? "Awaiting Escrow Funding" : "Awaiting Prior Funding"}
+                                  {isNextToFund ? t("awaiting_escrow_funding", "Awaiting Escrow Funding") : t("awaiting_prior_funding", "Awaiting Prior Funding")}
                                 </span>
                                 {isNextToFund && (
                                   <button
@@ -3297,7 +3956,7 @@ export default function ProjectMilestoneTracker({
                                     }}
                                     className="text-[9px] font-extrabold text-white bg-amber-600 hover:bg-amber-700 px-3 py-1.5 rounded-lg cursor-pointer border-0 shadow-sm transition-all"
                                   >
-                                    Request Escrow Funding
+                                    {t("request_escrow_funding_btn", "Request Escrow Funding")}
                                   </button>
                                 )}
                               </div>
@@ -3311,7 +3970,7 @@ export default function ProjectMilestoneTracker({
                                   disabled={milestoneActionLoading}
                                   className="text-[10px] font-extrabold text-primary bg-primary/[0.04] border border-primary/20 hover:bg-primary/[0.08] px-3 py-1.5 rounded-lg cursor-pointer transition-all disabled:opacity-50"
                                 >
-                                  {m.revision_status === "In Progress" ? "Submit Revision work" : "Submit Deliverable"}
+                                  {m.revision_status === "In Progress" ? t("submit_revision_work_btn", "Submit Revision work") : t("submit_deliverable_btn", "Submit Deliverable")}
                                 </button>
                               )
                             )
@@ -3319,9 +3978,9 @@ export default function ProjectMilestoneTracker({
                             m.payment_status === "Pending" ? (
                               isNextToFund ? (
                                 <div className="flex flex-col gap-2 bg-amber-50/50 border border-amber-100/60 rounded-xl p-3.5 text-left max-w-[320px] ml-auto w-full">
-                                  <span className="text-[9px] font-black text-amber-800 uppercase tracking-wider block">Escrow Funding Required</span>
+                                  <span className="text-[9px] font-black text-amber-800 uppercase tracking-wider block">{t("escrow_funding_required", "Escrow Funding Required")}</span>
                                   <p className="text-[10px] text-slate-500 font-semibold leading-relaxed mt-0.5">
-                                    This milestone must be funded before the freelancer can begin work.
+                                    {t("milestone_funding_required_msg", "This milestone must be funded before the freelancer can begin work.")}
                                   </p>
                                   <button
                                     onClick={() => {
@@ -3337,12 +3996,12 @@ export default function ProjectMilestoneTracker({
                                     disabled={milestoneActionLoading}
                                     className="w-full bg-amber-600 hover:bg-amber-755 text-white text-[10px] font-extrabold py-1.5 rounded-lg shadow-sm border-0 cursor-pointer text-center"
                                   >
-                                    Fund Milestone (${parseFloat(m.amount).toFixed(2)})
+                                    {t("fund_milestone_btn", "Fund Milestone")} (${parseFloat(m.amount).toFixed(2)})
                                   </button>
                                 </div>
                               ) : (
                                 <span className="text-[10px] font-black text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider flex items-center gap-1">
-                                  <FiClock className="w-3 h-3 text-slate-400" /> Awaiting prior milestone completion
+                                  <FiClock className="w-3 h-3 text-slate-400" /> {t("awaiting_prior_milestone_completion", "Awaiting prior milestone completion")}
                                 </span>
                               )
                             ) : m.status === "Under Review" ? (
@@ -3679,12 +4338,14 @@ export default function ProjectMilestoneTracker({
                   Cancel Contract & Refund Escrow
                 </button>
               )}
-              <button
-                onClick={() => setShowDisputeModal(true)}
-                className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
-              >
-                File a Dispute
-              </button>
+              {activeContract.status !== "Hired" && (
+                <button
+                  onClick={() => setShowDisputeModal(true)}
+                  className="px-4 py-2 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
+                >
+                  File a Dispute
+                </button>
+              )}
             </div>
           )}
 
@@ -3781,12 +4442,14 @@ export default function ProjectMilestoneTracker({
                 <div className="flex flex-col sm:flex-row justify-end items-center gap-3 w-full mt-2">
 
                   <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full sm:w-auto">
-                    <button
-                      onClick={() => setShowDisputeModal(true)}
-                      className="w-full sm:w-auto px-4 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
-                    >
-                      File a Dispute
-                    </button>
+                    {!isHired && (
+                      <button
+                        onClick={() => setShowDisputeModal(true)}
+                        className="w-full sm:w-auto px-4 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
+                      >
+                        File a Dispute
+                      </button>
+                    )}
                     <button
                       onClick={handleFreelancerCancelContract}
                       className="w-full sm:w-auto px-4 py-2.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
@@ -3827,13 +4490,13 @@ export default function ProjectMilestoneTracker({
                 disabled={isApprovingCompletion}
                 className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-750 text-white font-extrabold text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 border-0 shadow-sm animate-fadeIn whitespace-nowrap"
               >
-                <FiCheckCircle className="w-3.5 h-3.5" /> Approve Completion & Close Project
+                <FiCheckCircle className="w-3.5 h-3.5" /> {t("approve_completion_close_btn", "Approve Completion & Close Project")}
               </button>
               <button
                 onClick={() => setShowDisputeModal(true)}
                 className="w-full sm:w-auto px-4 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
               >
-                File a Dispute
+                {t("file_a_dispute_btn", "File a Dispute")}
               </button>
             </div>
           )}
@@ -3844,7 +4507,7 @@ export default function ProjectMilestoneTracker({
                 onClick={() => setShowDisputeModal(true)}
                 className="w-full sm:w-auto px-4 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
               >
-                File a Dispute
+                {t("file_a_dispute_btn", "File a Dispute")}
               </button>
             </div>
           )}
@@ -3853,20 +4516,20 @@ export default function ProjectMilestoneTracker({
             <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full sm:w-auto">
               <button
                 onClick={async () => {
-                  if (window.confirm("Are you sure you want to approve this work and release all escrow payments to the freelancer? This action cannot be undone.")) {
+                  if (window.confirm(t("approve_work_release_escrow_confirm", "Are you sure you want to approve this work and release all escrow payments to the freelancer? This action cannot be undone."))) {
                     await approveContractPayment(activeContract.contract_id);
                     fetchContracts();
                   }
                 }}
                 className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-750 text-white font-extrabold text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 border-0 shadow-sm whitespace-nowrap"
               >
-                <FiCheckCircle className="w-3.5 h-3.5" /> Accept Work & Release Escrow
+                <FiCheckCircle className="w-3.5 h-3.5" /> {t("accept_work_btn", "Accept Work & Release Escrow")}
               </button>
               <button
                 onClick={() => setShowDisputeModal(true)}
                 className="w-full sm:w-auto px-4 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 whitespace-nowrap"
               >
-                File a Dispute
+                {t("file_a_dispute_btn", "File a Dispute")}
               </button>
             </div>
           )}
@@ -3885,8 +4548,8 @@ export default function ProjectMilestoneTracker({
           >
             <i className="fa-solid fa-star text-xs"></i>
             {userReviewed 
-              ? "Your Submitted Review" 
-              : (userRole === "client" ? "Rate & Review Freelancer" : "Rate & Review Client")}
+              ? t("your_submitted_review", "Your Submitted Review") 
+              : (userRole === "client" ? t("rate_review_freelancer", "Rate & Review Freelancer") : t("rate_review_client", "Rate & Review Client"))}
           </button>
         </div>
       )}
@@ -3928,6 +4591,10 @@ export default function ProjectMilestoneTracker({
 
                 return (
                   <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-col gap-2">
+                    <div className="flex justify-between items-center text-[10px] font-semibold text-slate-500">
+                      <span>Your Wallet Balance</span>
+                      <span className="font-extrabold text-slate-800">${walletInfo ? parseFloat(walletInfo.balance).toFixed(2) : "0.00"}</span>
+                    </div>
                     <div className="flex justify-between items-center text-[10px] font-semibold text-slate-500">
                       <span>Total Timecard Amount</span>
                       <span className="font-extrabold text-slate-800">${amount.toFixed(2)}</span>
@@ -4602,7 +5269,7 @@ export default function ProjectMilestoneTracker({
                         <p className="text-[9px] font-semibold text-slate-500 mt-1">
                           ID: <span className="text-slate-800 font-bold">
                             {selectedInvoiceItem 
-                              ? `INV-${selectedInvoiceItem.type === 'timecard' ? 'TC' : 'MS'}-${selectedInvoiceItem.id || 'RC'}-${new Date(selectedInvoiceItem.date).getTime().toString().slice(-4)}`
+                              ? `INV-${selectedInvoiceItem.type === 'timecard' ? 'TC' : selectedInvoiceItem.type === 'timecard_revision' ? 'REV' : 'MS'}-${selectedInvoiceItem.id || 'RC'}-${new Date(selectedInvoiceItem.date).getTime().toString().slice(-4)}`
                               : `INV-CON-${activeContract.contract_id}-${new Date(activeContract.created_at).getTime().toString().slice(-4)}`
                             }
                           </span>
@@ -4704,6 +5371,10 @@ export default function ProjectMilestoneTracker({
                               {selectedInvoiceItem.type === "timecard" ? (
                                 <span className="inline-block text-primary text-[8px] font-black uppercase tracking-wider">
                                   Hourly ({selectedInvoiceItem.hours}h {selectedInvoiceItem.minutes}m @ ${hourlyRate.toFixed(2)}/hr)
+                                </span>
+                              ) : selectedInvoiceItem.type === "timecard_revision" ? (
+                                <span className="inline-block text-amber-700 text-[8px] font-black uppercase tracking-wider">
+                                  Timecard Extra Revision Fee
                                 </span>
                               ) : (
                                 <span className="inline-block text-teal-700 text-[8px] font-black uppercase tracking-wider">
@@ -4829,6 +5500,16 @@ export default function ProjectMilestoneTracker({
                           <div className="mt-1">
                             <span className="block"><strong>Payment Method:</strong> Stripe Checkout & LancerFlow Escrow Wallet</span>
                             <span className="block mt-0.5"><strong>Transaction ID:</strong> TXN-TC-{selectedInvoiceItem.id}</span>
+                          </div>
+                        </div>
+                      ) : selectedInvoiceItem.type === "timecard_revision" ? (
+                        <div>
+                          <span>Extra revision fee payout of </span>
+                          <strong className="text-slate-800">${selectedInvoiceItem.amount.toFixed(2)}</strong>
+                          <span> was funded by client and credited to the freelancer.</span>
+                          <div className="mt-1">
+                            <span className="block"><strong>Payment Method:</strong> Client Balance & Escrow Wallet Checkout</span>
+                            <span className="block mt-0.5"><strong>Transaction ID:</strong> TXN-TC-REV-{selectedInvoiceItem.id}</span>
                           </div>
                         </div>
                       ) : (

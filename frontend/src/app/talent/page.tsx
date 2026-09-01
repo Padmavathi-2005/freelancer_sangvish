@@ -13,7 +13,7 @@ import { FiSearch, FiSliders, FiRefreshCw, FiDollarSign, FiStar, FiCheckCircle, 
 import { checkAndSwitchRole } from "@/utils/roleRedirect";
 
 function TalentSearchContent() {
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, currency, currencySymbol, currencyRate } = useLanguage();
   const router = useRouter();
   useEffect(() => {
     const handleRoleVerification = async () => {
@@ -276,7 +276,7 @@ function TalentSearchContent() {
     }
 
     // 4. Hourly Rate range
-    const rate = parseFloat(f.hourly_rate || 0);
+    const rate = parseFloat(f.hourly_rate || 0) * (currencyRate || 1.0);
     if (minRate && !isNaN(parseFloat(minRate))) {
       if (rate < parseFloat(minRate)) return false;
     }
@@ -491,22 +491,34 @@ function TalentSearchContent() {
 
             {/* Hourly Rate Range */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("hourly_rate_range", "Hourly Rate Range ($)")}</label>
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">
+                {t("hourly_rate_range_label", "Hourly Rate Range")} ({currency})
+              </label>
               <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="number"
-                  placeholder={t("min", "Min")}
-                  value={minRate}
-                  onChange={(e) => setMinRate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
-                />
-                <input
-                  type="number"
-                  placeholder={t("max", "Max")}
-                  value={maxRate}
-                  onChange={(e) => setMaxRate(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none"
-                />
+                <div className="flex items-center bg-slate-50 border border-slate-200/90 hover:border-slate-300 focus-within:border-teal-700/50 rounded-xl overflow-hidden transition-all">
+                  <span className="pl-3.5 pr-2.5 py-2 text-[10px] font-black text-slate-400 border-r border-slate-200 select-none shrink-0 min-w-[28px] text-center">
+                    {currencySymbol}
+                  </span>
+                  <input
+                    type="number"
+                    placeholder={t("min", "Min")}
+                    value={minRate}
+                    onChange={(e) => setMinRate(e.target.value)}
+                    className="w-full bg-transparent px-3 py-2 text-xs font-bold text-slate-700 border-none outline-none focus:outline-none focus:ring-0"
+                  />
+                </div>
+                <div className="flex items-center bg-slate-50 border border-slate-200/90 hover:border-slate-300 focus-within:border-teal-700/50 rounded-xl overflow-hidden transition-all">
+                  <span className="pl-3.5 pr-2.5 py-2 text-[10px] font-black text-slate-400 border-r border-slate-200 select-none shrink-0 min-w-[28px] text-center">
+                    {currencySymbol}
+                  </span>
+                  <input
+                    type="number"
+                    placeholder={t("max", "Max")}
+                    value={maxRate}
+                    onChange={(e) => setMaxRate(e.target.value)}
+                    className="w-full bg-transparent px-3 py-2 text-xs font-bold text-slate-700 border-none outline-none focus:outline-none focus:ring-0"
+                  />
+                </div>
               </div>
             </div>
 
@@ -555,9 +567,9 @@ function TalentSearchContent() {
         {/* Right Side: Search Results Listing */}
         <section className="lg:col-span-9 w-full min-w-0 space-y-6">
           {/* Top Panel bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
             {/* Search Input */}
-            <div className="flex-1 max-w-md relative select-none">
+            <div className="w-full lg:max-w-md relative select-none">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <FiSearch className="h-4 w-4 text-slate-400" />
               </span>
@@ -566,17 +578,17 @@ function TalentSearchContent() {
                 placeholder={t("search_freelancers_placeholder", "Search for freelancers...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9.5 pr-4 text-xs font-bold text-slate-800 placeholder-slate-450 outline-none focus:border-primary transition-all"
               />
             </div>
 
             {/* Stats and Sort */}
-            <div className="flex flex-wrap items-center gap-4 shrink-0 select-none">
-              <p className="text-slate-500 text-xs font-bold">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none w-full lg:w-auto">
+              <p className="text-slate-500 text-xs font-bold whitespace-nowrap">
                 {t("showing", "Showing")} <span className="text-slate-800 font-extrabold">{sortedFreelancers.length}</span> {t("professionals", "professionals")}
               </p>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none">{t("sort_by", "Sort By")}</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none whitespace-nowrap shrink-0">{t("sort_by", "Sort By")}</span>
                 <CustomSelect
                   value={sortBy}
                   onChange={(val) => setSortBy(val)}
@@ -585,7 +597,7 @@ function TalentSearchContent() {
                     { value: "rate_desc", label: t("sort_rate_high_low", "Hourly Rate: High to Low") },
                     { value: "rate_asc", label: t("sort_rate_low_high", "Hourly Rate: Low to High") },
                   ]}
-                  className="w-48"
+                  className="w-36 sm:w-48"
                 />
               </div>
             </div>
@@ -595,22 +607,22 @@ function TalentSearchContent() {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl gap-4">
               <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin" />
-              <p className="text-xs font-bold text-slate-400">Loading freelancers...</p>
+              <p className="text-xs font-bold text-slate-400">{t("loading_freelancers", "Loading freelancers...")}</p>
             </div>
           ) : sortedFreelancers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl text-center p-6">
               <div className="w-16 h-16 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 text-2xl mb-4">
                 👋
               </div>
-              <h3 className="text-base font-black text-slate-850">No talent found</h3>
+              <h3 className="text-base font-black text-slate-850">{t("no_talent_found", "No talent found")}</h3>
               <p className="text-xs text-slate-500 font-bold max-w-sm mt-2">
-                Try checking for other categories, adjusting hourly rate limits, or resetting filters.
+                {t("no_talent_found_desc", "Try checking for other categories, adjusting hourly rate limits, or resetting filters.")}
               </p>
               <button
                 onClick={handleResetFilters}
                 className="mt-6 bg-primary hover:bg-primary-hover text-white text-xs font-black py-2.5 px-6 rounded-xl shadow-sm transition cursor-pointer border-none"
               >
-                Reset All Filters
+                {t("reset_all_filters", "Reset All Filters")}
               </button>
             </div>
           ) : (
@@ -660,12 +672,12 @@ function TalentSearchContent() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-base font-black text-slate-850 group-hover:text-primary transition-colors leading-tight">
-                          {f.name}
+                          {f.name && f.name.length > 15 ? `${f.name.substring(0, 15)}...` : f.name}
                         </h3>
                         {f.is_featured && (
                           <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm px-2.5 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider animate-pulse shrink-0 flex items-center gap-1">
                             <FiStar className="w-2.5 h-2.5 fill-white text-white shrink-0" />
-                            <span>{siteShortName}'s Choice</span>
+                            <span>{t("site_choice", "{site_name}'s Choice").replace("{site_name}", siteShortName)}</span>
                           </span>
                         )}
                         {f.vetting_status === "Approved" && (
@@ -673,17 +685,17 @@ function TalentSearchContent() {
                         )}
                         {f.experience_level && (
                           <span className="bg-slate-50 text-slate-600 border border-slate-200 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider">
-                            {f.experience_level}
+                            {t(f.experience_level.toLowerCase(), f.experience_level)}
                           </span>
                         )}
                       </div>
 
                       <p className="text-xs font-black text-slate-800 mt-1 leading-snug">
-                        {f.professional_title || "Freelancer Partner"}
+                        {f.professional_title || t("freelancer_partner", "Freelancer Partner")}
                       </p>
 
                       <p className="text-xs text-slate-500 font-bold leading-relaxed mt-2 line-clamp-2">
-                        {f.bio || "No professional overview bio provided yet by this freelancer partner."}
+                        {f.bio || t("no_bio_provided", "No professional overview bio provided yet by this freelancer partner.")}
                       </p>
 
                       {/* Skills list */}

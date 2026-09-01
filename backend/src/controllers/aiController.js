@@ -761,8 +761,12 @@ export const matchProjects = async (req, res) => {
     const jobsRes = await pool.query(
       `SELECT j.job_id, j.title, j.description, j.budget, j.max_budget, j.min_budget,
               j.project_type, j.experience_level, j.duration, j.location, j.skills,
-              j.slug, j.category_id, c.category_name
+              j.slug, j.category_id, j.created_at, c.category_name,
+              u.first_name || ' ' || COALESCE(u.last_name, '') AS client_name,
+              cp.company_name
        FROM jobs j
+       JOIN users u ON j.client_id = u.user_id
+       LEFT JOIN client_profiles cp ON u.user_id = cp.user_id
        LEFT JOIN categories c ON j.category_id = c.category_id
        WHERE j.status = 'Open'
        ORDER BY j.created_at DESC

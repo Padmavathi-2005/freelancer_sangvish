@@ -6,6 +6,7 @@ import React, { useState, useEffect } from "react";
 import { FiGlobe, FiUploadCloud, FiExternalLink, FiPlus, FiTrash2, FiUpload } from "react-icons/fi";
 import { Home3HeroSlide, DEFAULT_HOME3_HERO_SLIDES } from "@/components/home/Home3Hero";
 import { useAdmin } from "@/app/admin/AdminContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface SiteSettingsTabProps {
   handleSaveSetting: (key: string, value: any, category?: string) => Promise<void>;
@@ -14,6 +15,7 @@ interface SiteSettingsTabProps {
 export default function SiteSettingsTab({
   handleSaveSetting
 }: SiteSettingsTabProps) {
+  const { t } = useLanguage();
   const { adminTheme } = useAdmin();
   const isDark = adminTheme === "dark";
 
@@ -42,8 +44,8 @@ export default function SiteSettingsTab({
   const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showToast, setShowToast] = useState(false);
 
-  const [toastTitle, setToastTitle] = useState("Settings Saved");
-  const [toastText, setToastText] = useState("Platform configuration updated successfully.");
+  const [toastTitle, setToastTitle] = useState(t("admin_settings_saved_title", "Settings Saved"));
+  const [toastText, setToastText] = useState(t("admin_settings_saved_desc", "Platform configuration updated successfully."));
 
   const [uploadingField, setUploadingField] = useState<"logo" | "logo_dark" | "favicon" | "og_image" | "chatbot_avatar" | null>(null);
 
@@ -76,10 +78,10 @@ export default function SiteSettingsTab({
       else if (target === "og_image") setSiteOgImage(data.url);
       else if (target === "chatbot_avatar") setSiteChatbotAvatar(data.url);
       
-      triggerToast("Upload Success", `${target.replace("_", " ").toUpperCase()} uploaded successfully!`);
+      triggerToast(t("admin_upload_success", "Upload Success"), t("admin_upload_success_desc", "File uploaded successfully."));
     } catch (err: any) {
       console.error(err);
-      triggerToast("Upload Failed", err.message || `Could not upload image.`);
+      triggerToast(t("admin_upload_failed", "Upload Failed"), err.message || t("admin_upload_failed_desc", "Could not upload image."));
     } finally {
       setUploadingField(null);
     }
@@ -260,11 +262,11 @@ export default function SiteSettingsTab({
       await handleSaveSetting("default_home_page", defaultHomePage, "site_settings");
       await handleSaveSetting("home3_hero_slides", JSON.stringify(hero3Slides), "site_settings");
 
-      triggerToast("Settings Saved", "Site identity and SEO settings saved successfully!");
-      setSaveStatus({ type: "success", text: "✓ Site settings saved successfully!" });
+      triggerToast(t("admin_settings_saved_title", "Settings Saved"), t("admin_site_settings_saved_desc", "Site identity and SEO settings saved successfully!"));
+      setSaveStatus({ type: "success", text: "✓ " + t("admin_site_settings_saved_desc", "Site identity and SEO settings saved successfully!") });
       setTimeout(() => setSaveStatus(null), 4000);
     } catch (e) {
-      setSaveStatus({ type: "error", text: "Failed to save settings. Please try again." });
+      setSaveStatus({ type: "error", text: t("admin_settings_save_failed", "Failed to save settings. Please try again.") });
     } finally {
       setSaving(false);
     }
@@ -276,46 +278,47 @@ export default function SiteSettingsTab({
   // Helper to format/preview image URLs
   const formatImgSrc = (url: string) => {
     if (!url) return "";
-    let cleanUrl = url;
     
-    // Clean absolute domains to relative path
-    const publicIdx = cleanUrl.indexOf("/public/");
-    if (publicIdx !== -1) {
-      cleanUrl = cleanUrl.substring(publicIdx);
+    if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:")) {
+      return url;
     }
     
-    if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
-      return cleanUrl;
+    // If it's a backend uploaded file (which includes /public/)
+    if (url.includes("/public/")) {
+      const apiDomain = API_URL.replace("/api", "");
+      // Extract from /public/ onwards just in case
+      const publicPath = url.substring(url.indexOf("/public/"));
+      return `${apiDomain}${publicPath}`;
     }
     
-    const apiDomain = API_URL.replace("/api", "");
-    return `${apiDomain}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+    // Otherwise it's a frontend relative file like /logo.png, /favicon.ico, /images/...
+    return url;
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left">
+    <div className={`bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left rtl:text-right ${isDark ? "dark:bg-slate-950 dark:border-slate-800" : ""}`}>
       
       {/* HEADER SECTION with Save Action */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
         <div>
-          <h3 className="text-lg font-bold text-slate-805 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-slate-805 flex items-center gap-2 text-left rtl:text-right">
             <FiGlobe className="w-5 h-5 text-slate-500" />
-            <span>Site Identity & SEO Settings</span>
+            <span>{t("admin_site_settings_title", "Site Identity & SEO Settings")}</span>
           </h3>
-          <p className="text-slate-505 text-xs mt-0.5 font-semibold">Configure site name, logo, default home page design, favicon, and social meta descriptions.</p>
+          <p className="text-slate-505 text-xs mt-0.5 font-semibold text-left rtl:text-right">{t("admin_site_settings_desc", "Configure site name, logo, default home page design, favicon, and social meta descriptions.")}</p>
         </div>
         <button
           onClick={handleBulkSave}
           disabled={saving}
           className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-6 py-3 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer border-none"
         >
-          {saving ? "Saving..." : "Save Settings"}
+          {saving ? t("admin_saving_btn", "Saving...") : t("admin_save_settings_btn", "Save Settings")}
         </button>
       </div>
 
       {/* Save Success/Error Alert banner */}
       {saveStatus && (
-        <div className={`p-4 rounded-xl text-xs font-bold border transition animate-fadeIn ${
+        <div className={`p-4 rounded-xl text-xs font-bold border transition animate-fadeIn text-left rtl:text-right ${
           saveStatus.type === "success" 
             ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
             : "bg-rose-50 text-rose-700 border-rose-100"
@@ -325,32 +328,32 @@ export default function SiteSettingsTab({
       )}
 
       {/* HOME PAGE DESIGN VARIATIONS SECTION */}
-      <div className="border-b border-slate-100 pb-8">
-        <h4 className="text-sm font-extrabold text-slate-855 mb-1">Default Home Page Layout</h4>
-        <p className="text-xs text-slate-505 mb-5 font-semibold">Select the active landing page layout presented to visitors on the website home route (/)</p>
+      <div className="border-b border-slate-100 pb-8 text-left rtl:text-right">
+        <h4 className="text-sm font-extrabold text-slate-855 mb-1 text-left rtl:text-right">{t("admin_default_homepage_layout", "Default Home Page Layout")}</h4>
+        <p className="text-xs text-slate-505 mb-5 font-semibold text-left rtl:text-right">{t("admin_active_landing_layout_desc", "Select the active landing page layout presented to visitors on the website home route (/)")}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          <div className="md:col-span-7 flex flex-col gap-1.5">
-            <label className={labelClass}>Active Default Layout</label>
+          <div className="md:col-span-7 flex flex-col gap-1.5 text-left rtl:text-right">
+            <label className={labelClass}>{t("admin_active_default_layout", "Active Default Layout")}</label>
             <CustomSelect
               value={defaultHomePage}
               onChange={setDefaultHomePage}
               options={[
-                { value: "home_1", label: "Home 1 — Classic Marketplace (Services, Projects, Pricing & FAQ)" },
-                { value: "home_2", label: "Home 2 — Modern Talent Portal (Vetted Freelancers & Top Services)" },
-                { value: "home_3", label: "Home 3 — Enterprise Hub (Dual Search, Live Tenders & Escrow)" }
+                { value: "home_1", label: t("home_layout_1", "Home 1 — Classic Marketplace (Services, Projects, Pricing & FAQ)") },
+                { value: "home_2", label: t("home_layout_2", "Home 2 — Modern Talent Portal (Vetted Freelancers & Top Services)") },
+                { value: "home_3", label: t("home_layout_3", "Home 3 — Enterprise Hub (Dual Search, Live Tenders & Escrow)") }
               ]}
             />
           </div>
 
-          <div className="md:col-span-5 flex flex-wrap items-center gap-2.5 pt-2 sm:pt-0">
+          <div className="md:col-span-5 flex flex-wrap items-center gap-2.5 pt-2 sm:pt-0 justify-start">
             <a
               href="/home-1"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-black bg-slate-100 hover:bg-slate-200 text-slate-700 transition border border-slate-200 shadow-xs"
             >
-              <span>Preview Home 1</span>
+              <span>{t("admin_preview_home_1", "Preview Home 1")}</span>
               <FiExternalLink className="w-3.5 h-3.5 text-slate-500" />
             </a>
             <a
@@ -359,7 +362,7 @@ export default function SiteSettingsTab({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-black bg-teal-50 hover:bg-teal-100 text-teal-800 transition border border-teal-200 shadow-xs"
             >
-              <span>Preview Home 2</span>
+              <span>{t("admin_preview_home_2", "Preview Home 2")}</span>
               <FiExternalLink className="w-3.5 h-3.5 text-teal-600" />
             </a>
             <a
@@ -368,33 +371,32 @@ export default function SiteSettingsTab({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-black bg-slate-900 hover:bg-slate-800 text-white transition border border-slate-800 shadow-xs"
             >
-              <span>Preview Home 3</span>
+              <span>{t("admin_preview_home_3", "Preview Home 3")}</span>
               <FiExternalLink className="w-3.5 h-3.5 text-emerald-400" />
             </a>
           </div>
         </div>
       </div>
-
-      {/* BRANDING ASSETS SECTION */}
-      <div className="border-b border-slate-100 pb-8">
-        <h4 className="text-sm font-extrabold text-slate-855 mb-1">Branding Assets</h4>
-        <p className="text-xs text-slate-505 mb-6 font-semibold">Upload your light theme logo, dark theme logo, browser favicon, social thumbnail, and AI chatbot avatar image.</p>
+            {/* BRANDING ASSETS SECTION */}
+      <div className="border-b border-slate-100 pb-8 text-left rtl:text-right">
+        <h4 className="text-sm font-extrabold text-slate-855 mb-1 text-left rtl:text-right">{t("admin_branding_assets", "Branding Assets")}</h4>
+        <p className="text-xs text-slate-505 mb-6 font-semibold text-left rtl:text-right">{t("admin_branding_assets_desc", "Upload your light theme logo, dark theme logo, browser favicon, social thumbnail, and AI chatbot avatar image.")}</p>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           
           {/* SITE LOGO UPLOADER (LIGHT THEME) */}
-          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Logo (Light Theme)</span>
+          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right">{t("admin_logo_light", "Site Logo (Light Theme)")}</span>
             
-            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-36 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
+            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-24 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
               {siteLogo ? (
-                <div className="w-full h-full p-4 flex items-center justify-center relative">
+                <div className="w-full h-full p-2 flex items-center justify-center relative">
                   <img 
                     src={formatImgSrc(siteLogo)} 
                     className="max-h-full max-w-full object-contain transition group-hover:scale-105"
                     alt="Light Logo Preview" 
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/logo.png";
+                       (e.target as HTMLImageElement).src = "/logo.png";
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
@@ -410,7 +412,7 @@ export default function SiteSettingsTab({
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400">
                   <FiUploadCloud className="w-8 h-8 text-slate-350" />
-                  <span className="text-[10px] font-bold">Upload light logo</span>
+                  <span className="text-[10px] font-bold">{t("admin_upload_light_logo", "Upload light logo")}</span>
                 </div>
               )}
               <input
@@ -433,12 +435,12 @@ export default function SiteSettingsTab({
           </div>
 
           {/* SITE LOGO UPLOADER (DARK THEME) */}
-          <div className="flex flex-col gap-3 bg-slate-900 border border-slate-800 p-5 rounded-xl text-white">
-            <span style={{ color: "#f1f5f9" }} className="text-[10px] font-black uppercase tracking-wider !text-slate-100">Site Logo (Dark Theme)</span>
+          <div className="flex flex-col gap-3 bg-slate-900 border border-slate-800 p-5 rounded-xl text-white text-left rtl:text-right">
+            <span style={{ color: "#f1f5f9" }} className="text-[10px] font-black uppercase tracking-wider !text-slate-100 text-left rtl:text-right">{t("admin_logo_dark", "Site Logo (Dark Theme)")}</span>
             
-            <div className="relative group border border-dashed border-slate-700 hover:border-teal-500 rounded-xl h-36 flex flex-col items-center justify-center bg-slate-950 overflow-hidden transition-all duration-200 shadow-sm">
+            <div className="relative group border border-dashed border-slate-700 hover:border-teal-500 rounded-xl h-24 flex flex-col items-center justify-center bg-slate-950 overflow-hidden transition-all duration-200 shadow-sm">
               {siteLogoDark ? (
-                <div className="w-full h-full p-4 flex items-center justify-center relative">
+                <div className="w-full h-full p-2 flex items-center justify-center relative">
                   <img 
                     src={formatImgSrc(siteLogoDark)} 
                     className="max-h-full max-w-full object-contain transition group-hover:scale-105"
@@ -458,9 +460,9 @@ export default function SiteSettingsTab({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-2 text-slate-400">
+                <div className="flex flex-col items-center gap-2 text-slate-400 text-center">
                   <FiUploadCloud className="w-8 h-8 text-slate-400" />
-                  <span style={{ color: "#cbd5e1" }} className="text-[10px] font-bold !text-slate-300">Upload dark logo</span>
+                  <span style={{ color: "#cbd5e1" }} className="text-[10px] font-bold !text-slate-300">{t("admin_upload_dark_logo", "Upload dark logo")}</span>
                 </div>
               )}
               <input
@@ -484,18 +486,18 @@ export default function SiteSettingsTab({
           </div>
 
           {/* SITE FAVICON UPLOADER */}
-          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Site Favicon</span>
+          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right">{t("admin_favicon", "Site Favicon")}</span>
             
-            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-36 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
+            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-24 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
               {siteFavicon ? (
-                <div className="w-full h-full p-6 flex items-center justify-center relative">
+                <div className="w-full h-full p-2 flex items-center justify-center relative">
                   <img 
                     src={formatImgSrc(siteFavicon)} 
                     className="h-10 w-10 object-contain transition group-hover:scale-105"
                     alt="Favicon Preview" 
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/public/favicon.ico";
+                      (e.target as HTMLImageElement).src = "/favicon.ico";
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
@@ -511,7 +513,7 @@ export default function SiteSettingsTab({
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400">
                   <FiUploadCloud className="w-8 h-8 text-slate-350" />
-                  <span className="text-[10px] font-bold">Upload site favicon</span>
+                  <span className="text-[10px] font-bold">{t("admin_upload_favicon", "Upload site favicon")}</span>
                 </div>
               )}
               <input
@@ -528,16 +530,16 @@ export default function SiteSettingsTab({
               type="text"
               value={siteFavicon}
               onChange={(e) => setSiteFavicon(e.target.value)}
-              placeholder="/public/favicon.ico"
+              placeholder="/favicon.ico"
               className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-mono text-slate-500 focus:outline-none focus:border-teal-700 transition"
             />
           </div>
 
-          {/* OG SHARING IMAGE UPLOADER */}
-          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Social OG Image</span>
+          {/* SITE OG SHARING IMAGE UPLOADER */}
+          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right">{t("admin_social_og_image", "Social OG Image")}</span>
             
-            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-36 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
+            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-24 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
               {siteOgImage ? (
                 <div className="w-full h-full flex items-center justify-center relative">
                   <img 
@@ -545,7 +547,7 @@ export default function SiteSettingsTab({
                     className="w-full h-full object-cover transition group-hover:scale-105"
                     alt="OG Preview" 
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/public/og-image.png";
+                      (e.target as HTMLImageElement).src = "/og-image.png";
                     }}
                   />
                   <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all duration-200">
@@ -561,7 +563,7 @@ export default function SiteSettingsTab({
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400">
                   <FiUploadCloud className="w-8 h-8 text-slate-350" />
-                  <span className="text-[10px] font-bold">Upload OG image</span>
+                  <span className="text-[10px] font-bold">{t("admin_upload_og_image", "Upload OG image")}</span>
                 </div>
               )}
               <input
@@ -584,12 +586,12 @@ export default function SiteSettingsTab({
           </div>
 
           {/* CHATBOT AVATAR IMAGE UPLOADER */}
-          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Chatbot Avatar Image</span>
+          <div className="flex flex-col gap-3 bg-slate-50/30 border border-slate-200/60 p-5 rounded-xl text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right">{t("admin_chatbot_avatar", "Chatbot Avatar Image")}</span>
             
-            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-36 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
+            <div className="relative group border border-dashed border-slate-250 hover:border-teal-600 rounded-xl h-24 flex flex-col items-center justify-center bg-white overflow-hidden transition-all duration-200 shadow-sm">
               {siteChatbotAvatar ? (
-                <div className="w-full h-full p-4 flex items-center justify-center relative">
+                <div className="w-full h-full p-2 flex items-center justify-center relative">
                   <img 
                     src={formatImgSrc(siteChatbotAvatar)} 
                     className="h-14 w-14 object-contain rounded-full border border-slate-200 shadow-xs transition group-hover:scale-105"
@@ -611,7 +613,7 @@ export default function SiteSettingsTab({
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-400">
                   <FiUploadCloud className="w-8 h-8 text-slate-350" />
-                  <span className="text-[10px] font-bold">Upload Chatbot Avatar</span>
+                  <span className="text-[10px] font-bold">{t("admin_upload_chatbot_avatar", "Upload Chatbot Avatar")}</span>
                 </div>
               )}
               <input
@@ -637,13 +639,13 @@ export default function SiteSettingsTab({
       </div>
 
       {/* GENERAL IDENTITY & SEO METADATA */}
-      <div className="border-b border-slate-100 pb-8">
-        <h4 className="text-sm font-extrabold text-slate-855 mb-1">General Identity & SEO Metadata</h4>
-        <p className="text-xs text-slate-505 mb-6 font-semibold">Define search engine parameters and name identifiers used dynamically by crawler indexers.</p>
+      <div className="border-b border-slate-100 pb-8 text-left rtl:text-right">
+        <h4 className="text-sm font-extrabold text-slate-855 mb-1 text-left rtl:text-right">{t("admin_general_identity_seo", "General Identity & SEO Metadata")}</h4>
+        <p className="text-xs text-slate-505 mb-6 font-semibold text-left rtl:text-right">{t("admin_general_identity_seo_desc", "Define search engine parameters and name identifiers used dynamically by crawler indexers.")}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>Site Name</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className={labelClass}>{t("admin_site_name", "Site Name")}</span>
             <input
               type="text"
               value={siteName}
@@ -652,8 +654,8 @@ export default function SiteSettingsTab({
               className={inputClass}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>Site Short Name (e.g. for Lancer's Choice tag)</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className={labelClass}>{t("admin_site_short_name", "Site Short Name (e.g. for Lancer's Choice tag)")}</span>
             <input
               type="text"
               value={siteShortName}
@@ -663,58 +665,58 @@ export default function SiteSettingsTab({
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>Share / Meta Description</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className={labelClass}>{t("admin_meta_description", "Share / Meta Description")}</span>
             <textarea
               value={siteDescription}
               onChange={(e) => setSiteDescription(e.target.value)}
               placeholder="Buy2Lancer is a leading web portal linking freelancers and clients..."
               rows={4}
-              className="w-full bg-slate-50 border border-slate-202 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm"
+              className="w-full bg-slate-50 border border-slate-202 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm text-left rtl:text-right"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>Meta Keywords (comma separated)</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className={labelClass}>{t("admin_meta_keywords", "Meta Keywords (comma separated)")}</span>
             <textarea
               value={siteKeywords}
               onChange={(e) => setSiteKeywords(e.target.value)}
               placeholder="freelance, marketplace, buy, services, client, gigs"
               rows={4}
-              className="w-full bg-slate-50 border border-slate-202 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm"
+              className="w-full bg-slate-50 border border-slate-202 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition font-medium placeholder-slate-400 shadow-sm text-left rtl:text-right"
             />
           </div>
         </div>
       </div>
 
       {/* HOME 3 HERO CAROUSEL MANAGER */}
-      <div className="border-b border-slate-100 pb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h4 className="text-sm font-extrabold text-slate-855 flex items-center gap-2">
+      <div className="border-b border-slate-100 pb-8 text-left rtl:text-right">
+        <div className="flex items-center justify-between mb-4 flex-row rtl:flex-row-reverse">
+          <div className="text-left rtl:text-right">
+            <h4 className="text-sm font-extrabold text-slate-855 flex items-center gap-2 text-left rtl:text-right">
               <FiGlobe className="w-4 h-4 text-teal-600" />
-              <span>Home 3 Hero Banner Carousel Slides</span>
+              <span>{t("admin_home3_hero_slides", "Home 3 Hero Banner Carousel Slides")}</span>
             </h4>
-            <p className="text-xs text-slate-505 font-semibold mt-0.5">
-              Manage banner slides for Home Page Three. Upload 2 cut-out images per slide, customize title/highlight text, CTA buttons, and backdrop circle colors.
+            <p className="text-xs text-slate-505 font-semibold mt-0.5 text-left rtl:text-right">
+              {t("admin_home3_hero_slides_desc", "Manage banner slides for Home Page Three. Upload 2 cut-out images per slide, customize title/highlight text, CTA buttons, and backdrop circle colors.")}
             </p>
           </div>
           <button
             type="button"
             onClick={handleAddSlide}
-            className="bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition flex items-center gap-2 shadow-sm cursor-pointer border-none"
+            className="bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition flex items-center gap-2 shadow-sm cursor-pointer border-none shrink-0"
           >
             <FiPlus className="w-4 h-4" />
-            <span>Add Slide</span>
+            <span>{t("admin_add_slide", "Add Slide")}</span>
           </button>
         </div>
 
         <div className="flex flex-col gap-6">
           {hero3Slides.map((slide, idx) => (
-            <div key={slide.id || idx} className={`p-5 rounded-2xl flex flex-col gap-4 border shadow-sm ${isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50/70 border-slate-200/90 text-slate-800"}`}>
-              <div className={`flex items-center justify-between border-b pb-3 ${isDark ? "border-slate-800" : "border-slate-200/80"}`}>
+            <div key={slide.id || idx} className={`p-5 rounded-2xl flex flex-col gap-4 border shadow-sm text-left rtl:text-right ${isDark ? "bg-slate-900 border-slate-800 text-white" : "bg-slate-50/70 border-slate-200/90 text-slate-800"}`}>
+              <div className={`flex items-center justify-between border-b pb-3 flex-row rtl:flex-row-reverse ${isDark ? "border-slate-800" : "border-slate-200/80"}`}>
                 <span className={`text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full border ${isDark ? "bg-teal-600/30 text-teal-300 border-teal-500/30" : "bg-teal-50 text-teal-750 border-teal-200"}`}>
-                  Slide #{idx + 1}
+                  {t("admin_slide_num", "Slide #")}{idx + 1}
                 </span>
                 <button
                   type="button"
@@ -722,13 +724,13 @@ export default function SiteSettingsTab({
                   className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 cursor-pointer border-none bg-transparent"
                 >
                   <FiTrash2 className="w-4 h-4" />
-                  <span>Remove Slide</span>
+                  <span>{t("admin_remove_slide", "Remove Slide")}</span>
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Title</span>
+                <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_slide_title", "Title")}</span>
                   <input
                     type="text"
                     value={slide.title}
@@ -738,8 +740,8 @@ export default function SiteSettingsTab({
                     }`}
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Underlined Highlight Text</span>
+                <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_slide_highlight_text", "Underlined Highlight Text")}</span>
                   <input
                     type="text"
                     value={slide.highlight_text}
@@ -752,8 +754,8 @@ export default function SiteSettingsTab({
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Subtitle / Description</span>
+              <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_slide_subtitle", "Subtitle / Description")}</span>
                 <textarea
                   value={slide.subtitle}
                   onChange={(e) => handleSlideChange(idx, "subtitle", e.target.value)}
@@ -766,8 +768,8 @@ export default function SiteSettingsTab({
 
               {/* Buttons Links */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Primary Button Text</span>
+                <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_slide_primary_btn_text", "Primary Button Text")}</span>
                   <input
                     type="text"
                     value={slide.primary_btn_text}
@@ -777,8 +779,8 @@ export default function SiteSettingsTab({
                     }`}
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Primary Button Link</span>
+                <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_slide_primary_btn_link", "Primary Button Link")}</span>
                   <input
                     type="text"
                     value={slide.primary_btn_link}
@@ -788,8 +790,8 @@ export default function SiteSettingsTab({
                     }`}
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Secondary Button Text</span>
+                <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_slide_secondary_btn_text", "Secondary Button Text")}</span>
                   <input
                     type="text"
                     value={slide.secondary_btn_text}
@@ -799,8 +801,8 @@ export default function SiteSettingsTab({
                     }`}
                   />
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Secondary Button Link</span>
+                <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_slide_secondary_btn_link", "Secondary Button Link")}</span>
                   <input
                     type="text"
                     value={slide.secondary_btn_link}
@@ -813,31 +815,31 @@ export default function SiteSettingsTab({
               </div>
 
               {/* Dual Cutout Images & Circle Background Colors */}
-              <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t ${isDark ? "border-slate-800" : "border-slate-200/80"}`}>
+              <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t flex-row rtl:flex-row-reverse ${isDark ? "border-slate-800" : "border-slate-200/80"}`}>
                 
                 {/* Image 1 Box */}
-                <div className={`p-3.5 rounded-xl border flex flex-col gap-2.5 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/90 shadow-2xs"}`}>
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Cut-out Person Image 1 (Left Circle)</span>
-                  <div className="flex items-center gap-3">
+                <div className={`p-3.5 rounded-xl border flex flex-col gap-2.5 text-left rtl:text-right ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/90 shadow-2xs"}`}>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t("admin_slide_image1_label", "Cut-out Person Image 1 (Left Circle)")}</span>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                     <div 
                       style={{ backgroundColor: slide.image_1_bg || "#0d9488" }} 
                       className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-slate-300 flex items-center justify-center relative shadow-xs"
                     >
                       <img src={slide.image_1} className="w-full h-full object-cover object-top" alt="Cutout 1" />
                     </div>
-                    <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                    <div className="flex-1 flex flex-col gap-1.5 min-w-0 w-full text-left rtl:text-right">
                       <input
                         type="text"
                         value={slide.image_1}
                         onChange={(e) => handleSlideChange(idx, "image_1", e.target.value)}
                         placeholder="Image URL"
-                        className={`w-full border rounded-lg px-2.5 py-1.5 text-[10px] font-mono focus:outline-none transition ${
+                        className={`w-full border rounded-lg px-2.5 py-1.5 text-[10px] font-mono focus:outline-none transition text-left rtl:text-right ${
                           isDark ? "bg-slate-900 border-slate-800 text-white placeholder-slate-500" : "bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-teal-700"
                         }`}
                       />
-                      <div className="flex items-center gap-2">
-                        <label className="bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg cursor-pointer shrink-0">
-                          {uploadingSlideIdx?.index === idx && uploadingSlideIdx?.target === "image_1" ? "Uploading..." : "Upload Image 1"}
+                      <div className="flex items-center gap-2 flex-wrap justify-start">
+                        <label className="bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer shrink-0 whitespace-nowrap">
+                          {uploadingSlideIdx?.index === idx && uploadingSlideIdx?.target === "image_1" ? t("admin_saving_btn", "Saving...") : t("admin_upload_image1", "Upload Image 1")}
                           <input
                             type="file"
                             accept="image/*"
@@ -845,8 +847,8 @@ export default function SiteSettingsTab({
                             className="hidden"
                           />
                         </label>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className={`text-[9px] font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>Circle Color:</span>
+                        <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                          <span className={`text-[9px] font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_slide_circle_color", "Circle Color:")}</span>
                           <input
                             type="color"
                             value={slide.image_1_bg || "#0d9488"}
@@ -860,28 +862,28 @@ export default function SiteSettingsTab({
                 </div>
 
                 {/* Image 2 Box */}
-                <div className={`p-3.5 rounded-xl border flex flex-col gap-2.5 ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/90 shadow-2xs"}`}>
-                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Cut-out Person Image 2 (Right Circle)</span>
-                  <div className="flex items-center gap-3">
+                <div className={`p-3.5 rounded-xl border flex flex-col gap-2.5 text-left rtl:text-right ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/90 shadow-2xs"}`}>
+                  <span className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t("admin_slide_image2_label", "Cut-out Person Image 2 (Right Circle)")}</span>
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
                     <div 
                       style={{ backgroundColor: slide.image_2_bg || "#eab308" }} 
                       className="w-14 h-14 rounded-full overflow-hidden shrink-0 border border-slate-300 flex items-center justify-center relative shadow-xs"
                     >
                       <img src={slide.image_2} className="w-full h-full object-cover object-top" alt="Cutout 2" />
                     </div>
-                    <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+                    <div className="flex-1 flex flex-col gap-1.5 min-w-0 w-full text-left rtl:text-right">
                       <input
                         type="text"
                         value={slide.image_2}
                         onChange={(e) => handleSlideChange(idx, "image_2", e.target.value)}
                         placeholder="Image URL"
-                        className={`w-full border rounded-lg px-2.5 py-1.5 text-[10px] font-mono focus:outline-none transition ${
+                        className={`w-full border rounded-lg px-2.5 py-1.5 text-[10px] font-mono focus:outline-none transition text-left rtl:text-right ${
                           isDark ? "bg-slate-900 border-slate-800 text-white placeholder-slate-500" : "bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-teal-700"
                         }`}
                       />
-                      <div className="flex items-center gap-2">
-                        <label className="bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold px-3 py-1 rounded-lg cursor-pointer shrink-0">
-                          {uploadingSlideIdx?.index === idx && uploadingSlideIdx?.target === "image_2" ? "Uploading..." : "Upload Image 2"}
+                      <div className="flex items-center gap-2 flex-wrap justify-start">
+                        <label className="bg-teal-650 hover:bg-teal-700 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer shrink-0 whitespace-nowrap">
+                          {uploadingSlideIdx?.index === idx && uploadingSlideIdx?.target === "image_2" ? t("admin_saving_btn", "Saving...") : t("admin_upload_image2", "Upload Image 2")}
                           <input
                             type="file"
                             accept="image/*"
@@ -889,8 +891,8 @@ export default function SiteSettingsTab({
                             className="hidden"
                           />
                         </label>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className={`text-[9px] font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>Circle Color:</span>
+                        <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                          <span className={`text-[9px] font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_slide_circle_color", "Circle Color:")}</span>
                           <input
                             type="color"
                             value={slide.image_2_bg || "#eab308"}
@@ -911,16 +913,16 @@ export default function SiteSettingsTab({
       </div>
 
       {/* PLATFORM APP & SOCIAL LINKS */}
-      <div>
-        <h4 className="text-sm font-extrabold text-slate-855 mb-1 flex items-center gap-2">
+      <div className="text-left rtl:text-right">
+        <h4 className="text-sm font-extrabold text-slate-855 mb-1 flex items-center gap-2 text-left rtl:text-right">
           <FiExternalLink className="w-4 h-4 text-slate-500" />
-          <span>Platform App & Social Links</span>
+          <span>{t("admin_app_social_links", "Platform App & Social Links")}</span>
         </h4>
-        <p className="text-xs text-slate-505 mb-6 font-semibold">Manage external marketplace links for your downloadable mobile apps and corporate social handles.</p>
+        <p className="text-xs text-slate-505 mb-6 font-semibold text-left rtl:text-right">{t("admin_app_social_links_desc", "Manage external marketplace links for your downloadable mobile apps and corporate social handles.")}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>App Store Link</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className={labelClass}>{t("admin_app_store_link", "App Store Link")}</span>
             <input
               type="text"
               value={appStoreUrl}
@@ -929,8 +931,8 @@ export default function SiteSettingsTab({
               className={inputClass}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>Google Play Store Link</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className={labelClass}>{t("admin_google_play_link", "Google Play Store Link")}</span>
             <input
               type="text"
               value={googlePlayUrl}
@@ -939,8 +941,8 @@ export default function SiteSettingsTab({
               className={inputClass}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>Instagram Handle URL</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className={labelClass}>{t("admin_instagram_link", "Instagram Handle URL")}</span>
             <input
               type="text"
               value={instagramUrl}
@@ -949,8 +951,8 @@ export default function SiteSettingsTab({
               className={inputClass}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <span className={labelClass}>LinkedIn Organization URL</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className={labelClass}>{t("admin_linkedin_link", "LinkedIn Organization URL")}</span>
             <input
               type="text"
               value={linkedinUrl}
@@ -964,11 +966,11 @@ export default function SiteSettingsTab({
 
       {/* FLOATING SUCCESS TOAST */}
       {showToast && (
-        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-slideIn max-w-sm">
+        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-slideIn max-w-sm text-left rtl:text-right">
           <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
             ✓
           </div>
-          <div className="flex flex-col text-left">
+          <div className="flex flex-col text-left rtl:text-right">
             <span className="text-xs font-black text-white leading-tight">{toastTitle || "Notification"}</span>
             {toastText && (
               <span className="text-[11px] font-semibold text-slate-300 mt-0.5 leading-snug">{toastText}</span>

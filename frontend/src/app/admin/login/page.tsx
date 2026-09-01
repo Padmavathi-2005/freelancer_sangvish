@@ -1,10 +1,10 @@
 "use client";
 import { API_URL } from "@/config/api";
-
-
 import React, { useState, useEffect } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function AdminLoginPage() {
+  const { t, direction } = useLanguage();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-teal-700 border-t-transparent rounded-full animate-spin"></div>
           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest animate-pulse">
-            Verifying Admin Access...
+            {t("admin_login_verifying_access", "Verifying Admin Access...")}
           </span>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function AdminLoginPage() {
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      setError("Please fill in all security fields.");
+      setError(t("admin_login_err_fill_all", "Please fill in all security fields."));
       return;
     }
 
@@ -111,7 +111,7 @@ export default function AdminLoginPage() {
           }),
         });
       } catch {
-        setError("Cannot reach the server. Please check your internet connection or try again later.");
+        setError(t("admin_login_err_network", "Cannot reach the server. Please check your internet connection or try again later."));
         setLoading(false);
         return;
       }
@@ -119,7 +119,7 @@ export default function AdminLoginPage() {
       // Check the response is JSON before parsing
       const contentType = response.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
-        setError("Server returned an unexpected response. The backend may be down or unreachable.");
+        setError(t("admin_login_err_server", "Server returned an unexpected response. The backend may be down or unreachable."));
         setLoading(false);
         return;
       }
@@ -127,7 +127,7 @@ export default function AdminLoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Invalid credentials. Please check your email and password.");
+        throw new Error(data.message || t("admin_login_err_credentials", "Invalid credentials. Please check your email and password."));
       }
 
       if (typeof window !== "undefined") {
@@ -136,7 +136,7 @@ export default function AdminLoginPage() {
         window.location.href = "/admin";
       }
     } catch (err: any) {
-      setError(err.message || "Failed to connect to the administration service.");
+      setError(err.message || t("admin_login_err_connect", "Failed to connect to the administration service."));
       setLoading(false);
     }
   };
@@ -196,28 +196,28 @@ export default function AdminLoginPage() {
                   )}
                 </span>
                 <span className="bg-teal-700 text-white text-[11px] font-black px-2.5 py-0.5 rounded-md uppercase tracking-wider shadow-sm">
-                  Admin
+                  {t("admin", "Admin")}
                 </span>
               </div>
             )}
           </a>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-rose-50 text-rose-600 border border-rose-100 uppercase tracking-widest mt-2 select-none">
-            ⚠️ SECURE TERMINAL - AUTHORIZED ONLY
+            {t("admin_login_secure_terminal", "⚠️ SECURE TERMINAL - AUTHORIZED ONLY")}
           </div>
         </div>
 
         {/* Card Frame */}
-        <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-10 shadow-2xl shadow-slate-200/50 flex flex-col gap-6">
-          <div className="text-center sm:text-left border-b border-slate-100 pb-5">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 leading-tight font-display">
-              Admin Login
+        <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-10 shadow-2xl shadow-slate-200/50 flex flex-col gap-6 text-left rtl:text-right">
+          <div className="text-center sm:text-left border-b border-slate-100 pb-5 text-left rtl:text-right">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 leading-tight font-display text-left rtl:text-right">
+              {t("admin_login_title", "Admin Login")}
             </h1>
-            <p className="text-xs font-semibold text-slate-500 mt-1">
-              Provide authorization key and security credentials
+            <p className="text-xs font-semibold text-slate-500 mt-1 text-left rtl:text-right">
+              {t("admin_login_subtitle", "Provide authorization key and security credentials")}
             </p>
           </div>
 
-          <form onSubmit={handleAdminLogin} className="flex flex-col gap-4">
+          <form onSubmit={handleAdminLogin} className="flex flex-col gap-4 text-left rtl:text-right" dir={direction?.toLowerCase()}>
             
             {/* Error Message */}
             {error && (
@@ -230,9 +230,9 @@ export default function AdminLoginPage() {
             )}
 
             {/* Username/Email Field */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="username" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Admin Username
+            <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+              <label htmlFor="username" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-left rtl:text-right">
+                {t("admin_login_username_label", "Admin Username")}
               </label>
               <input
                 id="username"
@@ -246,9 +246,9 @@ export default function AdminLoginPage() {
             </div>
 
             {/* Password/Key Field */}
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                Access Password
+            <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+              <label htmlFor="password" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-left rtl:text-right">
+                {t("admin_login_password_label", "Access Password")}
               </label>
               <div className="relative">
                 <input
@@ -292,10 +292,10 @@ export default function AdminLoginPage() {
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-                  Initializing Admin Session...
+                  {t("admin_login_initializing", "Initializing Admin Session...")}
                 </>
               ) : (
-                "Verify Security Credentials"
+                t("admin_login_verify_btn", "Verify Security Credentials")
               )}
             </button>
           </form>
@@ -303,9 +303,9 @@ export default function AdminLoginPage() {
 
         {/* Back Link */}
         <p className="text-center text-xs text-slate-500 font-semibold select-none">
-          Not an administrator?{" "}
+          {t("admin_login_not_admin", "Not an administrator?")}{" "}
           <a href="/" className="text-primary hover:underline font-bold">
-            Return to Homepage
+            {t("admin_login_return_home", "Return to Homepage")}
           </a>
         </p>
       </div>

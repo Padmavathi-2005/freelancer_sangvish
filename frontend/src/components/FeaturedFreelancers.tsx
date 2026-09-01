@@ -135,7 +135,7 @@ export default function FeaturedFreelancers() {
             className="inline-flex items-center gap-1.5 text-sm font-black text-primary hover:text-primary-hover transition-all duration-200 group shrink-0"
           >
             {t("featured_btn", "See all")}
-            <FiArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+            <FiArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform rtl:rotate-180 rtl:group-hover:-translate-x-1" />
           </Link>
         </div>
 
@@ -197,7 +197,7 @@ export default function FeaturedFreelancers() {
                             onError={() => setFailedImages((prev) => ({ ...prev, [freelancer.user_id]: true }))}
                           />
                         ) : (
-                          <div className="w-[52px] h-[52px] rounded-xl bg-[#0a5a54] dark:bg-teal-750 flex items-center justify-center font-black text-white text-base select-none shadow-sm border border-teal-600/20">
+                          <div className="w-[52px] h-[52px] rounded-xl bg-primary flex items-center justify-center font-black text-white text-base select-none shadow-sm border border-primary/20">
                             {getInitials(freelancer.name || freelancer.email || "FL")}
                           </div>
                         )}
@@ -288,10 +288,10 @@ export default function FeaturedFreelancers() {
                           else if (freelancer.user_id) router.push(`/freelancer/${slugParam}?hire=true`);
                           else router.push("/talent");
                         }}
-                        className="flex items-center justify-center gap-1.5 bg-[#0a5a54] hover:bg-[#07433e] text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.97] hover:shadow-md cursor-pointer border-none group/btn shrink-0"
+                        className="flex items-center justify-center gap-1.5 bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.97] hover:shadow-md cursor-pointer border-none group/btn shrink-0"
                       >
                         {t("btn_hire_now", "Hire Now")}
-                        <FiArrowRight className="w-3.5 h-3.5 transform group-hover/btn:translate-x-0.5 transition-transform" />
+                        <FiArrowRight className="w-3.5 h-3.5 transform group-hover/btn:translate-x-0.5 transition-transform rtl:rotate-180 rtl:group-hover/btn:-translate-x-0.5" />
                       </button>
                     </div>
                   </div>

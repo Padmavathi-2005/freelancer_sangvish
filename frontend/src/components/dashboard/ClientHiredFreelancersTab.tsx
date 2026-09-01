@@ -22,6 +22,7 @@ export default function ClientHiredFreelancersTab({
   setSelectedFreelancerProfile,
 }: ClientHiredFreelancersTabProps) {
   const { t, formatPrice } = useLanguage();
+  const [expandedFreelancerIds, setExpandedFreelancerIds] = React.useState<Record<string, boolean>>({});
   return (
     <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left">
       <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm">
@@ -112,16 +113,18 @@ export default function ClientHiredFreelancersTab({
                   </div>
 
                   {freelancer.contracts && freelancer.contracts.length > 0 ? (() => {
-                      // Sort: reviewed first, then by date. Show max 3.
+                      // Sort: reviewed first, then by date.
                       const sorted = [...freelancer.contracts].sort((a: any, b: any) => {
                         if ((a.rating !== null) !== (b.rating !== null)) return a.rating !== null ? -1 : 1;
                         return 0;
                       });
-                      const preview = sorted.slice(0, 3);
+                      const isExpanded = !!expandedFreelancerIds[freelancer.user_id];
+                      const displayContracts = isExpanded ? sorted : sorted.slice(0, 3);
                       const remaining = freelancer.contracts.length - 3;
+
                       return (
                     <div className="flex flex-col gap-1.5 text-left">
-                      {preview.map((c: any, idx: number) => {
+                      {displayContracts.map((c: any, idx: number) => {
                         const isGig = c.type === "gig";
                         let statusColor = "bg-slate-100 text-slate-700 border-slate-200";
                         if (c.status === "Completed") statusColor = "bg-emerald-50 text-emerald-700 border-emerald-150/70";
@@ -190,10 +193,23 @@ export default function ClientHiredFreelancersTab({
                           </div>
                         );
                       })}
-                      {remaining > 0 && (
-                        <p className="text-[9px] text-slate-400 font-semibold text-center pt-0.5">
-                          +{remaining} {t("more_click_profile_all", "more · click profile to view all")}
-                        </p>
+                      {!isExpanded && remaining > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedFreelancerIds((prev) => ({ ...prev, [freelancer.user_id]: true }))}
+                          className="text-[10px] font-bold text-primary hover:text-primary-hover hover:underline text-center pt-1.5 w-full cursor-pointer transition-colors block"
+                        >
+                          +{remaining} {t("more_click_profile_all", "more · click to expand all")} ({freelancer.contracts.length} {t("total", "total")}) ↓
+                        </button>
+                      )}
+                      {isExpanded && freelancer.contracts.length > 3 && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedFreelancerIds((prev) => ({ ...prev, [freelancer.user_id]: false }))}
+                          className="text-[10px] font-bold text-slate-500 hover:text-slate-700 hover:underline text-center pt-1.5 w-full cursor-pointer transition-colors block"
+                        >
+                          {t("show_less_btn", "Show less")} ↑
+                        </button>
                       )}
                     </div>
                       );

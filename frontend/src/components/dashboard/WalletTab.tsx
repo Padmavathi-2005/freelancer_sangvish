@@ -237,23 +237,25 @@ export default function WalletTab() {
 
       {/* Prominent Pending Sign-Up Bonus Notification Banner */}
       {parseFloat(wallet?.pending_bonus_balance || "0") > 0 && (
-        <div className="bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-slate-900 border border-purple-500/30 rounded-2xl p-4 sm:p-5 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
+        <div className="bg-gradient-to-r from-purple-900/90 via-indigo-900/90 to-slate-900 border border-purple-500/30 rounded-2xl p-4 sm:p-5 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn font-sans">
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center text-2xl shrink-0 shadow-sm">
               🎁
             </div>
             <div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap text-left">
                 <h4 className="text-sm font-black text-white">
-                  Sign-Up Bonus Requested: <span className="text-amber-300 font-extrabold text-base">${parseFloat(wallet.pending_bonus_balance).toFixed(2)}</span>
+                  {t("signup_bonus_requested_title", "Sign-Up Bonus Requested:")} <span className="text-amber-300 font-extrabold text-base">${parseFloat(wallet.pending_bonus_balance).toFixed(2)}</span>
                 </h4>
-                <span className="text-[10px] font-black uppercase bg-amber-400 text-slate-950 px-2 py-0.5 rounded-md shadow-xs inline-flex items-center gap-1">
+                <span className="text-[10px] font-black uppercase bg-amber-400 text-slate-950 px-2.5 py-0.5 rounded-md shadow-xs inline-flex items-center gap-1 select-none">
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-950 animate-pulse shrink-0" />
-                  Awaiting Admin Approval
+                  {t("awaiting_admin_approval_badge", "Awaiting Admin Approval")}
                 </span>
               </div>
-              <p className="text-xs text-slate-300 font-medium mt-1 leading-relaxed">
-                Your <strong className="text-amber-300">${parseFloat(wallet.pending_bonus_balance).toFixed(2)} Sign-up Bonus</strong> has been requested upon profile setup. Once reviewed and approved by Admin, it will be credited to your active balance!
+              <p className="text-xs text-slate-300 font-medium mt-1 leading-relaxed text-left">
+                {t("signup_bonus_desc_prefix", "Your ")}
+                <strong className="text-amber-300">${parseFloat(wallet.pending_bonus_balance).toFixed(2)} {t("signup_bonus_desc_highlight", "Sign-up Bonus")}</strong>
+                {t("signup_bonus_desc_suffix", " has been requested upon profile setup. Once reviewed and approved by Admin, it will be credited to your active balance!")}
               </p>
             </div>
           </div>
@@ -298,9 +300,9 @@ export default function WalletTab() {
                 )}
               </div>
               {parseFloat(wallet?.pending_bonus_balance || "0") > 0 && (
-                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-xs shadow-md border border-amber-300">
+                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-black text-xs shadow-md border border-amber-300 select-none">
                   <span>🎁</span>
-                  <span>+${parseFloat(wallet.pending_bonus_balance).toFixed(2)} Pending Admin Release</span>
+                  <span>{t("pending_admin_release_badge", "Pending Admin Release {amount}").replace("{amount}", "$" + parseFloat(wallet.pending_bonus_balance).toFixed(2))}</span>
                 </div>
               )}
             </div>

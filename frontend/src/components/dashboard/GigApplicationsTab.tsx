@@ -1,9 +1,9 @@
 import { API_URL, API_BASE_URL } from "@/config/api";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDashboard } from "@/app/dashboard/DashboardContext";
 import { FiBriefcase, FiMessageSquare, FiRefreshCw, FiClock, FiCheckCircle, FiDollarSign, FiAlertTriangle, FiX } from "react-icons/fi";
 import GigMilestoneTracker from "./GigMilestoneTracker";
-import { renderOrderBreakdown, getOrderStatusPill, checkIsNegotiated, getOriginalPackagePrice } from "./ClientOrdersTab";
+import { renderOrderBreakdown, getOrderStatusPill, checkIsNegotiated, getOriginalPackagePrice, getInvoiceBreakdown } from "./ClientOrdersTab";
 import { useLanguage } from "@/context/LanguageContext";
 import { createPortal } from "react-dom";
 import CustomSelect from "@/components/CustomSelect";
@@ -49,19 +49,41 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
 
   const [activeFilterTab, setActiveFilterTab] = useState<"pending" | "active" | "completed" | "all">("all");
   const [selectedGigOrder, setSelectedGigOrder] = useState<any | null>(null);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const hasAutoSelected = useRef(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && gigApplications.length > 0 && !selectedGigOrder) {
+    if (typeof window !== "undefined" && gigApplications.length > 0 && !selectedGigOrder && !hasAutoSelected.current) {
       const params = new URLSearchParams(window.location.search);
       const appIdParam = params.get("application_id") || params.get("order_id");
       if (appIdParam) {
         const found = gigApplications.find((a: any) => a.application_id.toString() === appIdParam.toString());
         if (found) {
+          hasAutoSelected.current = true;
           setSelectedGigOrder(found);
         }
       }
     }
   }, [gigApplications, selectedGigOrder]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const currentAppId = params.get("application_id") || params.get("order_id");
+      if (selectedGigOrder) {
+        const appId = selectedGigOrder.application_id.toString();
+        if (currentAppId !== appId) {
+          window.history.pushState(null, "", `?application_id=${appId}`);
+        }
+      } else {
+        if (currentAppId) {
+          window.history.pushState(null, "", window.location.pathname);
+        }
+      }
+    }
+  }, [selectedGigOrder]);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submittingContractId, setSubmittingContractId] = useState<number | null>(null);
   const [deliverableFiles, setDeliverableFiles] = useState<{ name: string; url: string }[]>([]);
@@ -120,18 +142,26 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
       const hasContract = !!app.contract_id;
       const contractStatus = app.contract_status;
       
+      let matchesTab = true;
       if (activeFilterTab === "pending") {
-        return app.status === "Pending";
+        matchesTab = app.status === "Pending";
+      } else if (activeFilterTab === "active") {
+        matchesTab = app.status === "Accepted" && hasContract && contractStatus !== "Completed" && contractStatus !== "Cancelled";
+      } else if (activeFilterTab === "completed") {
+        matchesTab = app.status === "Completed" || (hasContract && contractStatus === "Completed");
       }
-      if (activeFilterTab === "active") {
-        return app.status === "Accepted" && hasContract && contractStatus !== "Completed" && contractStatus !== "Cancelled";
-      }
-      if (activeFilterTab === "completed") {
-        return app.status === "Completed" || (hasContract && contractStatus === "Completed");
-      }
-      return true;
+
+      if (!matchesTab) return false;
+
+      const term = searchTerm.toLowerCase().trim();
+      if (!term) return true;
+      return (
+        (app.gig_title && app.gig_title.toLowerCase().includes(term)) ||
+        (app.client_name && app.client_name.toLowerCase().includes(term)) ||
+        (app.application_id && app.application_id.toString().includes(term))
+      );
     });
-  }, [gigApplications, activeFilterTab]);
+  }, [gigApplications, activeFilterTab, searchTerm]);
 
   const handleOpenChat = async (clientId: number) => {
     try {
@@ -402,6 +432,14 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
             >
               <FiRefreshCw className="w-3 h-3" /> Refresh
             </button>
+            {app.payment_status === "Paid" && (
+              <button
+                onClick={() => setShowInvoiceModal(true)}
+                className="text-[10px] font-extrabold text-primary bg-primary/[0.04] border border-primary/20 hover:bg-primary/[0.08] rounded-xl px-4 py-2.5 flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap animate-fadeIn"
+              >
+                <i className="fa-solid fa-file-invoice-dollar"></i> View Invoice
+              </button>
+            )}
           </div>
         </div>
 
@@ -458,22 +496,22 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
           {app.status === "Pending" && (
             <>
               <div className="text-left">
-                <p className="text-xs font-black text-slate-850">Accept or Decline this Service Order</p>
+                <p className="text-xs font-black text-slate-855">{t("accept_decline_order_header", "Accept or Decline this Service Order")}</p>
                 <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-relaxed">
-                  Accepting confirms you are available to complete this work. The client will be notified to fund the order.
+                  {t("accept_decline_order_desc", "Accepting confirms you are available to complete this work. The client will be notified to fund the order.")}
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={async () => {
-                    if (confirm("Are you sure you want to decline this order?")) {
+                    if (confirm(t("decline_order_confirm", "Are you sure you want to decline this order?"))) {
                       await handleUpdateApplicationStatus(app.application_id, "Rejected");
                       setSelectedGigOrder(null);
                     }
                   }}
                   className="px-4.5 py-2.5 rounded-xl font-bold text-xs border border-rose-200 text-rose-650 hover:text-rose-700 bg-rose-50 hover:bg-rose-100/70 transition-all cursor-pointer shadow-sm"
                 >
-                  Decline Order
+                  {t("decline_order_btn", "Decline Order")}
                 </button>
                 <button
                   onClick={async () => {
@@ -483,7 +521,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                   }}
                   className="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-primary hover:bg-primary-hover shadow-md hover:shadow-lg transition-all cursor-pointer"
                 >
-                  Accept & Start Order
+                  {t("accept_start_order_btn", "Accept & Start Order")}
                 </button>
               </div>
             </>
@@ -689,6 +727,139 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
           </div>,
           document.body
         )}
+      {showInvoiceModal && selectedGigOrder && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-950/40 flex items-center justify-center p-4 print:p-0 print:bg-white animate-fadeIn text-slate-800">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] border border-slate-200/80 shadow-2xl flex flex-col relative overflow-hidden print:shadow-none print:border-none print:max-w-none print:max-h-none">
+            {/* Header Bar */}
+            <div className="flex justify-between items-center p-4 border-b border-slate-100 shrink-0 print:hidden bg-slate-50/50">
+              <span className="text-xs font-bold text-slate-855">Gig Order Receipt</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="text-[10px] font-extrabold text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-lg px-3 py-1.5 cursor-pointer transition-all flex items-center gap-1"
+                >
+                  <i className="fa-solid fa-print"></i> Print
+                </button>
+                <button
+                  onClick={() => setShowInvoiceModal(false)}
+                  className="text-slate-400 hover:text-slate-650 hover:bg-slate-100 rounded-lg p-1.5 cursor-pointer transition-all border-0 flex items-center justify-center"
+                >
+                  <i className="fa-solid fa-xmark text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-grow overflow-y-auto scrollbar-thin p-6 print:p-0 text-left">
+              <div id="printable-invoice-area" className="flex flex-col w-full text-slate-805">
+                <div className="h-1.5 bg-gradient-to-r from-primary to-cyan-500 shrink-0 print:hidden -mx-6 -mt-6 mb-6" />
+
+                <div className="flex justify-between items-start border-b border-slate-100 pb-5">
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 tracking-wide">Buy2Lancer Invoice</h2>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Payment Receipt</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
+                      Paid & Released
+                    </span>
+                    <p className="text-[10px] font-semibold text-slate-550 mt-2">
+                      ID: <span className="text-slate-800 font-bold">INV-GIG-{selectedGigOrder.application_id}-{new Date(selectedGigOrder.created_at).getTime().toString().slice(-4)}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Billed To / From */}
+                <div className="grid grid-cols-2 gap-6 py-5 border-b border-slate-100 text-xs">
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Billed To (Client Partner)</span>
+                    <p className="font-extrabold text-slate-705">{selectedGigOrder.client_name || "Client Partner"}</p>
+                    <p className="text-slate-505 mt-0.5 font-medium">{selectedGigOrder.client_email}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Service Provider (Freelancer)</span>
+                    <p className="font-extrabold text-slate-705">{selectedGigOrder.freelancer_name || "Freelancer Partner"}</p>
+                    <p className="text-slate-505 mt-0.5 font-medium">{selectedGigOrder.freelancer_email}</p>
+                  </div>
+                </div>
+
+                {/* Order Details */}
+                <div className="py-5 border-b border-slate-100 text-xs">
+                  <span className="text-[9px] font-black text-slate-405 uppercase tracking-wider block mb-2">Service Ordered</span>
+                  <p className="font-extrabold text-slate-800 text-sm">{selectedGigOrder.gig_title}</p>
+                  <p className="text-slate-505 mt-1 font-semibold">Order ID: #{selectedGigOrder.application_id} · Ordered on {new Date(selectedGigOrder.created_at).toLocaleDateString()}</p>
+                </div>
+
+                {/* Itemized Table */}
+                <div className="py-5 text-xs">
+                  <span className="text-[9px] font-black text-slate-405 uppercase tracking-wider block mb-3">Itemized Receipt Details</span>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-405 uppercase tracking-wider">
+                          <th className="p-3 text-left w-3/5">Description</th>
+                          <th className="p-3 text-right w-2/5">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-bold text-slate-750">
+                        {(() => {
+                          const { baseCost, addonsList, customFeaturesList, total, planName } = getInvoiceBreakdown(selectedGigOrder);
+                          return (
+                            <>
+                              <tr>
+                                <td className="p-3 text-left font-extrabold">
+                                  {planName ? `${planName.toUpperCase()} Plan` : "Base Service Scope"}
+                                </td>
+                                <td className="p-3 text-right">
+                                  {selectedGigOrder.currency_symbol || "$"}{baseCost.toLocaleString()}
+                                </td>
+                              </tr>
+                              {addonsList.map((a, i) => (
+                                <tr key={`addon-row-${i}`} className="text-emerald-805">
+                                  <td className="p-3 text-left font-semibold">
+                                    <span className="text-[9px] font-black text-emerald-605 bg-emerald-50 border border-emerald-200/50 px-1 py-0.5 rounded uppercase mr-1.5">Extra Add-on</span>
+                                    {a.title}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    +{selectedGigOrder.currency_symbol || "$"}{a.price.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                              {customFeaturesList.map((f, i) => (
+                                <tr key={`feat-row-${i}`} className="text-sky-850">
+                                  <td className="p-3 text-left font-semibold">
+                                    <span className="text-[9px] font-black text-sky-600 bg-sky-50 border border-sky-200/50 px-1 py-0.5 rounded uppercase mr-1.5">Custom Feature</span>
+                                    {f.title}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    +{selectedGigOrder.currency_symbol || "$"}{f.price.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr className="bg-slate-50 font-black text-slate-900 border-t border-slate-200">
+                                <td className="p-3.5 text-left text-sm">Total Paid</td>
+                                <td className="p-3.5 text-right text-sm">
+                                  {selectedGigOrder.currency_symbol || "$"}{total.toLocaleString()}
+                                </td>
+                              </tr>
+                            </>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Footer Notes */}
+                <div className="bg-slate-50/50 border border-slate-150 rounded-xl p-4 mt-2 text-[10px] text-slate-500 font-semibold leading-relaxed">
+                  <p>This is a payment confirmation receipt. Payments are processed securely via Stripe, PayPal, or User Wallet escrow system. Please email support@buy2lancer.com for any billing inquiries.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       </div>
     );
   }
@@ -705,6 +876,18 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
             <span>{t("service_orders_header", "Service Orders")}</span>
           </h2>
           <p className="text-slate-404 text-xs mt-1 font-semibold">{t("service_orders_desc", "Review custom project requirements and accept or reject orders sent by clients.")}</p>
+        </div>
+        <div className="w-full sm:w-64 relative">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={t("search_orders_placeholder", "Search by title, partner...")}
+            className="w-full pl-9 pr-4 py-2 text-xs font-semibold bg-slate-50 hover:bg-slate-100/75 focus:bg-white border border-slate-200 focus:border-primary/50 rounded-xl outline-none transition-all shadow-2xs"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <i className="fa-solid fa-magnifying-glass text-[11px]"></i>
+          </div>
         </div>
       </div>
 
@@ -791,9 +974,15 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
               {/* Top Meta info */}
               <div className="flex justify-between items-start gap-4 flex-wrap">
                 <div>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Service Order ID: #{app.application_id}</span>
-                  <h3 className="text-sm font-black text-slate-855 mt-0.5">Gig: {app.gig_title}</h3>
-                  <p className="text-xs text-slate-400 font-bold mt-1">Client: {app.client_name} ({app.client_email})</p>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">
+                    {t("service_order_id_label", "Service Order ID: #{id}").replace("{id}", String(app.application_id))}
+                  </span>
+                  <h3 className="text-sm font-black text-slate-855 mt-0.5">
+                    {t("gig_label", "Gig:")} {app.gig_title}
+                  </h3>
+                  <p className="text-xs text-slate-400 font-bold mt-1">
+                    {t("client_label", "Client:")} {app.client_name} ({app.client_email})
+                  </p>
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -805,7 +994,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                       if (isNegotiated && origPrice) {
                         return (
                           <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded uppercase tracking-wider">
-                            Negotiated from {app.currency_symbol || "$"}{origPrice.toLocaleString()}
+                            {t("negotiated_from_label", "Negotiated from")} {app.currency_symbol || "$"}{origPrice.toLocaleString()}
                           </span>
                         );
                       }
@@ -814,7 +1003,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                   </span>
                   
                   {(() => {
-                    const badge = getOrderStatusPill(app);
+                    const badge = getOrderStatusPill(app, t);
                     return (
                       <span className={`text-[10px] font-black px-2.5 py-1 rounded uppercase tracking-wider border ${badge.style}`}>
                         {badge.text}
@@ -831,18 +1020,20 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
 
               {/* Actions for Pending */}
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 pt-3 border-t border-slate-100 mt-2">
-                <span className="text-xxs font-extrabold text-primary hover:underline">Click card to view details & track milestones →</span>
+                <span className="text-xs font-bold text-primary hover:underline">
+                  {t("click_card_details_hint", "Click card to view details & track milestones →")}
+                </span>
                 {app.status === "Pending" && (
                   <div className="flex gap-2.5 w-full sm:w-auto" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={async () => {
-                        if (confirm("Are you sure you want to decline this order?")) {
+                        if (confirm(t("decline_order_confirm", "Are you sure you want to decline this order?"))) {
                           await handleUpdateApplicationStatus(app.application_id, "Rejected");
                         }
                       }}
                       className="flex-1 sm:flex-initial px-4 py-2 rounded-xl font-bold text-xs border border-rose-200 text-rose-650 hover:text-rose-700 bg-rose-50 hover:bg-rose-100/70 transition-all cursor-pointer shadow-sm border-0 whitespace-nowrap text-center"
                     >
-                      Decline Order
+                      {t("decline_order_btn", "Decline Order")}
                     </button>
                     <button
                       onClick={async () => {
@@ -850,7 +1041,7 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                       }}
                       className="flex-1 sm:flex-initial px-4 py-2 rounded-xl font-bold text-xs text-white bg-primary hover:bg-primary-hover shadow-md hover:shadow-lg transition-all cursor-pointer border-0 whitespace-nowrap text-center"
                     >
-                      Accept Order
+                      {t("accept_order_btn", "Accept Order")}
                     </button>
                   </div>
                 )}
@@ -962,6 +1153,139 @@ const GigApplicationsTab: React.FC<GigApplicationsTabProps> = ({
                     <span>Submit Deliverable</span>
                   )}
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      {showInvoiceModal && selectedGigOrder && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-950/40 flex items-center justify-center p-4 print:p-0 print:bg-white animate-fadeIn text-slate-800">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] border border-slate-200/80 shadow-2xl flex flex-col relative overflow-hidden print:shadow-none print:border-none print:max-w-none print:max-h-none">
+            {/* Header Bar */}
+            <div className="flex justify-between items-center p-4 border-b border-slate-100 shrink-0 print:hidden bg-slate-50/50">
+              <span className="text-xs font-bold text-slate-805">Gig Order Receipt</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="text-[10px] font-extrabold text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-lg px-3 py-1.5 cursor-pointer transition-all flex items-center gap-1"
+                >
+                  <i className="fa-solid fa-print"></i> Print
+                </button>
+                <button
+                  onClick={() => setShowInvoiceModal(false)}
+                  className="text-slate-400 hover:text-slate-650 hover:bg-slate-100 rounded-lg p-1.5 cursor-pointer transition-all border-0 flex items-center justify-center"
+                >
+                  <i className="fa-solid fa-xmark text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-grow overflow-y-auto scrollbar-thin p-6 print:p-0 text-left">
+              <div id="printable-invoice-area" className="flex flex-col w-full text-slate-805">
+                <div className="h-1.5 bg-gradient-to-r from-primary to-cyan-500 shrink-0 print:hidden -mx-6 -mt-6 mb-6" />
+
+                <div className="flex justify-between items-start border-b border-slate-100 pb-5">
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 tracking-wide">Buy2Lancer Invoice</h2>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Payment Receipt</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
+                      Paid & Released
+                    </span>
+                    <p className="text-[10px] font-semibold text-slate-505 mt-2">
+                      ID: <span className="text-slate-800 font-bold">INV-GIG-{selectedGigOrder.application_id}-{new Date(selectedGigOrder.created_at).getTime().toString().slice(-4)}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Billed To / From */}
+                <div className="grid grid-cols-2 gap-6 py-5 border-b border-slate-100 text-xs">
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Billed To (Client Partner)</span>
+                    <p className="font-extrabold text-slate-705">{selectedGigOrder.client_name || "Client Partner"}</p>
+                    <p className="text-slate-505 mt-0.5 font-medium">{selectedGigOrder.client_email}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Service Provider (Freelancer)</span>
+                    <p className="font-extrabold text-slate-705">{selectedGigOrder.freelancer_name || "Freelancer Partner"}</p>
+                    <p className="text-slate-505 mt-0.5 font-medium">{selectedGigOrder.freelancer_email}</p>
+                  </div>
+                </div>
+
+                {/* Order Details */}
+                <div className="py-5 border-b border-slate-100 text-xs">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-2">Service Ordered</span>
+                  <p className="font-extrabold text-slate-800 text-sm">{selectedGigOrder.gig_title}</p>
+                  <p className="text-slate-505 mt-1 font-semibold">Order ID: #{selectedGigOrder.application_id} · Ordered on {new Date(selectedGigOrder.created_at).toLocaleDateString()}</p>
+                </div>
+
+                {/* Itemized Table */}
+                <div className="py-5 text-xs">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-3">Itemized Receipt Details</span>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-405 uppercase tracking-wider">
+                          <th className="p-3 text-left w-3/5">Description</th>
+                          <th className="p-3 text-right w-2/5">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-bold text-slate-750">
+                        {(() => {
+                          const { baseCost, addonsList, customFeaturesList, total, planName } = getInvoiceBreakdown(selectedGigOrder);
+                          return (
+                            <>
+                              <tr>
+                                <td className="p-3 text-left font-extrabold">
+                                  {planName ? `${planName.toUpperCase()} Plan` : "Base Service Scope"}
+                                </td>
+                                <td className="p-3 text-right">
+                                  {selectedGigOrder.currency_symbol || "$"}{baseCost.toLocaleString()}
+                                </td>
+                              </tr>
+                              {addonsList.map((a, i) => (
+                                <tr key={`addon-row-${i}`} className="text-emerald-805">
+                                  <td className="p-3 text-left font-semibold">
+                                    <span className="text-[9px] font-black text-emerald-605 bg-emerald-50 border border-emerald-200/50 px-1 py-0.5 rounded uppercase mr-1.5">Extra Add-on</span>
+                                    {a.title}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    +{selectedGigOrder.currency_symbol || "$"}{a.price.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                              {customFeaturesList.map((f, i) => (
+                                <tr key={`feat-row-${i}`} className="text-sky-850">
+                                  <td className="p-3 text-left font-semibold">
+                                    <span className="text-[9px] font-black text-sky-600 bg-sky-50 border border-sky-200/50 px-1 py-0.5 rounded uppercase mr-1.5">Custom Feature</span>
+                                    {f.title}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    +{selectedGigOrder.currency_symbol || "$"}{f.price.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr className="bg-slate-50 font-black text-slate-900 border-t border-slate-200">
+                                <td className="p-3.5 text-left text-sm">Total Paid</td>
+                                <td className="p-3.5 text-right text-sm">
+                                  {selectedGigOrder.currency_symbol || "$"}{total.toLocaleString()}
+                                </td>
+                              </tr>
+                            </>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Footer Notes */}
+                <div className="bg-slate-50/50 border border-slate-150 rounded-xl p-4 mt-2 text-[10px] text-slate-500 font-semibold leading-relaxed">
+                  <p>This is a payment confirmation receipt. Payments are processed securely via Stripe, PayPal, or User Wallet escrow system. Please email support@buy2lancer.com for any billing inquiries.</p>
+                </div>
               </div>
             </div>
           </div>

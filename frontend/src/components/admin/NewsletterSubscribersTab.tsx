@@ -14,6 +14,7 @@ import {
   FiAlertCircle
 } from "react-icons/fi";
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface Subscriber {
   id: number;
@@ -27,6 +28,7 @@ interface NewsletterSubscribersTabProps {
 }
 
 export default function NewsletterSubscribersTab({ isDark = false }: NewsletterSubscribersTabProps) {
+  const { t } = useLanguage();
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,14 +55,14 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
         const data = await res.json();
         setSubscribers(data);
       } else {
-        setError("Failed to fetch newsletter subscribers.");
+        setError(t("admin_failed_load_affiliate_commissions", "Failed to fetch newsletter subscribers."));
       }
     } catch {
-      setError("Network error while connecting to server.");
+      setError(t("admin_failed_connect_server", "Network error while connecting to server."));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchSubscribers();
@@ -82,19 +84,19 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
         setSubscribers((prev) =>
           prev.map((item) => (item.id === id ? { ...item, status: nextStatus as "Subscribed" | "Unsubscribed" } : item))
         );
-        showToast(`Subscriber status updated to ${nextStatus}`);
+        showToast(`${t("admin_subscriber_status_updated_to", "Subscriber status updated to")} ${nextStatus === "Subscribed" ? t("admin_active_subscribed", "Active Subscribed") : t("admin_unsubscribed", "Unsubscribed")}`);
       } else {
-        showToast("Failed to update status.", "error");
+        showToast(t("admin_failed_update_status", "Failed to update status."), "error");
       }
     } catch {
-      showToast("Network error during update.", "error");
+      showToast(t("admin_network_error_update", "Network error during update."), "error");
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this email address from the subscriber list?")) return;
+    if (!confirm(t("admin_confirm_delete_subscriber", "Are you sure you want to delete this email address from the subscriber list?"))) return;
     setActionLoading(id);
     try {
       const res = await fetch(`${API_URL}/admin/newsletter-subscribers/${id}`, {
@@ -103,12 +105,12 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
       });
       if (res.ok) {
         setSubscribers((prev) => prev.filter((item) => item.id !== id));
-        showToast("Subscriber deleted successfully!");
+        showToast(t("admin_subscriber_deleted_success", "Subscriber deleted successfully!"));
       } else {
-        showToast("Failed to delete subscriber.", "error");
+        showToast(t("admin_failed_delete_subscriber", "Failed to delete subscriber."), "error");
       }
     } catch {
-      showToast("Network error during deletion.", "error");
+      showToast(t("admin_network_error_deletion", "Network error during deletion."), "error");
     } finally {
       setActionLoading(null);
     }
@@ -116,7 +118,7 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
 
   const handleExportCSV = () => {
     if (subscribers.length === 0) {
-      showToast("No subscriber data to export.", "error");
+      showToast(t("admin_no_subscriber_data_export", "No subscriber data to export."), "error");
       return;
     }
 
@@ -140,7 +142,7 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
     link.click();
     document.body.removeChild(link);
 
-    showToast("Newsletter subscriber CSV exported successfully!");
+    showToast(t("admin_newsletter_csv_exported", "Newsletter subscriber CSV exported successfully!"));
   };
 
   const filteredSubscribers = subscribers.filter((sub) => {
@@ -154,37 +156,37 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
   const unsubscribedCount = subscribers.filter((s) => s.status === "Unsubscribed").length;
 
   return (
-    <div className="flex flex-col gap-6 w-full text-left">
+    <div className="flex flex-col gap-6 w-full text-left rtl:text-right">
       {/* HEADER TITLE */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-black tracking-tight">Newsletter Subscribers</h2>
+          <h2 className="text-xl font-black tracking-tight">{t("admin_newsletter_subscribers", "Newsletter Subscribers")}</h2>
           <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            Audit public email subscribers, manage subscription status, and export subscriber lists for email campaigns.
+            {t("admin_newsletter_subscribers_desc", "Audit public email subscribers, manage subscription status, and export subscriber lists for email campaigns.")}
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0 whitespace-nowrap">
           <button
             onClick={handleExportCSV}
             disabled={subscribers.length === 0}
-            className="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50"
+            className="px-4 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition flex items-center gap-2 cursor-pointer shadow-xs disabled:opacity-50 border-0 whitespace-nowrap"
           >
             <FiDownload className="w-3.5 h-3.5" />
-            Export CSV
+            {t("admin_export_csv", "Export CSV")}
           </button>
 
           <button
             onClick={fetchSubscribers}
             disabled={loading}
-            className={`px-4 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
+            className={`px-4 py-2 rounded-xl border text-xs font-bold transition flex items-center gap-2 cursor-pointer whitespace-nowrap ${
               isDark
                 ? "bg-slate-900 border-slate-800 text-slate-200 hover:bg-slate-800"
                 : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
             }`}
           >
             <FiRefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            Refresh
+            {t("admin_refresh_btn", "Refresh")}
           </button>
         </div>
       </div>
@@ -196,7 +198,7 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
             <FiUsers className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Total Subscribers</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">{t("admin_total_subscribers", "Total Subscribers")}</span>
             <span className="text-xl font-black text-slate-900 dark:text-white leading-tight">{totalCount}</span>
           </div>
         </div>
@@ -206,7 +208,7 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
             <FiCheckCircle className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Active Subscribed</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">{t("admin_active_subscribed", "Active Subscribed")}</span>
             <span className="text-xl font-black text-emerald-600 leading-tight">{activeCount}</span>
           </div>
         </div>
@@ -216,7 +218,7 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
             <FiSlash className="w-5 h-5" />
           </div>
           <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Unsubscribed</span>
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">{t("admin_unsubscribed", "Unsubscribed")}</span>
             <span className="text-xl font-black text-rose-600 leading-tight">{unsubscribedCount}</span>
           </div>
         </div>
@@ -237,7 +239,7 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
                   : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
-              {tab}
+              {tab === "All" ? t("admin_all", "All") : tab === "Subscribed" ? t("admin_active_subscribed", "Active Subscribed") : t("admin_unsubscribed", "Unsubscribed")}
             </button>
           ))}
         </div>
@@ -246,10 +248,10 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
           <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search by subscriber email..."
+            placeholder={t("admin_search_subscribers_placeholder", "Search by subscriber email...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs font-bold border focus:outline-none transition ${
+            className={`w-full pl-9 pr-4 py-2 rounded-xl text-xs font-bold border focus:outline-none transition text-left rtl:text-right ${
               isDark
                 ? "bg-slate-900 border-slate-800 text-white placeholder-slate-500 focus:border-teal-500"
                 : "bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:bg-white"
@@ -263,7 +265,7 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
         {loading ? (
           <div className="p-12 text-center text-slate-400 text-xs font-bold flex flex-col items-center justify-center gap-3">
             <FiRefreshCw className="w-6 h-6 animate-spin text-teal-600" />
-            <span>Loading newsletter subscriber directory...</span>
+            <span>{t("admin_loading_newsletter_directory", "Loading newsletter subscriber directory...")}</span>
           </div>
         ) : error ? (
           <div className="p-12 text-center text-rose-500 text-xs font-bold flex flex-col items-center justify-center gap-2">
@@ -276,25 +278,25 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
               <FiMail className="w-6 h-6" />
             </div>
             <div>
-              <p className="font-bold text-slate-700 dark:text-slate-200">No newsletter subscribers found</p>
-              <p className="text-[11px] text-slate-400 mt-0.5">When site visitors subscribe to the newsletter, their emails will appear here.</p>
+              <p className="font-bold text-slate-700 dark:text-slate-200">{t("admin_no_newsletter_subscribers", "No newsletter subscribers found")}</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">{t("admin_no_newsletter_subscribers_desc", "When site visitors subscribe to the newsletter, their emails will appear here.")}</p>
             </div>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left rtl:text-right border-collapse">
               <thead>
                 <tr className={`border-b text-[10px] uppercase font-black tracking-wider ${isDark ? "border-slate-850 text-slate-400 bg-slate-900/50" : "border-slate-150 text-slate-500 bg-slate-50"}`}>
-                  <th className="py-3.5 px-4">Email Address</th>
-                  <th className="py-3.5 px-4">Subscribed Date</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
+                  <th className="py-3.5 px-4 text-left rtl:text-right">{t("email_address", "Email Address")}</th>
+                  <th className="py-3.5 px-4 text-left rtl:text-right">{t("admin_subscribed_date_header", "Subscribed Date")}</th>
+                  <th className="py-3.5 px-4 text-left rtl:text-right">{t("status_label", "Status")}</th>
+                  <th className="py-3.5 px-4 text-right rtl:text-left">{t("actions", "Actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-850 text-xs">
                 {filteredSubscribers.map((item) => (
                   <tr key={item.id} className="transition hover:bg-slate-50/50 dark:hover:bg-slate-900/40">
-                    <td className="py-4 px-4 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap text-left rtl:text-right">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-teal-50 border border-teal-100 text-teal-700 font-black text-xs flex items-center justify-center shrink-0">
                           <FiMail className="w-4 h-4 text-teal-700" />
@@ -303,7 +305,7 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
                       </div>
                     </td>
 
-                    <td className="py-4 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 text-[11px] font-semibold">
+                    <td className="py-4 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400 text-[11px] font-semibold text-left rtl:text-right">
                       {new Date(item.created_at).toLocaleDateString(undefined, {
                         month: "short",
                         day: "numeric",
@@ -313,7 +315,7 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
                       })}
                     </td>
 
-                    <td className="py-4 px-4 whitespace-nowrap">
+                    <td className="py-4 px-4 whitespace-nowrap text-left rtl:text-right">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
                           item.status === "Subscribed"
@@ -321,29 +323,29 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
                             : "bg-rose-50 text-rose-700 border border-rose-200"
                         }`}
                       >
-                        {item.status}
+                        {item.status === "Subscribed" ? t("admin_active_subscribed", "Active Subscribed") : t("admin_unsubscribed", "Unsubscribed")}
                       </span>
                     </td>
 
-                    <td className="py-4 px-4 whitespace-nowrap text-right">
+                    <td className="py-4 px-4 whitespace-nowrap text-right rtl:text-left">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleToggleStatus(item.id, item.status)}
                           disabled={actionLoading === item.id}
                           className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer ${
                             item.status === "Subscribed"
-                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                              : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700"
+                              ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-0"
+                              : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-0"
                           }`}
                         >
-                          {item.status === "Subscribed" ? "Mark Unsubscribed" : "Mark Subscribed"}
+                          {item.status === "Subscribed" ? t("admin_mark_unsubscribed_btn", "Mark Unsubscribed") : t("admin_mark_subscribed_btn", "Mark Subscribed")}
                         </button>
 
                         <button
                           onClick={() => handleDelete(item.id)}
                           disabled={actionLoading === item.id}
-                          className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition cursor-pointer"
-                          title="Delete subscriber"
+                          className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition cursor-pointer border-0 bg-transparent"
+                          title={t("admin_delete_subscriber_title", "Delete subscriber")}
                         >
                           <FiTrash2 className="w-3.5 h-3.5" />
                         </button>
@@ -365,8 +367,8 @@ export default function NewsletterSubscribersTab({ isDark = false }: NewsletterS
           }`}>
             {toast.type === "success" ? "✓" : "✕"}
           </div>
-          <div className="flex flex-col text-left">
-            <span className="text-xs font-black text-white leading-tight">Notification</span>
+          <div className="flex flex-col text-left rtl:text-right">
+            <span className="text-xs font-black text-white leading-tight">{t("admin_notification_title", "Notification")}</span>
             <span className="text-[11px] font-semibold text-slate-300 mt-0.5 leading-snug">{toast.message}</span>
           </div>
         </div>

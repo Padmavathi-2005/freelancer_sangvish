@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { API_URL } from "@/config/api";
 import { FiSave, FiAlertCircle, FiGlobe, FiEye, FiCheck } from "react-icons/fi";
 import { useAdmin } from "@/app/admin/AdminContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface SeoSetting {
   seo_id: number;
@@ -18,6 +19,7 @@ interface SeoSetting {
 export default function SEOPreviewTab() {
   const { adminTheme } = useAdmin();
   const isDark = adminTheme === "dark";
+  const { t } = useLanguage();
 
   const [routesList, setRoutesList] = useState<SeoSetting[]>([]);
   const [selectedRoute, setSelectedRoute] = useState<SeoSetting | null>(null);
@@ -221,7 +223,7 @@ export default function SEOPreviewTab() {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <div className="w-10 h-10 border-4 border-t-teal-700 border-slate-200 rounded-full animate-spin"></div>
-        <p className="text-slate-500 font-bold text-xs uppercase tracking-wider">Loading route details...</p>
+        <p className="text-slate-500 font-bold text-xs uppercase tracking-wider">{t("admin_seo_loading_routes", "Loading route details...")}</p>
       </div>
     );
   }
@@ -258,7 +260,7 @@ export default function SEOPreviewTab() {
         {/* Route Selector Card */}
         <div className={`rounded-3xl p-6 shadow-sm border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/80"}`}>
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-3.5 select-none">
-            Target Page Route
+            {t("admin_seo_target_route", "Target Page Route")}
           </label>
           <div className="flex flex-wrap gap-2">
             {routesList.map((r) => {
@@ -277,7 +279,7 @@ export default function SEOPreviewTab() {
                   }`}
                 >
                   <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-teal-300 animate-pulse" : isDark ? "bg-slate-700" : "bg-slate-300"}`}></div>
-                  <span>{r.route_path === "/" ? "Home Page" : r.route_path}</span>
+                  <span>{r.route_path === "/" ? t("admin_seo_home_page", "Home Page") : r.route_path}</span>
                 </button>
               );
             })}
@@ -289,9 +291,9 @@ export default function SEOPreviewTab() {
           <div className={`border-b pb-4 ${isDark ? "border-slate-800" : "border-slate-100"}`}>
             <h3 className={`text-base font-black flex items-center gap-2 ${isDark ? "text-white" : "text-slate-800"}`}>
               <FiGlobe className="text-teal-750" />
-              <span>SEO Metadata Customizer</span>
+              <span>{t("admin_seo_customizer", "SEO Metadata Customizer")}</span>
             </h3>
-            <p className="text-xs text-slate-450 mt-1">Control search tags and indexing titles sent to search engine crawlers.</p>
+            <p className="text-xs text-slate-450 mt-1">{t("admin_seo_customizer_desc", "Control search tags and indexing titles sent to search engine crawlers.")}</p>
           </div>
 
           {error && (
@@ -304,16 +306,16 @@ export default function SEOPreviewTab() {
           {success && (
             <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl flex items-center gap-2 animate-pulse">
               <FiCheck className="w-4 h-4 shrink-0" />
-              <span>SEO settings updated successfully! Changes are now live.</span>
+              <span>{t("admin_seo_save_success", "SEO settings updated successfully! Changes are now live.")}</span>
             </div>
           )}          {/* Title tag with progressive meter */}
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-end">
-              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Meta Title Tag</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("admin_seo_meta_title", "Meta Title Tag")}</label>
               <span className={`text-[10px] font-black tracking-tight tracking-tight transition-colors duration-205 ${
                 metaTitle.length > 60 ? "text-rose-500" : metaTitle.length >= 45 ? "text-emerald-600" : "text-slate-400"
               }`}>
-                {metaTitle.length}/60 chars
+                {metaTitle.length} {t("admin_seo_chars_suffix", "/60 chars")}
               </span>
             </div>
             <input
@@ -321,7 +323,7 @@ export default function SEOPreviewTab() {
               required
               value={metaTitle}
               onChange={(e) => setMetaTitle(e.target.value)}
-              placeholder="e.g. Buy2Lancer - Professional Freelance Services Marketplace"
+              placeholder={t("admin_seo_meta_title_placeholder", "e.g. Buy2Lancer - Professional Freelance Services Marketplace")}
               className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 focus:bg-white dark:focus:bg-slate-950 focus:shadow-md focus:shadow-teal-700/5 transition-all text-slate-800 dark:text-slate-100 font-medium"
             />
             {/* Title Progressive Indicator Meter */}
@@ -336,11 +338,11 @@ export default function SEOPreviewTab() {
           {/* Meta Description with progressive meter */}
           <div className="flex flex-col gap-1.5">
             <div className="flex justify-between items-end">
-              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Meta Description Tag</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("admin_seo_meta_desc", "Meta Description Tag")}</label>
               <span className={`text-[10px] font-black tracking-tight transition-colors duration-205 ${
                 metaDescription.length > 160 ? "text-rose-500" : metaDescription.length >= 120 ? "text-emerald-600" : "text-slate-400"
               }`}>
-                {metaDescription.length}/160 chars
+                {metaDescription.length} {t("admin_seo_desc_chars_suffix", "/160 chars")}
               </span>
             </div>
             <textarea
@@ -348,8 +350,8 @@ export default function SEOPreviewTab() {
               rows={3}
               value={metaDescription}
               onChange={(e) => setMetaDescription(e.target.value)}
-              placeholder="Provide a high-converting call-to-action summary to increase organic Google click-through rates..."
-              className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 focus:bg-white dark:focus:bg-slate-950 focus:shadow-md focus:shadow-teal-700/5 transition-all text-slate-850 dark:text-slate-100 resize-none leading-relaxed font-medium"
+              placeholder={t("admin_seo_meta_desc_placeholder", "Provide a high-converting call-to-action summary to increase organic Google click-through rates...")}
+              className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 focus:bg-white dark:focus:bg-slate-950 focus:shadow-md focus:shadow-teal-700/5 transition-all text-slate-855 dark:text-slate-100 resize-none leading-relaxed font-medium"
             />
             {/* Description Progressive Indicator Meter */}
             <div className="w-full h-1 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden mt-1 select-none">
@@ -362,12 +364,12 @@ export default function SEOPreviewTab() {
 
           {/* Meta Keywords */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Meta Keywords (Comma separated)</label>
+            <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("admin_seo_meta_keywords", "Meta Keywords (Comma separated)")}</label>
             <input
               type="text"
               value={metaKeywords}
               onChange={(e) => setMetaKeywords(e.target.value)}
-              placeholder="e.g. freelance, developer, outsource projects, hire expert"
+              placeholder={t("admin_seo_meta_keywords_placeholder", "e.g. freelance, developer, outsource projects, hire expert")}
               className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 focus:bg-white dark:focus:bg-slate-950 focus:shadow-md focus:shadow-teal-700/5 transition-all text-slate-800 dark:text-slate-100 font-medium"
             />
           </div>
@@ -375,21 +377,21 @@ export default function SEOPreviewTab() {
           {/* OpenGraph/Social Titles (Accordion Box) */}
           <div className={`border-t pt-5 mt-2 ${isDark ? "border-slate-850" : "border-slate-100"}`}>
             <span className="text-[10px] font-black text-slate-450 uppercase tracking-wider block mb-4 select-none">
-              OpenGraph Settings (Social Overrides)
+              {t("admin_seo_og_settings", "OpenGraph Settings (Social Overrides)")}
             </span>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">OG Title Override</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("admin_seo_og_title", "OG Title Override")}</label>
                 <input
                   type="text"
                   value={ogTitle}
                   onChange={(e) => setOgTitle(e.target.value)}
-                  placeholder="Defaults to Meta Title"
+                  placeholder={t("admin_seo_og_title_placeholder", "Defaults to Meta Title")}
                   className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 focus:bg-white dark:focus:bg-slate-950 focus:shadow-md focus:shadow-teal-700/5 transition-all text-slate-800 dark:text-slate-100 font-medium"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">Custom Sharing Image</label>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">{t("admin_seo_og_image", "Custom Sharing Image")}</label>
                 <div className="flex gap-2">
                   {ogImage && (
                     <img src={resolveLogoUrl(ogImage)} alt="SEO Preview" className="w-10 h-10 rounded-lg object-cover border border-slate-200 dark:border-slate-800 shrink-0" />
@@ -397,7 +399,7 @@ export default function SEOPreviewTab() {
                   <label className="flex-1 cursor-pointer">
                     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-teal-700/60 hover:bg-teal-50 dark:hover:bg-slate-800 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 transition-all flex items-center justify-between gap-2 shadow-sm border-slate-250 dark:border-slate-750 hover:border-slate-350 dark:hover:border-slate-600">
                       <span className={uploadingOgImage ? "text-slate-400" : "font-bold text-slate-700"}>
-                        {uploadingOgImage ? "Uploading..." : ogImage ? "Change Image" : "Upload Image"}
+                        {uploadingOgImage ? t("admin_seo_uploading", "Uploading...") : ogImage ? t("admin_seo_change_image", "Change Image") : t("admin_seo_upload_image", "Upload Image")}
                       </span>
                       {uploadingOgImage && (
                         <div className="w-3.5 h-3.5 border-2 border-t-transparent border-teal-700 rounded-full animate-spin shrink-0" />
@@ -412,17 +414,17 @@ export default function SEOPreviewTab() {
                     />
                   </label>
                 </div>
-                <span className="text-[9px] text-slate-450 font-medium mt-0.5">Min 300x200px &bull; Large images auto-resized to 1200x630px</span>
+                <span className="text-[9px] text-slate-450 font-medium mt-0.5">{t("admin_seo_image_dimensions_hint", "Min 300x200px • Large images auto-resized to 1200x630px")}</span>
               </div>
             </div>
             
             <div className="flex flex-col gap-1.5 mt-4">
-              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">OG Description Override</label>
+              <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("admin_seo_og_desc", "OG Description Override")}</label>
               <textarea
                 rows={2}
                 value={ogDescription}
                 onChange={(e) => setOgDescription(e.target.value)}
-                placeholder="Defaults to Meta Description if left empty"
+                placeholder={t("admin_seo_og_desc_placeholder", "Defaults to Meta Description if left empty")}
                 className="w-full bg-slate-50/50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-teal-700 dark:focus:border-teal-500 focus:bg-white dark:focus:bg-slate-950 focus:shadow-md focus:shadow-teal-700/5 transition-all text-slate-800 dark:text-slate-100 font-medium resize-none leading-relaxed"
               />
             </div>
@@ -436,12 +438,12 @@ export default function SEOPreviewTab() {
             {saving ? (
               <>
                 <div className="w-4 h-4 border-2 border-t-white border-teal-600 rounded-full animate-spin"></div>
-                <span>Saving Metadata...</span>
+                <span>{t("admin_seo_saving", "Saving Metadata...")}</span>
               </>
             ) : (
               <>
                 <FiSave className="w-4 h-4" />
-                <span>Save Route SEO settings</span>
+                <span>{t("admin_seo_save_btn", "Save Route SEO settings")}</span>
               </>
             )}
           </button>
@@ -454,7 +456,7 @@ export default function SEOPreviewTab() {
         <div className={`rounded-3xl p-6 shadow-sm border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/80"}`}>
           <div className={`flex items-center gap-2 border-b pb-3.5 mb-4 select-none ${isDark ? "border-slate-800" : "border-slate-100"}`}>
             <FiGlobe className="w-4 h-4 text-teal-750" />
-            <h3 className="text-xs font-black uppercase text-slate-450 tracking-wider">Google Search Snippet Preview</h3>
+            <h3 className="text-xs font-black uppercase text-slate-450 tracking-wider">{t("admin_seo_google_preview", "Google Search Snippet Preview")}</h3>
           </div>
 
           {/* High-fidelity Google Search Card */}
@@ -469,7 +471,7 @@ export default function SEOPreviewTab() {
                 <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded px-1.5 py-0.5 font-bold uppercase select-none leading-none flex items-center h-4.5 shrink-0">
                   HTTPS
                 </span>
-                <span className={`text-[11px] font-medium leading-none truncate ${isDark ? "text-slate-400" : "text-slate-550"}`}>
+                <span className={`text-[11px] font-medium leading-none truncate ${isDark ? "text-slate-400" : "text-slate-555"}`}>
                   freelancer.sangvish.com{selectedRoute?.route_path === "/" ? "" : `/${selectedRoute?.route_path.replace("/", "")}`}
                 </span>
               </div>
@@ -477,12 +479,12 @@ export default function SEOPreviewTab() {
             
             {/* Clickable title link */}
             <h4 className={`hover:underline text-xl font-normal leading-snug mt-2.5 font-sans break-words cursor-pointer select-text ${isDark ? "text-blue-450" : "text-[#1a0dab]"}`}>
-              {metaTitle || "Please specify a Meta Title"}
+              {metaTitle || t("admin_seo_specify_title", "Please specify a Meta Title")}
             </h4>
             
             {/* Description snippet */}
             <p className={`text-[13.5px] leading-relaxed mt-1 font-sans break-words select-text ${isDark ? "text-slate-350" : "text-[#4d5156]"}`}>
-              {metaDescription || "Please specify a description. Google search crawlers will generate a fallback snippet based on random page texts if left empty."}
+              {metaDescription || t("admin_seo_specify_desc", "Please specify a description. Google search crawlers will generate a fallback snippet based on random page texts if left empty.")}
             </p>
           </div>
         </div>
@@ -491,7 +493,7 @@ export default function SEOPreviewTab() {
         <div className={`rounded-3xl p-6 shadow-sm border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200/80"}`}>
           <div className={`flex items-center gap-2 border-b pb-3.5 mb-4 select-none ${isDark ? "border-slate-800" : "border-slate-100"}`}>
             <FiEye className="w-4 h-4 text-teal-750" />
-            <h3 className="text-xs font-black uppercase text-slate-450 tracking-wider">Social Share Cards Preview</h3>
+            <h3 className="text-xs font-black uppercase text-slate-450 tracking-wider">{t("admin_seo_social_preview", "Social Share Cards Preview")}</h3>
           </div>
 
           <div className={`border rounded-2xl overflow-hidden select-none hover:shadow-md transition-all duration-200 ${isDark ? "bg-slate-900 border-slate-800" : "bg-slate-50/50 border-slate-200/80"}`}>
@@ -509,7 +511,7 @@ export default function SEOPreviewTab() {
               />
               {/* Preview Indicator overlay */}
               <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">
-                Card Preview
+                {t("admin_seo_card_preview_badge", "Card Preview")}
               </div>
             </div>
             
@@ -517,10 +519,10 @@ export default function SEOPreviewTab() {
             <div className={`p-4 font-sans text-left ${isDark ? "bg-slate-900" : "bg-white"}`}>
               <div className="text-[9.5px] uppercase text-slate-400 font-black tracking-wider">freelancer.sangvish.com</div>
               <h4 className={`text-sm font-bold truncate mt-1 leading-snug ${isDark ? "text-slate-100" : "text-slate-900"}`}>
-                {ogTitle || metaTitle || "Card Title Display"}
+                {ogTitle || metaTitle || t("admin_seo_card_title_display", "Card Title Display")}
               </h4>
               <p className={`text-xs line-clamp-2 mt-1 leading-relaxed ${isDark ? "text-slate-400" : "text-slate-555"}`}>
-                {ogDescription || metaDescription || "Shared link description summary text..."}
+                {ogDescription || metaDescription || t("admin_seo_shared_link_desc", "Shared link description summary text...")}
               </p>
             </div>
           </div>

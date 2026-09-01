@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 import CustomSelect from "@/components/CustomSelect";
 import { FiSettings } from "react-icons/fi";
 import { useAdmin } from "@/app/admin/AdminContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface GeneralSettingsTabProps {
   platformFee: number;
@@ -61,6 +62,7 @@ export default function GeneralSettingsTab({
   setEnableProjectVetting,
   handleSaveSetting
 }: GeneralSettingsTabProps) {
+  const { t } = useLanguage();
   const { adminTheme } = useAdmin();
   const isDark = adminTheme === "dark";
 
@@ -87,8 +89,8 @@ export default function GeneralSettingsTab({
   const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showToast, setShowToast] = useState(false);
 
-  const [toastTitle, setToastTitle] = useState("Settings Saved");
-  const [toastText, setToastText] = useState("Platform configuration updated successfully.");
+  const [toastTitle, setToastTitle] = useState(t("admin_settings_saved_title", "Settings Saved"));
+  const [toastText, setToastText] = useState(t("admin_settings_saved_desc", "Platform configuration updated successfully."));
 
   const triggerToast = (title: string, text: string) => {
     setToastTitle(title);
@@ -231,40 +233,40 @@ export default function GeneralSettingsTab({
       setDefaultLanguage(localLanguage);
       setItemsPerPage(localLimit);
 
-      triggerToast("Settings Saved", "General settings saved successfully!");
-      setSaveStatus({ type: "success", text: "✓ General settings saved successfully!" });
+      triggerToast(t("admin_settings_saved_title", "Settings Saved"), t("admin_general_settings_saved_desc", "General settings saved successfully!"));
+      setSaveStatus({ type: "success", text: "✓ " + t("admin_general_settings_saved_desc", "General settings saved successfully!") });
       setTimeout(() => setSaveStatus(null), 4000);
     } catch (e) {
-      setSaveStatus({ type: "error", text: "Failed to save settings. Please try again." });
+      setSaveStatus({ type: "error", text: t("admin_settings_save_failed", "Failed to save settings. Please try again.") });
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className={`rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+    <div className={`rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left rtl:text-right border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
       
       {/* HEADER SECTION with Save Action */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
         <div>
-          <h3 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-805"}`}>
+          <h3 className={`text-lg font-bold flex items-center gap-2 ${isDark ? "text-white" : "text-slate-805"} text-left rtl:text-right`}>
             <FiSettings className="w-5 h-5 text-slate-500" />
-            <span>General Visual & System Settings</span>
+            <span>{t("admin_general_settings_title", "General Visual & System Settings")}</span>
           </h3>
-          <p className="text-slate-550 text-xs mt-0.5 font-semibold">Control platform fees, theme options, currencies, languages, page sizing, and maintenance mode.</p>
+          <p className="text-slate-555 text-xs mt-0.5 font-semibold text-left rtl:text-right">{t("admin_general_settings_desc", "Control platform fees, theme options, currencies, languages, page sizing, and maintenance mode.")}</p>
         </div>
         <button
           onClick={handleBulkSave}
           disabled={saving}
           className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-6 py-3 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer border border-teal-600 dark:border-teal-500"
         >
-          {saving ? "Saving..." : "Save Settings"}
+          {saving ? t("admin_saving_btn", "Saving...") : t("admin_save_settings_btn", "Save Settings")}
         </button>
       </div>
 
       {/* Save Success/Error Alert banner */}
       {saveStatus && (
-        <div className={`p-4 rounded-xl text-xs font-bold border transition animate-fadeIn ${
+        <div className={`p-4 rounded-xl text-xs font-bold border transition animate-fadeIn text-left rtl:text-right ${
           saveStatus.type === "success" 
             ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
             : "bg-rose-50 text-rose-700 border-rose-100"
@@ -273,17 +275,17 @@ export default function GeneralSettingsTab({
         </div>
       )}
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6 text-left rtl:text-right">
         {/* Service Fee slider */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-850">Platform Escrow Service Fee (%)</h4>
-            <p className="text-xs text-slate-550 mt-1 font-semibold">Configure service charge percentages extracted on final payout milestones releases.</p>
+            <h4 className="text-sm font-extrabold text-slate-850">{t("admin_platform_fee_title", "Platform Escrow Service Fee (%)")}</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">{t("admin_platform_fee_desc", "Configure service charge percentages extracted on final payout milestones releases.")}</p>
           </div>
           
           <div className="w-full md:w-64 flex flex-col gap-2">
             <div className="flex justify-between items-center text-xs font-semibold">
-              <span className="text-slate-500">Percentage</span>
+              <span className="text-slate-500">{t("admin_percentage_label", "Percentage")}</span>
               <span className="text-teal-700 font-bold">{fee}%</span>
             </div>
             <input
@@ -299,10 +301,10 @@ export default function GeneralSettingsTab({
         </div>
 
         {/* Minimum Withdrawal Amount configuration */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-850">Minimum Withdrawal Amount ($)</h4>
-            <p className="text-xs text-slate-550 mt-1 font-semibold">Minimum wallet balance threshold required before users, freelancers, or affiliates can submit payout withdrawal requests.</p>
+            <h4 className="text-sm font-extrabold text-slate-850">{t("admin_min_withdrawal_title", "Minimum Withdrawal Amount ($)")}</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">{t("admin_min_withdrawal_desc", "Minimum wallet balance threshold required before users, freelancers, or affiliates can submit payout withdrawal requests.")}</p>
           </div>
           
           <div className="w-full sm:w-64 flex items-center gap-2">
@@ -319,16 +321,16 @@ export default function GeneralSettingsTab({
         </div>
 
         {/* Site Theme configuration */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855">Site Visual Theme</h4>
-            <p className="text-xs text-slate-505 mt-1 font-semibold">Toggle between a premium Light (White) theme and the default dark mode.</p>
+            <h4 className="text-sm font-extrabold text-slate-855">{t("admin_site_theme_title", "Site Visual Theme")}</h4>
+            <p className="text-xs text-slate-505 mt-1 font-semibold">{t("admin_site_theme_desc", "Toggle between a premium Light (White) theme and the default dark mode.")}</p>
           </div>
           
           <CustomSelect
             options={[
-              { value: "light", label: "White (Light) Theme" },
-              { value: "dark", label: "Vibrant Dark Theme" }
+              { value: "light", label: t("admin_site_theme_light", "White (Light) Theme") },
+              { value: "dark", label: t("admin_site_theme_dark", "Vibrant Dark Theme") }
             ]}
             value={theme}
             onChange={(val) => setLocalTheme(val as string)}
@@ -337,18 +339,18 @@ export default function GeneralSettingsTab({
         </div>
 
         {/* Site Brand Colors configuration */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855">Visual Brand Colors</h4>
-            <p className="text-xs text-slate-550 mt-1 font-semibold">Customize the primary (base accent) and secondary (complementary accent) brand colors used in the layout.</p>
+            <h4 className="text-sm font-extrabold text-slate-855">{t("admin_brand_colors_title", "Visual Brand Colors")}</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">{t("admin_brand_colors_desc", "Customize the primary (base accent) and secondary (complementary accent) brand colors used in the layout.")}</p>
           </div>
           
           <div className="w-full lg:w-auto flex flex-col xl:flex-row gap-5 xl:items-center shrink-0">
             {/* Primary Color */}
             <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[220px]">
-              <label className="text-[11px] font-extrabold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+              <label className="text-[11px] font-extrabold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 text-left rtl:text-right">
                 <span className="w-2.5 h-2.5 rounded-full inline-block shadow-sm" style={{ backgroundColor: pColor || "#0F766E" }}></span>
-                Primary Color
+                {t("admin_primary_color", "Primary Color")}
               </label>
               <div className="relative flex items-center bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700/80 rounded-2xl p-1.5 transition-all duration-200 focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/10 shadow-sm">
                 <div className="relative w-8 h-8 rounded-full shrink-0 shadow-inner border border-black/10 overflow-hidden flex items-center justify-center cursor-pointer transition-transform hover:scale-105 active:scale-95">
@@ -372,9 +374,9 @@ export default function GeneralSettingsTab({
 
             {/* Secondary Color */}
             <div className="flex flex-col gap-2 min-w-[200px] sm:min-w-[220px]">
-              <label className="text-[11px] font-extrabold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+              <label className="text-[11px] font-extrabold text-slate-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5 text-left rtl:text-right">
                 <span className="w-2.5 h-2.5 rounded-full inline-block shadow-sm" style={{ backgroundColor: sColor || "#22C55E" }}></span>
-                Secondary Color
+                {t("admin_secondary_color", "Secondary Color")}
               </label>
               <div className="relative flex items-center bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700/80 rounded-2xl p-1.5 transition-all duration-200 focus-within:border-teal-600 focus-within:ring-2 focus-within:ring-teal-600/10 shadow-sm">
                 <div className="relative w-8 h-8 rounded-full shrink-0 shadow-inner border border-black/10 overflow-hidden flex items-center justify-center cursor-pointer transition-transform hover:scale-105 active:scale-95">
@@ -399,10 +401,10 @@ export default function GeneralSettingsTab({
         </div>
 
         {/* Auto approve profiles toggle */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855 font-sans">Auto-Approve Freelancer Profiles</h4>
-            <p className="text-xs text-slate-550 mt-1 font-semibold">When enabled, new freelancer accounts are automatically approved upon completing onboarding, bypassing the admin review queue.</p>
+            <h4 className="text-sm font-extrabold text-slate-855 font-sans">{t("admin_auto_approve_freelancers_title", "Auto-Approve Freelancer Profiles")}</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">{t("admin_auto_approve_freelancers_desc", "When enabled, new freelancer accounts are automatically approved upon completing onboarding, bypassing the admin review queue.")}</p>
           </div>
           
           <button
@@ -419,10 +421,10 @@ export default function GeneralSettingsTab({
         </div>
 
         {/* Proposal vetting toggle */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855 font-sans">Review Freelancer Proposals</h4>
-            <p className="text-xs text-slate-550 mt-1 font-semibold">When enabled, all proposals submitted by freelancers must be reviewed and approved by an administrator before they are visible to clients.</p>
+            <h4 className="text-sm font-extrabold text-slate-855 font-sans">{t("admin_review_proposals_title", "Review Freelancer Proposals")}</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">{t("admin_review_proposals_desc", "When enabled, all proposals submitted by freelancers must be reviewed and approved by an administrator before they are visible to clients.")}</p>
           </div>
           
           <button
@@ -439,10 +441,10 @@ export default function GeneralSettingsTab({
         </div>
 
         {/* Client vetting toggle */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855 font-sans">Review Client Profiles</h4>
-            <p className="text-xs text-slate-555 mt-1 font-semibold">When enabled, new client profiles must be reviewed and approved by an administrator before they are permitted to post jobs.</p>
+            <h4 className="text-sm font-extrabold text-slate-855 font-sans">{t("admin_review_clients_title", "Review Client Profiles")}</h4>
+            <p className="text-xs text-slate-555 mt-1 font-semibold">{t("admin_review_clients_desc", "When enabled, new client profiles must be reviewed and approved by an administrator before they are permitted to post jobs.")}</p>
           </div>
           
           <button
@@ -459,10 +461,10 @@ export default function GeneralSettingsTab({
         </div>
 
         {/* Project/Job Posting vetting toggle */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855 font-sans">Review Project Postings</h4>
-            <p className="text-xs text-slate-555 mt-1 font-semibold">When enabled, newly created or edited project postings must be reviewed and approved by an administrator before they are published and visible to freelancers.</p>
+            <h4 className="text-sm font-extrabold text-slate-855 font-sans">{t("admin_review_projects_title", "Review Project Postings")}</h4>
+            <p className="text-xs text-slate-555 mt-1 font-semibold">{t("admin_review_projects_desc", "When enabled, newly created or edited project postings must be reviewed and approved by an administrator before they are published and visible to freelancers.")}</p>
           </div>
           
           <button
@@ -479,10 +481,10 @@ export default function GeneralSettingsTab({
         </div>
 
         {/* Default Currency configuration */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855">Default Platform Currency</h4>
-            <p className="text-xs text-slate-550 mt-1 font-semibold">Select the primary system currency used across dashboards, wallets, and invoices by default.</p>
+            <h4 className="text-sm font-extrabold text-slate-855">{t("admin_default_currency_title", "Default Platform Currency")}</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">{t("admin_default_currency_desc", "Select the primary system currency used across dashboards, wallets, and invoices by default.")}</p>
           </div>
           
           <select
@@ -496,16 +498,16 @@ export default function GeneralSettingsTab({
               </option>
             ))}
             {availCurrencies.length === 0 && (
-              <option value="USD">US Dollar (USD)</option>
+              <option value="USD">{t("currency_usd", "US Dollar (USD)")}</option>
             )}
           </select>
         </div>
 
         {/* Default Language configuration */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855">Default Site Language</h4>
-            <p className="text-xs text-slate-550 mt-1 font-semibold">Select the primary display translation dictionary loaded for anonymous guests and new signups.</p>
+            <h4 className="text-sm font-extrabold text-slate-855">{t("admin_default_language_title", "Default Site Language")}</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">{t("admin_default_language_desc", "Select the primary display translation dictionary loaded for anonymous guests and new signups.")}</p>
           </div>
           
           <select
@@ -519,16 +521,16 @@ export default function GeneralSettingsTab({
               </option>
             ))}
             {availLanguages.length === 0 && (
-              <option value="EN">English (EN)</option>
+              <option value="EN">{t("language_en", "English (EN)")}</option>
             )}
           </select>
         </div>
 
         {/* Pagination Settings configuration */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-855">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-6 text-slate-855 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855">Default Pagination Limit</h4>
-            <p className="text-xs text-slate-550 mt-1 font-semibold">Configure the global number of records loaded per page across all directory and table listings.</p>
+            <h4 className="text-sm font-extrabold text-slate-855">{t("admin_default_pagination_title", "Default Pagination Limit")}</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">{t("admin_default_pagination_desc", "Configure the global number of records loaded per page across all directory and table listings.")}</p>
           </div>
           
           <select
@@ -536,20 +538,20 @@ export default function GeneralSettingsTab({
             onChange={(e) => setLocalLimit(Number(e.target.value))}
             className="w-full sm:w-64 bg-slate-50 border border-slate-202 rounded-xl px-3 py-2.5 text-xs text-slate-805 focus:outline-none focus:border-teal-700 transition font-bold"
           >
-            <option value={3}>3 rows per page</option>
-            <option value={5}>5 rows per page</option>
-            <option value={10}>10 rows per page</option>
-            <option value={20}>20 rows per page</option>
-            <option value={50}>50 rows per page</option>
-            <option value={100}>100 rows per page</option>
+            <option value={3}>3 {t("admin_rows_per_page", "rows per page")}</option>
+            <option value={5}>5 {t("admin_rows_per_page", "rows per page")}</option>
+            <option value={10}>10 {t("admin_rows_per_page", "rows per page")}</option>
+            <option value={20}>20 {t("admin_rows_per_page", "rows per page")}</option>
+            <option value={50}>50 {t("admin_rows_per_page", "rows per page")}</option>
+            <option value={100}>100 {t("admin_rows_per_page", "rows per page")}</option>
           </select>
         </div>
 
         {/* Maintenance mode toggle */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 text-slate-805">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-2 text-slate-805 text-left rtl:text-right">
           <div className="max-w-md">
-            <h4 className="text-sm font-extrabold text-slate-855">Platform System Maintenance Mode</h4>
-            <p className="text-xs text-slate-550 mt-1 font-semibold">Restricts client registrations and contractor job bidding temporarily for structural updates.</p>
+            <h4 className="text-sm font-extrabold text-slate-855">{t("admin_maintenance_mode_title", "Platform System Maintenance Mode")}</h4>
+            <p className="text-xs text-slate-550 mt-1 font-semibold">{t("admin_maintenance_mode_desc", "Restricts client registrations and contractor job bidding temporarily for structural updates.")}</p>
           </div>
           
           <button
@@ -568,11 +570,11 @@ export default function GeneralSettingsTab({
 
       {/* FLOATING SUCCESS TOAST */}
       {showToast && (
-        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-slideIn max-w-sm">
+        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-slideIn max-w-sm text-left rtl:text-right">
           <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
             ✓
           </div>
-          <div className="flex flex-col text-left">
+          <div className="flex flex-col text-left rtl:text-right">
             <span className="text-xs font-black text-white leading-tight">{toastTitle || "Notification"}</span>
             {toastText && (
               <span className="text-[11px] font-semibold text-slate-300 mt-0.5 leading-snug">{toastText}</span>

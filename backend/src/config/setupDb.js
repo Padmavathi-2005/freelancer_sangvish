@@ -1670,11 +1670,38 @@ async function setupTables() {
         "description" TEXT,
         "status" CHARACTER VARYING DEFAULT 'Pending'::character varying,
         "amount" NUMERIC DEFAULT 0.00 NOT NULL,
+        "feedback" TEXT,
+        "submitted_files" TEXT,
+        "revision_count" INTEGER DEFAULT 0,
+        "revision_status" CHARACTER VARYING(50) DEFAULT 'None'::character varying,
+        "extra_revision_fee" NUMERIC DEFAULT 0.00,
+        "revision_feedback" TEXT,
+        "revision_submitted_files" TEXT,
+        "free_revision_count" INTEGER DEFAULT 0,
+        "paid_revision_count" INTEGER DEFAULT 0,
         "created_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         "updated_at" TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY ("timecard_id")
       )
     `);
+
+    // Alter table to add revision columns if they do not exist
+    try {
+      await pool.query(`
+        ALTER TABLE "contract_timecards"
+        ADD COLUMN IF NOT EXISTS "feedback" TEXT,
+        ADD COLUMN IF NOT EXISTS "submitted_files" TEXT,
+        ADD COLUMN IF NOT EXISTS "revision_count" INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS "revision_status" CHARACTER VARYING(50) DEFAULT 'None',
+        ADD COLUMN IF NOT EXISTS "extra_revision_fee" NUMERIC DEFAULT 0.00,
+        ADD COLUMN IF NOT EXISTS "revision_feedback" TEXT,
+        ADD COLUMN IF NOT EXISTS "revision_submitted_files" TEXT,
+        ADD COLUMN IF NOT EXISTS "free_revision_count" INTEGER DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS "paid_revision_count" INTEGER DEFAULT 0
+      `);
+    } catch (alterErr) {
+      console.log("⚠️ Failed to alter contract_timecards:", alterErr.message);
+    }
     console.log("✅ 'contract_timecards' table ready.");
 
     await pool.query(`

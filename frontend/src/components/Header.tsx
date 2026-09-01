@@ -72,7 +72,7 @@ export default function Header() {
   const isBlogsActive = pathname.startsWith("/blogs");
   const isCategoriesActive = pathname.startsWith("/categories");
 
-  const { lang, currency, currencySymbol, activeLanguages, currencies, changeLanguage, changeCurrency, t } = useLanguage();
+  const { lang, direction, currency, currencySymbol, activeLanguages, currencies, changeLanguage, changeCurrency, t } = useLanguage();
   const { openLoginModal } = useAuthModal();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -128,6 +128,15 @@ export default function Header() {
   const [categories, setCategories] = useState<any[]>([]);
   const [subcategories, setSubcategories] = useState<any[]>([]);
   const [hoveredCategoryId, setHoveredCategoryId] = useState<number | null>(null);
+  const [isSubcategoryLoading, setIsSubcategoryLoading] = useState(false);
+  const handleCategoryHover = (catId: number) => {
+    if (hoveredCategoryId === catId) return;
+    setIsSubcategoryLoading(true);
+    setHoveredCategoryId(catId);
+    setTimeout(() => {
+      setIsSubcategoryLoading(false);
+    }, 250);
+  };
   const DEFAULT_SITE_LOGO = "/public/images/onboard/file-1783600571599-686657795.png";
   const [siteLogo, setSiteLogo] = useState(DEFAULT_SITE_LOGO);
   const [siteLogoDark, setSiteLogoDark] = useState(DEFAULT_SITE_LOGO);
@@ -144,6 +153,7 @@ export default function Header() {
     const fetchNotifications = async () => {
       try {
         const token = localStorage.getItem("token");
+        if (!token) return;
         const res = await fetch(`${API_URL}/notifications`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -151,13 +161,14 @@ export default function Header() {
           setNotifications(await res.json());
         }
       } catch (e) {
-        console.error("Failed to fetch notifications in Header:", e);
+        console.warn("Failed to fetch notifications in Header:", e);
       }
     };
 
     const fetchUnreadCount = async () => {
       try {
         const token = localStorage.getItem("token");
+        if (!token) return;
         const res = await fetch(`${API_URL}/notifications/unread-count`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -166,7 +177,7 @@ export default function Header() {
           setUnreadNotificationsCount(data.unreadCount);
         }
       } catch (e) {
-        console.error("Failed to fetch unread count in Header:", e);
+        console.warn("Failed to fetch unread count in Header:", e);
       }
     };
 
@@ -184,6 +195,7 @@ export default function Header() {
   const handleMarkAllRead = async () => {
     try {
       const token = localStorage.getItem("token");
+      if (!token) return;
       const res = await fetch(`${API_URL}/notifications/read-all`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` }
@@ -193,7 +205,7 @@ export default function Header() {
         setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       }
     } catch (e) {
-      console.error("Failed to mark all notifications as read in Header:", e);
+      console.warn("Failed to mark all notifications as read in Header:", e);
     }
   };
 
@@ -211,7 +223,29 @@ export default function Header() {
       if (type === "message" || type === "chat") {
         redirectUrl = refId ? `/dashboard/inbox?chat_id=${refId}` : "/dashboard/inbox";
       } else if (type === "proposal" || type === "project") {
-        redirectUrl = "/dashboard/proposals";
+        if (userRole === "client" && refId) {
+          try {
+            const refNum = parseInt(refId);
+            const resJobs = await fetch(`${API_URL}/jobs/client`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (resJobs.ok) {
+              const jobsList = await resJobs.json();
+              const matchedJob = jobsList.find((j: any) => j.job_id === refNum || j.contract_id === refNum);
+              if (matchedJob) {
+                redirectUrl = `/dashboard/proposals?project_id=${matchedJob.job_id}`;
+              } else {
+                redirectUrl = `/dashboard/proposals`;
+              }
+            } else {
+              redirectUrl = `/dashboard/proposals`;
+            }
+          } catch (e) {
+            redirectUrl = `/dashboard/proposals`;
+          }
+        } else {
+          redirectUrl = "/dashboard/proposals";
+        }
       } else if (type === "gig") {
         if (userRole === "client") {
           redirectUrl = refId ? `/dashboard/orders?application_id=${refId}` : "/dashboard/orders";
@@ -241,7 +275,6 @@ export default function Header() {
         if (refId) {
           try {
             const refNum = parseInt(refId);
-            const token = localStorage.getItem("token");
             const endpoint = userRole === "client"
               ? `${API_URL}/freelancer/client/gigs/applications`
               : `${API_URL}/freelancer/gigs/applications`;
@@ -511,111 +544,114 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 w-full bg-slate-100/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-slate-200 dark:border-zinc-800 z-[9999] px-4 sm:px-6 lg:px-8">
+      <header className={`fixed top-0 left-0 right-0 w-full bg-slate-100/95 dark:bg-zinc-950/95 border-b border-slate-200 dark:border-zinc-800 z-[9999] px-4 sm:px-6 lg:px-8 transition-colors duration-300 ${isOpen ? "backdrop-blur-none" : "backdrop-blur-md"}`}>
         <div className="max-w-[1600px] mx-auto">
           <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="shrink-0">
+              <a href="/" className="flex items-center gap-2 select-none py-2">
+                <img
+                  src={resolveLogoUrl(siteTheme === "dark" ? (siteLogoDark || siteLogo) : (siteLogo || siteLogoDark)) || resolveLogoUrl("/public/images/onboard/file-1783600571599-686657795.png")}
+                  alt={siteName || "Buy2Lancer"}
+                  className="h-8 w-auto max-w-[180px] object-contain shrink-0"
+                  onError={(e: any) => {
+                    e.target.onerror = null;
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </a>
+            </div>
 
-            {/* Left Section: Logo & Links */}
-            <div className="flex items-center gap-5">
-              {/* Logo */}
-              <div className="shrink-0">
-                <a href="/" className="flex items-center gap-2 select-none py-2">
-                  <img
-                    src={resolveLogoUrl(siteTheme === "dark" ? (siteLogoDark || siteLogo) : (siteLogo || siteLogoDark)) || resolveLogoUrl("/public/images/onboard/file-1783600571599-686657795.png")}
-                    alt={siteName || "Buy2Lancer"}
-                    className="h-8 w-auto max-w-[180px] object-contain shrink-0"
-                    onError={(e: any) => {
-                      e.target.onerror = null;
-                      e.target.style.display = 'none';
-                    }}
-                  />
+            {/* Navigation Links (Desktop) */}
+            <nav className="hidden xl:flex items-center justify-center gap-6 flex-1">
+              {/* Home Dropdown Link */}
+              <div className="relative group/home py-2">
+                <a
+                  href="/"
+                  className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer ${isHome1Active || isHome2Active || isHome3Active
+                    ? "text-slate-900 dark:text-white font-black"
+                    : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
+                    }`}
+                >
+                  {t("nav_home", "Home")}
+                  <FiChevronDown className="w-3.5 h-3.5 text-slate-455 transition-transform duration-250 group-hover/home:rotate-180" />
                 </a>
-              </div>
 
-              {/* Navigation Links (Desktop) */}
-              <nav className="hidden xl:flex items-center gap-4">
-                {/* Home Dropdown Link */}
-                <div className="relative group/home py-2">
+                {/* Home Variations Dropdown Options on Hover */}
+                <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-slate-200/85 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/home:opacity-100 group-hover/home:visible transition-all duration-200 z-50">
                   <a
                     href="/"
-                    className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer ${isHome1Active || isHome2Active || isHome3Active
-                      ? "text-teal-700 dark:text-teal-400 font-black"
-                      : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
+                    className={`flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors ${isHome1Active
+                      ? "bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-extrabold"
+                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-teal-600 dark:hover:text-teal-400"
                       }`}
                   >
-                    {t("nav_home", "Home")}
-                    <FiChevronDown className="w-3.5 h-3.5 text-slate-450 transition-transform duration-250 group-hover/home:rotate-180" />
+                    {t("home_1_default", "Home 1 (Default)")}
+                    {isHome1Active && <span className="text-teal-600 dark:text-teal-400 font-black">✓</span>}
                   </a>
-
-                  {/* Home Variations Dropdown Options on Hover */}
-                  <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-zinc-900 border border-slate-200/85 dark:border-zinc-800 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/home:opacity-100 group-hover/home:visible transition-all duration-200 z-50">
-                    <a
-                      href="/"
-                      className={`flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors ${isHome1Active
-                        ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
-                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-teal-600 dark:hover:text-teal-400"
-                        }`}
-                    >
-                      {t("home_1_default", "Home 1 (Default)")}
-                      {isHome1Active && <span className="text-teal-600 dark:text-teal-400 font-black">✓</span>}
-                    </a>
-                    <a
-                      href="/home-2"
-                      className={`flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors ${isHome2Active
-                        ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
-                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-teal-600 dark:hover:text-teal-400"
-                        }`}
-                    >
-                      {t("home_2", "Home 2")}
-                      {isHome2Active && <span className="text-teal-600 dark:text-teal-400 font-black">✓</span>}
-                    </a>
-                    <a
-                      href="/home-3"
-                      className={`flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors ${isHome3Active
-                        ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold"
-                        : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-teal-600 dark:hover:text-teal-400"
-                        }`}
-                    >
-                      {t("home_3", "Home 3")}
-                      {isHome3Active && <span className="text-teal-600 dark:text-teal-400 font-black">✓</span>}
-                    </a>
-                  </div>
+                  <a
+                    href="/home-2"
+                    className={`flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors ${isHome2Active
+                      ? "bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-extrabold"
+                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-teal-600 dark:hover:text-teal-400"
+                      }`}
+                  >
+                    {t("home_2", "Home 2")}
+                    {isHome2Active && <span className="text-teal-600 dark:text-teal-400 font-black">✓</span>}
+                  </a>
+                  <a
+                    href="/home-3"
+                    className={`flex items-center justify-between px-4 py-2.5 text-xs font-bold transition-colors ${isHome3Active
+                      ? "bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white font-extrabold"
+                      : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-teal-600 dark:hover:text-teal-400"
+                      }`}
+                  >
+                    {t("home_3", "Home 3")}
+                    {isHome3Active && <span className="text-teal-600 dark:text-teal-400 font-black">✓</span>}
+                  </a>
                 </div>
+              </div>
 
-                {/* Categories Dropdown (Triggers mega dropdown on hover) */}
-                <div className="group/mega py-2">
-                  <button className={`hover:text-primary dark:hover:text-teal-400 font-bold text-sm tracking-wide leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer ${isCategoriesActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200"
-                    }`}>
-                    {t("nav_categories", "Categories")}
-                    <FiChevronDown className="w-3.5 h-3.5 text-slate-450 transition-transform duration-250 group-hover/mega:rotate-180" />
-                  </button>
+              {/* Categories Dropdown (Triggers mega dropdown on hover) */}
+              <div className="group/mega py-2">
+                <button className={`hover:text-primary dark:hover:text-teal-400 font-bold text-sm tracking-wide leading-none transition-all duration-200 flex items-center gap-1 cursor-pointer ${isCategoriesActive ? "text-slate-900 dark:text-white font-black" : "text-slate-800 dark:text-slate-200"
+                  }`}>
+                  {t("nav_categories", "Categories")}
+                  <FiChevronDown className="w-3.5 h-3.5 text-slate-450 transition-transform duration-250 group-hover/mega:rotate-180" />
+                </button>
 
-                  {/* MEGA MENU DROPDOWN PANEL (Matches Header bg-slate-100/95) */}
-                  <div className="absolute left-0 right-0 w-full mt-3 bg-slate-100/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-b border-slate-200 dark:border-zinc-800 shadow-2xl opacity-0 invisible group-hover/mega:opacity-100 group-hover/mega:visible transition-all duration-200 z-50 animate-fadeIn overflow-hidden">
-                    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-7 flex flex-col gap-6 relative z-10">
+                {/* MEGA MENU DROPDOWN PANEL (Matches Header bg-slate-100/95) */}
+                <div className="absolute top-full left-0 right-0 w-full bg-slate-100/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-b border-slate-200 dark:border-zinc-800 shadow-2xl opacity-0 invisible group-hover/mega:opacity-100 group-hover/mega:visible transition-all duration-200 z-50 animate-fadeIn overflow-hidden">
+                  <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
 
-                      {/* Horizontal row of Categories */}
-                      <div className="flex flex-row flex-wrap gap-x-5 gap-y-3 border-b border-slate-200 dark:border-zinc-800 pb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-[25%_1px_1fr] gap-8">
+
+                      {/* Left Side: Scrollable Categories List (Thin vertical track) */}
+                      <div className="max-h-[350px] overflow-y-auto pr-3 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-zinc-800 flex flex-col gap-1 text-left">
                         {categories.map((cat) => {
-                          const isHovered = hoveredCategoryId === cat.category_id;
+                          const isActive = hoveredCategoryId === cat.category_id;
                           return (
                             <a
                               key={cat.category_id}
                               href={getCategoryOnlyLink(cat.category_name)}
-                              onMouseEnter={() => setHoveredCategoryId(cat.category_id)}
-                              className={`px-4 py-2 rounded-xl text-[12px] font-black transition-all duration-150 cursor-pointer ${isHovered
-                                ? "bg-primary text-white border border-primary/20 shadow-sm shadow-primary/5"
-                                : "text-slate-600 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-800 hover:text-primary border border-transparent"
+                              onMouseEnter={() => handleCategoryHover(cat.category_id)}
+                              className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-[12px] font-black transition-all duration-150 cursor-pointer ${isActive
+                                  ? "bg-teal-700 text-white shadow-sm shadow-teal-700/10"
+                                  : "text-slate-605 dark:text-zinc-350 hover:bg-slate-50 dark:hover:bg-zinc-800 hover:text-teal-700"
                                 }`}
                             >
-                              {cat.category_name}
+                              <span>{t(cat.category_name, cat.category_name)}</span>
+                              <span className={`text-[10px] transition-transform duration-200 ${isActive ? "translate-x-1" : "opacity-0"}`}>&rarr;</span>
                             </a>
                           );
                         })}
                       </div>
 
-                      {/* Subcategories of the hovered Category */}
-                      <div className="min-h-[160px] text-left">
+                      {/* Divider Line */}
+                      <div className="hidden md:block w-px bg-slate-200 dark:bg-zinc-800 h-full min-h-[320px]" />
+
+                      {/* Right Side: Subcategories Grid */}
+                      <div className="min-h-[320px] text-left">
                         {hoveredCategoryId ? (
                           (() => {
                             const activeCat = categories.find((c) => c.category_id === hoveredCategoryId);
@@ -623,96 +659,99 @@ export default function Header() {
                               (sub) => sub.category_id === hoveredCategoryId
                             );
                             return (
-                              <div className="space-y-4">
+                              <div className="space-y-4 h-full flex flex-col">
+                                {/* Subcategory Header */}
                                 <a
                                   href={getCategoryOnlyLink(activeCat?.category_name || "")}
-                                  className="flex items-center gap-1.5 hover:opacity-80 transition-opacity w-fit"
+                                  className="flex items-center gap-1.5 hover:opacity-80 transition-opacity w-fit select-none"
                                 >
                                   <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                                   <h4 className="text-[13px] font-black text-slate-800 dark:text-zinc-100 uppercase tracking-widest">
-                                    {activeCat?.category_name}{" "}Subcategories &rarr;
+                                    {t(activeCat?.category_name || "", activeCat?.category_name || "")} {t("subcategories_label", "Subcategories")} &rarr;
                                   </h4>
                                 </a>
 
-                                {catSubs.length === 0 ? (
-                                  <p className="text-slate-400 dark:text-zinc-500 text-xs font-bold italic py-4 pl-3">
-                                    No sub-categories available in this category.
-                                  </p>
-                                ) : (
-                                  <div className="grid grid-cols-5 gap-6">
-                                    <div className="col-span-4 grid grid-cols-4 gap-4">
+                                {/* Content Grid (Always 100% of remaining 75% width) */}
+                                <div className="flex-1 w-full">
+                                  {isSubcategoryLoading ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                      {Array.from({ length: 12 }).map((_, i) => (
+                                        <div key={i} className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl border border-slate-100/85 dark:border-zinc-800/85 bg-slate-50/50 dark:bg-zinc-800/20 animate-pulse select-none">
+                                          <div className="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-zinc-700 shrink-0" />
+                                          <div className="h-3 bg-slate-200 dark:bg-zinc-700 rounded-md w-2/3" />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : catSubs.length === 0 ? (
+                                    <p className="text-slate-400 dark:text-zinc-500 text-xs font-bold italic py-4 pl-3">
+                                      {t("no_subcategories_label", "No sub-categories available in this category.")}
+                                    </p>
+                                  ) : (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin">
                                       {catSubs.map((sub) => (
                                         <a
                                           key={sub.sub_category_id}
                                           href={getCategoryLink(activeCat?.category_name || "", sub.sub_category_name)}
-                                          className="px-4 py-2.5 rounded-xl text-slate-600 dark:text-zinc-300 hover:text-primary hover:bg-white dark:hover:bg-zinc-800 text-xs font-black transition-all flex items-center gap-2 border border-transparent hover:border-slate-200 dark:hover:border-zinc-700"
+                                          className="px-4 py-2.5 rounded-xl text-slate-605 dark:text-zinc-350 hover:text-primary hover:bg-slate-50 dark:hover:bg-zinc-800/50 text-xs font-black transition-all flex items-center gap-2 border border-transparent hover:border-slate-200/50 dark:hover:border-zinc-850"
                                         >
                                           <div className="w-1.5 h-1.5 rounded-full bg-primary/80 shrink-0" />
-                                          <span>{sub.sub_category_name}</span>
+                                          <span>{t(sub.sub_category_name, sub.sub_category_name)}</span>
                                         </a>
                                       ))}
                                     </div>
-                                    <div className="col-span-1 bg-gradient-to-br from-white to-slate-50 dark:from-zinc-850 dark:to-zinc-800 border border-slate-200 dark:border-zinc-700/80 rounded-xl p-4.5 flex flex-col justify-between min-h-[140px] text-left shadow-sm">
-                                      <div>
-                                        <span className="text-[9px] font-black text-primary uppercase tracking-widest block mb-1">{t("promoted", "PROMOTED")}</span>
-                                        <h5 className="text-xs font-black text-slate-800 dark:text-white leading-snug">{t("hire_expert_freelancers", "Hire Expert Freelancers")}</h5>
-                                        <p className="text-[10px] text-slate-500 dark:text-zinc-400 font-bold mt-1">{t("promoted_desc", "Get custom solutions tailored precisely to your budget and deadlines.")}</p>
-                                      </div>
-                                      <a href="/gigs" className="mt-3 bg-primary hover:bg-primary-hover text-white text-[10px] font-black text-center py-2.5 px-3 rounded-lg shadow-sm transition-all block w-full">
-                                        {t("nav_gigs", "Explore Gigs")}
-                                      </a>
-                                    </div>
-                                  </div>
-                                )}
+                                  )}
+                                </div>
+
                               </div>
                             );
                           })()
                         ) : (
-                          <div className="flex flex-col items-center justify-center py-6 text-slate-400 dark:text-zinc-500 gap-1.5 select-none">
+                          <div className="flex flex-col items-center justify-center h-full min-h-[250px] text-slate-400 dark:text-zinc-500 gap-1.5 select-none">
                             <span>👆</span>
-                            <p className="text-xs font-bold">{t("hover_category_prompt", "Hover over any category above to explore subcategories.")}</p>
+                            <p className="text-xs font-bold">{t("hover_category_prompt", "Hover over any category to explore subcategories.")}</p>
                           </div>
                         )}
                       </div>
 
                     </div>
+
                   </div>
                 </div>
+              </div>
 
-                {/* Navigation Links */}
-                <a
-                  href="/talent"
-                  onClick={handleTalentClick}
-                  className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${isTalentActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
-                    }`}
-                >
-                  {t("nav_talent", "Hire Freelancers")}
-                </a>
-                <a
-                  href="/projects"
-                  onClick={handleProjectsClick}
-                  className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${isProjectsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
-                    }`}
-                >
-                  {t("nav_projects", "Find Projects")}
-                </a>
-                <a
-                  href="/gigs"
-                  className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${isGigsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
-                    }`}
-                >
-                  {t("nav_gigs", "Explore Gigs")}
-                </a>
-                <a
-                  href="/blogs"
-                  className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${isBlogsActive ? "text-teal-700 dark:text-teal-400 font-black underline underline-offset-4 decoration-2" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
-                    }`}
-                >
-                  {t("nav_blogs", "Blogs")}
-                </a>
+              {/* Navigation Links */}
+              <a
+                href="/talent"
+                onClick={handleTalentClick}
+                className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${isTalentActive ? "text-slate-900 dark:text-white font-black" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
+                  }`}
+              >
+                {t("nav_talent", "Hire Freelancers")}
+              </a>
+              <a
+                href="/projects"
+                onClick={handleProjectsClick}
+                className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${isProjectsActive ? "text-slate-900 dark:text-white font-black" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
+                  }`}
+              >
+                {t("nav_projects", "Find Projects")}
+              </a>
+              <a
+                href="/gigs"
+                className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${isGigsActive ? "text-slate-900 dark:text-white font-black" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
+                  }`}
+              >
+                {t("nav_gigs", "Explore Gigs")}
+              </a>
+              <a
+                href="/blogs"
+                className={`font-bold text-sm tracking-wide leading-none transition-all duration-200 ${isBlogsActive ? "text-slate-900 dark:text-white font-black" : "text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-teal-400"
+                  }`}
+              >
+                {t("nav_blogs", "Blogs")}
+              </a>
 
-              </nav>
-            </div>
+            </nav>
 
             {/* Right Section: CTAs */}
             <div className="hidden xl:flex items-center gap-2.5">
@@ -727,20 +766,21 @@ export default function Header() {
                   </svg>
                   {lang}
                 </button>
-                <div dir="ltr" className="absolute right-0 rtl:left-0 rtl:right-auto mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
+                <div dir="ltr" style={{ left: direction === "RTL" || direction?.toUpperCase() === "RTL" ? 0 : "auto", right: direction === "RTL" || direction?.toUpperCase() === "RTL" ? "auto" : 0 }} className="absolute mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
                   {activeLanguages.map((l, idx) => (
                     <button
                       key={l.code || idx}
                       onClick={() => changeLanguage(l.code)}
-                      className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors cursor-pointer hover:bg-slate-50 ${lang === l.code ? "text-teal-700 bg-teal-50/50" : "text-slate-600"
+                      className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors cursor-pointer hover:bg-slate-50 ${lang === l.code ? "text-teal-700 bg-teal-50/50" : "text-slate-600"
                         }`}
                     >
-                      {l.name} ({l.code})
+                      <span>{l.name}</span>
+                      <span className="text-[10px] text-slate-400 font-bold">({l.code})</span>
                     </button>
                   ))}
                 </div>
               </div>
- 
+
               {/* Currency Switcher */}
               <div className="relative group/curr">
                 <button
@@ -750,7 +790,7 @@ export default function Header() {
                   <span className="font-extrabold text-primary dark:text-teal-400 mr-0.5">{currencySymbol}</span>
                   {currency}
                 </button>
-                <div dir="ltr" className="absolute right-0 rtl:left-0 rtl:right-auto mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/curr:opacity-100 group-hover/curr:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
+                <div dir="ltr" style={{ left: direction === "RTL" || direction?.toUpperCase() === "RTL" ? 0 : "auto", right: direction === "RTL" || direction?.toUpperCase() === "RTL" ? "auto" : 0 }} className="absolute mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/curr:opacity-100 group-hover/curr:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin">
                   {currencies.map((c, idx) => (
                     <button
                       key={c.code || idx}
@@ -814,12 +854,14 @@ export default function Header() {
                       )}
                     </div>
                     <span className="font-extrabold text-slate-800 text-sm select-none group-hover:text-primary transition-colors">
-                      {userFirstName || "User"}
+                      {userFirstName
+                        ? (userFirstName.length > 15 ? `${userFirstName.substring(0, 15)}...` : userFirstName)
+                        : t("user_fallback", "User")}
                     </span>
                   </button>
 
                   {/* Dropdown Menu (visible on hover) */}
-                  <div className="absolute right-0 mt-3 w-64 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.12)] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-left">
+                  <div style={{ left: direction === "RTL" || direction?.toUpperCase() === "RTL" ? 0 : "auto", right: direction === "RTL" || direction?.toUpperCase() === "RTL" ? "auto" : 0 }} className="absolute mt-3 w-64 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-slate-200 dark:border-zinc-700 rounded-2xl shadow-[0_15px_50px_-15px_rgba(0,0,0,0.12)] p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 text-start">
                     {/* User Badge */}
                     <div className="px-3.5 py-2 border-b border-slate-100 dark:border-zinc-800 mb-1 flex items-center justify-between gap-3">
                       <div className="min-w-0 flex-1 flex flex-col gap-0.5">
@@ -827,10 +869,13 @@ export default function Header() {
                           {userFirstName} {userLastName}
                         </p>
                         {userRole && (
-                          <span className={`inline-block w-fit text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${userRole === "client"
-                            ? "bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 border border-teal-200/50"
-                            : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50"
-                            }`}>
+                          <span
+                            className="inline-block w-fit text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800"
+                            style={{
+                              color: siteTheme === "dark" ? "#5eead4" : "#042f2e",
+                              backgroundColor: siteTheme === "dark" ? "rgba(19, 78, 74, 0.6)" : "#ccfbf1"
+                            }}
+                          >
                             {userRole === "client" ? t("client", "Client") : t("freelancer", "Freelancer")}
                           </span>
                         )}
@@ -860,7 +905,7 @@ export default function Header() {
                           <FiGrid className="w-4 h-4 text-slate-400 dark:text-zinc-400 group-hover:text-primary" />
                           <span>{t("dashboard", "Dashboard")}</span>
                         </div>
-                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary rtl:rotate-180" />
                       </a>
 
                       {/* Refer & Earn */}
@@ -870,7 +915,7 @@ export default function Header() {
                           <span>{t("refer_and_earn", "Refer & Earn")}</span>
                         </div>
                         <span className="text-[9px] font-black uppercase tracking-wider bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md">
-                          Earn $
+                          {t("earn_badge_label", "Earn $")}
                         </span>
                       </a>
 
@@ -880,7 +925,7 @@ export default function Header() {
                           <FiHeart className="w-4 h-4 text-rose-500 group-hover:text-primary" />
                           <span>{t("wishlist", "Wishlist")}</span>
                         </div>
-                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary rtl:rotate-180" />
                       </a>
 
                       {/* Wallet & Earnings */}
@@ -889,7 +934,7 @@ export default function Header() {
                           <FiCreditCard className="w-4 h-4 text-emerald-500 group-hover:text-primary" />
                           <span>{t("wallet_earnings", "Wallet & Earnings")}</span>
                         </div>
-                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary rtl:rotate-180" />
                       </a>
 
                       {/* My Orders / Projects */}
@@ -898,7 +943,7 @@ export default function Header() {
                           <FiBriefcase className="w-4 h-4 text-indigo-500 group-hover:text-primary" />
                           <span>{userRole === "client" ? t("my_orders", "My Orders") : t("my_proposals", "My Proposals")}</span>
                         </div>
-                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary rtl:rotate-180" />
                       </a>
 
                       {/* Settings / Account */}
@@ -907,7 +952,7 @@ export default function Header() {
                           <FiSettings className="w-4 h-4 text-slate-400 dark:text-zinc-400 group-hover:text-primary" />
                           <span>{t("account_settings", "Account Settings")}</span>
                         </div>
-                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                        <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary rtl:rotate-180" />
                       </a>
 
                       {/* View Freelancer Profile (If applicable) */}
@@ -917,7 +962,7 @@ export default function Header() {
                             <FiExternalLink className="w-4 h-4 text-teal-500 group-hover:text-primary" />
                             <span>{t("view_public_profile", "Public Profile")}</span>
                           </div>
-                          <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary" />
+                          <FiChevronRight className="w-3.5 h-3.5 opacity-0 group-hover/item:opacity-100 transition-opacity duration-200 text-primary rtl:rotate-180" />
                         </a>
                       )}
 
@@ -926,9 +971,9 @@ export default function Header() {
                       {/* Logout */}
                       <button
                         onClick={handleHeaderLogout}
-                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold rounded-xl transition-all duration-200 cursor-pointer text-left border-none bg-transparent"
+                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-bold rounded-xl transition-all duration-200 cursor-pointer text-start border-none bg-transparent"
                       >
-                        <FiLogOut className="w-4 h-4 text-rose-500 dark:text-rose-400" />
+                        <FiLogOut className="w-4 h-4 text-rose-500 dark:text-rose-400 rtl:rotate-180" />
                         <span>{t("logout", "Logout")}</span>
                       </button>
                     </div>
@@ -996,35 +1041,35 @@ export default function Header() {
         >
           <div className="px-4 pt-4 pb-44 space-y-2 flex flex-col min-h-full">
             <div className="space-y-1 bg-slate-100 dark:bg-zinc-800 p-2.5 rounded-xl border border-slate-200 dark:border-zinc-700">
-              <span className="block px-3 py-1 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("home_variations", "Home Variations")}</span>
+              <span className="block px-3 py-1 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t("home_variations", "Home Variations")}</span>
               <a
                 href="/"
                 className={`flex items-center justify-between px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${isHome1Active
                   ? "bg-teal-700 text-white font-extrabold shadow-sm"
-                  : "text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
+                  : "text-slate-900 dark:text-slate-100 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
                   }`}
               >
-                <span>{t("home_1_default", "Home 1 (Default)")}</span>
+                <span className="text-slate-900 dark:text-slate-100">{t("home_1_default", "Home 1 (Default)")}</span>
                 {isHome1Active && <span className="text-xs font-black">✓</span>}
               </a>
               <a
                 href="/home-2"
                 className={`flex items-center justify-between px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${isHome2Active
                   ? "bg-teal-700 text-white font-extrabold shadow-sm"
-                  : "text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
+                  : "text-slate-900 dark:text-slate-100 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
                   }`}
               >
-                <span>{t("home_2", "Home 2")}</span>
+                <span className="text-slate-900 dark:text-slate-100">{t("home_2", "Home 2")}</span>
                 {isHome2Active && <span className="text-xs font-black">✓</span>}
               </a>
               <a
                 href="/home-3"
                 className={`flex items-center justify-between px-3.5 py-2 rounded-lg text-sm font-bold transition-all ${isHome3Active
                   ? "bg-teal-700 text-white font-extrabold shadow-sm"
-                  : "text-slate-800 dark:text-slate-200 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
+                  : "text-slate-900 dark:text-slate-100 hover:text-primary hover:bg-slate-200/60 dark:hover:bg-zinc-700"
                   }`}
               >
-                <span>{t("home_3", "Home 3")}</span>
+                <span className="text-slate-900 dark:text-slate-100">{t("home_3", "Home 3")}</span>
                 {isHome3Active && <span className="text-xs font-black">✓</span>}
               </a>
             </div>
@@ -1033,10 +1078,10 @@ export default function Header() {
               href="/categories"
               className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${isCategoriesActive
                 ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
-                : "text-slate-700 dark:text-slate-200 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
+                : "text-slate-900 dark:text-slate-100 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
             >
-              <span>Categories</span>
+              <span className="text-slate-900 dark:text-slate-100">{t("nav_categories", "Categories")}</span>
               {isCategoriesActive && <span className="text-xs font-black text-teal-600">●</span>}
             </a>
             <a
@@ -1044,10 +1089,10 @@ export default function Header() {
               onClick={handleTalentClick}
               className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${isTalentActive
                 ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
-                : "text-slate-700 dark:text-slate-200 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
+                : "text-slate-900 dark:text-slate-100 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
             >
-              <span>Hire Freelancers</span>
+              <span className="text-slate-900 dark:text-slate-100">{t("nav_talent", "Hire Freelancers")}</span>
               {isTalentActive && <span className="text-xs font-black text-teal-600">●</span>}
             </a>
             <a
@@ -1055,30 +1100,30 @@ export default function Header() {
               onClick={handleProjectsClick}
               className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${isProjectsActive
                 ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
-                : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+                : "text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
             >
-              <span>Find Projects</span>
+              <span className="text-slate-900 dark:text-slate-100">{t("nav_projects", "Find Projects")}</span>
               {isProjectsActive && <span className="text-xs font-black text-teal-600">●</span>}
             </a>
             <a
               href="/gigs"
               className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${isGigsActive
                 ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
-                : "text-slate-700 dark:text-slate-200 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
+                : "text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
             >
-              <span>Explore Gigs</span>
+              <span className="text-slate-900 dark:text-slate-100">{t("nav_gigs", "Explore Gigs")}</span>
               {isGigsActive && <span className="text-xs font-black text-teal-600">●</span>}
             </a>
             <a
               href="/blogs"
               className={`font-bold px-4 py-2.5 rounded-lg text-base transition-all flex items-center justify-between ${isBlogsActive
                 ? "bg-teal-50 dark:bg-zinc-800 text-teal-700 dark:text-teal-400 font-extrabold border-l-4 border-teal-600"
-                : "text-slate-700 dark:text-slate-200 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
+                : "text-slate-900 dark:text-slate-100 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800"
                 }`}
             >
-              <span>Blogs</span>
+              <span className="text-slate-900 dark:text-slate-100">{t("nav_blogs", "Blogs")}</span>
               {isBlogsActive && <span className="text-xs font-black text-teal-600">●</span>}
             </a>
 
@@ -1087,7 +1132,7 @@ export default function Header() {
             {/* Mobile Switchers */}
             <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 border border-slate-200/55 rounded-xl">
               <div className="flex-1 flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Language</label>
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{t("language_label", "Language")}</label>
                 <CustomSelect
                   value={lang}
                   options={activeLanguages.map((l: any) => ({
@@ -1098,7 +1143,7 @@ export default function Header() {
                 />
               </div>
               <div className="flex-1 flex flex-col gap-1">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Currency</label>
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{t("currency_label", "Currency")}</label>
                 <CustomSelect
                   value={currency}
                   options={currencies.map((c: any) => ({
@@ -1109,14 +1154,14 @@ export default function Header() {
                 />
               </div>
               <div className="flex flex-col gap-1 items-center justify-center shrink-0 border-l border-slate-200 pl-3">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Theme</label>
+                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{t("theme_label", "Theme")}</label>
                 <button
                   onClick={toggleTheme}
                   className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center cursor-pointer shadow-sm mt-0.5"
                 >
                   {siteTheme === "dark" ? (
                     <svg className="w-3.5 h-3.5 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" clipRule="evenodd" />
                     </svg>
                   ) : (
                     <svg className="w-3.5 h-3.5 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
@@ -1135,62 +1180,67 @@ export default function Header() {
                     {userFirstName ? userFirstName.substring(0, 2).toUpperCase() : "US"}
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">Logged In As</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-none">{t("logged_in_as", "Logged In As")}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate leading-none">{userFirstName || "User"}</p>
+                      <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate leading-none">{userFirstName || t("user_fallback", "User")}</p>
                       {userRole && (
-                        <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded leading-none ${userRole === "client"
-                          ? "bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-400 border border-teal-200/50"
-                          : "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-200/50"
-                          }`}>
+                        <span
+                          className="inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded leading-none border border-teal-200 dark:border-teal-800"
+                          style={{
+                            color: siteTheme === "dark" ? "#5eead4" : "#042f2e",
+                            backgroundColor: siteTheme === "dark" ? "rgba(19, 78, 74, 0.6)" : "#ccfbf1"
+                          }}
+                        >
                           {userRole === "client" ? t("client", "Client") : t("freelancer", "Freelancer")}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
-                <a href="/dashboard" className="text-primary font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
+                <a href="/dashboard" className="text-slate-900 dark:text-slate-100 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
                   <FiGrid className="w-4.5 h-4.5 text-primary" />
-                  <span>{t("dashboard", "Dashboard")}</span>
+                  <span className="text-slate-900 dark:text-slate-100">{t("dashboard", "Dashboard")}</span>
                 </a>
-                <a href="/dashboard/referrals" className="text-slate-700 dark:text-zinc-200 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
-                  <FiGift className="w-4.5 h-4.5 text-slate-400" />
-                  <span>{t("refer_and_earn", "Refer & Earn")}</span>
+                <a href="/dashboard/referrals" className="text-slate-900 dark:text-slate-100 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
+                  <FiGift className="w-4.5 h-4.5 text-slate-600 dark:text-slate-300" />
+                  <span className="text-slate-900 dark:text-slate-100">{t("refer_and_earn", "Refer & Earn")}</span>
                 </a>
-                <a href="/dashboard/wishlist" className="text-slate-700 dark:text-zinc-200 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
-                  <FiHeart className="w-4.5 h-4.5 text-slate-400" />
-                  <span>{t("wishlist", "Wishlist")}</span>
+                <a href="/dashboard/wishlist" className="text-slate-900 dark:text-slate-100 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
+                  <FiHeart className="w-4.5 h-4.5 text-slate-600 dark:text-slate-300" />
+                  <span className="text-slate-900 dark:text-slate-100">{t("wishlist", "Wishlist")}</span>
                 </a>
-                <a href="/dashboard/wallet" className="text-slate-700 dark:text-zinc-200 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
-                  <FiCreditCard className="w-4.5 h-4.5 text-slate-400" />
-                  <span>{t("wallet_earnings", "Wallet & Earnings")}</span>
+                <a href="/dashboard/wallet" className="text-slate-900 dark:text-slate-100 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
+                  <FiCreditCard className="w-4.5 h-4.5 text-slate-600 dark:text-slate-300" />
+                  <span className="text-slate-900 dark:text-slate-100">{t("wallet_earnings", "Wallet & Earnings")}</span>
                 </a>
-                <a href={userRole === "client" ? "/dashboard/orders" : "/dashboard/proposals"} className="text-slate-700 dark:text-zinc-200 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
-                  <FiBriefcase className="w-4.5 h-4.5 text-slate-400" />
-                  <span>{userRole === "client" ? t("my_orders", "My Orders") : t("my_proposals", "My Proposals")}</span>
+                <a href={userRole === "client" ? "/dashboard/orders" : "/dashboard/proposals"} className="text-slate-900 dark:text-slate-100 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
+                  <FiBriefcase className="w-4.5 h-4.5 text-slate-600 dark:text-slate-300" />
+                  <span className="text-slate-900 dark:text-slate-100">{userRole === "client" ? t("my_orders", "My Orders") : t("my_proposals", "My Proposals")}</span>
                 </a>
-                <a href="/dashboard/settings" className="text-slate-700 dark:text-zinc-200 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
-                  <FiSettings className="w-4.5 h-4.5 text-slate-400" />
-                  <span>{t("account_settings", "Account Settings")}</span>
+                <a href="/dashboard/settings" className="text-slate-900 dark:text-slate-100 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
+                  <FiSettings className="w-4.5 h-4.5 text-slate-600 dark:text-slate-300" />
+                  <span className="text-slate-900 dark:text-slate-100">{t("account_settings", "Account Settings")}</span>
                 </a>
                 {userRole === "freelancer" && userSlug && (
-                  <a href={`/freelancer/${userSlug}`} className="text-slate-700 dark:text-zinc-200 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
-                    <FiExternalLink className="w-4.5 h-4.5 text-slate-400" />
-                    <span>{t("view_public_profile", "Public Profile")}</span>
+                  <a href={`/freelancer/${userSlug}`} className="text-slate-900 dark:text-slate-100 font-bold px-4 py-2 rounded-lg text-base hover:bg-slate-200/50 transition-colors flex items-center gap-2.5">
+                    <FiExternalLink className="w-4.5 h-4.5 text-slate-600 dark:text-slate-300" />
+                    <span className="text-slate-900 dark:text-slate-100">{t("view_public_profile", "Public Profile")}</span>
                   </a>
                 )}
                 <button
                   onClick={handleHeaderLogout}
-                  className="text-rose-600 text-left font-bold px-4 py-2 rounded-lg text-base hover:bg-rose-50 transition-colors cursor-pointer flex items-center gap-2.5 border-none bg-transparent"
+                  className="text-start font-bold px-4 py-2 rounded-lg text-base hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer flex items-center gap-2.5 border-none bg-transparent"
                 >
-                  <FiLogOut className="w-4.5 h-4.5 text-rose-500" />
-                  <span>Logout</span>
+                  <FiLogOut className="w-4.5 h-4.5 rtl:rotate-180" style={{ color: siteTheme === "dark" ? "#f87171" : "#dc2626" }} />
+                  <span className="font-black" style={{ color: siteTheme === "dark" ? "#f87171" : "#b91c1c" }}>
+                    {t("logout", "Logout")}
+                  </span>
                 </button>
               </>
             ) : (
               <button
                 onClick={() => openLoginModal("/dashboard")}
-                className="text-slate-650 hover:text-primary font-bold text-base hover:bg-slate-200/50 transition-colors cursor-pointer text-left px-4 py-2.5 rounded-lg border-none bg-transparent"
+                className="text-slate-900 dark:text-slate-100 hover:text-primary font-bold text-base hover:bg-slate-200/50 transition-colors cursor-pointer text-left px-4 py-2.5 rounded-lg border-none bg-transparent"
               >
                 {t("sign_in", "Sign in")}
               </button>

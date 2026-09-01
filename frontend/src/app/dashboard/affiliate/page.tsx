@@ -4,6 +4,7 @@ import { API_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FiCopy, FiCheck, FiUsers, FiDollarSign, FiAward, FiInfo, FiActivity, FiArrowRight, FiBriefcase, FiTrendingUp, FiMousePointer, FiExternalLink } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface LedgerEntry {
   commission_id: number;
@@ -39,6 +40,7 @@ interface AffiliateData {
 }
 
 export default function AffiliatePortalPage() {
+  const { t } = useLanguage();
   const [data, setData] = useState<AffiliateData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -144,7 +146,7 @@ export default function AffiliatePortalPage() {
   if (error) {
     return (
       <div className="bg-red-50 text-red-800 border border-red-100 p-6 rounded-xl text-center m-6 max-w-xl mx-auto">
-        <h3 className="font-extrabold text-base mb-1">Error Loading Affiliate Stats</h3>
+        <h3 className="font-extrabold text-base mb-1">{t("error_loading_affiliate_stats_title", "Error Loading Affiliate Stats")}</h3>
         <p className="text-xs font-semibold">{error}</p>
       </div>
     );
@@ -161,27 +163,31 @@ export default function AffiliatePortalPage() {
     return (
       <div className="flex-grow max-w-2xl mx-auto w-full px-3 sm:px-4 py-2 sm:py-6 flex flex-col gap-5 sm:gap-6 text-center animate-fadeIn">
         <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-805 tracking-tight">Become an Affiliate Partner</h1>
-          <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1">Earn recurring commissions on platform fees</p>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-805 tracking-tight">{t("become_affiliate_partner_title", "Become an Affiliate Partner")}</h1>
+          <p className="text-[10px] sm:text-xs font-bold text-slate-404 uppercase tracking-widest mt-0.5 sm:mt-1">{t("earn_recurring_commissions_desc", "Earn recurring commissions on platform fees")}</p>
         </div>
         <p className="text-sm text-slate-500 font-semibold leading-relaxed max-w-lg mx-auto">
-          Unlock your affiliate referral links and start earning recurring commissions. Invite freelancers, contractors, or clients to LancerFlow and receive <span className="text-emerald-700 font-extrabold">10% of all service fees</span> collected from their transactions!
+          {t("unlock_affiliate_links_prefix", "Unlock your affiliate referral links and start earning recurring commissions. Invite freelancers, contractors, or clients to LancerFlow and receive")}{" "}
+          <span className="text-emerald-700 font-extrabold">
+            {t("ten_percent_service_fees_highlight", "10% of all service fees")}
+          </span>{" "}
+          {t("collected_from_transactions_suffix", "collected from their transactions!")}
         </p>
 
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm text-left flex flex-col gap-4 mt-2">
-          <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3">Why Join LancerFlow Affiliates?</h3>
+          <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3">{t("why_join_affiliates_header", "Why Join LancerFlow Affiliates?")}</h3>
           <ul className="space-y-3.5 text-xs font-semibold text-slate-500">
             <li className="flex items-start gap-2.5">
               <span className="text-emerald-600 mt-0.5 font-bold">✓</span>
-              <span><strong>Recurring Revenue</strong>: Earn a lifetime 10% cut of our platform fees from every project or gig completed by your referrals.</span>
+              <span><strong>{t("recurring_revenue_bullet", "Recurring Revenue")}</strong>: {t("recurring_revenue_bullet_desc", "Earn a lifetime 10% cut of our platform fees from every project or gig completed by your referrals.")}</span>
             </li>
             <li className="flex items-start gap-2.5">
               <span className="text-emerald-600 mt-0.5 font-bold">✓</span>
-              <span><strong>Item-Level Sharing</strong>: Generate special affiliate links for specific projects or gigs. When shared, any bookings made will earn you commissions.</span>
+              <span><strong>{t("item_level_sharing_bullet", "Item-Level Sharing")}</strong>: {t("item_level_sharing_bullet_desc", "Generate special affiliate links for specific projects or gigs. When shared, any bookings made will earn you commissions.")}</span>
             </li>
             <li className="flex items-start gap-2.5">
               <span className="text-emerald-600 mt-0.5 font-bold">✓</span>
-              <span><strong>Real-time Ledger & Dashboard</strong>: Track referred users, review pending payout cycles, and request withdrawal to your wallet.</span>
+              <span><strong>{t("real_time_ledger_bullet", "Real-time Ledger & Dashboard")}</strong>: {t("real_time_ledger_bullet_desc", "Track referred users, review pending payout cycles, and request withdrawal to your wallet.")}</span>
             </li>
           </ul>
         </div>
@@ -191,7 +197,7 @@ export default function AffiliatePortalPage() {
           onClick={() => setShowTermsModal(true)}
           className="mt-2 bg-teal-700 hover:bg-teal-850 text-white font-extrabold text-xs py-3.5 px-8 rounded-xl shadow-md transition cursor-pointer self-center border-none flex items-center gap-1.5"
         >
-          Join Affiliate Program
+          {t("join_affiliate_program_btn", "Join Affiliate Program")}
         </button>
 
         {/* Terms & Conditions Pop-up Modal rendered at body level using createPortal */}
@@ -203,13 +209,13 @@ export default function AffiliatePortalPage() {
             />
             <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-sm p-5 relative z-10 flex flex-col gap-4 text-left animate-fadeIn">
               <div>
-                <h3 className="text-sm font-black text-slate-805">Affiliate Program Agreement</h3>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Please review and agree to join</p>
+                <h3 className="text-sm font-black text-slate-805">{t("affiliate_program_agreement_title", "Affiliate Program Agreement")}</h3>
+                <p className="text-[9px] font-bold text-slate-404 uppercase tracking-widest mt-0.5">{t("please_review_agree_desc", "Please review and agree to join")}</p>
               </div>
 
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center flex flex-col items-center gap-2.5">
                 <p className="text-[10px] font-semibold text-slate-500 leading-relaxed">
-                  Before joining the program, you must read the official Affiliate Terms page:
+                  {t("before_joining_terms_desc", "Before joining the program, you must read the official Affiliate Terms page:")}
                 </p>
                 <a
                   href="/affiliate-terms"
@@ -217,7 +223,7 @@ export default function AffiliatePortalPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-[10px] font-black text-teal-700 hover:text-teal-850 hover:underline transition-all bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-xs"
                 >
-                  📄 Read Affiliate Terms
+                  {t("read_affiliate_terms_btn", "📄 Read Affiliate Terms")}
                 </a>
               </div>
 
@@ -228,7 +234,7 @@ export default function AffiliatePortalPage() {
                   onChange={(e) => setAgreed(e.target.checked)}
                   className="w-4 h-4 rounded text-teal-600 border-slate-350 focus:ring-teal-500 cursor-pointer"
                 />
-                <span className="text-xs font-bold text-slate-655">I review and accept the Affiliate Agreement Terms</span>
+                <span className="text-xs font-bold text-slate-655">{t("review_accept_agreement_terms_checkbox", "I review and accept the Affiliate Agreement Terms")}</span>
               </label>
 
               <div className="flex gap-3 justify-end pt-2 border-t border-slate-100">
@@ -238,7 +244,7 @@ export default function AffiliatePortalPage() {
                   disabled={joining}
                   className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-600 rounded-lg transition cursor-pointer disabled:opacity-50"
                 >
-                  Reject
+                  {t("reject_btn", "Reject")}
                 </button>
                 <button
                   type="button"
@@ -249,10 +255,10 @@ export default function AffiliatePortalPage() {
                   {joining ? (
                     <>
                       <div className="w-3 h-3 border-2 border-t-transparent border-white rounded-full animate-spin" />
-                      <span>Joining...</span>
+                      <span>{t("joining_btn", "Joining...")}</span>
                     </>
                   ) : (
-                    "Accept & Join"
+                    t("accept_join_btn", "Accept & Join")
                   )}
                 </button>
               </div>
@@ -273,8 +279,8 @@ export default function AffiliatePortalPage() {
       
       {/* Title */}
       <div className="select-none">
-        <h1 className="text-xl sm:text-2xl font-black text-slate-805 tracking-tight">Affiliate Portal</h1>
-        <p className="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5 sm:mt-1">Earn recurring commissions on platform fees</p>
+        <h1 className="text-xl sm:text-2xl font-black text-slate-805 tracking-tight">{t("affiliate_portal_title", "Affiliate Portal")}</h1>
+        <p className="text-[10px] sm:text-xs font-bold text-slate-404 uppercase tracking-widest mt-0.5 sm:mt-1">{t("earn_recurring_commissions_desc", "Earn recurring commissions on platform fees")}</p>
       </div>
 
       {/* Hero Promo Box */}
@@ -283,13 +289,17 @@ export default function AffiliatePortalPage() {
         
         <div className="flex-grow flex flex-col gap-3 relative z-10 text-center md:text-left">
           <span className="bg-emerald-50/70 border border-emerald-250 text-emerald-700 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full w-fit mx-auto md:mx-0">
-            Recurring Payouts
+            {t("recurring_payouts_badge", "Recurring Payouts")}
           </span>
           <h2 className="text-2xl font-black tracking-tight leading-tight text-slate-855">
-            Earn 10% of Platform Fees on Referred Users
+            {t("earn_ten_percent_platform_fees_header", "Earn 10% of Platform Fees on Referred Users")}
           </h2>
           <p className="text-slate-500 text-xs font-semibold leading-relaxed max-w-md">
-            Invite contractors or hiring managers to the platform. Unlike one-off refer rewards, you earn a <strong className="text-emerald-700">recurring 10% commission</strong> on every single service fee the platform collects from their contracts and projects!
+            {t("invite_contractors_prefix", "Invite contractors or hiring managers to the platform. Unlike one-off refer rewards, you earn a")}{" "}
+            <strong className="text-emerald-700">
+              {t("recurring_ten_percent_commission_highlight", "recurring 10% commission")}
+            </strong>{" "}
+            {t("on_every_service_fee_suffix", "on every single service fee the platform collects from their contracts and projects!")}
           </p>
         </div>
 
@@ -300,19 +310,19 @@ export default function AffiliatePortalPage() {
               🛍️
             </div>
             <div>
-              <h4 className="text-xs font-black text-slate-850 uppercase tracking-wider">Product-Specific Affiliate Links</h4>
-              <p className="text-[10px] font-extrabold text-emerald-700 mt-0.5">Share specific Gigs & Projects</p>
+              <h4 className="text-xs font-black text-slate-850 uppercase tracking-wider">{t("product_specific_affiliate_links_header", "Product-Specific Affiliate Links")}</h4>
+              <p className="text-[10px] font-extrabold text-emerald-700 mt-0.5">{t("share_specific_gigs_projects_sub", "Share specific Gigs & Projects")}</p>
             </div>
           </div>
           <p className="text-[11px] font-semibold text-slate-600 leading-relaxed bg-white/90 p-3 rounded-xl border border-emerald-150/70">
-            Affiliate referral links are item-specific. Browse any Gig or Project on the marketplace to find your unique <strong>"Copy Product Affiliate Link"</strong> button.
+            {t("affiliate_links_item_specific_desc", 'Affiliate referral links are item-specific. Browse any Gig or Project on the marketplace to find your unique "Copy Product Affiliate Link" button.')}
           </p>
           <a
             href="/gigs"
             className="inline-flex items-center justify-center gap-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-black py-2.5 px-4 rounded-xl shadow-xs transition cursor-pointer text-center no-underline border-none"
           >
-            <span>Browse Marketplace Products</span>
-            <FiArrowRight className="w-3.5 h-3.5" />
+            <span>{t("browse_marketplace_products_btn", "Browse Marketplace Products")}</span>
+            <FiArrowRight className="w-3.5 h-3.5 rtl-flip" />
           </a>
         </div>
       </div>
@@ -321,14 +331,14 @@ export default function AffiliatePortalPage() {
       <div className="bg-white border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs text-left">
         <div className="p-5 sm:p-6 border-b border-slate-150 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div>
-            <h3 className="text-base font-black text-slate-855 tracking-tight">Affiliate Link Traffic & Conversion Table</h3>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-              Admin-style detailed view of link visits, orders placed, completed sales, and earnings per link
+            <h3 className="text-base font-black text-slate-855 tracking-tight">{t("affiliate_traffic_conversion_table_title", "Affiliate Link Traffic & Conversion Table")}</h3>
+            <p className="text-[11px] font-bold text-slate-404 uppercase tracking-widest mt-0.5">
+              {t("admin_style_conversion_table_desc", "Admin-style detailed view of link visits, orders placed, completed sales, and earnings per link")}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="bg-teal-50 border border-teal-200 text-teal-700 text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-full">
-              {data?.link_breakdown?.length || 0} Links Active
+              {t("links_active_badge", "{count} Links Active").replace("{count}", String(data?.link_breakdown?.length || 0))}
             </span>
           </div>
         </div>
@@ -337,25 +347,25 @@ export default function AffiliatePortalPage() {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-100/60 select-none">
-                <th className="py-3.5 px-5">Target Page / Project Link</th>
-                <th className="py-3.5 px-4 text-center">Stage 1: Link Visits</th>
-                <th className="py-3.5 px-4 text-center">Stage 2: Orders Placed</th>
-                <th className="py-3.5 px-4 text-center">Stage 3: Completed Sales</th>
-                <th className="py-3.5 px-4 text-right">Commission Paid</th>
-                <th className="py-3.5 px-5 text-right">Last Visit Date</th>
+                <th className="py-3.5 px-5 text-left">{t("target_page_project_link_th", "Target Page / Project Link")}</th>
+                <th className="py-3.5 px-4 text-center">{t("stage_1_link_visits_th", "Stage 1: Link Visits")}</th>
+                <th className="py-3.5 px-4 text-center">{t("stage_2_orders_placed_th", "Stage 2: Orders Placed")}</th>
+                <th className="py-3.5 px-4 text-center">{t("stage_3_completed_sales_th", "Stage 3: Completed Sales")}</th>
+                <th className="py-3.5 px-4 text-right">{t("commission_paid_th", "Commission Paid")}</th>
+                <th className="py-3.5 px-5 text-right">{t("last_visit_date_th", "Last Visit Date")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {data?.link_breakdown && data.link_breakdown.length > 0 ? (
                 data.link_breakdown.map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-5 font-bold text-slate-800">
+                    <td className="py-4 px-5 font-bold text-slate-800 text-left">
                       <a
                         href={item.target_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 font-mono text-xs text-teal-800 hover:text-teal-950 font-extrabold bg-teal-50 border border-teal-200/80 px-2.5 py-1 rounded-lg hover:underline transition-all"
-                        title="Click to open page link"
+                        title={t("click_to_open_link_tooltip", "Click to open page link")}
                       >
                         <span>{item.target_url}</span>
                         <FiExternalLink className="w-3 h-3 text-teal-600 shrink-0" />
@@ -363,17 +373,17 @@ export default function AffiliatePortalPage() {
                     </td>
                     <td className="py-4 px-4 text-center">
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 font-extrabold border border-indigo-200/60">
-                        {item.unique_ips} Visitors
+                        {t("visitors_count", "{count} Visitors").replace("{count}", String(item.unique_ips))}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-center">
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber-50 text-amber-700 font-extrabold border border-amber-200/60">
-                        {item.orders_count !== undefined ? item.orders_count : (data?.orders_placed || 0)} Orders
+                        {t("orders_count_badge", "{count} Orders").replace("{count}", String(item.orders_count !== undefined ? item.orders_count : (data?.orders_placed || 0)))}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-center">
                       <span className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-extrabold border border-emerald-200/60">
-                        {item.sales_count !== undefined ? item.sales_count : (data?.total_sales || 0)} Sales
+                        {t("sales_count_badge", "{count} Sales").replace("{count}", String(item.sales_count !== undefined ? item.sales_count : (data?.total_sales || 0)))}
                       </span>
                     </td>
                     <td className="py-4 px-4 text-right font-black text-slate-900">
@@ -389,8 +399,8 @@ export default function AffiliatePortalPage() {
                   <td colSpan={6} className="py-12 text-center bg-slate-50/40">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <FiMousePointer className="w-8 h-8 text-slate-350" />
-                      <p className="text-xs font-bold text-slate-500">No referral link traffic recorded yet.</p>
-                      <p className="text-[11px] text-slate-400">Share your referral or product links to start tracking link visits and orders!</p>
+                      <p className="text-xs font-bold text-slate-500">{t("no_referral_traffic_msg", "No referral link traffic recorded yet.")}</p>
+                      <p className="text-[11px] text-slate-400">{t("share_links_tracking_desc", "Share your referral or product links to start tracking link visits and orders!")}</p>
                     </div>
                   </td>
                 </tr>
@@ -404,12 +414,12 @@ export default function AffiliatePortalPage() {
       <div className="bg-slate-100/45 border border-slate-200/60 p-6 rounded-xl flex gap-4">
         <FiInfo className="w-5 h-5 text-teal-700 shrink-0 mt-0.5" />
         <div className="text-left flex flex-col gap-2">
-          <h4 className="text-sm font-extrabold text-slate-800">Affiliate program rules</h4>
+          <h4 className="text-sm font-extrabold text-slate-800">{t("affiliate_program_rules_title", "Affiliate program rules")}</h4>
           <ol className="list-decimal pl-4 text-xs font-semibold text-slate-500 leading-relaxed space-y-1">
-            <li>Referred users must register through your unique link to bind to your affiliate account.</li>
-            <li>When referred clients pay freelancers, or referred freelancers complete paid jobs, a service fee is collected by the system.</li>
-            <li>You receive <strong>10%</strong> of that service fee as a commission.</li>
-            <li>Commissions are recorded instantly in your ledger as <strong>Pending</strong>. Once approved by the administrator, they are moved to <strong>Approved</strong> and paid directly to your wallet balance.</li>
+            <li>{t("rule_1", "Referred users must register through your unique link to bind to your affiliate account.")}</li>
+            <li>{t("rule_2", "When referred clients pay freelancers, or referred freelancers complete paid jobs, a service fee is collected by the system.")}</li>
+            <li>{t("rule_3", "You receive 10% of that service fee as a commission.")}</li>
+            <li>{t("rule_4", "Commissions are recorded instantly in your ledger as Pending. Once approved by the administrator, they are moved to Approved and paid directly to your wallet balance.")}</li>
           </ol>
         </div>
       </div>
@@ -417,50 +427,50 @@ export default function AffiliatePortalPage() {
       {/* Ledger Table */}
       <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm">
         <div className="px-6 py-4 border-b border-slate-150/70 text-left bg-slate-50/50">
-          <h3 className="text-sm font-black text-slate-805 leading-none">Commission Ledger</h3>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1 block">Real-time log of recurring commission rewards</span>
+          <h3 className="text-sm font-black text-slate-805 leading-none">{t("commission_ledger_title", "Commission Ledger")}</h3>
+          <span className="text-[10px] font-bold text-slate-404 uppercase tracking-wider mt-1 block">{t("commission_ledger_desc", "Real-time log of recurring commission rewards")}</span>
         </div>
 
         {data?.ledger && data.ledger.length > 0 ? (
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-100/10 text-[10px] font-black text-slate-400 uppercase tracking-wider select-none">
-                  <th className="px-6 py-3.5">Referred User</th>
-                  <th className="px-6 py-3.5">Platform Fee</th>
-                  <th className="px-6 py-3.5">Your Commission (10%)</th>
-                  <th className="px-6 py-3.5">3-Stage Conversion Funnel</th>
-                  <th className="px-6 py-3.5">Created Date</th>
-                  <th className="px-6 py-3.5 text-center">Status</th>
+                <tr className="border-b border-slate-100 bg-slate-100/10 text-[10px] font-black text-slate-400 uppercase tracking-wider select-none text-left">
+                  <th className="px-6 py-3.5 text-left">{t("referred_user_th", "Referred User")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("platform_fee_th", "Platform Fee")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("your_commission_th", "Your Commission (10%)")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("three_stage_funnel_th", "3-Stage Conversion Funnel")}</th>
+                  <th className="px-6 py-3.5 text-left">{t("created_date_th", "Created Date")}</th>
+                  <th className="px-6 py-3.5 text-center">{t("status_th", "Status")}</th>
                 </tr>
               </thead>
               <tbody>
                 {data.ledger.map((entry) => (
-                  <tr key={entry.commission_id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4.5">
+                  <tr key={entry.commission_id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors text-left">
+                    <td className="px-6 py-4.5 text-left">
                       <div className="flex flex-col">
                         <span className="text-xs font-black text-slate-800 leading-normal">{entry.referred_user_name}</span>
                         <span className="text-[10px] font-bold text-slate-400">{entry.referred_user_email}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4.5 text-xs font-bold text-slate-500">
+                    <td className="px-6 py-4.5 text-xs font-bold text-slate-500 text-left">
                       ${parseFloat(entry.platform_fee).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4.5 text-xs font-black text-slate-800">
+                    <td className="px-6 py-4.5 text-xs font-black text-slate-800 text-left">
                       ${parseFloat(entry.amount).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4.5">
+                    <td className="px-6 py-4.5 text-left">
                       <div className="inline-flex items-center gap-1.5 bg-slate-50 border border-slate-200/80 px-3 py-1.5 rounded-full text-[9px] font-black uppercase shadow-2xs">
-                        <span className="text-indigo-600">✓ 1. Link Clicked</span>
+                        <span className="text-indigo-600">✓ {t("funnel_step_1", "1. Link Clicked")}</span>
                         <span className="text-slate-300">→</span>
-                        <span className="text-amber-600">✓ 2. Order Placed</span>
+                        <span className="text-amber-600">✓ {t("funnel_step_2", "2. Order Placed")}</span>
                         <span className="text-slate-300">→</span>
                         <span className={entry.status === "approved" ? "text-emerald-700 font-extrabold" : "text-amber-600"}>
-                          {entry.status === "approved" ? "✓ 3. Payment Paid" : "⏳ 3. Pending Review"}
+                          {entry.status === "approved" ? `✓ ${t("funnel_step_3_paid", "3. Payment Paid")}` : `⏳ ${t("funnel_step_3_pending", "3. Pending Review")}`}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4.5 text-xs font-bold text-slate-500">
+                    <td className="px-6 py-4.5 text-xs font-bold text-slate-500 text-left">
                       {new Date(entry.created_at).toLocaleDateString(undefined, {
                         year: 'numeric',
                         month: 'short',
@@ -475,7 +485,7 @@ export default function AffiliatePortalPage() {
                           ? "bg-rose-50 text-rose-700 border border-rose-100"
                           : "bg-amber-50 text-amber-700 border border-amber-100"
                       }`}>
-                        {entry.status === "pending" ? "Pending Approval" : entry.status}
+                        {entry.status === "pending" ? t("pending_approval_status", "Pending Approval") : t(entry.status, entry.status)}
                       </span>
                     </td>
                   </tr>
@@ -489,9 +499,9 @@ export default function AffiliatePortalPage() {
               <FiActivity />
             </div>
             <div>
-              <h4 className="text-sm font-extrabold text-slate-700">No Commissions Yet</h4>
+              <h4 className="text-sm font-extrabold text-slate-700">{t("no_commissions_yet_title", "No Commissions Yet")}</h4>
               <p className="text-xs text-slate-400 max-w-xs mt-1 leading-relaxed font-semibold">
-                Share your affiliate link and start referring users. Commissions will show up here as soon as they complete transactions!
+                {t("no_commissions_yet_desc", "Share your affiliate link and start referring users. Commissions will show up here as soon as they complete transactions!")}
               </p>
             </div>
           </div>

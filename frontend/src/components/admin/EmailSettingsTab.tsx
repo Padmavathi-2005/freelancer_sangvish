@@ -3,6 +3,7 @@ import { API_URL } from "@/config/api";
 
 
 import React, { useState, useEffect } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface EmailSettingsTabProps {
   handleSaveSetting: (key: string, value: any, category?: string) => Promise<void>;
@@ -11,6 +12,7 @@ interface EmailSettingsTabProps {
 export default function EmailSettingsTab({
   handleSaveSetting
 }: EmailSettingsTabProps) {
+  const { t } = useLanguage();
 
   // Email SMTP states
   const [emailId, setEmailId] = useState("noreply@buy2lancer.com");
@@ -28,8 +30,8 @@ export default function EmailSettingsTab({
   const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [showToast, setShowToast] = useState(false);
 
-  const [toastTitle, setToastTitle] = useState("Settings Saved");
-  const [toastText, setToastText] = useState("Email configuration updated successfully.");
+  const [toastTitle, setToastTitle] = useState(t("admin_settings_saved_title", "Settings Saved"));
+  const [toastText, setToastText] = useState(t("admin_email_settings_saved_desc", "Email settings saved successfully!"));
 
   const triggerToast = (title: string, text: string) => {
     setToastTitle(title);
@@ -93,37 +95,35 @@ export default function EmailSettingsTab({
         email_copyright: emailCopyright
       }, "email_settings");
 
-      triggerToast("Settings Saved", "Email settings saved successfully!");
-      setSaveStatus({ type: "success", text: "✓ Email settings saved successfully!" });
+      triggerToast(t("admin_settings_saved_title", "Settings Saved"), t("admin_email_settings_saved_desc", "Email settings saved successfully!"));
+      setSaveStatus({ type: "success", text: "✓ " + t("admin_email_settings_saved_desc", "Email settings saved successfully!") });
       setTimeout(() => setSaveStatus(null), 4000);
     } catch (e) {
-      setSaveStatus({ type: "error", text: "Failed to save settings. Please try again." });
+      setSaveStatus({ type: "error", text: t("admin_settings_save_failed", "Failed to save settings. Please try again.") });
     } finally {
       setSaving(false);
     }
-  };
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left">
+  };  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left rtl:text-right">
       
       {/* HEADER SECTION with Save Action */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
         <div>
-          <h3 className="text-lg font-bold text-slate-850">Email SMTP Gateway Settings</h3>
-          <p className="text-slate-505 text-xs mt-0.5">Configure SMTP parameters and default sender address to trigger real automated emails to users.</p>
+          <h3 className="text-lg font-bold text-slate-855 text-left rtl:text-right">{t("admin_email_smtp_settings_title", "Email SMTP Gateway Settings")}</h3>
+          <p className="text-slate-505 text-xs mt-0.5 text-left rtl:text-right">{t("admin_email_smtp_settings_desc", "Configure SMTP parameters and default sender address to trigger real automated emails to users.")}</p>
         </div>
         <button
           onClick={handleBulkSave}
           disabled={saving}
-          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-6 py-3 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer"
+          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-6 py-3 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer border-none"
         >
-          {saving ? "Saving..." : "Save Settings"}
+          {saving ? t("admin_saving_btn", "Saving...") : t("admin_save_settings_btn", "Save Settings")}
         </button>
       </div>
 
       {/* Save Success/Error Alert banner */}
       {saveStatus && (
-        <div className={`p-4 rounded-xl text-xs font-bold border transition animate-fadeIn ${
+        <div className={`p-4 rounded-xl text-xs font-bold border transition animate-fadeIn text-left rtl:text-right ${
           saveStatus.type === "success" 
             ? "bg-emerald-50 text-emerald-700 border-emerald-100" 
             : "bg-rose-50 text-rose-700 border-rose-100"
@@ -133,65 +133,65 @@ export default function EmailSettingsTab({
       )}
 
       {/* Email settings: Sender, SMTP Host, Port, User, Pass */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800 font-sans">Email SMTP Config</h4>
-          <p className="text-xs text-slate-505 mt-1">Specify sender identity and connection credentials to dispatch system notifications.</p>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 text-slate-805 text-left rtl:text-right">
+        <div className="max-w-md text-left rtl:text-right">
+          <h4 className="text-sm font-extrabold text-slate-855 font-sans">{t("admin_email_smtp_config", "Email SMTP Config")}</h4>
+          <p className="text-xs text-slate-505 mt-1 font-semibold">{t("admin_email_smtp_config_desc", "Specify sender identity and connection credentials to dispatch system notifications.")}</p>
         </div>
         
         <div className="w-full lg:w-auto grid grid-cols-1 sm:grid-cols-2 gap-4 shrink-0">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Sender Email Address</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_sender_email_address", "Sender Email Address")}</span>
             <input
               type="email"
               value={emailId}
               onChange={(e) => setEmailId(e.target.value)}
               placeholder="noreply@buy2lancer.com"
-              className="w-full sm:w-[220px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
+              className="w-full sm:w-[220px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-855 focus:outline-none focus:border-teal-700 transition"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">SMTP Host</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_smtp_host", "SMTP Host")}</span>
             <input
               type="text"
               value={smtpHost}
               onChange={(e) => setSmtpHost(e.target.value)}
               placeholder="smtp"
-              className="w-full sm:w-[220px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
+              className="w-full sm:w-[220px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-855 focus:outline-none focus:border-teal-700 transition"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">SMTP Port</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_smtp_port", "SMTP Port")}</span>
             <input
               type="number"
               value={smtpPort}
               onChange={(e) => setSmtpPort(Number(e.target.value))}
               placeholder="2525"
-              className="w-full sm:w-[220px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition font-mono"
+              className="w-full sm:w-[220px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-855 focus:outline-none focus:border-teal-700 transition font-mono"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">SMTP Username</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_smtp_username", "SMTP Username")}</span>
             <input
               type="text"
               value={smtpUser}
               onChange={(e) => setSmtpUser(e.target.value)}
               placeholder="username"
-              className="w-full sm:w-[220px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
+              className="w-full sm:w-[220px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-855 focus:outline-none focus:border-teal-700 transition"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5 sm:col-span-2">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">SMTP Password</span>
+          <div className="flex flex-col gap-1.5 sm:col-span-2 text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_smtp_password", "SMTP Password")}</span>
             <input
               type="password"
               value={smtpPass}
               onChange={(e) => setSmtpPass(e.target.value)}
               placeholder="••••••••"
-              className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
+              className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-855 focus:outline-none focus:border-teal-700 transition"
             />
           </div>
         </div>
@@ -200,56 +200,56 @@ export default function EmailSettingsTab({
       <div className="border-t border-slate-100 my-2"></div>
 
       {/* Email Branding settings: Logo, Signature, Copyright */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-start gap-6 text-slate-800">
-        <div className="max-w-md">
-          <h4 className="text-sm font-extrabold text-slate-800 font-sans">Email Branding & Templates</h4>
-          <p className="text-xs text-slate-505 mt-1 font-medium">Customize the visual identity, signatures, and footer copyright displayed on outgoing emails.</p>
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-start gap-6 text-slate-805 text-left rtl:text-right">
+        <div className="max-w-md text-left rtl:text-right">
+          <h4 className="text-sm font-extrabold text-slate-855 font-sans">{t("admin_email_branding_templates", "Email Branding & Templates")}</h4>
+          <p className="text-xs text-slate-505 mt-1 font-semibold">{t("admin_email_branding_templates_desc", "Customize the visual identity, signatures, and footer copyright displayed on outgoing emails.")}</p>
         </div>
         
-        <div className="w-full lg:w-auto flex flex-col gap-4 shrink-0">
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Email Logo URL</span>
+        <div className="w-full lg:w-auto flex flex-col gap-4 shrink-0 text-left rtl:text-right">
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right font-sans">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_email_logo_url", "Email Logo URL")}</span>
             <input
               type="text"
               value={emailLogo}
               onChange={(e) => setEmailLogo(e.target.value)}
               placeholder="e.g. https://yourdomain.com/logo.png"
-              className="w-full lg:w-[456px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
+              className="w-full lg:w-[456px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-855 focus:outline-none focus:border-teal-700 transition"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Email Sender Signature</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right font-sans">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_email_sender_signature", "Email Sender Signature")}</span>
             <textarea
               value={emailSignature}
               onChange={(e) => setEmailSignature(e.target.value)}
               placeholder="Best regards,&#10;The Buy2Lancer Team"
               rows={3}
-              className="w-full lg:w-[456px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition resize-none font-sans"
+              className="w-full lg:w-[456px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-855 focus:outline-none focus:border-teal-700 transition resize-none font-sans text-left rtl:text-right"
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Footer Copyright Text</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right font-sans">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_footer_copyright_text", "Footer Copyright Text")}</span>
             <input
               type="text"
               value={emailCopyright}
               onChange={(e) => setEmailCopyright(e.target.value)}
               placeholder="© {{year}} {{site_name}}. All rights reserved."
-              className="w-full lg:w-[456px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-teal-700 transition"
+              className="w-full lg:w-[456px] bg-slate-50/50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-855 focus:outline-none focus:border-teal-700 transition"
             />
-            <p className="text-[10px] text-slate-400 mt-0.5 font-medium">Use <code>&#123;&#123;year&#125;&#125;</code> and <code>&#123;&#123;site_name&#125;&#125;</code> for dynamic values.</p>
+            <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{t("admin_footer_copyright_dynamic_desc", "Use {{year}} and {{site_name}} for dynamic values.")}</p>
           </div>
         </div>
       </div>
 
       {/* FLOATING SUCCESS TOAST */}
       {showToast && (
-        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-slideIn max-w-sm">
+        <div className="fixed bottom-6 right-6 z-[9999] bg-slate-900 border border-slate-700 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3.5 animate-slideIn max-w-sm text-left rtl:text-right">
           <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
             ✓
           </div>
-          <div className="flex flex-col text-left">
+          <div className="flex flex-col text-left rtl:text-right">
             <span className="text-xs font-black text-white leading-tight">{toastTitle || "Notification"}</span>
             {toastText && (
               <span className="text-[11px] font-semibold text-slate-300 mt-0.5 leading-snug">{toastText}</span>

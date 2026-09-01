@@ -11,7 +11,6 @@ import Home2Categories from "@/components/home/Home2Categories";
 import Home2PromoCards from "@/components/home/Home2PromoCards";
 import Home2FeaturesShowcase from "@/components/home/Home2FeaturesShowcase";
 import RecentProjects from "@/components/RecentProjects";
-import Home2ChatWidget from "@/components/home/Home2ChatWidget";
 import { useLanguage } from "@/context/LanguageContext";
 import { 
   FiSearch, 
@@ -74,9 +73,6 @@ export default function Home2() {
       <section className="relative overflow-hidden bg-primary/[0.05] dark:bg-primary/[0.12] pt-16 pb-20 sm:pt-20 sm:pb-24 px-4 sm:px-6 lg:px-8 select-none border-b border-primary/10">
 
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-8 relative z-10" style={{ direction: "ltr" }}>
-
-          {/* LEFT: Empty spacer (keeps layout balanced) */}
-          <div className="hidden lg:block w-60 shrink-0" />
 
           {/* CENTER: Main hero content */}
           <div className="flex-1 flex flex-col items-center text-center">
@@ -174,11 +170,6 @@ export default function Home2() {
           </div>
 
           </div>{/* end center col */}
-
-          {/* RIGHT: Animated Chat Widget */}
-          <div className="hidden lg:flex flex-col items-center justify-center w-60 h-[300px] shrink-0">
-            <Home2ChatWidget />
-          </div>
 
         </div>
       </section>

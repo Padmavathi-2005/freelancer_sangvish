@@ -7,8 +7,10 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FiInstagram, FiLinkedin, FiDownload, FiArrowRight } from "react-icons/fi";
 import { FaApple, FaGooglePlay } from "react-icons/fa";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function DownloadPage() {
+  const { t } = useLanguage();
   const [links, setLinks] = useState({
     app_store_url: "https://apps.apple.com",
     google_play_url: "https://play.google.com",
@@ -73,13 +75,13 @@ export default function DownloadPage() {
       <section className="relative w-full py-20 px-4 text-center z-10">
         <div className="max-w-4xl mx-auto flex flex-col items-center gap-4">
           <span className="bg-primary/5 border border-primary/10 text-primary text-[10px] font-black tracking-widest uppercase py-1.5 px-4 rounded-full shadow-sm shrink-0 inline-block mb-1 select-none">
-            Download Hub
+            {t("download_hub", "Download Hub")}
           </span>
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none font-display text-slate-800">
-            Connect Everywhere
+            {t("connect_everywhere", "Connect Everywhere")}
           </h1>
           <p className="text-slate-500 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed font-semibold">
-            Get the Buy2Lancer mobile app and follow our official social network profiles to stay updated.
+            {t("download_hub_hero_desc", "Get the Buy2Lancer mobile app and follow our official social network profiles to stay updated.")}
           </p>
         </div>
       </section>
@@ -127,12 +129,12 @@ export default function DownloadPage() {
                   
                   <div className="w-full space-y-2.5 mt-auto">
                     <div className="w-full bg-primary/20 border border-primary/30 rounded-xl py-2 px-3 text-[10px] text-primary font-bold flex items-center justify-between">
-                      <span>Active contracts: 14</span>
+                      <span>{t("active_contracts_count", "Active contracts: 14")}</span>
                       <FiArrowRight />
                     </div>
                     <div className="w-full bg-white text-slate-900 rounded-xl py-3 px-4 text-xs font-black shadow-sm flex items-center justify-center gap-1.5 select-none font-sans">
                       <FiDownload />
-                      <span>Download App</span>
+                      <span>{t("download_app", "Download App")}</span>
                     </div>
                   </div>
                 </div>
@@ -147,13 +149,13 @@ export default function DownloadPage() {
             <div className="bg-white border border-slate-200/50 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-slate-250 transition-all duration-300 space-y-6">
               <div>
                 <span className="bg-primary/5 border border-primary/10 text-primary text-[10px] font-black tracking-widest uppercase py-1.5 px-4 rounded-full shadow-sm shrink-0 inline-block mb-1 select-none">
-                  Buy2Lancer App
+                  {t("buy2lancer_app_label", "Buy2Lancer App")}
                 </span>
                 <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mt-3 tracking-tight leading-tight select-none">
-                  Download Mobile App
+                  {t("download_mobile_app", "Download Mobile App")}
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-2 font-medium leading-relaxed">
-                  Take your freelancing and client projects on the go. Available for both iOS and Android platforms.
+                <p className="text-xs sm:text-sm text-slate-505 mt-2 font-medium leading-relaxed">
+                  {t("download_app_desc", "Take your freelancing and client projects on the go. Available for both iOS and Android platforms.")}
                 </p>
               </div>
 
@@ -167,8 +169,8 @@ export default function DownloadPage() {
                 >
                   <FaApple className="w-8 h-8 text-white shrink-0" />
                   <div className="text-left leading-tight">
-                    <p className="text-[9px] font-medium text-slate-405 uppercase tracking-wider m-0">Download on the</p>
-                    <p className="text-sm font-black text-white m-0 font-sans">App Store</p>
+                    <p className="text-[9px] font-medium text-slate-405 uppercase tracking-wider m-0">{t("download_app_store", "Download on the")}</p>
+                    <p className="text-sm font-black text-white m-0 font-sans">{t("app_store", "App Store")}</p>
                   </div>
                 </a>
 
@@ -181,8 +183,8 @@ export default function DownloadPage() {
                 >
                   <FaGooglePlay className="w-7 h-7 text-white shrink-0" />
                   <div className="text-left leading-tight">
-                    <p className="text-[9px] font-medium text-slate-405 uppercase tracking-wider m-0">Get it on</p>
-                    <p className="text-sm font-black text-white m-0 font-sans">Google Play</p>
+                    <p className="text-[9px] font-medium text-slate-405 uppercase tracking-wider m-0">{t("google_play_get_it", "Get it on")}</p>
+                    <p className="text-sm font-black text-white m-0 font-sans">{t("google_play", "Google Play")}</p>
                   </div>
                 </a>
               </div>
@@ -192,13 +194,13 @@ export default function DownloadPage() {
             <div className="bg-white border border-slate-200/50 rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md hover:border-slate-250 transition-all duration-300 space-y-6">
               <div>
                 <span className="bg-secondary/5 border border-secondary/10 text-secondary text-[10px] font-black tracking-widest uppercase py-1.5 px-4 rounded-full shadow-sm shrink-0 inline-block mb-1 select-none">
-                  Social Channels
+                  {t("social_channels", "Social Channels")}
                 </span>
                 <h2 className="text-2xl font-black text-slate-800 mt-3 tracking-tight leading-tight select-none">
-                  Connect With Us
+                  {t("connect_with_us", "Connect With Us")}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-505 mt-2 font-medium leading-relaxed">
-                  Join our communities on social channels to get news, tips, and chat with team members.
+                  {t("social_channels_desc", "Join our communities on social channels to get news, tips, and chat with team members.")}
                 </p>
               </div>
 
@@ -210,8 +212,8 @@ export default function DownloadPage() {
                   rel="noopener noreferrer"
                   className="group flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-xl text-slate-700 hover:text-white hover:bg-gradient-to-tr hover:from-[#f9ce3f] hover:via-[#e1306c] hover:to-[#833ab4] hover:border-transparent font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
                 >
-                  <FiInstagram className="w-5 h-5 shrink-0 transition-colors" />
-                  <span className="transition-colors">Instagram</span>
+                  <FiInstagram className="w-5 h-5 shrink-0 transition-colors group-hover:text-white" />
+                  <span className="transition-colors group-hover:text-white">Instagram</span>
                 </a>
 
                 {/* LinkedIn */}
@@ -221,8 +223,8 @@ export default function DownloadPage() {
                   rel="noopener noreferrer"
                   className="group flex items-center justify-center sm:justify-start gap-3 px-6 py-4 bg-slate-50 border border-slate-200/60 rounded-xl text-slate-700 hover:text-white hover:bg-gradient-to-r hover:from-[#0077B5] hover:to-[#006295] hover:border-transparent font-bold text-xs sm:text-sm transition-all duration-300 shadow-sm no-underline font-sans active:scale-98"
                 >
-                  <FiLinkedin className="w-5 h-5 shrink-0 transition-colors" />
-                  <span className="transition-colors">LinkedIn</span>
+                  <FiLinkedin className="w-5 h-5 shrink-0 transition-colors group-hover:text-white" />
+                  <span className="transition-colors group-hover:text-white">LinkedIn</span>
                 </a>
               </div>
             </div>

@@ -677,7 +677,7 @@ export const updateUserProfile = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const { default: pool } = await import('../config/db.js');
-        const { first_name, last_name, profile_image } = req.body;
+        const { first_name, last_name, display_name, profile_image } = req.body;
 
         const currentRes = await pool.query("SELECT * FROM users WHERE user_id = $1", [userId]);
         if (currentRes.rows.length === 0) {
@@ -686,16 +686,31 @@ export const updateUserProfile = async (req, res) => {
 
         const current = currentRes.rows[0];
 
+        let cleanDisplayName = display_name !== undefined ? (display_name ? display_name.trim() : null) : current.display_name;
+        if (cleanDisplayName) {
+            if (cleanDisplayName.length > 20) {
+                return res.status(400).json({ message: "Display Name cannot exceed 20 characters." });
+            }
+
+            const checkDisp = await pool.query(
+                "SELECT user_id FROM users WHERE LOWER(display_name) = LOWER($1) AND user_id != $2",
+                [cleanDisplayName, userId]
+            );
+            if (checkDisp.rows.length > 0) {
+                return res.status(400).json({ message: "Display Name is already taken by another user." });
+            }
+        }
+
         const updatedName = first_name !== undefined ? first_name : current.first_name;
         const updatedLastName = last_name !== undefined ? last_name : current.last_name;
         const updatedImage = profile_image !== undefined ? profile_image : current.profile_image;
 
         const updateRes = await pool.query(
             `UPDATE users 
-             SET first_name = $1, last_name = $2, profile_image = $3 
-             WHERE user_id = $4 
-             RETURNING user_id, first_name, last_name, email, profile_image`,
-            [updatedName, updatedLastName, updatedImage, userId]
+             SET first_name = $1, last_name = $2, display_name = $3, profile_image = $4 
+             WHERE user_id = $5 
+             RETURNING user_id, first_name, last_name, display_name, email, profile_image`,
+            [updatedName, updatedLastName, cleanDisplayName, updatedImage, userId]
         );
 
         res.status(200).json({

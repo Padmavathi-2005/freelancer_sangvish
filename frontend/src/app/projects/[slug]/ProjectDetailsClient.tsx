@@ -403,13 +403,13 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative">
       <Header />
 
-      <main className="max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8 flex flex-col gap-6 text-left">
+      <main className="max-w-7xl mx-auto w-full py-10 px-4 sm:px-6 lg:px-8 flex flex-col gap-6 text-left rtl:text-right">
         {/* Back navigation */}
         <button
           onClick={() => router.push("/projects")}
           className="self-start text-xs font-black text-slate-500 hover:text-primary transition flex items-center gap-1.5 cursor-pointer bg-transparent border-none p-0"
         >
-          <FiArrowLeft className="w-4 h-4" />
+          <FiArrowLeft className="w-4 h-4 rtl-flip" />
           <span>{t("btn_back_to_projects", "Back to Projects")}</span>
         </button>
 
@@ -417,7 +417,7 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Column: Details */}
           <div className="lg:col-span-8 flex flex-col gap-6 self-start">
-            <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-5 relative overflow-hidden">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-5 relative overflow-hidden text-left rtl:text-right">
               <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary to-cyan-500" />
               
               <div>
@@ -517,13 +517,13 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
             
             {/* Affiliate Share card */}
             {isAffiliate && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left relative overflow-hidden">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left rtl:text-right relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-1.5">
                   <span className="text-emerald-600">★</span> {t("affiliate_share", "Affiliate Share")}
                 </h3>
                 <p className="text-[11px] font-semibold text-slate-500 leading-normal">
-                  Share this project link. If a user registers and books/completes this project, you will earn a recurring 10% commission on the platform service fee!
+                  {t("affiliate_project_share_desc", "Share this project link. If a user registers and books/completes this project, you will earn a recurring 10% commission on the platform service fee!")}
                 </p>
                 <div className="flex items-center gap-2 bg-slate-100/80 border border-slate-200 rounded-xl p-1.5 pl-3 mt-1">
                   <input
@@ -566,7 +566,7 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
                 {/* Direct Social Share Options with Affiliate Link */}
                 <div className="pt-2.5 border-t border-slate-100 flex flex-col gap-2">
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    Quick Social Share:
+                    {t("quick_social_share", "Quick Social Share:")}
                   </span>
                   <ShareSection
                     type="project"
@@ -596,15 +596,15 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
 
               {isOwner ? (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold p-3.5 rounded-xl">
-                  You are the owner of this project posting.
+                  {t("owner_of_project_posting", "You are the owner of this project posting.")}
                 </div>
               ) : isApplied ? (
                 <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold p-3.5 rounded-xl flex items-center justify-center gap-2">
                   <FiCheckCircle className="w-4 h-4 text-emerald-600" />
-                  <span>Proposal Submitted</span>
+                  <span>{t("proposal_submitted", "Proposal Submitted")}</span>
                 </div>
               ) : (
-                <form onSubmit={handleSubmitProposal} className="flex flex-col gap-3.5 text-left mt-2">
+                <form onSubmit={handleSubmitProposal} className="flex flex-col gap-3.5 text-left rtl:text-right mt-2">
                   {limitReached && (
                     <div className="p-3 bg-amber-50 border border-amber-200/80 rounded-xl text-amber-800 text-xxs font-bold leading-relaxed flex items-start gap-2">
                       <FiAlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -694,7 +694,7 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
             </div>
 
             {/* Client info card */}
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left">
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left rtl:text-right">
               <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3">
                 {t("about_client", "About Client")}
               </h3>
@@ -702,7 +702,12 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
               <div className="flex flex-col gap-3">
                 <div>
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">{t("client_name", "Client Name")}</span>
-                  <span className="text-xs font-extrabold text-slate-800 block mt-0.5">{job.company_name || job.client_name}</span>
+                  <span className="text-xs font-extrabold text-slate-800 block mt-0.5">
+                    {(() => {
+                      const clientName = job.company_name || job.client_name || "";
+                      return clientName.length > 15 ? `${clientName.substring(0, 15)}...` : clientName;
+                    })()}
+                  </span>
                 </div>
                 {job.industry && (
                   <div>
@@ -785,7 +790,7 @@ export default function ProjectDetailsClient({ initialJob, initialSlug }: Projec
 
       {/* Floating Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-[9999] bg-white border border-slate-200/80 rounded-2xl py-3.5 px-4.5 shadow-2xl shadow-slate-100 flex items-center gap-3 animate-slideUp text-left max-w-sm select-none">
+        <div className="fixed bottom-6 right-6 z-[9999] bg-white border border-slate-200/80 rounded-2xl py-3.5 px-4.5 shadow-2xl shadow-slate-100 flex items-center gap-3 animate-slideUp text-left rtl:text-right max-w-sm select-none">
           {toast.type === "success" ? (
             <div className="w-6 h-6 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 shrink-0">
               <FiCheckCircle className="w-4 h-4" />

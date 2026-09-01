@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { useLanguage } from "@/context/LanguageContext";
 import { AdminUser, useAdmin } from "@/app/admin/AdminContext";
 import {
   FiTrendingUp,
@@ -21,6 +22,7 @@ interface OverviewTabProps {
 }
 
 export default function OverviewTab({ adminUser }: OverviewTabProps) {
+  const { t, formatPrice } = useLanguage();
   const {
     usersList = [],
     projectsList = [],
@@ -255,7 +257,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
   };
 
   return (
-    <div className="flex flex-col gap-8 animate-fadeIn max-w-full overflow-x-hidden text-left">
+    <div className="flex flex-col gap-8 animate-fadeIn max-w-full overflow-x-hidden text-left rtl:text-right">
       
       {/* 1. Admin Profile Header Card */}
       <div className="relative overflow-hidden bg-white border border-slate-200 rounded-xl p-4 sm:p-6 lg:p-8 shadow-sm flex flex-col md:flex-row justify-between items-stretch md:items-center gap-4 sm:gap-6">
@@ -266,13 +268,13 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="text-lg sm:text-xl lg:text-2xl font-black text-slate-850 tracking-tight leading-tight truncate">
-              Welcome back, {adminUser?.full_name || "Administrator"}
+              {t("admin_welcome_back", "Welcome back")}, {adminUser?.full_name === "Admin" ? t("admin", "Admin") : (adminUser?.full_name === "Administrator" ? t("admin_administrator", "Administrator") : (adminUser?.full_name || t("admin_administrator", "Administrator")))}
             </h2>
             <div className="text-xs text-slate-500 mt-1 font-bold flex flex-wrap items-center gap-2">
               <span className="font-bold truncate max-w-[200px] sm:max-w-none">{adminUser?.email || "admin@freelancer.com"}</span>
               <span className="w-1 h-1 bg-slate-300 rounded-full shrink-0 hidden sm:inline-block" />
               <span className="bg-teal-700/10 text-teal-750 px-2 py-0.5 rounded-full border border-teal-700/15 uppercase text-[9px] tracking-wider font-extrabold inline-block shrink-0">
-                {adminUser?.role || "Main Admin"}
+                {t(adminUser?.role?.toLowerCase() || "main_admin", adminUser?.role || "Main Admin")}
               </span>
             </div>
           </div>
@@ -281,8 +283,8 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         <div className="w-full md:w-auto flex items-center gap-3.5 shrink-0 bg-slate-50 border border-slate-200/60 p-3.5 sm:p-4 rounded-xl">
           <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping shrink-0" />
           <div>
-            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">Session Status</div>
-            <div className="text-xs font-black text-slate-800 mt-1 block">Vetted Security Active</div>
+            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block leading-none">{t("admin_session_status", "Session Status")}</div>
+            <div className="text-xs font-black text-slate-800 mt-1 block">{t("admin_security_active", "Vetted Security Active")}</div>
           </div>
         </div>
       </div>
@@ -293,23 +295,23 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 1: Platform Revenue */}
         <div 
           onClick={() => navigateToTab("wallet_management")}
-          className="bg-white border border-slate-200 hover:border-emerald-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-emerald-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left rtl:text-right"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Net Revenue Profit</span>
+            <span className="text-[10px] font-extrabold uppercase text-slate-450 tracking-wider">{t("admin_net_revenue", "Net Revenue Profit")}</span>
             <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
               <FiTrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div>
             <h3 className="text-lg xl:text-2xl font-black text-slate-800 tracking-tight whitespace-nowrap">
-              ${totalCommissionsVal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatPrice(totalCommissionsVal)}
             </h3>
             <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5">
-              <span>{platformFee}% fee rate enabled</span>
+              <span>{platformFee}% {t("admin_fee_rate_enabled", "fee rate enabled")}</span>
               <span className="w-1 h-1 bg-slate-350 rounded-full" />
-              <span className="text-emerald-600">Active</span>
+              <span className="text-emerald-600">{t("active", "Active")}</span>
             </p>
           </div>
         </div>
@@ -317,21 +319,21 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 2: Neutral Escrow Holding */}
         <div 
           onClick={() => navigateToTab("wallet_management")}
-          className="bg-white border border-slate-200 hover:border-blue-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-blue-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left rtl:text-right"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Escrow Holdings</span>
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">{t("admin_escrow_holdings", "Escrow Holdings")}</span>
             <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
               <FiShield className="w-4 h-4" />
             </div>
           </div>
           <div>
             <h3 className="text-lg xl:text-2xl font-black text-slate-800 tracking-tight whitespace-nowrap">
-              ${totalEscrowVal.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatPrice(totalEscrowVal)}
             </h3>
             <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5">
-              <span>Held securely in active project escrows</span>
+              <span>{t("admin_held_securely", "Held securely in active project escrows")}</span>
             </p>
           </div>
         </div>
@@ -339,11 +341,11 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 3: Ongoing Projects */}
         <div 
           onClick={() => navigateToTab("projects")}
-          className="bg-white border border-slate-200 hover:border-teal-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-teal-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left rtl:text-right"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-teal-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Ongoing Projects</span>
+            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">{t("admin_ongoing_projects", "Ongoing Projects")}</span>
             <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center group-hover:scale-110 transition-transform">
               <FiBriefcase className="w-4 h-4" />
             </div>
@@ -353,7 +355,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
               {ongoingProjectsCount}
             </h3>
             <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5">
-              <span>Active contracts & gigs</span>
+              <span>{t("admin_active_contracts_gigs", "Active contracts & gigs")}</span>
             </p>
           </div>
         </div>
@@ -361,11 +363,11 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         {/* Metric 4: Disputes Cases */}
         <div 
           onClick={() => navigateToTab("transactions", "disputes")}
-          className="bg-white border border-slate-200 hover:border-rose-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left"
+          className="bg-white border border-slate-200 hover:border-rose-200 rounded-xl p-4 sm:p-5 xl:p-6 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer relative overflow-hidden text-left rtl:text-right"
         >
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-rose-500/5 to-transparent rounded-full -mr-8 -mt-8" />
           <div className="flex justify-between items-center mb-4">
-            <span className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">Active Disputes</span>
+            <span className="text-[10px] font-extrabold uppercase text-slate-450 tracking-wider">{t("admin_active_disputes", "Active Disputes")}</span>
             <div className="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform relative">
               <FiAlertCircle className="w-4 h-4" />
               {activeDisputesCount > 0 && (
@@ -378,7 +380,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
               {activeDisputesCount}
             </h3>
             <p className="text-[10px] font-semibold text-slate-400 mt-2 flex items-center gap-1.5">
-              <span>Under platform mediation</span>
+              <span>{t("admin_under_mediation", "Under platform mediation")}</span>
             </p>
           </div>
         </div>
@@ -391,9 +393,9 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
           <div className="flex items-center gap-3">
             <span className="text-2xl">⚡</span>
             <div>
-              <p className="text-xs font-black">Freelancer onboarding reviews require attention</p>
+              <p className="text-xs font-black">{t("admin_vetting_warning", "Freelancer onboarding reviews require attention")}</p>
               <p className="text-[11px] text-amber-700/80 font-bold mt-0.5">
-                There are {pendingVettingCount} contractor(s) awaiting onboarding vetting approval.
+                {t("admin_vetting_warning_desc_1", "There are")} {pendingVettingCount} {t("admin_vetting_warning_desc_2", "contractor(s) awaiting onboarding vetting approval.")}
               </p>
             </div>
           </div>
@@ -401,7 +403,7 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
             onClick={() => navigateToTab("onboarding")}
             className="text-[11px] font-black bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl transition cursor-pointer border-none shadow-sm"
           >
-            Manage Onboarding
+            {t("admin_manage_onboarding", "Manage Onboarding")}
           </button>
         </div>
       )}
@@ -410,17 +412,17 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* SVG Area Chart Card (Span 8) */}
-        <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between text-left">
+        <div className="lg:col-span-8 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between text-left rtl:text-right">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
-              <h3 className="text-base font-extrabold text-slate-800">Platform Revenue Stream</h3>
+              <h3 className="text-base font-extrabold text-slate-800">{t("admin_revenue_stream", "Platform Revenue Stream")}</h3>
               <p className="text-[11px] text-slate-400 font-bold mt-0.5">
-                Total commissions collected from contract payouts (Last 6 Months)
+                {t("admin_revenue_stream_desc", "Total commissions collected from contract payouts (Last 6 Months)")}
               </p>
             </div>
             <div className="flex items-center gap-1 bg-slate-100/70 p-1 border border-slate-200/40 rounded-xl">
               <span className="text-[9px] font-black px-2.5 py-1 bg-white text-slate-800 rounded-lg shadow-xs select-none">
-                Commissions (USD)
+                {t("admin_commissions_usd", "Commissions (USD)")}
               </span>
             </div>
           </div>
@@ -570,11 +572,11 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
         </div>
 
         {/* User Demographics split (Span 4) */}
-        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between text-left">
+        <div className="lg:col-span-4 bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col justify-between text-left rtl:text-right">
           <div>
-            <h3 className="text-base font-extrabold text-slate-800">User Demographic</h3>
+            <h3 className="text-base font-extrabold text-slate-800">{t("admin_user_demographic", "User Demographic")}</h3>
             <p className="text-[11px] text-slate-400 font-bold mt-0.5">
-              Registration ratios & directory distribution
+              {t("admin_demographic_desc", "Registration ratios & directory distribution")}
             </p>
           </div>
 
@@ -585,11 +587,11 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
               <div className="flex justify-between items-center text-xs font-bold text-slate-700">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 bg-teal-700 rounded-md" />
-                  Freelancers ({freelancerPercent}%)
+                  {t("freelancers", "Freelancers")} ({freelancerPercent}%)
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 bg-cyan-500 rounded-md" />
-                  Clients ({clientPercent}%)
+                  {t("clients", "Clients")} ({clientPercent}%)
                 </span>
               </div>
               <div className="w-full h-3.5 bg-slate-100 rounded-full overflow-hidden flex">
@@ -601,11 +603,11 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
             {/* Demographics details list */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-slate-50 border border-slate-200/50 rounded-xl">
-                <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider">Freelancers</span>
+                <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider">{t("freelancers", "Freelancers")}</span>
                 <p className="text-base font-black text-slate-800 mt-1">{userCounts.freelancers || 0}</p>
               </div>
               <div className="p-3 bg-slate-50 border border-slate-200/50 rounded-xl">
-                <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider">Clients</span>
+                <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider">{t("clients", "Clients")}</span>
                 <p className="text-base font-black text-slate-800 mt-1">{userCounts.clients || 0}</p>
               </div>
             </div>
@@ -614,10 +616,10 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
 
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-500">
             <div>
-              <span>Total Accounts</span>
+              <span>{t("admin_total_accounts", "Total Accounts")}</span>
               {userCounts.dualRole ? (
                 <span className="text-[10px] text-slate-400 font-medium block">
-                  Unique user profiles ({userCounts.dualRole} dual-role)
+                  {t("admin_unique_user_profiles", "Unique user profiles")} ({userCounts.dualRole} {t("admin_dual_role", "dual-role")})
                 </span>
               ) : null}
             </div>
@@ -628,17 +630,17 @@ export default function OverviewTab({ adminUser }: OverviewTabProps) {
       </div>
 
       {/* 5. Dynamic Platform Audit logs */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 lg:p-8 shadow-sm text-left">
+      <div className="bg-white border border-slate-200 rounded-xl p-6 lg:p-8 shadow-sm text-left rtl:text-right">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h3 className="text-base font-extrabold text-slate-800">System Activity Ledger</h3>
+            <h3 className="text-base font-extrabold text-slate-800">{t("admin_activity_ledger", "System Activity Ledger")}</h3>
             <p className="text-[11px] text-slate-400 font-bold mt-0.5">
-              Live updates gathered from active platform entries
+              {t("admin_activity_ledger_desc", "Live updates gathered from active platform entries")}
             </p>
           </div>
           <span className="flex items-center gap-1.5 text-[9px] font-black uppercase text-teal-750 bg-teal-50 border border-teal-700/15 px-2.5 py-1 rounded-full tracking-wider animate-pulse">
             <span className="w-1.5 h-1.5 bg-teal-600 rounded-full" />
-            Live Sync
+            {t("admin_live_sync", "Live Sync")}
           </span>
         </div>
 

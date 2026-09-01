@@ -7,10 +7,12 @@ import Table from "@/components/Table";
 import CustomSelect from "@/components/CustomSelect";
 import { AdminUser } from "@/app/admin/AdminContext";
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 function VettingDropdown({ status, onChange }: { status: string; onChange: (newStatus: string) => void }) {
   const [isOpen, setIsOpen] = React.useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const { t } = useLanguage();
 
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -162,6 +164,7 @@ export default function UsersTab({
   handleDeleteAdmin,
   fetchError
 }: UsersTabProps) {
+  const { t } = useLanguage();
 
   const [selectedUser, setSelectedUser] = React.useState<any | null>(null);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -195,11 +198,11 @@ export default function UsersTab({
 
   const userColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: any, idx: number) => ((usersPage - 1) * itemsPerPage) + idx + 1
     },
     {
-      header: "User Name",
+      header: t("user_name", "User Name"),
       accessor: (row: any) => (
         <div className="flex items-center gap-3">
           {row.profile_image ? (
@@ -209,7 +212,7 @@ export default function UsersTab({
               {row.first_name?.[0]?.toUpperCase() || "U"}
             </div>
           )}
-          <div className="flex flex-col text-left">
+          <div className="flex flex-col text-left rtl:text-right">
             <span className="font-bold text-slate-800 text-xs sm:text-sm">
               {row.first_name} {row.last_name || ""}
             </span>
@@ -221,9 +224,9 @@ export default function UsersTab({
       )
     },
     {
-      header: "Email & Phone",
+      header: t("email_phone", "Email & Phone"),
       accessor: (row: any) => (
-        <div className="flex flex-col text-left space-y-1">
+        <div className="flex flex-col text-left rtl:text-right space-y-1">
           <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
             <span>{row.email}</span>
             {row.email_verified && (
@@ -231,7 +234,7 @@ export default function UsersTab({
             )}
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium">
-            <span>{row.phone || "No phone"}</span>
+            <span>{row.phone || t("no_phone", "No phone")}</span>
             {row.phone_verified && (
               <span className="text-[8px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded-full" title="Phone Verified">✓</span>
             )}
@@ -240,18 +243,18 @@ export default function UsersTab({
       )
     },
     {
-      header: "Profiles & Title",
+      header: t("profiles_title", "Profiles & Title"),
       accessor: (row: any) => (
-        <div className="flex flex-col text-left space-y-1">
+        <div className="flex flex-col text-left rtl:text-right space-y-1">
           <div className="flex gap-1.5">
             {row.client_onboarding && (
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">Client</span>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">{t("client", "Client")}</span>
             )}
             {row.freelancer_onboarding && (
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">Freelancer</span>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">{t("freelancer", "Freelancer")}</span>
             )}
             {!row.client_onboarding && !row.freelancer_onboarding && (
-              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-200">No profile</span>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-50 text-slate-400 border border-slate-200">{t("no_profile", "No profile")}</span>
             )}
           </div>
           <span className="text-xs text-slate-600 font-medium truncate max-w-[180px]" title={row.professional_title || row.company_name || row.tagline}>
@@ -261,15 +264,15 @@ export default function UsersTab({
       )
     },
     {
-      header: "Location",
+      header: t("location", "Location"),
       accessor: (row: any) => (
         <span className="text-xs text-slate-600 font-medium">
-          {row.city || row.country ? `${row.city ? row.city + ", " : ""}${row.country || ""}` : "Not set"}
+          {row.city || row.country ? `${row.city ? row.city + ", " : ""}${row.country || ""}` : t("not_set", "Not set")}
         </span>
       )
     },
     {
-      header: "Vetting",
+      header: t("vetting", "Vetting"),
       accessor: (row: any) => (
         <VettingDropdown
           status={row.vetting_status}
@@ -282,26 +285,26 @@ export default function UsersTab({
       )
     },
     {
-      header: "Status",
+      header: t("status_label", "Status"),
       accessor: (row: any) => (
         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
           row.is_active !== false 
             ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" 
             : "bg-rose-50 text-rose-700 border border-rose-200"
         }`}>
-          {row.is_active !== false ? "Active" : "Blocked"}
+          {row.is_active !== false ? t("active", "Active") : t("blocked", "Blocked")}
         </span>
       )
     },
     {
-      header: "Actions",
+      header: t("actions", "Actions"),
       accessor: (row: any) => (
         <div className="flex items-center gap-2">
           <button
             onClick={() => setSelectedUser(row)}
             className="px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 rounded-lg transition-colors cursor-pointer"
           >
-            View Details
+            {t("view_details", "View Details")}
           </button>
           <button
             onClick={() => handleToggleUserActive(row.user_id)}
@@ -311,7 +314,7 @@ export default function UsersTab({
                 : "text-emerald-600 hover:bg-emerald-50 border border-emerald-200/60 bg-white"
             }`}
           >
-            {row.is_active !== false ? "Block" : "Unblock"}
+            {row.is_active !== false ? t("block", "Block") : t("unblock", "Unblock")}
           </button>
         </div>
       )
@@ -319,7 +322,7 @@ export default function UsersTab({
   ];
 
   return (
-    <div className="flex flex-col gap-6 animate-fadeIn">
+    <div className="flex flex-col gap-6 animate-fadeIn text-left rtl:text-right">
       {/* Users sub tabs */}
       <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start select-none">
         <button
@@ -330,7 +333,7 @@ export default function UsersTab({
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          Registered user accounts
+          {t("admin_registered_user_accounts", "Registered user accounts")}
         </button>
         <button
           onClick={() => setUsersSubTab("admins")}
@@ -340,29 +343,29 @@ export default function UsersTab({
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          Platform administrators
+          {t("admin_platform_administrators", "Platform administrators")}
         </button>
       </div>
 
       {usersSubTab === "users" ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left rtl:text-right">
           <div>
-            <h3 className="text-lg font-bold text-slate-800">User accounts directory</h3>
-            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Review profiles, active registration statuses, account verification flags and toggle lock/block states.</p>
+            <h3 className="text-lg font-bold text-slate-800">{t("admin_user_accounts_directory", "User accounts directory")}</h3>
+            <p className="text-slate-505 text-xs sm:text-sm mt-0.5">{t("admin_user_accounts_directory_desc", "Review profiles, active registration statuses, account verification flags and toggle lock/block states.")}</p>
           </div>
 
           {/* Onboarding Counts Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Accounts</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t("admin_total_accounts", "Total Accounts")}</span>
               <span className="text-xl font-black text-slate-900 mt-1">{userCounts.total}</span>
             </div>
             <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-              <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Onboarded Freelancers</span>
+              <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">{t("admin_onboarded_freelancers", "Onboarded Freelancers")}</span>
               <span className="text-xl font-black text-purple-700 mt-1">{userCounts.freelancers}</span>
             </div>
             <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Onboarded Clients</span>
+              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{t("admin_onboarded_clients", "Onboarded Clients")}</span>
               <span className="text-xl font-black text-blue-700 mt-1">{userCounts.clients}</span>
             </div>
           </div>
@@ -371,7 +374,7 @@ export default function UsersTab({
             <div className="relative w-full sm:w-64">
               <input
                 type="text"
-                placeholder="Search users..."
+                placeholder={t("admin_search_users_placeholder", "Search users...")}
                 value={usersSearch}
                 onChange={(e) => {
                   setUsersSearch(e.target.value);
@@ -385,12 +388,12 @@ export default function UsersTab({
             </div>
 
             <div className="flex items-center gap-2 select-none w-full sm:w-auto">
-              <span className="text-xs font-semibold text-slate-500 shrink-0">Profile Filter:</span>
+              <span className="text-xs font-semibold text-slate-500 shrink-0">{t("admin_profile_filter", "Profile Filter:")}</span>
               <CustomSelect
                 options={[
-                  { value: "all", label: "All Users" },
-                  { value: "freelancer", label: "Freelancers (Onboarded)" },
-                  { value: "client", label: "Clients (Onboarded)" }
+                  { value: "all", label: t("admin_all_users", "All Users") },
+                  { value: "freelancer", label: t("admin_freelancers_onboarded", "Freelancers (Onboarded)") },
+                  { value: "client", label: t("admin_clients_onboarded", "Clients (Onboarded)") }
                 ]}
                 value={usersFilterRole}
                 onChange={(val) => {
@@ -410,7 +413,7 @@ export default function UsersTab({
             onPageChange={setUsersPage}
             totalItems={filteredUsers.length}
             itemsPerPage={itemsPerPage}
-            emptyMessage="No registered users found."
+            emptyMessage={t("admin_no_users_found", "No registered users found.")}
           />
         </div>
       ) : (
@@ -435,16 +438,16 @@ export default function UsersTab({
                 adminsList.map((adm) => (
                   <div 
                     key={adm.admin_id} 
-                    className="p-4 bg-slate-50/50 border border-slate-200 rounded-xl flex items-center justify-between gap-4"
+                    className="p-3.5 sm:p-4 bg-slate-50/50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 min-w-0 max-w-full"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-teal-700/10 border border-teal-700/20 text-teal-750 font-extrabold flex items-center justify-center">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 rounded-full bg-teal-700/10 border border-teal-700/20 text-teal-750 font-extrabold flex items-center justify-center shrink-0">
                         {adm.full_name.charAt(0).toUpperCase()}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-800 text-sm">{adm.full_name}</span>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                          <span className="font-bold text-slate-800 text-sm truncate">{adm.full_name}</span>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
                             adm.role === "MAIN_ADMIN" 
                               ? "bg-teal-50 text-teal-700 border border-teal-200/50" 
                               : "bg-slate-100 text-slate-500 border border-slate-200"
@@ -452,7 +455,7 @@ export default function UsersTab({
                             {adm.role}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-500 block font-medium mt-0.5">{adm.email}</span>
+                        <span className="text-xs text-slate-500 block font-medium mt-0.5 truncate">{adm.email}</span>
                       </div>
                     </div>
 
@@ -460,7 +463,7 @@ export default function UsersTab({
                     {adminUser?.role === "MAIN_ADMIN" && adm.role !== "MAIN_ADMIN" && (
                       <button
                         onClick={() => handleDeleteAdmin(adm.admin_id)}
-                        className="px-3 py-1.5 bg-rose-50 border border-rose-250/50 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold text-rose-600 rounded-xl cursor-pointer"
+                        className="px-3 py-1.5 bg-rose-50 border border-rose-250/50 hover:bg-rose-500 hover:text-white transition-all text-xs font-bold text-rose-600 rounded-xl cursor-pointer shrink-0 whitespace-nowrap"
                       >
                         Remove
                       </button>

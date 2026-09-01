@@ -5,6 +5,7 @@ import { API_URL } from "@/config/api";
 import React, { useState, useEffect } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
 import CustomSelect from "@/components/CustomSelect";
+import { useLanguage } from "@/context/LanguageContext";
 
 function getAdminToken() {
   if (typeof window !== "undefined") {
@@ -28,6 +29,7 @@ export default function LandingSectionsEditor({
   handleSaveSetting,
   defaultSubTab
 }: LandingSectionsEditorProps) {
+  const { t } = useLanguage();
   const [activeSubTab, setActiveSubTab] = useState(defaultSubTab || "hero");
 
   useEffect(() => {
@@ -80,20 +82,6 @@ export default function LandingSectionsEditor({
   ]);
   const [uploadingPromoImg, setUploadingPromoImg] = useState<string | null>(null);
 
-  // Home 2 Chat Messages Settings
-  const [chatMessages, setChatMessages] = useState<any[]>([
-    { id: "1",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "Hi! I need a React developer for 3 months." },
-    { id: "2",  side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "Sure! I specialize in React & Next.js 🚀" },
-    { id: "3",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "E-commerce with real-time updates." },
-    { id: "4",  side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "Perfect, available immediately!" },
-    { id: "5",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "What's your hourly rate?" },
-    { id: "6",  side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "$85/hr. Starting this Monday." },
-    { id: "7",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "Sounds good, sending contract now." },
-    { id: "8",  side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "Got it! Signed & ready ✅" },
-    { id: "9",  side: "left",  avatar: "SJ", avatarColor: "bg-gradient-to-br from-violet-500 to-indigo-600",  text: "Milestone 1 approved. Payment released 💸" },
-    { id: "10", side: "right", avatar: "DM", avatarColor: "bg-gradient-to-br from-emerald-500 to-teal-600", text: "Thank you! Onto Milestone 2 🎯" }
-  ]);
-
   const fetchPromoCardsSettings = async () => {
     try {
       const res = await fetch(`${API_URL}/settings`);
@@ -113,36 +101,7 @@ export default function LandingSectionsEditor({
     }
   };
 
-  const fetchChatMessages = async () => {
-    try {
-      const res = await fetch(`${API_URL}/settings`);
-      if (res.ok) {
-        const data = await res.json();
-        const item = data.find((s: any) => s.setting_key === "home2_chat_messages");
-        if (item && item.setting_value) {
-          let val = item.setting_value;
-          if (typeof val === "string") {
-            try { val = JSON.parse(val); } catch (e) {}
-          }
-          if (Array.isArray(val) && val.length > 0) setChatMessages(val);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
-  const handleSaveChatMessages = async () => {
-    setSaving(true);
-    try {
-      await handleSaveSetting("home2_chat_messages", chatMessages, "frontend");
-      triggerToast("Success", "Home 2 Chat Messages updated successfully!");
-    } catch (err: any) {
-      triggerToast("Error", err.message || "Failed to save chat messages.");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handlePromoImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, cardId: string) => {
     const file = e.target.files?.[0];
@@ -320,7 +279,6 @@ export default function LandingSectionsEditor({
     fetchHowItWorksSteps();
     fetchFeaturesPool();
     fetchPromoCardsSettings();
-    fetchChatMessages();
   }, []);
 
   useEffect(() => {
@@ -380,13 +338,13 @@ export default function LandingSectionsEditor({
       await handleSaveSetting("frontend_hero_content", nextHeroContent, "frontend");
       setFrontendHeroContent(nextHeroContent);
 
-      triggerToast("Copy Saved", "Landing page sections copywriting translations saved successfully!");
+      triggerToast(t("admin_copy_saved", "Copy Saved"), t("admin_copy_saved_desc", "Landing page sections copywriting translations saved successfully!"));
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event("storage"));
       }
     } catch (e) {
       console.error(e);
-      triggerToast("Error Saving", "Failed to save translations.");
+      triggerToast(t("admin_error_saving", "Error Saving"), t("admin_error_saving_desc", "Failed to save translations."));
     } finally {
       setSaving(false);
     }
@@ -400,7 +358,7 @@ export default function LandingSectionsEditor({
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
       if (res.ok) {
-        triggerToast("Benefit Added", "New Why Choose benefit item added successfully!");
+        triggerToast(t("admin_benefit_added", "Benefit Added"), t("admin_benefit_added_desc", "New Why Choose benefit item added successfully!"));
         await fetchWhyChooseFeats();
       }
     } catch (e) {
@@ -411,7 +369,7 @@ export default function LandingSectionsEditor({
   const handleDeleteWhyChooseFeat = async (id: number, suffix: string) => {
     const key = `why_choose_feat${suffix}_title`;
     const titleText = translationsByLang[selectedContentLang]?.[key] || "this benefit";
-    if (!window.confirm(`Are you sure you want to delete "${titleText}"?`)) return;
+    if (!window.confirm(t("admin_faq_delete_confirm", "Are you sure you want to delete this item?") + ` ("${titleText}")`)) return;
 
     try {
       const res = await fetch(`${API_URL}/admin/why-choose-features/${id}`, {
@@ -419,7 +377,7 @@ export default function LandingSectionsEditor({
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
       if (res.ok) {
-        triggerToast("Benefit Deleted", "Removed benefit and translations successfully.");
+        triggerToast(t("admin_benefit_deleted", "Benefit Deleted"), t("admin_benefit_deleted_desc", "Removed benefit and translations successfully."));
         await fetchWhyChooseFeats();
       }
     } catch (e) {
@@ -435,7 +393,7 @@ export default function LandingSectionsEditor({
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
       if (res.ok) {
-        triggerToast("Step Added", "New timeline step item added successfully!");
+        triggerToast(t("admin_step_added", "Step Added"), t("admin_step_added_desc", "New timeline step item added successfully!"));
         await fetchHowItWorksSteps();
       }
     } catch (e) {
@@ -446,7 +404,7 @@ export default function LandingSectionsEditor({
   const handleDeleteHowItWorksStep = async (id: number, suffix: string) => {
     const key = `how_it_works_step${suffix}_title`;
     const titleText = translationsByLang[selectedContentLang]?.[key] || "this workflow step";
-    if (!window.confirm(`Are you sure you want to delete "${titleText}"?`)) return;
+    if (!window.confirm(t("admin_faq_delete_confirm", "Are you sure you want to delete this item?") + ` ("${titleText}")`)) return;
 
     try {
       const res = await fetch(`${API_URL}/admin/how-it-works-steps/${id}`, {
@@ -454,7 +412,7 @@ export default function LandingSectionsEditor({
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
       if (res.ok) {
-        triggerToast("Step Deleted", "Removed step and translations successfully.");
+        triggerToast(t("admin_step_deleted", "Step Deleted"), t("admin_step_deleted_desc", "Removed step and translations successfully."));
         await fetchHowItWorksSteps();
       }
     } catch (e) {
@@ -463,27 +421,27 @@ export default function LandingSectionsEditor({
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-fadeIn text-slate-800">
+    <div className="flex flex-col gap-6 animate-fadeIn text-slate-805 text-left rtl:text-right">
       
       {/* Header action */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
-        <div>
-          <h4 className="text-base font-bold text-slate-800">Landing Page Copywriting</h4>
-          <p className="text-xs text-slate-500 mt-1">Configure all main marketing texts and grids in all active languages.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100 text-left rtl:text-right">
+        <div className="text-left rtl:text-right">
+          <h4 className="text-base font-bold text-slate-855 text-left rtl:text-right">{t("admin_landing_page_copywriting", "Landing Page Copywriting")}</h4>
+          <p className="text-xs text-slate-505 mt-1 font-semibold text-left rtl:text-right">{t("admin_landing_page_copywriting_desc", "Configure all main marketing texts and grids in all active languages.")}</p>
         </div>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer"
+          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer border-none whitespace-nowrap w-full sm:w-auto text-center"
         >
-          {saving ? "Saving translations..." : "Save Copywriting Translations"}
+          {saving ? t("admin_saving_translations_btn", "Saving translations...") : t("admin_save_copywriting_btn", "Save Copywriting Translations")}
         </button>
       </div>
 
       {/* Select Language Switcher */}
-      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200/50">
-        <span className="text-xs font-bold text-slate-500">Edit translations for:</span>
-        <div className="flex items-center gap-1">
+      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200/50 flex-row rtl:flex-row-reverse text-left rtl:text-right">
+        <span className="text-xs font-bold text-slate-500 text-left rtl:text-right">{t("admin_edit_translations_for", "Edit translations for:")}</span>
+        <div className="flex items-center gap-1 flex-row rtl:flex-row-reverse">
           {(availLanguages.length > 0 ? availLanguages : [
             { name: "English", code: "EN" },
             { name: "Arabic", code: "AR" },
@@ -494,10 +452,10 @@ export default function LandingSectionsEditor({
               key={langItem.code}
               type="button"
               onClick={() => setSelectedContentLang(langItem.code.toUpperCase())}
-              className={`px-3 py-1.5 text-[11px] font-extrabold rounded-xl transition cursor-pointer ${
+              className={`px-3 py-1.5 text-[11px] font-extrabold rounded-xl transition cursor-pointer border-none ${
                 selectedContentLang === langItem.code.toUpperCase()
                   ? "bg-teal-700 text-white shadow-sm"
-                  : "text-slate-550 hover:bg-slate-150"
+                  : "text-slate-550 hover:bg-slate-150 bg-transparent"
               }`}
             >
               {langItem.code.toUpperCase()}
@@ -512,7 +470,7 @@ export default function LandingSectionsEditor({
         {activeSubTab === "hero" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hero Badge Text ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_hero_badge_text", "Hero Badge Text")} ({selectedContentLang})</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.hero_badge || ""}
@@ -522,7 +480,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Search Button Text ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_search_button_text", "Search Button Text")} ({selectedContentLang})</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.hero_search_btn || ""}
@@ -532,7 +490,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Mobile Search Label ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_mobile_search_label", "Mobile Search Label")} ({selectedContentLang})</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.search || ""}
@@ -542,7 +500,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hero Heading Title ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_hero_heading_title", "Hero Heading Title")} ({selectedContentLang})</label>
               <textarea
                 rows={2}
                 value={translationsByLang[selectedContentLang]?.hero_title || ""}
@@ -552,7 +510,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hero Subtitle Paragraph ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_hero_subtitle_paragraph", "Hero Subtitle Paragraph")} ({selectedContentLang})</label>
               <textarea
                 rows={3}
                 value={translationsByLang[selectedContentLang]?.hero_subtitle || ""}
@@ -562,7 +520,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Search Input Placeholder ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_search_input_placeholder", "Search Input Placeholder")} ({selectedContentLang})</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.hero_search_placeholder || ""}
@@ -572,7 +530,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Popular Tags Label ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_popular_tags_label", "Popular Tags Label")} ({selectedContentLang})</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.hero_popular_label || ""}
@@ -586,7 +544,7 @@ export default function LandingSectionsEditor({
         {activeSubTab === "home2_hero" && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Title Prefix ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_title_prefix", "Title Prefix")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Transform"
@@ -597,7 +555,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-amber-600 uppercase tracking-wider">Title Highlighted Text ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-amber-600 uppercase tracking-wider">{t("admin_label_title_highlighted_text", "Title Highlighted Text")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Your Team with"
@@ -608,7 +566,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Title Suffix ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_title_suffix", "Title Suffix")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Top Talent Discovery"
@@ -619,7 +577,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-3">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Hero Subtitle ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_hero_subtitle", "Hero Subtitle")} ({selectedContentLang})</label>
               <textarea
                 rows={2}
                 placeholder="e.g. Flourish in a thriving freelance ecosystem..."
@@ -630,7 +588,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Search Input Placeholder ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_search_input_placeholder", "Search Input Placeholder")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Search by keyword"
@@ -641,7 +599,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Search Filter Label ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_search_filter_label", "Search Filter Label")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Sellers"
@@ -652,7 +610,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Search Button Text ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_search_button_text", "Search Button Text")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Search"
@@ -663,7 +621,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Popular Label ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_popular_label", "Popular Label")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Popular categories"
@@ -686,11 +644,11 @@ export default function LandingSectionsEditor({
 
             {/* Home 2 Feature Banner Customization */}
             <div className="flex flex-col gap-1.5 md:col-span-3 pt-4 border-t border-slate-200/60 mt-2">
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">Home 2 Featured Banner Section</span>
+              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">{t("admin_header_home_2_featured_banner_section", "Home 2 Featured Banner Section")}</span>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Banner Badge ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_banner_badge", "Banner Badge")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Verified Global Network"
@@ -701,7 +659,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Banner Title ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_banner_title", "Banner Title")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Empowering Top Talent & Enterprise Teams Worldwide"
@@ -712,7 +670,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Banner Button Text ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_banner_button_text", "Banner Button Text")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="e.g. Explore Talent Directory"
@@ -723,7 +681,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Banner Image URL / Relative Path</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_banner_image_url_relative_path", "Banner Image URL / Relative Path")}</label>
               <input
                 type="text"
                 placeholder="/home2_banner.png"
@@ -734,7 +692,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2 border-t border-slate-100 pt-4 mt-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Categories Section Title ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_categories_section_title", "Categories Section Title")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="Trending Top Categories"
@@ -745,7 +703,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Categories Section Subtitle ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_categories_section_subtitle", "Categories Section Subtitle")} ({selectedContentLang})</label>
               <textarea
                 rows={2}
                 placeholder="At our core, we are experts in connecting local business..."
@@ -756,7 +714,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Explore Box Title ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_explore_box_title", "Explore Box Title")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="Explore Categories"
@@ -767,7 +725,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Explore Box Subtitle ({selectedContentLang})</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_explore_box_subtitle", "Explore Box Subtitle")} ({selectedContentLang})</label>
               <input
                 type="text"
                 placeholder="More categories with lots of talent available..."
@@ -784,7 +742,7 @@ export default function LandingSectionsEditor({
           <div className="flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 border border-slate-200 rounded-xl p-4">
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Features Section Badge ({selectedContentLang})</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_features_section_badge", "Features Section Badge")} ({selectedContentLang})</label>
                 <input
                   type="text"
                   placeholder="Why Choose Our Platform"
@@ -794,7 +752,7 @@ export default function LandingSectionsEditor({
                 />
               </div>
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Features Section Title ({selectedContentLang})</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_features_section_title", "Features Section Title")} ({selectedContentLang})</label>
                 <input
                   type="text"
                   placeholder="Engineered for Speed, Security, and Success"
@@ -804,7 +762,7 @@ export default function LandingSectionsEditor({
                 />
               </div>
               <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Features Section Subtitle ({selectedContentLang})</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_features_section_subtitle", "Features Section Subtitle")} ({selectedContentLang})</label>
                 <textarea
                   rows={2}
                   placeholder="Discover the core features powering top businesses..."
@@ -816,7 +774,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
-              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">Add New Feature to Pool</span>
+              <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">{t("admin_header_add_new_feature_to_pool", "Add New Feature to Pool")}</span>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <input
                   type="text"
@@ -908,14 +866,14 @@ export default function LandingSectionsEditor({
                 }}
                 className="bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs px-4 py-2 rounded-lg transition self-start cursor-pointer border-none"
               >
-                + Add Feature to Pool
+                {t("admin_add_feature_to_pool", "+ Add Feature to Pool")}
               </button>
             </div>
 
             {/* Current Pool List */}
             <div className="flex flex-col gap-3">
               <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
-                Features Pool ({featuresPool.length} Total Items Available — System randomly displays 7 on each page load)
+                {t("admin_features_pool", "Features Pool")} ({featuresPool.length} {t("admin_total_items_desc", "Total Items Available — System randomly displays 7 on each page load")})
               </span>
 
               {featuresPool.map((feat, idx) => (
@@ -959,7 +917,7 @@ export default function LandingSectionsEditor({
         {activeSubTab === "general_sections" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Trusted Companies Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_trusted_companies_title", "Trusted Companies Title")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.trusted_title || ""}
@@ -969,7 +927,7 @@ export default function LandingSectionsEditor({
             </div>
             
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Browse Categories Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_browse_categories_title", "Browse Categories Title")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.categories_title || ""}
@@ -979,7 +937,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Featured Freelancers Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_featured_freelancers_title", "Featured Freelancers Title")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.featured_title || ""}
@@ -989,7 +947,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Featured button text</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_featured_button_text", "Featured button text")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.featured_btn || ""}
@@ -999,7 +957,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Featured Freelancers Subtitle</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_featured_freelancers_subtitle", "Featured Freelancers Subtitle")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.featured_subtitle || ""}
@@ -1009,7 +967,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Popular Services Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_popular_services_title", "Popular Services Title")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.popular_services_title || ""}
@@ -1019,7 +977,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Recent Projects Section Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_recent_projects_section_title", "Recent Projects Section Title")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.recent_projects_title || ""}
@@ -1029,7 +987,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">FAQ Section Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_faq_section_title", "FAQ Section Title")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.faq_header_title || ""}
@@ -1040,11 +998,11 @@ export default function LandingSectionsEditor({
 
             {/* CTA Section Copy */}
             <div className="flex flex-col gap-1.5 md:col-span-2 border-t border-slate-100 pt-4 mt-2">
-              <label className="text-[10px] font-black text-teal-700 uppercase tracking-widest">Footer CTA Section</label>
+              <label className="text-[10px] font-black text-teal-700 uppercase tracking-widest">{t("admin_label_footer_cta_section", "Footer CTA Section")}</label>
             </div>
             
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">CTA Header Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_cta_header_title", "CTA Header Title")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.cta_title || ""}
@@ -1054,7 +1012,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">CTA Primary Button Label</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_cta_primary_button_label", "CTA Primary Button Label")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.cta_btn_primary || ""}
@@ -1064,7 +1022,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">CTA Subtitle Description</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_cta_subtitle_description", "CTA Subtitle Description")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.cta_subtitle || ""}
@@ -1074,7 +1032,7 @@ export default function LandingSectionsEditor({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">CTA Secondary Button Label</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_cta_secondary_button_label", "CTA Secondary Button Label")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.cta_btn_secondary || ""}
@@ -1085,11 +1043,11 @@ export default function LandingSectionsEditor({
 
             {/* Success Stories & Stats Copy */}
             <div className="flex flex-col gap-1.5 md:col-span-2 border-t border-slate-100 pt-4 mt-2">
-              <label className="text-[10px] font-black text-teal-700 uppercase tracking-widest">Success Stories & Stats Bar</label>
+              <label className="text-[10px] font-black text-teal-700 uppercase tracking-widest">{t("admin_label_success_stories_stats_bar", "Success Stories & Stats Bar")}</label>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Success Stories Heading Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_success_stories_heading_title", "Success Stories Heading Title")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.success_stories_title || ""}
@@ -1176,7 +1134,7 @@ export default function LandingSectionsEditor({
           <div className="flex flex-col gap-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-slate-100 pb-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Why Choose Section Title</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_why_choose_section_title", "Why Choose Section Title")}</label>
                 <input
                   type="text"
                   value={translationsByLang[selectedContentLang]?.why_choose_title || ""}
@@ -1186,7 +1144,7 @@ export default function LandingSectionsEditor({
               </div>
               
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Why Choose Section Subtitle</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_why_choose_section_subtitle", "Why Choose Section Subtitle")}</label>
                 <textarea
                   rows={2}
                   value={translationsByLang[selectedContentLang]?.why_choose_subtitle || ""}
@@ -1199,14 +1157,14 @@ export default function LandingSectionsEditor({
             {/* List of dynamic Why Choose features */}
             <div className="flex flex-col gap-4">
               <div className="flex justify-between items-center">
-                <h5 className="text-xs font-bold text-slate-700">Grid Features List</h5>
+                <h5 className="text-xs font-bold text-slate-700">{t("admin_grid_features_list", "Grid Features List")}</h5>
                 <button
                   type="button"
                   onClick={handleAddWhyChooseFeat}
-                  className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[10px] px-3.5 py-1.5 rounded-xl transition duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[10px] px-3.5 py-1.5 rounded-xl transition duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm border-none"
                 >
                   <FiPlus className="w-3.5 h-3.5" />
-                  Add Feature
+                  {t("admin_add_feature", "Add Feature")}
                 </button>
               </div>
 
@@ -1223,7 +1181,7 @@ export default function LandingSectionsEditor({
                     return (
                       <div key={feat.feature_id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 relative shadow-sm">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                          <span className="text-[10px] font-black text-[#0a5a54] uppercase tracking-wider">Benefit #{index + 1}</span>
+                          <span className="text-[10px] font-black text-[#0a5a54] uppercase tracking-wider">{t("admin_benefit_num_label", "Benefit #")}{index + 1}</span>
                           <button
                             type="button"
                             onClick={() => handleDeleteWhyChooseFeat(feat.feature_id, feat.key_suffix)}
@@ -1234,7 +1192,7 @@ export default function LandingSectionsEditor({
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Title ({selectedContentLang})</label>
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_title", "Title")} ({selectedContentLang})</label>
                           <input
                             type="text"
                             value={translationsByLang[selectedContentLang]?.[tKey] || ""}
@@ -1244,7 +1202,7 @@ export default function LandingSectionsEditor({
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Description ({selectedContentLang})</label>
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_description", "Description")} ({selectedContentLang})</label>
                           <textarea
                             rows={2}
                             value={translationsByLang[selectedContentLang]?.[dKey] || ""}
@@ -1264,7 +1222,7 @@ export default function LandingSectionsEditor({
         {activeSubTab === "how_it_works" && (
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-1.5 max-w-sm border-b border-slate-100 pb-4">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">How It Works Section Title</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_how_it_works_section_title", "How It Works Section Title")}</label>
               <input
                 type="text"
                 value={translationsByLang[selectedContentLang]?.how_it_works_title || ""}
@@ -1276,14 +1234,14 @@ export default function LandingSectionsEditor({
             {/* List of dynamic How It Works steps */}
             <div className="flex flex-col gap-4">
               <div className="flex justify-between items-center">
-                <h5 className="text-xs font-bold text-slate-700">Timeline Steps List</h5>
+                <h5 className="text-xs font-bold text-slate-700">{t("admin_timeline_steps_list", "Timeline Steps List")}</h5>
                 <button
                   type="button"
                   onClick={handleAddHowItWorksStep}
-                  className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[10px] px-3.5 py-1.5 rounded-xl transition duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-[10px] px-3.5 py-1.5 rounded-xl transition duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm border-none"
                 >
                   <FiPlus className="w-3.5 h-3.5" />
-                  Add Step
+                  {t("admin_add_step", "Add Step")}
                 </button>
               </div>
 
@@ -1300,7 +1258,7 @@ export default function LandingSectionsEditor({
                     return (
                       <div key={step.step_id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 relative shadow-sm">
                         <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                          <span className="text-[10px] font-black text-[#0a5a54] uppercase tracking-wider">Step #{index + 1}</span>
+                          <span className="text-[10px] font-black text-[#0a5a54] uppercase tracking-wider">{t("admin_step_num_label", "Step #")}{index + 1}</span>
                           <button
                             type="button"
                             onClick={() => handleDeleteHowItWorksStep(step.step_id, step.key_suffix)}
@@ -1311,7 +1269,7 @@ export default function LandingSectionsEditor({
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Title ({selectedContentLang})</label>
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_title", "Title")} ({selectedContentLang})</label>
                           <input
                             type="text"
                             value={translationsByLang[selectedContentLang]?.[tKey] || ""}
@@ -1321,7 +1279,7 @@ export default function LandingSectionsEditor({
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Description ({selectedContentLang})</label>
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_description", "Description")} ({selectedContentLang})</label>
                           <textarea
                             rows={2}
                             value={translationsByLang[selectedContentLang]?.[dKey] || ""}
@@ -1339,27 +1297,27 @@ export default function LandingSectionsEditor({
         )}
 
         {activeSubTab === "promo_cards" && (
-          <div className="flex flex-col gap-6">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-200/60">
-              <div>
-                <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider">Home Category Promo Banners</h5>
-                <p className="text-xs text-slate-500 mt-0.5">Customize the promotional banner cards displayed right after the categories section.</p>
+          <div className="flex flex-col gap-6 text-left rtl:text-right">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-200/60 flex-row rtl:flex-row-reverse text-left rtl:text-right">
+              <div className="text-left rtl:text-right">
+                <h5 className="text-xs font-black text-slate-800 uppercase tracking-wider text-left rtl:text-right">{t("admin_promo_banners_title", "Home Category Promo Banners")}</h5>
+                <p className="text-xs text-slate-505 mt-0.5 font-medium text-left rtl:text-right">{t("admin_promo_banners_desc", "Customize the promotional banner cards displayed right after the categories section.")}</p>
               </div>
               <button
                 type="button"
                 onClick={handleSavePromoCards}
                 disabled={saving}
-                className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition shadow-xs cursor-pointer"
+                className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition shadow-xs cursor-pointer border-none"
               >
-                {saving ? "Saving Promo Cards..." : "Save Promo Cards Settings"}
+                {saving ? t("admin_saving_promo_cards", "Saving Promo Cards...") : t("admin_save_promo_cards_btn", "Save Promo Cards Settings")}
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {promoCards.map((card, idx) => (
-                <div key={card.id || idx} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col gap-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                    <span className="text-xs font-black text-teal-750 uppercase tracking-wider">Promo Card #{idx + 1}</span>
+                <div key={card.id || idx} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs flex flex-col gap-4 text-left rtl:text-right">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 flex-row rtl:flex-row-reverse text-left rtl:text-right">
+                    <span className="text-xs font-black text-teal-750 uppercase tracking-wider">{t("admin_promo_card_num_label", "Promo Card #")}{idx + 1}</span>
                     <select
                       value={card.card_theme || "slate"}
                       onChange={(e) => {
@@ -1368,13 +1326,13 @@ export default function LandingSectionsEditor({
                       }}
                       className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-700 font-bold focus:outline-none"
                     >
-                      <option value="slate">Cool Slate/Blue Theme</option>
-                      <option value="amber">Warm Amber/Beige Theme</option>
+                      <option value="slate">{t("admin_theme_slate", "Cool Slate/Blue Theme")}</option>
+                      <option value="amber">{t("admin_theme_amber", "Warm Amber/Beige Theme")}</option>
                     </select>
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Eyebrow Badge Text</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_eyebrow_badge_text", "Eyebrow Badge Text")}</label>
                     <input
                       type="text"
                       value={card.eyebrow}
@@ -1387,7 +1345,7 @@ export default function LandingSectionsEditor({
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Main Card Title</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_main_card_title", "Main Card Title")}</label>
                     <input
                       type="text"
                       value={card.title}
@@ -1400,7 +1358,7 @@ export default function LandingSectionsEditor({
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Subtitle / Description</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_subtitle_description", "Subtitle / Description")}</label>
                     <textarea
                       rows={2}
                       value={card.description}
@@ -1413,7 +1371,7 @@ export default function LandingSectionsEditor({
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Button Redirect Link URL</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_button_redirect_link_url", "Button Redirect Link URL")}</label>
                     <input
                       type="text"
                       value={card.link_url}
@@ -1427,7 +1385,7 @@ export default function LandingSectionsEditor({
                   </div>
 
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Card Image</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_label_card_image", "Card Image")}</label>
                     <div className="flex items-center gap-3">
                       {card.image_url && (
                         <div className="w-16 h-12 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
@@ -1462,123 +1420,6 @@ export default function LandingSectionsEditor({
           </div>
         )}
 
-        {activeSubTab === "home2_chat_messages" && (
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-              <div>
-                <h4 className="text-sm font-black text-slate-800">Home 2 Hero Chat Messages</h4>
-                <p className="text-xs text-slate-500 font-medium mt-0.5">
-                  Configure the simulated chat conversation displayed on the right side of the Home 2 Hero section.
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newId = String(Date.now());
-                    setChatMessages((prev) => [
-                      ...prev,
-                      {
-                        id: newId,
-                        side: prev.length % 2 === 0 ? "left" : "right",
-                        avatar: prev.length % 2 === 0 ? "SJ" : "DM",
-                        avatarColor: prev.length % 2 === 0
-                          ? "bg-gradient-to-br from-violet-500 to-indigo-600"
-                          : "bg-gradient-to-br from-emerald-500 to-teal-600",
-                        text: "New conversation message..."
-                      }
-                    ]);
-                  }}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs px-4 py-2.5 rounded-xl transition cursor-pointer border border-slate-200 flex items-center gap-1.5"
-                >
-                  <FiPlus className="w-3.5 h-3.5" />
-                  <span>Add Message</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveChatMessages}
-                  disabled={saving}
-                  className="bg-teal-700 hover:bg-teal-800 text-white font-black text-xs px-6 py-2.5 rounded-xl transition cursor-pointer shadow-md disabled:opacity-50 border-none"
-                >
-                  {saving ? "Saving..." : "Save"}
-                </button>
-              </div>
-            </div>
-
-            {/* List of Messages */}
-            <div className="grid grid-cols-1 gap-4">
-              {chatMessages.map((msg, idx) => (
-                <div
-                  key={msg.id || idx}
-                  className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center gap-4 shadow-xs"
-                >
-                  {/* Speaker badge & order number */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs font-black text-slate-400 w-6">#{idx + 1}</span>
-                    <select
-                      value={msg.side}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setChatMessages((prev) =>
-                          prev.map((m, i) => (i === idx ? { ...m, side: val } : m))
-                        );
-                      }}
-                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none"
-                    >
-                      <option value="left">Client (Left)</option>
-                      <option value="right">Freelancer (Right)</option>
-                    </select>
-                  </div>
-
-                  {/* Avatar Initials */}
-                  <div className="flex flex-col gap-1 w-24 shrink-0">
-                    <span className="text-[9px] font-black text-slate-400 uppercase">Initials</span>
-                    <input
-                      type="text"
-                      maxLength={3}
-                      value={msg.avatar}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setChatMessages((prev) =>
-                          prev.map((m, i) => (i === idx ? { ...m, avatar: val } : m))
-                        );
-                      }}
-                      className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 uppercase focus:outline-none text-center"
-                    />
-                  </div>
-
-                  {/* Message Text */}
-                  <div className="flex-1 flex flex-col gap-1 w-full min-w-0">
-                    <span className="text-[9px] font-black text-slate-400 uppercase">Message Text</span>
-                    <input
-                      type="text"
-                      value={msg.text}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setChatMessages((prev) =>
-                          prev.map((m, i) => (i === idx ? { ...m, text: val } : m))
-                        );
-                      }}
-                      className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-teal-750 w-full"
-                    />
-                  </div>
-
-                  {/* Delete button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setChatMessages((prev) => prev.filter((_, i) => i !== idx));
-                    }}
-                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition cursor-pointer shrink-0 self-end md:self-center"
-                    title="Delete Message"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -275,13 +275,13 @@ export default function FreelancerProjectsTab() {
         ) : (
           <>
             {/* Navigation Tabs */}
-            <div className="flex justify-between items-center border-b border-slate-100 pb-4">
-              <div className="flex gap-2">
+            <div className="flex items-center border-b border-slate-100 pb-4 overflow-x-auto hide-scrollbar -mx-6 px-6 sm:mx-0 sm:px-0">
+              <div className="flex gap-2 min-w-max">
                 {(["ongoing", "completed", "cancelled", "all"] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveSubTab(tab)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer capitalize ${
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer capitalize whitespace-nowrap ${
                       activeSubTab === tab
                         ? "bg-teal-700 text-white shadow-md shadow-teal-700/10"
                         : "text-slate-550 hover:text-slate-800 hover:bg-slate-50"

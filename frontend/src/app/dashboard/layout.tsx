@@ -38,14 +38,14 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { DashboardProvider, useDashboard } from "./DashboardContext";
-import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX, FiClock, FiShield, FiSearch, FiMail, FiTrendingUp, FiBriefcase, FiUsers, FiPlus, FiFileText, FiChevronDown, FiUploadCloud } from "react-icons/fi";
+import { FiCheckCircle, FiZap, FiAlertTriangle, FiCheck, FiMenu, FiX, FiClock, FiShield, FiSearch, FiMail, FiTrendingUp, FiBriefcase, FiUsers, FiPlus, FiFileText, FiChevronDown, FiUploadCloud, FiLogOut } from "react-icons/fi";
 import NotificationsDropdown from "@/components/dashboard/NotificationsDropdown";
 import CustomSelect from "@/components/CustomSelect";
 import { useLanguage } from "@/context/LanguageContext";
 import ReferralCelebrationModal from "@/components/ReferralCelebrationModal";
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
-  const { t } = useLanguage();
+  const { lang, direction, currency, currencySymbol, activeLanguages, currencies, changeLanguage, changeCurrency, t } = useLanguage();
   const {
     userName,
     profileImage,
@@ -497,6 +497,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
   const clientScrollRef = React.useRef<HTMLDivElement>(null);
   const freelancerScrollRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (clientScrollRef.current) {
+      clientScrollRef.current.scrollTop = 0;
+    }
+  }, [clientWizardStep]);
+
+  React.useEffect(() => {
+    if (freelancerScrollRef.current) {
+      freelancerScrollRef.current.scrollTop = 0;
+    }
+  }, [wizardStep]);
 
   React.useEffect(() => {
     if (clientError && clientScrollRef.current) {
@@ -1130,7 +1142,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {t("settings_menu", "Settings")}
+                {t("profile_settings_menu", "Profile Settings")}
               </button>
             </div>
           </nav>
@@ -1544,7 +1556,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {t("settings_menu", "Settings")}
+                {t("profile_settings_menu", "Profile Settings")}
               </button>
             </div>
           </nav>
@@ -1552,8 +1564,64 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
         {/* Sidebar Footer User Details */}
         <div className="p-4 border-t border-slate-200 bg-slate-50 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
+          {/* Mobile/Sidebar Language & Currency Switchers */}
+          <div className="lg:hidden flex items-center justify-between gap-3 border-b border-slate-200 pb-3 mb-1">
+            {/* Language Switcher */}
+            <div className="relative group/side-lang flex-1">
+              <button
+                className="w-full justify-center hover:text-primary font-bold text-[11px] flex items-center gap-1.5 cursor-pointer bg-white hover:bg-slate-50 px-2 py-1.5 rounded-xl border border-slate-200 transition-all duration-200 text-slate-700"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253" />
+                </svg>
+                {lang}
+              </button>
+              <div 
+                dir="ltr" 
+                style={{ bottom: "100%", left: 0 }} 
+                className="absolute mb-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/side-lang:opacity-100 group-hover/side-lang:visible transition-all duration-150 z-50 max-h-48 overflow-y-auto scrollbar-thin"
+              >
+                {activeLanguages.map((l: any, idx: number) => (
+                  <button
+                    key={l.code || idx}
+                    onClick={() => changeLanguage(l.code)}
+                    className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors cursor-pointer hover:bg-slate-50 border-0 bg-transparent ${lang === l.code ? "text-teal-700 bg-teal-50/50" : "text-slate-600"}`}
+                  >
+                    <span>{l.name}</span>
+                    <span className="text-[10px] text-slate-400 font-bold">({l.code})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Currency Switcher */}
+            <div className="relative group/side-curr flex-1">
+              <button
+                className="w-full justify-center hover:text-primary font-bold text-[11px] flex items-center gap-1 cursor-pointer bg-white hover:bg-slate-50 px-2 py-1.5 rounded-xl border border-slate-200 transition-all duration-200 text-slate-700"
+              >
+                <span className="font-extrabold text-primary mr-0.5">{currencySymbol}</span>
+                {currency}
+              </button>
+              <div 
+                dir="ltr" 
+                style={{ bottom: "100%", right: 0 }} 
+                className="absolute mb-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/side-curr:opacity-100 group-hover/side-curr:visible transition-all duration-150 z-50 max-h-48 overflow-y-auto scrollbar-thin"
+              >
+                {currencies.map((c: any, idx: number) => (
+                  <button
+                    key={c.code || idx}
+                    onClick={() => changeCurrency(c.code)}
+                    className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors cursor-pointer hover:bg-slate-50 border-0 bg-transparent ${currency === c.code ? "text-teal-700 bg-teal-50/50" : "text-slate-600"}`}
+                  >
+                    <span className="text-teal-600 font-black mr-1">{c.symbol}</span> {c.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold text-white shadow-sm select-none shrink-0 overflow-hidden relative bg-gradient-to-tr from-teal-700 to-cyan-500">
                 <span className="font-extrabold text-white">
                   {userName ? userName.substring(0, 2).toUpperCase() : "US"}
@@ -1569,9 +1637,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   />
                 )}
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-bold text-slate-800 truncate">{userName}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate leading-snug">
+                  {userName}
+                </p>
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                  <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-teal-100 dark:bg-teal-950/80 text-teal-900 dark:text-teal-200 border border-teal-300/60">
+                    {userRole === "client" ? t("client_role", "Client") : t("freelancer_role", "Freelancer")}
+                  </span>
                   <button
                     onClick={() => setActiveTab("wallet")}
                     className="inline-flex items-center gap-1 text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0 shadow-2xs hover:bg-emerald-100 transition-colors cursor-pointer"
@@ -1580,13 +1653,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     <span>💳</span>
                     <span>${parseFloat(walletInfo?.wallet?.balance || "0.00").toFixed(2)}</span>
                   </button>
-                </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">{userRole === "client" ? t("client_role", "Client") : t("freelancer_role", "Freelancer")}</p>
                   {parseFloat(walletInfo?.wallet?.pending_bonus_balance || "0") > 0 && (
                     <span 
                       onClick={() => setActiveTab("wallet")}
-                      className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.2 rounded-md cursor-pointer hover:bg-amber-100" 
+                      className="text-[9px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md cursor-pointer hover:bg-amber-100" 
                       title="Pending Admin Payout Approval"
                     >
                       +${parseFloat(walletInfo.wallet.pending_bonus_balance).toFixed(2)} Pending
@@ -1597,17 +1667,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
             <button
               onClick={handleLogout}
-              className="text-xs font-bold text-rose-600 hover:text-rose-700 transition-colors px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-100 hover:bg-rose-100 cursor-pointer shadow-sm lg:hidden shrink-0"
+              className="w-full text-xs font-black text-rose-700 dark:text-rose-400 hover:text-rose-800 transition-colors py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/50 hover:bg-rose-100 cursor-pointer shadow-2xs flex items-center justify-center gap-1.5 lg:hidden"
             >
-              {t("logout_btn", "Logout")}
+              <FiLogOut className="w-3.5 h-3.5" />
+              <span>{t("logout_btn", "Logout")}</span>
             </button>
           </div>
         </div>
       </aside>
 
       {/* MAIN CONTAINER */}
-      <div className="flex-1 flex flex-col max-w-full lg:h-screen lg:overflow-hidden relative z-10 print:h-auto print:overflow-visible print:block">
-        <header className="h-16 w-full bg-white border-b border-slate-200 px-6 flex flex-row items-center justify-between relative z-50 shrink-0 shadow-sm print:hidden">
+      <div className="flex-1 flex flex-col max-w-full h-screen overflow-hidden relative z-10 print:h-auto print:overflow-visible print:block">
+        <header className="h-16 w-full bg-white border-b border-slate-200 px-6 flex flex-row items-center justify-between sticky top-0 z-50 shrink-0 shadow-sm print:hidden">
           {/* Left: Mobile hamburger menu toggle & role switch */}
           <div className="flex items-center gap-3">
             <button
@@ -1628,6 +1699,59 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-4 relative">
+            {/* Desktop Language Switcher */}
+            <div className="hidden md:block relative group/lang z-50">
+              <button
+                className="hover:text-primary font-bold text-xs flex items-center gap-1.5 cursor-pointer bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-all duration-200 text-slate-700"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A9.015 9.015 0 013 12c0-.778.099-1.533.284-2.253" />
+                </svg>
+                {lang}
+              </button>
+              <div 
+                dir="ltr" 
+                style={{ left: direction?.toUpperCase() === "RTL" ? 0 : "auto", right: direction?.toUpperCase() === "RTL" ? "auto" : 0 }} 
+                className="absolute mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/lang:opacity-100 group-hover/lang:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin"
+              >
+                {activeLanguages.map((l: any, idx: number) => (
+                  <button
+                    key={l.code || idx}
+                    onClick={() => changeLanguage(l.code)}
+                    className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors cursor-pointer hover:bg-slate-50 border-0 bg-transparent ${lang === l.code ? "text-teal-700 bg-teal-50/50" : "text-slate-600"}`}
+                  >
+                    <span>{l.name}</span>
+                    <span className="text-[10px] text-slate-400 font-bold">({l.code})</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Desktop Currency Switcher */}
+            <div className="hidden md:block relative group/curr z-50">
+              <button
+                className="hover:text-primary font-bold text-xs flex items-center gap-1 cursor-pointer bg-slate-50 hover:bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 transition-all duration-200 text-slate-700"
+              >
+                <span className="font-extrabold text-primary mr-0.5">{currencySymbol}</span>
+                {currency}
+              </button>
+              <div 
+                dir="ltr" 
+                style={{ left: direction?.toUpperCase() === "RTL" ? 0 : "auto", right: direction?.toUpperCase() === "RTL" ? "auto" : 0 }} 
+                className="absolute mt-1.5 w-36 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 opacity-0 invisible group-hover/curr:opacity-100 group-hover/curr:visible transition-all duration-150 z-50 max-h-64 overflow-y-auto scrollbar-thin"
+              >
+                {currencies.map((c: any, idx: number) => (
+                  <button
+                    key={c.code || idx}
+                    onClick={() => changeCurrency(c.code)}
+                    className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors cursor-pointer hover:bg-slate-50 border-0 bg-transparent ${currency === c.code ? "text-teal-700 bg-teal-50/50" : "text-slate-600"}`}
+                  >
+                    <span className="text-teal-655 font-black mr-1">{c.symbol}</span> {c.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Theme Toggle Button */}
             <button
               onClick={() => {
@@ -1828,10 +1952,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
               <div className="relative z-10 flex items-center justify-between border-b border-slate-100/55 pb-4 mb-6 pr-16 sm:pr-24 text-left">
                 <div>
-                  <span className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase">Client Onboarding</span>
-                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Step {clientWizardStep} of {totalClientSteps}</h2>
+                  <span className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase">{t("client_onboarding_title", "Client Onboarding")}</span>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">{t("onboarding_step_of_total", "Step {current} of {total}").replace("{current}", clientWizardStep.toString()).replace("{total}", totalClientSteps.toString())}</h2>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="hidden sm:flex gap-1.5">
                   {Array.from({ length: totalClientSteps }, (_, i) => i + 1).map((step) => (
                     <div
                       key={step}
@@ -1847,7 +1971,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <div ref={clientScrollRef} className="relative z-10 flex-grow overflow-y-auto no-scrollbar pr-4 text-left">
+              <div ref={clientScrollRef} className="relative z-10 flex-grow overflow-y-auto pe-4 text-start">
                 {clientError && (
                   <div className="p-3.5 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-semibold rounded-xl mb-4">
                     ⚠️ {clientError}
@@ -1856,28 +1980,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {clientSuccess && (
                   <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold rounded-xl mb-4 animate-pulse">
                     {clientWizardStep === totalClientSteps 
-                      ? "🎉 Setup complete! Redirecting to workspace..." 
-                      : "🎉 Section saved! Moving to next step..."}
+                      ? t("client_setup_complete", "🎉 Setup complete! Redirecting to workspace...") 
+                      : t("client_section_saved", "🎉 Section saved! Moving to next step...")}
                   </div>
                 )}
 
                 {/* STEP 1: COMPANY BASICS */}
                 {clientWizardStep === 1 && (
                   <div className="space-y-4">
-                    <h3 className="text-base font-black text-slate-900">Company Basics</h3>
+                    <h3 className="text-base font-black text-slate-900">{t("company_basics_title", "Company Basics")}</h3>
                     <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
-                      Let's set up the basic credentials of your organization or business.
+                      {t("company_basics_desc", "Let's set up the basic credentials of your organization or business.")}
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {isFieldEnabled("company_name") && (
                         <div className="sm:col-span-2">
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Company Name {isFieldRequired("company_name") ? "*" : ""}
+                            {t("company_name_label", "Company Name")} {isFieldRequired("company_name") ? "*" : ""}
                           </label>
                           <input
                             type="text"
-                            placeholder="e.g. Acme Corporation"
+                            placeholder={t("company_name_placeholder", "e.g. Acme Corporation")}
                             value={companyName}
                             onChange={(e) => {
                               setCompanyName(e.target.value);
@@ -1898,18 +2022,18 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("industry") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Industry {isFieldRequired("industry") ? "*" : ""}
+                            {t("industry_label", "Industry")} {isFieldRequired("industry") ? "*" : ""}
                           </label>
                           <div className={clientFieldErrors.industry ? "rounded-xl border border-rose-400 p-0.5" : ""}>
                             <CustomSelect
                               options={[
-                                { value: "Technology", label: "Technology & Software" },
-                                { value: "Finance", label: "Finance & Banking" },
-                                { value: "Healthcare", label: "Healthcare & Medicine" },
-                                { value: "Education", label: "Education & EdTech" },
-                                { value: "Marketing", label: "Marketing & Advertising" },
-                                { value: "Retail", label: "Retail & E-commerce" },
-                                { value: "Other", label: "Other Industry" }
+                                { value: "Technology", label: t("ind_technology", "Technology & Software") },
+                                { value: "Finance", label: t("ind_finance", "Finance & Banking") },
+                                { value: "Healthcare", label: t("ind_healthcare", "Healthcare & Medicine") },
+                                { value: "Education", label: t("ind_education", "Education & EdTech") },
+                                { value: "Marketing", label: t("ind_marketing", "Marketing & Advertising") },
+                                { value: "Retail", label: t("ind_retail", "Retail & E-commerce") },
+                                { value: "Other", label: t("ind_other", "Other Industry") }
                               ]}
                               value={industry}
                               onChange={(val) => {
@@ -1918,7 +2042,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   setClientFieldErrors((prev) => ({ ...prev, industry: "" }));
                                 }
                               }}
-                              placeholder="Select Industry"
+                              placeholder={t("select_industry_placeholder", "Select Industry")}
                             />
                           </div>
                           {clientFieldErrors.industry && (
@@ -1932,16 +2056,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("company_size") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Company Size {isFieldRequired("company_size") ? "*" : ""}
+                            {t("company_size_label", "Company Size")} {isFieldRequired("company_size") ? "*" : ""}
                           </label>
                           <div className={clientFieldErrors.company_size ? "rounded-xl border border-rose-400 p-0.5" : ""}>
                             <CustomSelect
                               options={[
-                                { value: "1-10", label: "1-10 employees" },
-                                { value: "11-50", label: "11-50 employees" },
-                                { value: "51-200", label: "51-200 employees" },
-                                { value: "201-500", label: "201-500 employees" },
-                                { value: "500+", label: "500+ employees" }
+                                { value: "1-10", label: t("size_1_10", "1-10 employees") },
+                                { value: "11-50", label: t("size_11_50", "11-50 employees") },
+                                { value: "51-200", label: t("size_51_200", "51-200 employees") },
+                                { value: "201-500", label: t("size_201_500", "201-500 employees") },
+                                { value: "500+", label: t("size_500_plus", "500+ employees") }
                               ]}
                               value={companySize}
                               onChange={(val) => {
@@ -1950,7 +2074,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   setClientFieldErrors((prev) => ({ ...prev, company_size: "" }));
                                 }
                               }}
-                              placeholder="Select Company Size"
+                              placeholder={t("select_company_size_placeholder", "Select Company Size")}
                             />
                           </div>
                           {clientFieldErrors.company_size && (
@@ -1964,7 +2088,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("established_year") && (
                         <div className="sm:col-span-2">
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Established Year {isFieldRequired("established_year") ? "*" : ""}
+                            {t("established_year_label", "Established Year")} {isFieldRequired("established_year") ? "*" : ""}
                           </label>
                           <input
                             type="number"
@@ -1994,16 +2118,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {/* STEP 2: COMPANY PRESENCE & DETAILS */}
                 {clientWizardStep === 2 && (
                   <div className="space-y-4">
-                    <h3 className="text-base font-black text-slate-900">Company Presence & Details</h3>
+                    <h3 className="text-base font-black text-slate-900">{t("company_presence_details_title", "Company Presence & Details")}</h3>
                     <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
-                      Provide details about your company website and description to build trust with candidates.
+                      {t("company_presence_details_desc", "Provide details about your company website and description to build trust with candidates.")}
                     </p>
 
                     <div className="space-y-4">
                       {isFieldEnabled("company_website") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Website URL {isFieldRequired("company_website") ? "*" : ""}
+                            {t("website_url_label", "Website URL")} {isFieldRequired("company_website") ? "*" : ""}
                           </label>
                           <input
                             type="url"
@@ -2028,10 +2152,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("company_description") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Company Description {isFieldRequired("company_description") ? "*" : ""}
+                            {t("company_description_label", "Company Description")} {isFieldRequired("company_description") ? "*" : ""}
                           </label>
                           <textarea
-                            placeholder="Tell us about what your business does, your mission, and your work culture..."
+                            placeholder={t("company_description_placeholder", "Tell us about what your business does, your mission, and your work culture...")}
                             value={companyDescription}
                             onChange={(e) => {
                               setCompanyDescription(e.target.value);
@@ -2055,16 +2179,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {/* STEP 3: REPRESENTATIVE CONTACT DETAILS */}
                 {clientWizardStep === 3 && (
                   <div className="space-y-4">
-                    <h3 className="text-base font-black text-slate-900">Hiring Contact Details</h3>
+                    <h3 className="text-base font-black text-slate-900">{t("hiring_contact_details_title", "Hiring Contact Details")}</h3>
                     <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
-                      Provide the contact representative details who will be interacting and hiring freelancers.
+                      {t("hiring_contact_details_desc", "Provide the contact representative details who will be interacting and hiring freelancers.")}
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {isFieldEnabled("hiring_contact_name") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Hiring Contact Name {isFieldRequired("hiring_contact_name") ? "*" : ""}
+                            {t("hiring_contact_name_label", "Hiring Contact Name")} {isFieldRequired("hiring_contact_name") ? "*" : ""}
                           </label>
                           <input
                             type="text"
@@ -2089,7 +2213,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("hiring_contact_designation") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Hiring Contact Designation {isFieldRequired("hiring_contact_designation") ? "*" : ""}
+                            {t("hiring_contact_designation_label", "Hiring Contact Designation")} {isFieldRequired("hiring_contact_designation") ? "*" : ""}
                           </label>
                           <input
                             type="text"
@@ -2118,7 +2242,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {clientWizardStep >= 4 && (
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-base font-black text-slate-900">Document Verification</h3>
+                      <h3 className="text-base font-black text-slate-900">
+                        {clientWizardStep === 4 
+                          ? t("document_verification_title", "Document Verification") 
+                          : clientWizardStep === 5 
+                          ? t("documents", "Documents") 
+                          : t("onboarding_step_num", "Onboarding Step {num}").replace("{num}", clientWizardStep.toString())}
+                      </h3>
                       <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
                         Please upload valid evidence for the following documents. These will be reviewed by our compliance team.
                       </p>
@@ -2129,13 +2259,15 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <div className="flex items-center justify-center py-10">
                           <div className="w-6 h-6 border-2 border-t-transparent border-emerald-500 rounded-full animate-spin" />
                         </div>
-                      ) : enabledDocFields.length === 0 ? (
+                      ) : enabledDocFields.filter(f => f.step_number === clientWizardStep || (clientWizardStep === 4 && !f.step_number)).length === 0 ? (
                         <div className="p-8 text-center text-slate-400 font-semibold text-xs bg-slate-50 rounded-xl border border-slate-200/50">
-                          No document verification required. You can complete onboarding.
+                          {t("no_verification_required_msg", "No verification required for this step. You can proceed.")}
                         </div>
                       ) : (
-                        enabledDocFields.map((field) => {
-                          const userDoc = userUploadedDocs.find(d => d.field_id === field.field_id);
+                        enabledDocFields
+                          .filter(f => f.step_number === clientWizardStep || (clientWizardStep === 4 && !f.step_number))
+                          .map((field) => {
+                            const userDoc = userUploadedDocs.find(d => d.field_id === field.field_id);
                           const isUploaded = !!userDoc;
                           const status = userDoc?.status || "Pending";
                           const isUploading = !!uploadingFields[field.field_id];
@@ -2145,21 +2277,21 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           return (
                             <div key={field.field_id} className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all duration-200 text-left space-y-4 relative overflow-hidden group">
                               {/* Field Header */}
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex items-center gap-3.5">
+                              <div className="flex flex-wrap items-start justify-between gap-3">
+                                <div className="flex items-start gap-3 min-w-0 flex-1">
                                   <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200/80 flex items-center justify-center text-emerald-600 shrink-0 shadow-2xs">
                                     <FiFileText className="w-5 h-5 text-emerald-600" />
                                   </div>
-                                  <div>
-                                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
-                                      <span>{field.field_name}</span>
+                                  <div className="min-w-0 flex-1">
+                                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex flex-wrap items-baseline gap-1">
+                                      <span>{t(field.field_name, field.field_name)}</span>
                                       {isFieldRequired ? (
-                                        <span className="text-rose-500 font-black text-sm leading-none ml-0.5 select-none" title="Required Field">*</span>
+                                        <span className="text-rose-500 font-black text-sm leading-none ml-0.5 select-none shrink-0" title="Required Field">*</span>
                                       ) : (
-                                        <span className="text-[10px] font-bold text-slate-400 normal-case ml-1 select-none tracking-normal">(Optional)</span>
+                                        <span className="text-[10px] font-bold text-slate-400 normal-case ml-1 select-none tracking-normal shrink-0">{t("optional_label", "(Optional)")}</span>
                                       )}
                                     </h4>
-                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-normal">{field.field_description}</p>
+                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-normal">{t(field.field_description, field.field_description)}</p>
                                   </div>
                                 </div>
 
@@ -2171,7 +2303,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                       ? "bg-rose-50 text-rose-700 border-rose-200"
                                       : "bg-amber-50 text-amber-700 border-amber-200"
                                   }`}>
-                                    {status === "Approved" ? "✓ Approved" : status === "Rejected" ? "✕ Rejected" : "⏳ Audit Pending"}
+                                    {status === "Approved" ? t("status_approved_badge", "✓ Approved") : status === "Rejected" ? t("status_rejected_badge", "✕ Rejected") : t("status_pending_badge", "⏳ Audit Pending")}
                                   </span>
                                 )}
                               </div>
@@ -2180,7 +2312,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                               {field.has_expiry && (
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl p-3">
                                   <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider shrink-0 flex items-center gap-1">
-                                    <span>📅</span> Expiration Date {isFieldRequired && <span className="text-rose-500 font-extrabold text-xs">*</span>}:
+                                    <span>📅</span> {t("expiration_date_label", "Expiration Date")} {isFieldRequired && <span className="text-rose-500 font-extrabold text-xs">*</span>}:
                                   </label>
                                   <input
                                     type="date"
@@ -2204,17 +2336,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                       </div>
                                       <div className="min-w-0 text-left">
                                         <p className="text-xs font-black text-slate-800 group-hover/drop:text-emerald-700 transition-colors truncate">
-                                          {isUploading ? "Uploading File to Server..." : "Click or Drag & Drop File Here"}
+                                          {isUploading ? t("uploading_file_msg", "Uploading File to Server...") : t("click_drag_drop_placeholder", "Click or Drag & Drop File Here")}
                                         </p>
                                         <p className="text-[10px] font-extrabold text-slate-400 mt-0.5 truncate">
-                                          PDF, JPG, PNG or DOC (Max 10MB)
+                                          {t("supported_doc_formats_desc", "PDF, JPG, PNG or DOC (Max 10MB)")}
                                         </p>
                                       </div>
                                     </div>
 
                                     <span style={{ fontSize: "11px" }} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 group-hover/drop:bg-emerald-700 text-white font-extrabold shadow-2xs transition-all active:scale-95 select-none">
                                       <FiFileText className="w-3.5 h-3.5" />
-                                      <span>Browse File</span>
+                                      <span>{t("browse_file_btn", "Browse File")}</span>
                                     </span>
 
                                     <input
@@ -2273,7 +2405,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                       className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95 flex items-center gap-1.5"
                                     >
                                       <FiCheck className="w-4 h-4" />
-                                      <span>{isUploading ? "Saving..." : "Save Information"}</span>
+                                      <span>{isUploading ? t("saving_label", "Saving...") : t("save_information_btn", "Save Information")}</span>
                                     </button>
                                   </div>
                                 )
@@ -2289,8 +2421,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                         {userDoc.file_url ? userDoc.file_url.split('/').pop() : userDoc.text_value}
                                       </p>
                                       <p className="text-[10px] font-extrabold text-emerald-700 flex items-center gap-1 mt-0.5">
-                                        <span>✓ Verified File Uploaded</span>
-                                        {userDoc?.expiry_date && <span>• Expires: {userDoc.expiry_date.substring(0, 10)}</span>}
+                                        <span>{t("verified_file_uploaded_msg", "✓ Verified File Uploaded")}</span>
+                                        {userDoc?.expiry_date && <span>• {t("expires_label", "Expires:")} {userDoc.expiry_date.substring(0, 10)}</span>}
                                       </p>
                                     </div>
                                   </div>
@@ -2303,14 +2435,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                         rel="noopener noreferrer"
                                         className="bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3.5 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                                       >
-                                        <span>View File</span>
+                                        <span>{t("view_file_btn", "View File")}</span>
                                         <span>↗</span>
                                       </a>
                                     )}
 
                                     {status !== "Approved" && (!field.field_type || field.field_type.startsWith("file_")) && (
                                       <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-xs active:scale-95">
-                                        <span>Replace File</span>
+                                        <span>{t("replace_file_btn", "Replace File")}</span>
                                         <input
                                           type="file"
                                           accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
@@ -2345,7 +2477,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                               {status === "Rejected" && userDoc?.rejection_reason && (
                                 <p className="text-[11px] text-rose-600 font-extrabold select-none bg-rose-50 border border-rose-200/70 p-2.5 rounded-xl flex items-center gap-1.5">
-                                  <span>❌ Rejection Reason:</span> {userDoc.rejection_reason}
+                                  <span>❌ {t("rejection_reason_label", "Rejection Reason:")}</span> {userDoc.rejection_reason}
                                 </p>
                               )}
                             </div>
@@ -2364,7 +2496,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   onClick={() => setClientWizardStep(clientWizardStep - 1)}
                   className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed text-slate-500 hover:text-slate-800 bg-slate-100"
                 >
-                  ← Back
+                  {t("back_btn", "← Back")}
                 </button>
 
                 <button
@@ -2372,7 +2504,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   onClick={() => handleSaveClientStep(clientWizardStep)}
                   className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-white flex items-center gap-1 shadow-md"
                 >
-                  <span className="text-white">{clientWizardStep === totalClientSteps ? "Complete Onboarding ✓" : "Save & Continue →"}</span>
+                  <span className="text-white">{clientWizardStep === totalClientSteps ? t("complete_onboarding_btn", "Complete Onboarding ✓") : t("save_continue_btn", "Save & Continue →")}</span>
                 </button>
               </div>
             </div>
@@ -2398,10 +2530,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
               <div className="relative z-10 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 mb-6 pr-16 sm:pr-24">
                 <div>
-                  <span className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase">Freelancer Onboarding</span>
-                  <h2 className="text-lg sm:text-xl font-black text-slate-900">Step {wizardStep} of {totalFreelancerSteps}</h2>
+                  <span className="text-[10px] font-bold text-emerald-500 tracking-widest uppercase">{t("freelancer_onboarding_title", "Freelancer Onboarding")}</span>
+                  <h2 className="text-lg sm:text-xl font-black text-slate-900">{t("onboarding_step_of_total", "Step {current} of {total}").replace("{current}", wizardStep.toString()).replace("{total}", totalFreelancerSteps.toString())}</h2>
                 </div>
-                <div className="flex gap-1.5">
+                <div className="hidden sm:flex gap-1.5">
                   {Array.from({ length: totalFreelancerSteps }, (_, i) => i + 1).map((step) => (
                     <div
                       key={step}
@@ -2417,14 +2549,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <div ref={freelancerScrollRef} className="relative z-10 flex-grow overflow-y-auto no-scrollbar pr-4 text-left">
+              <div ref={freelancerScrollRef} className="relative z-10 flex-grow overflow-y-auto pe-4 text-start">
                 
                 {/* STEP 1 FORM - PROFILE DETAILS */}
                 {wizardStep === 1 && (
                   <form onSubmit={handleSaveStep1} className="space-y-4">
-                    <h3 className="text-base font-black text-slate-900">Setup Profile & Details</h3>
-                    <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
-                      Tell clients about your professional domain, level of expertise, availability, and active skills.
+                    <h3 className="text-base font-black text-slate-900">{t("setup_profile_details", "Setup Profile & Details")}</h3>
+                    <p className="text-xs mt-0.5 leading-relaxed text-slate-505 font-medium">
+                      {t("setup_profile_details_desc", "Tell clients about your professional domain, level of expertise, availability, and active skills.")}
                     </p>
 
                     {step1Error && (
@@ -2442,7 +2574,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("category") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Category {isFieldRequired("category") ? "*" : ""}
+                            {t("category_label", "Category")} {isFieldRequired("category") ? "*" : ""}
                           </label>
                           <div className={step1FieldErrors.category ? "rounded-xl border border-rose-400 p-0.5" : ""}>
                             <CustomSelect
@@ -2454,7 +2586,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   setStep1FieldErrors((prev) => ({ ...prev, category: "", subcategory: "" }));
                                 }
                               }}
-                              placeholder="Select Category"
+                              placeholder={t("select_category_placeholder", "Select Category")}
                             />
                           </div>
                           {step1FieldErrors.category && (
@@ -2468,7 +2600,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("category") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Subcategory {isFieldRequired("category") ? "*" : ""}
+                            {t("subcategory_label", "Subcategory")} {isFieldRequired("category") ? "*" : ""}
                           </label>
                           <div className={step1FieldErrors.subcategory ? "rounded-xl border border-rose-400 p-0.5" : ""}>
                             <CustomSelect
@@ -2481,7 +2613,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   setStep1FieldErrors((prev) => ({ ...prev, subcategory: "" }));
                                 }
                               }}
-                              placeholder="Select Subcategory"
+                              placeholder={t("select_subcategory_placeholder", "Select Subcategory")}
                             />
                           </div>
                           {step1FieldErrors.subcategory && (
@@ -2495,16 +2627,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("title") && (
                         <div className="sm:col-span-2">
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Professional Title {isFieldRequired("title") ? "*" : ""}
+                            {t("professional_title_label", "Professional Title")} {isFieldRequired("title") ? "*" : ""}
                           </label>
                           <input
                             type="text"
-                            placeholder="e.g. Senior Full Stack Engineer (React, Node)"
+                            placeholder={t("professional_title_placeholder", "e.g. Senior Full Stack Engineer (React, Node)")}
                             value={professionalTitle}
                             onChange={(e) => {
                               setProfessionalTitle(e.target.value);
                               if (step1FieldErrors.title) {
-                                setStep1FieldErrors((prev) => ({ ...prev, title: "" }));
+                                  setStep1FieldErrors((prev) => ({ ...prev, title: "" }));
                               }
                             }}
                             className={`${inputClass} ${step1FieldErrors.title ? "border-rose-400 focus:border-rose-500 ring-1 ring-rose-400/30" : ""}`}
@@ -2520,14 +2652,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("experience_level") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Experience Level {isFieldRequired("experience_level") ? "*" : ""}
+                            {t("experience_level_label", "Experience Level")} {isFieldRequired("experience_level") ? "*" : ""}
                           </label>
                           <div className={step1FieldErrors.experience_level ? "rounded-xl border border-rose-400 p-0.5" : ""}>
                             <CustomSelect
                               options={[
-                                { value: "Beginner", label: "Beginner" },
-                                { value: "Intermediate", label: "Intermediate" },
-                                { value: "Expert", label: "Expert" }
+                                { value: "Beginner", label: t("experience_beginner", "Beginner") },
+                                { value: "Intermediate", label: t("experience_intermediate", "Intermediate") },
+                                { value: "Expert", label: t("experience_expert", "Expert") }
                               ]}
                               value={experienceLevel}
                               onChange={(val) => {
@@ -2536,7 +2668,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   setStep1FieldErrors((prev) => ({ ...prev, experience_level: "" }));
                                 }
                               }}
-                              placeholder="Select Experience Level"
+                              placeholder={t("select_experience_level_placeholder", "Select Experience Level")}
                             />
                           </div>
                           {step1FieldErrors.experience_level && (
@@ -2550,12 +2682,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("experience_level") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Years of Experience {isFieldRequired("experience_level") ? "*" : ""}
+                            {t("years_of_experience_label", "Years of Experience")} {isFieldRequired("experience_level") ? "*" : ""}
                           </label>
                           <input
                             type="number"
                             min="0"
-                            placeholder="e.g. 5"
+                            placeholder={t("years_of_experience_placeholder", "e.g. 5")}
                             value={totalExperienceYears}
                             onChange={(e) => {
                               setTotalExperienceYears(e.target.value);
@@ -2576,12 +2708,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("hourly_rate") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Hourly Rate ($) {isFieldRequired("hourly_rate") ? "*" : ""}
+                            {t("hourly_rate_label", "Hourly Rate ($)")} {isFieldRequired("hourly_rate") ? "*" : ""}
                           </label>
                           <input
                             type="number"
                             min="0"
-                            placeholder="e.g. 45"
+                            placeholder={t("hourly_rate_placeholder", "e.g. 45")}
                             value={hourlyRate}
                             onChange={(e) => {
                               setHourlyRate(e.target.value);
@@ -2602,14 +2734,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("availability_status") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Availability Status {isFieldRequired("availability_status") ? "*" : ""}
+                            {t("availability_status_label", "Availability Status")} {isFieldRequired("availability_status") ? "*" : ""}
                           </label>
                           <div className={step1FieldErrors.availability_status ? "rounded-xl border border-rose-400 p-0.5" : ""}>
                             <CustomSelect
                               options={[
-                                { value: "Available", label: "Available" },
-                                { value: "Busy", label: "Busy" },
-                                { value: "Not Available", label: "Not Available" }
+                                { value: "Available", label: t("status_available", "Available") },
+                                { value: "Busy", label: t("status_busy", "Busy") },
+                                { value: "Not Available", label: t("status_not_available", "Not Available") }
                               ]}
                               value={availabilityStatus}
                               onChange={(val) => {
@@ -2618,7 +2750,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   setStep1FieldErrors((prev) => ({ ...prev, availability_status: "" }));
                                 }
                               }}
-                              placeholder="Select Availability"
+                              placeholder={t("select_availability_placeholder", "Select Availability")}
                             />
                           </div>
                           {step1FieldErrors.availability_status && (
@@ -2632,7 +2764,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("linkedin") && (
                         <div className="sm:col-span-2">
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            LinkedIn Profile Link {isFieldRequired("linkedin") ? "*" : ""}
+                            {t("linkedin_profile_link_label", "LinkedIn Profile Link")} {isFieldRequired("linkedin") ? "*" : ""}
                           </label>
                           <input
                             type="url"
@@ -2657,7 +2789,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("website") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Portfolio Website URL {isFieldRequired("website") ? "*" : ""}
+                            {t("portfolio_website_url_label", "Portfolio Website URL")} {isFieldRequired("website") ? "*" : ""}
                           </label>
                           <input
                             type="url"
@@ -2682,7 +2814,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       {isFieldEnabled("github") && (
                         <div>
                           <label className="text-xs font-bold block mb-1 text-slate-600">
-                            Resume Document URL {isFieldRequired("github") ? "*" : ""}
+                            {t("resume_document_url_label", "Resume Document URL")} {isFieldRequired("github") ? "*" : ""}
                           </label>
                           <input
                             type="url"
@@ -2709,16 +2841,16 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <div className="mt-4">
                         <div className="flex items-center justify-between mb-1.5">
                           <label className="text-xs font-bold block text-slate-600">
-                            Select Skills {isFieldRequired("skills") ? "*" : ""} (At least 1)
+                            {t("select_skills_label", "Select Skills")} {isFieldRequired("skills") ? "*" : ""} (At least 1)
                           </label>
                           {!subCategoryId && availableSkills.length > 0 && (
                             <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                              Showing all skills
+                              {t("showing_all_skills_badge", "Showing all skills")}
                             </span>
                           )}
                         </div>
                         {availableSkills.length === 0 ? (
-                          <p className="text-xs text-slate-400 italic">Loading available skills...</p>
+                          <p className="text-xs text-slate-400 italic">{t("loading_available_skills", "Loading available skills...")}</p>
                         ) : (
                           <div className={`flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 rounded-xl border bg-slate-100/50 ${step1FieldErrors.skills ? "border-rose-400 ring-1 ring-rose-400/30" : "border-slate-200"}`}>
                             {availableSkills.map((sk) => {
@@ -2756,7 +2888,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     {isFieldEnabled("languages") && (
                       <div className="mt-4">
                         <label className="text-xs font-bold block mb-1.5 text-slate-600">
-                          Select Languages {isFieldRequired("languages") ? "*" : ""} (At least 1)
+                          {t("select_languages_label", "Select Languages")} {isFieldRequired("languages") ? "*" : ""} (At least 1)
                         </label>
                         <div className={step1FieldErrors.languages ? "rounded-xl border border-rose-400 p-0.5" : ""}>
                           <CustomSelect
@@ -2769,7 +2901,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 setStep1FieldErrors((prev) => ({ ...prev, languages: "" }));
                               }
                             }}
-                            placeholder="Select Languages"
+                            placeholder={t("select_languages_placeholder", "Select Languages")}
                           />
                         </div>
                         {step1FieldErrors.languages && (
@@ -2783,7 +2915,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                     {/* Spoken Languages Proficiency Levels Section */}
                     {selectedLanguages.length > 0 && (
                       <div className="mt-4 space-y-3 bg-slate-50 border border-slate-200/80 rounded-xl p-4 animate-fadeIn">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Set Language Proficiency Levels</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">{t("set_language_proficiency_levels", "Set Language Proficiency Levels")}</label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                           {selectedLanguages.map((selLang) => {
                             const dbLangObj = languages.find(l => l.language_id === selLang.language_id);
@@ -2799,7 +2931,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                     title={`Remove ${labelName}`}
                                   >
                                     <FiX className="w-3.5 h-3.5 text-rose-500" />
-                                    <span className="text-rose-600">Remove</span>
+                                    <span className="text-rose-600">{t("remove_label", "Remove")}</span>
                                   </button>
                                 </div>
                                 <select
@@ -2807,10 +2939,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   onChange={(e) => handleUpdateLanguageProficiency(selLang.language_id, e.target.value)}
                                   className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-700 font-semibold focus:outline-none focus:border-emerald-500 transition mt-1"
                                 >
-                                  <option value="Basic">Basic</option>
-                                  <option value="Conversational">Conversational</option>
-                                  <option value="Fluent">Fluent</option>
-                                  <option value="Native/Bilingual">Native/Bilingual</option>
+                                  <option value="Basic">{t("lang_basic", "Basic")}</option>
+                                  <option value="Conversational">{t("lang_conversational", "Conversational")}</option>
+                                  <option value="Fluent">{t("lang_fluent", "Fluent")}</option>
+                                  <option value="Native/Bilingual">{t("lang_native_bilingual", "Native/Bilingual")}</option>
                                 </select>
                               </div>
                             );
@@ -2824,7 +2956,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         type="submit"
                         className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-black text-xs cursor-pointer text-white flex items-center gap-1 shadow-md"
                       >
-                        Save & Next →
+                        {t("save_next_btn", "Save & Next →")}
                       </button>
                     </div>
                   </form>
@@ -2834,14 +2966,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {wizardStep === 2 && (
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-base font-black text-slate-900">Career Information (Optional)</h3>
+                      <h3 className="text-base font-black text-slate-900">{t("career_information_title", "Career Information (Optional)")}</h3>
                       <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
-                        Add past work experience, degree levels, or professional certifications to make your profile stand out. You can skip this step.
+                        {t("career_information_desc", "Add past work experience, degree levels, or professional certifications to make your profile stand out. You can skip this step.")}
                       </p>
                     </div>
 
                     <div className={subCardClass}>
-                      <h4 className="text-xs font-black text-emerald-500 mb-2 uppercase tracking-wide">Work Experience</h4>
+                      <h4 className="text-xs font-black text-emerald-500 mb-2 uppercase tracking-wide">{t("work_experience_label", "Work Experience")}</h4>
                       
                       {experiences.length > 0 && (
                         <div className={listBgClass}>
@@ -2849,7 +2981,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                             <div key={idx} className="text-xs border-b border-slate-200 dark:border-slate-800 last:border-b-0 pb-2 last:pb-0 flex items-center justify-between gap-3">
                               <div className="min-w-0 flex-1">
                                 <p className="font-extrabold text-slate-900 truncate">{exp.job_title} @ {exp.company_name}</p>
-                                <p className="text-slate-400 text-xxs">{formatExpDate(exp.start_date) || "N/A"} - {exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}</p>
+                                <p className="text-slate-400 text-xxs">{formatExpDate(exp.start_date) || "N/A"} - {exp.currently_working ? t("present_date_label", "Present") : (formatExpDate(exp.end_date) || "N/A")}</p>
                               </div>
                               <button
                                 type="button"
@@ -2867,28 +2999,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <input
                           type="text"
-                          placeholder="Company Name"
+                          placeholder={t("company_name_placeholder", "Company Name")}
                           value={expCompany}
                           onChange={(e) => setExpCompany(e.target.value)}
                           className={inputClass}
                         />
                         <input
                           type="text"
-                          placeholder="Job Title"
+                          placeholder={t("job_title_placeholder", "Job Title")}
                           value={expTitle}
                           onChange={(e) => setExpTitle(e.target.value)}
                           className={inputClass}
                         />
                         <CustomSelect
                           options={[
-                            { value: "Full-time", label: "Full-time" },
-                            { value: "Part-time", label: "Part-time" },
-                            { value: "Contract", label: "Contract" },
-                            { value: "Freelance", label: "Freelance" }
+                            { value: "Full-time", label: t("emp_full_time", "Full-time") },
+                            { value: "Part-time", label: t("emp_part_time", "Part-time") },
+                            { value: "Contract", label: t("emp_contract", "Contract") },
+                            { value: "Freelance", label: t("emp_freelance", "Freelance") }
                           ]}
                           value={expEmpType}
                           onChange={(val) => setExpEmpType(val as string)}
-                          placeholder="Select Employment Type"
+                          placeholder={t("select_employment_type", "Select Employment Type")}
                         />
                         <div className="flex gap-2 items-center">
                           <label className="text-[10px] font-bold flex items-center gap-1.5 text-slate-600">
@@ -2898,26 +3030,26 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                               onChange={(e) => setExpCurrent(e.target.checked)}
                               className="rounded border-slate-350"
                             />
-                            Currently Working
+                            {t("currently_working_checkbox", "Currently Working")}
                           </label>
                         </div>
                         <input
                           type="date"
-                          placeholder="Start Date"
+                          placeholder={t("start_date_label", "Start Date")}
                           value={expStart}
                           onChange={(e) => setExpStart(e.target.value)}
                           className={inputClass}
                         />
                         <input
                           type="date"
-                          placeholder="End Date"
+                          placeholder={t("end_date_label", "End Date")}
                           disabled={expCurrent}
                           value={expEnd}
                           onChange={(e) => setExpEnd(e.target.value)}
                           className={`${inputClass} disabled:opacity-50`}
                         />
                         <textarea
-                          placeholder="Brief description of work highlights..."
+                          placeholder={t("work_highlights_placeholder", "Brief description of work highlights...")}
                           value={expDesc}
                           onChange={(e) => setExpDesc(e.target.value)}
                           className={`sm:col-span-2 ${inputClass} h-16`}
@@ -2929,12 +3061,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         style={{ fontSize: "11px" }}
                         className="mt-3 inline-flex items-center gap-1 font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
                       >
-                        + Add Experience
+                        {t("add_experience_btn", "+ Add Experience")}
                       </button>
                     </div>
 
                     <div className={subCardClass}>
-                      <h4 className="text-xs font-black text-emerald-500 mb-2 uppercase tracking-wide">Education</h4>
+                      <h4 className="text-xs font-black text-emerald-500 mb-2 uppercase tracking-wide">{t("education_label", "Education")}</h4>
                       
                       {educations.length > 0 && (
                         <div className={listBgClass}>
@@ -2960,35 +3092,35 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <input
                           type="text"
-                          placeholder="Institution Name"
+                          placeholder={t("institution_name_placeholder", "Institution Name")}
                           value={eduInst}
                           onChange={(e) => setEduInst(e.target.value)}
                           className={inputClass}
                         />
                         <input
                           type="text"
-                          placeholder="Degree (e.g. Bachelor of Science)"
+                          placeholder={t("degree_placeholder", "Degree (e.g. Bachelor of Science)")}
                           value={eduDegree}
                           onChange={(e) => setEduDegree(e.target.value)}
                           className={inputClass}
                         />
                         <input
                           type="text"
-                          placeholder="Field of Study (e.g. Computer Science)"
+                          placeholder={t("field_of_study_placeholder", "Field of Study (e.g. Computer Science)")}
                           value={eduField}
                           onChange={(e) => setEduField(e.target.value)}
                           className={`sm:col-span-2 ${inputClass}`}
                         />
                         <input
                           type="number"
-                          placeholder="Start Year (e.g. 2018)"
+                          placeholder={t("start_year_placeholder", "Start Year (e.g. 2018)")}
                           value={eduStart}
                           onChange={(e) => setEduStart(e.target.value)}
                           className={inputClass}
                         />
                         <input
                           type="number"
-                          placeholder="End Year (or Expected)"
+                          placeholder={t("end_year_placeholder", "End Year (or Expected)")}
                           value={eduEnd}
                           onChange={(e) => setEduEnd(e.target.value)}
                           className={inputClass}
@@ -3000,12 +3132,12 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         style={{ fontSize: "11px" }}
                         className="mt-3 inline-flex items-center gap-1 font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
                       >
-                        + Add Education
+                        {t("add_education_btn", "+ Add Education")}
                       </button>
                     </div>
 
                     <div className={subCardClass}>
-                      <h4 className="text-xs font-black text-emerald-500 mb-2 uppercase tracking-wide">Certifications</h4>
+                      <h4 className="text-xs font-black text-emerald-500 mb-2 uppercase tracking-wide">{t("certifications_label", "Certifications")}</h4>
                       
                       {certifications.length > 0 && (
                         <div className={listBgClass}>
@@ -3031,28 +3163,28 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <input
                           type="text"
-                          placeholder="Certification Name"
+                          placeholder={t("certification_name_placeholder", "Certification Name")}
                           value={certName}
                           onChange={(e) => setCertName(e.target.value)}
                           className={inputClass}
                         />
                         <input
                           type="text"
-                          placeholder="Issuing Organization"
+                          placeholder={t("issuing_organization_placeholder", "Issuing Organization")}
                           value={certOrg}
                           onChange={(e) => setCertOrg(e.target.value)}
                           className={inputClass}
                         />
                         <input
                           type="date"
-                          placeholder="Issue Date"
+                          placeholder={t("issue_date_label", "Issue Date")}
                           value={certDate}
                           onChange={(e) => setCertDate(e.target.value)}
                           className={inputClass}
                         />
                         <input
                           type="url"
-                          placeholder="Credential Verification Link"
+                          placeholder={t("credential_link_placeholder", "Credential Verification Link")}
                           value={certCredUrl}
                           onChange={(e) => setCertCredUrl(e.target.value)}
                           className={inputClass}
@@ -3064,7 +3196,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         style={{ fontSize: "11px" }}
                         className="mt-3 inline-flex items-center gap-1 font-bold px-3 py-1.5 rounded-lg cursor-pointer transition-all bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 shadow-2xs"
                       >
-                        + Add Certification
+                        {t("add_certification_btn", "+ Add Certification")}
                       </button>
                     </div>
 
@@ -3072,17 +3204,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       <button
                         type="button"
                         onClick={() => setWizardStep(1)}
-                        className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-850 bg-slate-100 hover:bg-slate-200"
+                        className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-855 bg-slate-100 hover:bg-slate-200"
                       >
-                        ← Back
+                        {t("back_btn", "← Back")}
                       </button>
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={handleSkipStep2}
-                          className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-850 bg-slate-100 hover:bg-slate-200"
+                          className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-855 bg-slate-100 hover:bg-slate-200"
                         >
-                          Skip Step
+                          {t("skip_step_btn", "Skip Step")}
                         </button>
                         <button
                           type="button"
@@ -3092,7 +3224,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           }}
                           className="bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-bold text-xs cursor-pointer text-white"
                         >
-                          Next Step →
+                          {t("save_next_btn", "Save & Next →")}
                         </button>
                       </div>
                     </div>
@@ -3103,9 +3235,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {wizardStep === 3 && (
                   <div className="space-y-6">
                     <div>
-                      <h3 className="text-base font-black text-slate-900">Contact Verification (Optional)</h3>
+                      <h3 className="text-base font-black text-slate-900">{t("contact_verification_title", "Contact Verification (Optional)")}</h3>
                       <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
-                        You can verify your email and phone number to build trust, or skip this step to proceed.
+                        {t("contact_verification_desc", "You can verify your email and phone number to build trust, or skip this step to proceed.")}
                       </p>
                     </div>
 
@@ -3125,17 +3257,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <div className="flex items-center gap-3">
                           <span className="text-lg">📧</span>
                           <div>
-                            <p className="text-xs font-extrabold text-slate-900">Verify Email Address</p>
-                            <p className="text-xxs text-slate-400">{userEmail || "Loading Email..."}</p>
+                            <p className="text-xs font-extrabold text-slate-900">{t("verify_email_address", "Verify Email Address")}</p>
+                            <p className="text-xxs text-slate-400">{userEmail || t("loading_email_placeholder", "Loading Email...")}</p>
                           </div>
                         </div>
                         {emailVerified ? (
                           <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 border border-emerald-500/35 px-2.5 py-1 rounded uppercase tracking-wider">
-                            Verified
+                            {t("status_verified", "Verified")}
                           </span>
                         ) : (
                           <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded uppercase tracking-wider">
-                            Pending
+                            {t("status_pending", "Pending")}
                           </span>
                         )}
                       </div>
@@ -3149,14 +3281,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 onClick={handleSendEmailOtp}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-95"
                               >
-                                Send OTP Code
+                                {t("send_otp_code_btn", "Send OTP Code")}
                               </button>
                             ) : (
                               <div className="flex gap-2 w-full sm:w-auto">
                                 <input
                                   type="text"
                                   maxLength={6}
-                                  placeholder="Enter OTP"
+                                  placeholder={t("enter_otp_placeholder", "Enter OTP")}
                                   value={emailOtp}
                                   onChange={(e) => setEmailOtp(e.target.value)}
                                   className={`${inputClass} ${emailOtpError ? "border-rose-500 ring-2 ring-rose-500/20" : ""}`}
@@ -3167,14 +3299,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   onClick={handleVerifyEmailOtp}
                                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-95"
                                 >
-                                  Verify
+                                  {t("verify_btn", "Verify")}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={handleSendEmailOtp}
                                   className="text-slate-450 hover:text-emerald-500 text-[10px] px-2 font-bold cursor-pointer"
                                 >
-                                  Resend
+                                  {t("resend_btn", "Resend")}
                                 </button>
                               </div>
                             )}
@@ -3193,17 +3325,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         <div className="flex items-center gap-3">
                           <span className="text-lg">📱</span>
                           <div>
-                            <p className="text-xs font-extrabold text-slate-900">Verify Phone Number</p>
-                            <p className="text-xxs text-slate-400">{userPhone || "No Phone Registered"}</p>
+                            <p className="text-xs font-extrabold text-slate-900">{t("verify_phone_number", "Verify Phone Number")}</p>
+                            <p className="text-xxs text-slate-400">{userPhone || t("no_phone_registered", "No Phone Registered")}</p>
                           </div>
                         </div>
                         {phoneVerified ? (
                           <span className="text-[10px] font-black text-emerald-500 bg-emerald-500/10 border border-emerald-500/35 px-2.5 py-1 rounded uppercase tracking-wider">
-                            Verified
+                            {t("status_verified", "Verified")}
                           </span>
                         ) : (
                           <span className="text-[10px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded uppercase tracking-wider">
-                            Pending
+                            {t("status_pending", "Pending")}
                           </span>
                         )}
                       </div>
@@ -3213,7 +3345,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           <div className="flex flex-col gap-1.5">
                             <input
                               type="tel"
-                              placeholder="+1 (555) 123-4567 or +91 9876543210"
+                              placeholder={t("phone_placeholder", "+1 (555) 123-4567 or +91 9876543210")}
                               value={userPhone}
                               onChange={(e) => setUserPhone(e.target.value)}
                               className={`${inputClass} ${phoneOtpError ? "border-rose-500 ring-2 ring-rose-500/20" : ""}`}
@@ -3231,14 +3363,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                 onClick={handleSendPhoneOtp}
                                 className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-95"
                               >
-                                Send OTP Code
+                                {t("send_otp_code_btn", "Send OTP Code")}
                               </button>
                             ) : (
                               <div className="flex gap-2 w-full sm:w-auto">
                                 <input
                                   type="text"
                                   maxLength={6}
-                                  placeholder="Enter OTP"
+                                  placeholder={t("enter_otp_placeholder", "Enter OTP")}
                                   value={phoneOtp}
                                   onChange={(e) => setPhoneOtp(e.target.value)}
                                   className={inputClass}
@@ -3249,14 +3381,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   onClick={handleVerifyPhoneOtp}
                                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer transition-all shadow-md shadow-emerald-600/20 active:scale-95"
                                 >
-                                  Verify
+                                  {t("verify_btn", "Verify")}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={handleSendPhoneOtp}
                                   className="text-slate-450 hover:text-emerald-500 text-[10px] px-2 font-bold cursor-pointer"
                                 >
-                                  Resend
+                                  {t("resend_btn", "Resend")}
                                 </button>
                               </div>
                             )}
@@ -3271,7 +3403,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         onClick={() => setWizardStep(2)}
                         className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
                       >
-                        ← Back
+                        {t("back_btn", "← Back")}
                       </button>
                       <div className="flex gap-2">
                         <button
@@ -3279,14 +3411,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           onClick={handleSkipStep3}
                           className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
                         >
-                          Skip Step
+                          {t("skip_step_btn", "Skip Step")}
                         </button>
                         <button
                           type="button"
                           onClick={handleSaveStep3}
                           className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-extrabold text-xs cursor-pointer text-white shadow-md shadow-emerald-600/20"
                         >
-                          Next Step →
+                          {t("next_step_btn", "Next Step →")}
                         </button>
                       </div>
                     </div>
@@ -3297,24 +3429,24 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                 {wizardStep === 4 && (
                   <form onSubmit={handleAddProject} className="space-y-4">
                     <div>
-                      <h3 className="text-base font-black text-slate-900">Add Project to Portfolio (Optional)</h3>
+                      <h3 className="text-base font-black text-slate-900">{t("add_project_portfolio_title", "Add Project to Portfolio (Optional)")}</h3>
                       <p className="text-xs mt-0.5 leading-relaxed text-slate-500 font-medium">
-                        Add screenshots, documents, and descriptions of past contracts. This will build credibility with incoming buyers.
+                        {t("add_project_portfolio_desc", "Add screenshots, documents, and descriptions of past contracts. This will build credibility with incoming buyers.")}
                       </p>
                     </div>
 
                     {portfolioSuccess && (
                       <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-xs font-semibold rounded-xl">
-                        🎉 Project added successfully! Completing your onboarding profile...
+                        💡 {t("portfolio_success_message", "Project added successfully! Completing your onboarding profile...")}
                       </div>
                     )}
 
                     <div className="space-y-4">
                       <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Title *</label>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">{t("project_title_label", "Project Title *")}</label>
                         <input
                           type="text"
-                          placeholder="e.g. Decentralized Freelance Workspace Platform"
+                          placeholder={t("project_title_placeholder", "e.g. Decentralized Freelance Workspace Platform")}
                           value={projectTitle}
                           onChange={(e) => setProjectTitle(e.target.value)}
                           className={inputClass}
@@ -3322,9 +3454,9 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Description</label>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">{t("project_description_label", "Project Description")}</label>
                         <textarea
-                          placeholder="Summarize the core problem solved, architectural choices, and tech stack used..."
+                          placeholder={t("project_description_placeholder", "Summarize the core problem solved, architectural choices, and tech stack used...")}
                           value={projectDesc}
                           onChange={(e) => setProjectDesc(e.target.value)}
                           className={`${inputClass} h-24`}
@@ -3332,7 +3464,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Images (comma-separated URLs)</label>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">{t("project_images_label", "Project Images (comma-separated URLs)")}</label>
                         <input
                           type="text"
                           placeholder="https://image1.jpg, https://image2.png"
@@ -3343,7 +3475,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Walkthrough Video URL</label>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">{t("project_video_label", "Project Walkthrough Video URL")}</label>
                         <input
                           type="url"
                           placeholder="https://youtube.com/watch?v=..."
@@ -3354,7 +3486,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                       </div>
 
                       <div>
-                        <label className="text-xs font-bold block mb-1 text-slate-600">Project Documents (comma-separated URLs)</label>
+                        <label className="text-xs font-bold block mb-1 text-slate-600">{t("project_documents_label", "Project Documents (comma-separated URLs)")}</label>
                         <input
                           type="text"
                           placeholder="https://docs.pdf, https://source-file.zip"
@@ -3371,7 +3503,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         onClick={() => setWizardStep(3)}
                         className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
                       >
-                        ← Back
+                        {t("back_btn", "← Back")}
                       </button>
                       <div className="flex gap-2">
                         <button
@@ -3382,13 +3514,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                           }}
                           className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
                         >
-                          Skip Project
+                          {t("skip_project_btn", "Skip Project")}
                         </button>
                         <button
                           type="submit"
                           className="bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl font-extrabold text-xs cursor-pointer text-white shadow-md shadow-emerald-600/20"
                         >
-                          Add & Continue →
+                          {t("add_continue_btn", "Add & Continue →")}
                         </button>
                       </div>
                     </div>
@@ -3400,10 +3532,10 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                   <div className="space-y-6">
                     <div>
                       <h3 className="text-base font-black text-slate-900">
-                        {wizardStep === 5 ? "Document Verification" : `Onboarding Step ${wizardStep}`}
+                        {wizardStep === 5 ? t("document_verification_title", "Document Verification") : t("onboarding_step_num", "Onboarding Step {num}").replace("{num}", wizardStep.toString())}
                       </h3>
                       <p className="text-xs mt-0.5 leading-relaxed text-slate-505 font-medium">
-                        Please upload valid evidence for the following documents. These will be reviewed by our compliance team.
+                        {t("document_verification_desc", "Please upload valid evidence for the following documents. These will be reviewed by our compliance team.")}
                       </p>
                     </div>
 
@@ -3421,7 +3553,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         if (freelancerStepFields.length === 0) {
                           return (
                             <div className="p-8 text-center text-slate-400 font-semibold text-xs bg-slate-50 rounded-xl border border-slate-200/50">
-                              No verification required for this step. You can proceed.
+                              {t("no_verification_required_msg", "No verification required for this step. You can proceed.")}
                             </div>
                           );
                         }
@@ -3443,14 +3575,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                   </div>
                                   <div>
                                     <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
-                                      <span>{field.field_name}</span>
+                                      <span>{t(field.field_name, field.field_name)}</span>
                                       {isFieldRequired ? (
                                         <span className="text-rose-500 font-black text-sm leading-none ml-0.5 select-none" title="Required Field">*</span>
                                       ) : (
-                                        <span className="text-[10px] font-bold text-slate-400 normal-case ml-1 select-none tracking-normal">(Optional)</span>
+                                        <span className="text-[10px] font-bold text-slate-400 normal-case ml-1 select-none tracking-normal">{t("optional_label", "(Optional)")}</span>
                                       )}
                                     </h4>
-                                    <p className="text-[11px] text-slate-500 font-medium mt-0.5 leading-normal">{field.field_description}</p>
+                                    <p className="text-[11px] text-slate-505 font-medium mt-0.5 leading-normal">{t(field.field_description, field.field_description)}</p>
                                   </div>
                                 </div>
 
@@ -3462,7 +3594,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                       ? "bg-rose-50 text-rose-700 border-rose-200"
                                       : "bg-amber-50 text-amber-700 border-amber-200"
                                   }`}>
-                                    {status === "Approved" ? "✓ Approved" : status === "Rejected" ? "✕ Rejected" : "⏳ Audit Pending"}
+                                    {status === "Approved" ? t("status_approved_badge", "✓ Approved") : status === "Rejected" ? t("status_rejected_badge", "✕ Rejected") : t("status_pending_badge", "⏳ Audit Pending")}
                                   </span>
                                 )}
                               </div>
@@ -3471,7 +3603,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                               {field.has_expiry && (
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl p-3">
                                   <label className="text-[10px] font-black uppercase text-slate-500 tracking-wider shrink-0 flex items-center gap-1">
-                                    <span>📅</span> Expiration Date {isFieldRequired && <span className="text-rose-500 font-extrabold text-xs">*</span>}:
+                                    <span>📅</span> {t("expiration_date_label", "Expiration Date")} {isFieldRequired && <span className="text-rose-500 font-extrabold text-xs">*</span>}:
                                   </label>
                                   <input
                                     type="date"
@@ -3495,17 +3627,17 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                       </div>
                                       <div className="min-w-0 text-left">
                                         <p className="text-xs font-black text-slate-800 group-hover/drop:text-emerald-700 transition-colors truncate">
-                                          {isUploading ? "Uploading File to Server..." : "Click or Drag & Drop File Here"}
+                                          {isUploading ? t("uploading_file_msg", "Uploading File to Server...") : t("click_drag_drop_placeholder", "Click or Drag & Drop File Here")}
                                         </p>
                                         <p className="text-[10px] font-extrabold text-slate-400 mt-0.5 truncate">
-                                          PDF, JPG, PNG or DOC (Max 10MB)
+                                          {t("supported_doc_formats_desc", "PDF, JPG, PNG or DOC (Max 10MB)")}
                                         </p>
                                       </div>
                                     </div>
 
                                     <span style={{ fontSize: "11px" }} className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 group-hover/drop:bg-emerald-700 text-white font-extrabold shadow-2xs transition-all active:scale-95 select-none">
                                       <FiFileText className="w-3.5 h-3.5" />
-                                      <span>Browse File</span>
+                                      <span>{t("browse_file_btn", "Browse File")}</span>
                                     </span>
 
                                     <input
@@ -3564,7 +3696,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                       className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-[11px] px-5 py-2.5 rounded-xl transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-95 flex items-center gap-1.5"
                                     >
                                       <FiCheck className="w-4 h-4" />
-                                      <span>{isUploading ? "Saving..." : "Save Information"}</span>
+                                      <span>{isUploading ? t("saving_label", "Saving...") : t("save_information_btn", "Save Information")}</span>
                                     </button>
                                   </div>
                                 )
@@ -3580,8 +3712,8 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                         {userDoc.file_url ? userDoc.file_url.split('/').pop() : userDoc.text_value}
                                       </p>
                                       <p className="text-[10px] font-extrabold text-emerald-700 flex items-center gap-1 mt-0.5">
-                                        <span>✓ Verified File Uploaded</span>
-                                        {userDoc?.expiry_date && <span>• Expires: {userDoc.expiry_date.substring(0, 10)}</span>}
+                                        <span>{t("verified_file_uploaded_msg", "✓ Verified File Uploaded")}</span>
+                                        {userDoc?.expiry_date && <span>• {t("expires_label", "Expires:")} {userDoc.expiry_date.substring(0, 10)}</span>}
                                       </p>
                                     </div>
                                   </div>
@@ -3594,14 +3726,14 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                                         rel="noopener noreferrer"
                                         className="bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 px-3.5 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
                                       >
-                                        <span>View File</span>
+                                        <span>{t("view_file_btn", "View File")}</span>
                                         <span>↗</span>
                                       </a>
                                     )}
 
                                     {status !== "Approved" && (!field.field_type || field.field_type.startsWith("file_")) && (
                                       <label className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-xs active:scale-95">
-                                        <span>Replace File</span>
+                                        <span>{t("replace_file_btn", "Replace File")}</span>
                                         <input
                                           type="file"
                                           accept={field.field_type === 'file_pdf' ? '.pdf' : field.field_type === 'file_image' ? 'image/png,image/jpeg,image/jpg' : field.field_type === 'file_word' ? '.doc,.docx' : '*'}
@@ -3636,7 +3768,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                               {status === "Rejected" && userDoc?.rejection_reason && (
                                 <p className="text-[11px] text-rose-600 font-extrabold select-none bg-rose-50 border border-rose-200/70 p-2.5 rounded-xl flex items-center gap-1.5">
-                                  <span>❌ Rejection Reason:</span> {userDoc.rejection_reason}
+                                  <span>❌ {t("rejection_reason_label", "Rejection Reason:")}</span> {userDoc.rejection_reason}
                                 </p>
                               )}
                             </div>
@@ -3654,7 +3786,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         }}
                         className="font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200"
                       >
-                        ← Back
+                        {t("back_btn", "← Back")}
                       </button>
                       <button
                         type="button"
@@ -3674,8 +3806,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
                           if (missingRequired.length > 0) {
                             const list = missingRequired.map(f => f.field_name).join(", ");
-                            triggerToast("error", `Please complete all required fields for this step: ${list}`);
-                            return;
+                            triggerToast("warning", `Warning: Some required fields were not uploaded: ${list}. Your profile review may be delayed.`);
                           }
 
                           if (wizardStep < totalFreelancerSteps) {
@@ -3693,7 +3824,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
                         }}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold active:scale-[0.98] transition-all px-6 py-2.5 rounded-xl text-xs cursor-pointer shadow-md"
                       >
-                        <span className="text-white">{wizardStep === totalFreelancerSteps ? "Complete Onboarding ✓" : "Save & Continue →"}</span>
+                        <span className="text-white">{wizardStep === totalFreelancerSteps ? t("complete_onboarding_btn", "Complete Onboarding ✓") : t("save_continue_btn", "Save & Continue →")}</span>
                       </button>
                     </div>
                   </div>
@@ -3751,7 +3882,7 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
       {/* Submit Job Proposal Modal */}
       {showProposalModal && applyingJob && (
         <div className="fixed inset-0 z-[10000] bg-slate-900/25 backdrop-blur-[0.5px] flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left max-h-[90vh] flex flex-col relative my-8">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-start max-h-[90vh] flex flex-col relative my-8">
             <button
               onClick={() => {
                 setShowProposalModal(false);
@@ -3804,7 +3935,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <form onSubmit={handleSubmitProposal} className="flex-1 overflow-y-auto flex flex-col gap-5 mt-6 text-slate-800 pr-1.5 scrollbar-thin">
+            <form 
+              onSubmit={handleSubmitProposal} 
+              style={{ scrollbarGutter: "stable" }}
+              className="flex-1 overflow-y-auto flex flex-col gap-5 mt-6 text-slate-800 pe-1.5 scrollbar-thin"
+            >
 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

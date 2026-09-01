@@ -5,6 +5,7 @@ import Table from "@/components/Table";
 import { DisputeCase, useAdmin } from "@/app/admin/AdminContext";
 import { API_URL } from "@/config/api";
 import { FiMessageSquare, FiCheckCircle, FiRefreshCw } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface TransactionsTabProps {
   transactionsSubTab: "transactions" | "disputes";
@@ -36,6 +37,7 @@ export default function TransactionsTab({
   disputes,
   resolveDispute
 }: TransactionsTabProps) {
+  const { t } = useLanguage();
   const { highlightedDisputeId, setHighlightedDisputeId } = useAdmin();
 
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -158,51 +160,51 @@ export default function TransactionsTab({
   
   const transactionColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: any, idx: number) => ((transactionsPage - 1) * itemsPerPage) + idx + 1
     },
     {
-      header: "Contract Title",
-      accessor: (row: any) => <div className="font-bold text-slate-800">{row.title}</div>
+      header: t("contract_title", "Contract Title"),
+      accessor: (row: any) => <div className="font-bold text-slate-800 text-left rtl:text-right">{row.title}</div>
     },
     {
-      header: "Job",
-      accessor: (row: any) => row.job_title || "Direct Gig Order"
+      header: t("job", "Job"),
+      accessor: (row: any) => row.job_title || t("direct_gig_order", "Direct Gig Order")
     },
     {
-      header: "Client",
+      header: t("client", "Client"),
       accessor: (row: any) => row.client_name
     },
     {
-      header: "Freelancer",
+      header: t("freelancer", "Freelancer"),
       accessor: (row: any) => row.freelancer_name
     },
     {
-      header: "Budget",
+      header: t("budget", "Budget"),
       accessor: (row: any) => `$${Number(row.budget).toLocaleString()}`
     },
     {
-      header: "Progress",
+      header: t("progress", "Progress"),
       accessor: (row: any) => `${row.progress || 0}%`
     },
     {
-      header: "Status",
+      header: t("status_label", "Status"),
       accessor: (row: any) => (
         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
           row.status === "Completed" ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" :
           row.status === "In Progress" ? "bg-teal-50 text-teal-700 border border-teal-200/60" :
-          "bg-rose-50 text-rose-700 border border-rose-250"
+          "bg-rose-50 text-rose-700 border border-rose-255"
         }`}>
-          {row.status}
+          {row.status === "Completed" ? t("status_completed", "Completed") : (row.status === "In Progress" ? t("status_in_progress", "In Progress") : row.status)}
         </span>
       )
     }
   ];
 
   return (
-    <div className="flex flex-col gap-6 animate-fadeIn">
+    <div className="flex flex-col gap-6 animate-fadeIn text-left rtl:text-right">
       {/* Transactions Sub-tabs */}
-      <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start select-none">
+      <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start select-none flex-wrap gap-1">
         <button
           onClick={() => setTransactionsSubTab("transactions")}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -211,7 +213,7 @@ export default function TransactionsTab({
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          Escrow Contracts
+          {t("admin_escrow_contracts", "Escrow Contracts")}
         </button>
         <button
           onClick={() => setTransactionsSubTab("disputes")}
@@ -221,22 +223,22 @@ export default function TransactionsTab({
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          Arbitration disputes
+          {t("admin_arbitration_disputes", "Arbitration disputes")}
         </button>
       </div>
 
       {transactionsSubTab === "transactions" ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left rtl:text-right">
           <div>
-            <h3 className="text-lg font-bold text-slate-800">Transaction & contract escrows</h3>
-            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Track secure escrow deposits, progress percentages, and active milestones payout releases.</p>
+            <h3 className="text-lg font-bold text-slate-800">{t("admin_transaction_contract_escrows", "Transaction & contract escrows")}</h3>
+            <p className="text-slate-505 text-xs sm:text-sm mt-0.5">{t("admin_transaction_contract_escrows_desc", "Track secure escrow deposits, progress percentages, and active milestones payout releases.")}</p>
           </div>
 
           <div className="flex justify-between items-center gap-4">
             <div className="relative w-full md:w-64">
               <input
                 type="text"
-                placeholder="Search contracts..."
+                placeholder={t("admin_search_contracts_placeholder", "Search contracts...")}
                 value={transactionsSearch}
                 onChange={(e) => setTransactionsSearch(e.target.value)}
                 className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200"
@@ -255,30 +257,30 @@ export default function TransactionsTab({
             onPageChange={setTransactionsPage}
             totalItems={filteredTransactions.length}
             itemsPerPage={itemsPerPage}
-            emptyMessage="No contract records found."
+            emptyMessage={t("admin_no_contracts_found", "No contract records found.")}
           />
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left rtl:text-right">
           <div>
-            <h3 className="text-lg font-bold text-slate-805">Disputes & Arbitration Hub</h3>
-            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Review client complaints, freelancer counters, and execute escrow payouts or refunds.</p>
+            <h3 className="text-lg font-bold text-slate-805">{t("admin_disputes_arbitration_hub", "Disputes & Arbitration Hub")}</h3>
+            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">{t("admin_disputes_arbitration_hub_desc", "Review client complaints, freelancer counters, and execute escrow payouts or refunds.")}</p>
           </div>
 
           {/* Sub-tabs and Search */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 pb-5">
             {/* Filter Tabs */}
-            <div className="flex bg-slate-100 p-1 rounded-xl w-fit">
+            <div className="flex bg-slate-100 p-1 rounded-xl w-fit flex-wrap gap-1">
               <button
                 type="button"
                 onClick={() => setDisputeFilter("pending")}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   disputeFilter === "pending"
                     ? "bg-white text-teal-850 shadow-sm"
-                    : "text-slate-500 hover:text-slate-805"
+                    : "text-slate-500 hover:text-slate-855"
                 }`}
               >
-                Pending ({disputes.filter(d => !d.status.startsWith("Resolved") && d.status !== "Closed").length})
+                {t("admin_pending", "Pending")} ({disputes.filter(d => !d.status.startsWith("Resolved") && d.status !== "Closed").length})
               </button>
               <button
                 type="button"
@@ -286,10 +288,10 @@ export default function TransactionsTab({
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   disputeFilter === "resolved"
                     ? "bg-white text-teal-850 shadow-sm"
-                    : "text-slate-500 hover:text-slate-805"
+                    : "text-slate-500 hover:text-slate-855"
                 }`}
               >
-                Resolved ({disputes.filter(d => d.status.startsWith("Resolved") || d.status === "Closed").length})
+                {t("admin_resolved", "Resolved")} ({disputes.filter(d => d.status.startsWith("Resolved") || d.status === "Closed").length})
               </button>
               <button
                 type="button"
@@ -297,21 +299,20 @@ export default function TransactionsTab({
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                   disputeFilter === "all"
                     ? "bg-white text-teal-850 shadow-sm"
-                    : "text-slate-500 hover:text-slate-805"
+                    : "text-slate-500 hover:text-slate-855"
                 }`}
               >
-                All ({disputes.length})
+                {t("admin_all", "All")} ({disputes.length})
               </button>
             </div>
-
-            {/* Search Input */}
+              {/* Search Input */}
             <div className="relative w-full sm:w-64">
               <input
                 type="text"
-                placeholder="Search disputes..."
+                placeholder={t("admin_search_disputes_placeholder", "Search disputes...")}
                 value={disputesSearch}
                 onChange={(e) => setDisputesSearch(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-850 focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200 font-medium"
+                className="w-full bg-slate-50 border border-slate-200 hover:border-slate-300 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-855 focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200 font-medium"
               />
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -321,7 +322,7 @@ export default function TransactionsTab({
 
           {filteredDisputes.length === 0 ? (
             <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-xl">
-              <p className="text-slate-505 text-sm font-semibold">No disputes found matching the selected filter or search query.</p>
+              <p className="text-slate-505 text-sm font-semibold">{t("admin_no_disputes_matching", "No disputes found matching the selected filter or search query.")}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-6">
@@ -345,34 +346,34 @@ export default function TransactionsTab({
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
                     <div>
                       <span className="text-[10px] font-bold text-teal-700 uppercase tracking-widest bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded">
-                        Dispute #{disp.id}
+                        {t("admin_dispute_hash", "Dispute #")}{disp.id}
                       </span>
                       <h4 className="text-base font-extrabold text-slate-855 mt-2">{disp.project}</h4>
                       <div className="text-xs text-slate-500 font-semibold mt-1">
-                        Client: <span className="text-slate-700">{disp.client}</span> &nbsp;|&nbsp; Freelancer: <span className="text-slate-700">{disp.freelancer}</span>
+                        {t("client", "Client")}: <span className="text-slate-700">{disp.client}</span> &nbsp;|&nbsp; {t("freelancer", "Freelancer")}: <span className="text-slate-700">{disp.freelancer}</span>
                       </div>
                     </div>
 
-                    <div className="text-left sm:text-right shrink-0">
-                      <span className="text-xxs uppercase tracking-wider text-slate-400 font-semibold block">Escrow held</span>
+                    <div className="text-left sm:text-right shrink-0 rtl:text-right">
+                      <span className="text-xxs uppercase tracking-wider text-slate-400 font-semibold block">{t("admin_escrow_held", "Escrow held")}</span>
                       <span className="text-xl font-black text-rose-600">${disp.amount.toLocaleString()}</span>
                     </div>
                   </div>
 
                   {/* Dispute Reason */}
                   <div className="text-xs p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 font-semibold">
-                    <span className="font-extrabold">Reason filed: </span>
+                    <span className="font-extrabold">{t("admin_reason_filed", "Reason filed: ")}</span>
                     {disp.reason}
                   </div>
 
                   {/* Statements Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     <div className="p-4 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800">
-                      <h5 className="font-bold text-slate-800 mb-2 border-b border-slate-200/80 pb-1">Client Statement</h5>
+                      <h5 className="font-bold text-slate-800 mb-2 border-b border-slate-200/80 pb-1">{t("admin_client_statement", "Client Statement")}</h5>
                       <blockquote className="italic text-slate-500 leading-relaxed">&ldquo;{disp.clientStatement}&rdquo;</blockquote>
                     </div>
                     <div className="p-4 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-800">
-                      <h5 className="font-bold text-slate-800 mb-2 border-b border-slate-200/80 pb-1">Freelancer Statement</h5>
+                      <h5 className="font-bold text-slate-800 mb-2 border-b border-slate-200/80 pb-1">{t("admin_freelancer_statement", "Freelancer Statement")}</h5>
                       <blockquote className="italic text-slate-500 leading-relaxed">&ldquo;{disp.freelancerStatement}&rdquo;</blockquote>
                     </div>
                   </div>
@@ -380,7 +381,7 @@ export default function TransactionsTab({
                   {/* Arbitration controls */}
                   <div className="flex flex-wrap items-center justify-between border-t border-slate-100 pt-4 gap-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-500">Mediation Status: </span>
+                      <span className="text-xs font-bold text-slate-500">{t("admin_mediation_status", "Mediation Status: ")}</span>
                       <span className={`text-xs font-black px-3 py-1 rounded-full border flex items-center gap-1.5 ${
                         !disp.status.startsWith("Resolved") && disp.status !== "Closed"
                           ? "bg-amber-50 text-amber-700 border-amber-200"
@@ -391,12 +392,12 @@ export default function TransactionsTab({
                             <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600" />
                             <span>
                               {disp.status.includes("Refunded")
-                                ? "Closed & Resolved (Refunded Client)"
+                                ? t("admin_resolved_refunded", "Closed & Resolved (Refunded Client)")
                                 : disp.status.includes("Released")
-                                ? "Closed & Resolved (Released to Freelancer)"
+                                ? t("admin_resolved_released", "Closed & Resolved (Released to Freelancer)")
                                 : disp.status.includes("Split")
-                                ? "Closed & Resolved (Partial Split)"
-                                : "Closed & Resolved"}
+                                ? t("admin_resolved_split", "Closed & Resolved (Partial Split)")
+                                : disp.status}
                             </span>
                           </>
                         ) : (
@@ -411,13 +412,13 @@ export default function TransactionsTab({
                           onClick={() => resolveDispute(disp.id, "Resolved (Refunded Client)")}
                           className="px-3 py-1.5 bg-cyan-50 hover:bg-cyan-500 active:bg-cyan-600 focus:bg-cyan-500 focus:text-white active:text-white border border-cyan-200 text-cyan-700 hover:text-white transition-all text-xs font-bold rounded-lg cursor-pointer focus:outline-none"
                         >
-                          Refund Client (100%)
+                          {t("admin_refund_client_100", "Refund Client (100%)")}
                         </button>
                         <button
                           onClick={() => resolveDispute(disp.id, "Resolved (Released to Freelancer)")}
                           className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-500 active:bg-emerald-600 focus:bg-emerald-500 focus:text-white active:text-white border border-emerald-200 text-emerald-700 hover:text-white transition-all text-xs font-bold rounded-lg cursor-pointer focus:outline-none"
                         >
-                          Payout Freelancer (100%)
+                          {t("admin_payout_freelancer_100", "Payout Freelancer (100%)")}
                         </button>
                         <button
                           onClick={() => {
@@ -456,14 +457,14 @@ export default function TransactionsTab({
                           }}
                           className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-800 transition-all text-xs font-bold rounded-lg cursor-pointer"
                         >
-                          Split / Custom
+                          {t("admin_split_custom", "Split / Custom")}
                         </button>
                         <button
                           onClick={() => handleToggleChat(disp.id)}
                           className="px-3 py-1.5 bg-slate-105 hover:bg-slate-200 border border-slate-300 text-slate-700 transition-all text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1"
                         >
                           <FiMessageSquare className="w-3.5 h-3.5" />
-                          {loadingChatId === disp.id ? "Loading..." : activeChatId === disp.id ? "Hide Chat" : "View Chat"}
+                          {loadingChatId === disp.id ? t("loading", "Loading...") : activeChatId === disp.id ? t("admin_hide_chat", "Hide Chat") : t("admin_view_chat", "View Chat")}
                         </button>
                       </div>
                     ) : (
@@ -473,14 +474,14 @@ export default function TransactionsTab({
                           className="px-3 py-1.5 bg-slate-105 hover:bg-slate-200 border border-slate-300 text-slate-700 transition-all text-xs font-bold rounded-lg cursor-pointer flex items-center gap-1"
                         >
                           <FiMessageSquare className="w-3.5 h-3.5" />
-                          {loadingChatId === disp.id ? "Loading..." : activeChatId === disp.id ? "Hide Chat" : "View Chat"}
+                          {loadingChatId === disp.id ? t("loading", "Loading...") : activeChatId === disp.id ? t("admin_hide_chat", "Hide Chat") : t("admin_view_chat", "View Chat")}
                         </button>
                         <button
                           onClick={() => resolveDispute(disp.id, "Under Mediation")}
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-250 text-slate-700 font-bold transition-all text-xs rounded-lg cursor-pointer flex items-center gap-1.5"
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-255 text-slate-707 font-bold transition-all text-xs rounded-lg cursor-pointer flex items-center gap-1.5"
                         >
                           <FiRefreshCw className="w-3.5 h-3.5 text-slate-500" />
-                          Reopen Case
+                          {t("admin_reopen_case", "Reopen Case")}
                         </button>
                       </div>
                     )}
@@ -489,11 +490,11 @@ export default function TransactionsTab({
                   {/* Chat interface */}
                   {activeChatId === disp.id && (
                     <div className="mt-5 border-t border-slate-100 pt-5 flex flex-col gap-4 animate-fadeIn">
-                      <h5 className="font-extrabold text-slate-800 text-[10px] uppercase tracking-wider flex items-center gap-1.5">
-                        <FiMessageSquare className="w-3.5 h-3.5 text-teal-600" /> Dispute Mediation Dialogue
+                      <h5 className="font-extrabold text-slate-805 text-[10px] uppercase tracking-wider flex items-center gap-1.5">
+                        <FiMessageSquare className="w-3.5 h-3.5 text-teal-600" /> {t("admin_dispute_mediation_dialogue", "Dispute Mediation Dialogue")}
                       </h5>
                       {chatMessages.length === 0 ? (
-                        <p className="text-slate-400 text-xxs italic bg-slate-50 border border-slate-150 rounded-xl p-3 text-center">No discussion logged for this dispute folder.</p>
+                        <p className="text-slate-400 text-xxs italic bg-slate-50 border border-slate-150 rounded-xl p-3 text-center">{t("admin_no_discussion_logged", "No discussion logged for this dispute folder.")}</p>
                       ) : (
                         <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto bg-slate-50/50 border border-slate-200 p-4 rounded-xl">
                           {chatMessages.map((msg, index) => {

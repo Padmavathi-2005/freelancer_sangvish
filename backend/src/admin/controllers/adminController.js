@@ -165,6 +165,7 @@ export const getUsers = async (req, res) => {
             FROM users u
             LEFT JOIN client_profiles cp ON u.user_id = cp.user_id
             LEFT JOIN freelancer_profiles fp ON u.user_id = fp.user_id
+            WHERE u.email NOT IN (SELECT email FROM admins)
             ORDER BY u.created_at DESC
         `;
         const result = await pool.query(query);

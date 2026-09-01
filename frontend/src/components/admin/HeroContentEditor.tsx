@@ -180,7 +180,7 @@ export default function HeroContentEditor({
         <button
           onClick={handleCopywritingSave}
           disabled={saving}
-          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer"
+          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer whitespace-nowrap w-full sm:w-auto text-center"
         >
           {saving ? "Saving translations..." : "Save Copywriting Translations"}
         </button>

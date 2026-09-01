@@ -1,5 +1,5 @@
 import { API_URL, API_BASE_URL } from "@/config/api";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { FiBriefcase, FiCreditCard, FiCheckCircle, FiAlertTriangle, FiExternalLink, FiRefreshCw, FiStar, FiMessageSquare, FiX, FiUser, FiUnlock, FiClock, FiChevronDown } from "react-icons/fi";
 import { FaWallet, FaStripe, FaPaypal } from "react-icons/fa";
@@ -60,6 +60,59 @@ export const resolveDownloadUrl = (url: string) => {
   }
   const baseBackendUrl = API_BASE_URL.replace(/\/api\/?$/, "");
   return `${baseBackendUrl}${cleanUrl.startsWith("/") ? "" : "/"}${cleanUrl}`;
+};
+
+export const getInvoiceBreakdown = (app: any) => {
+  if (!app) return { baseCost: 0, addonsList: [], customFeaturesList: [], total: 0, planName: null };
+  const reqText = app.requirements || "";
+  const total = parseFloat(app.price || 0);
+
+  const planMatch = reqText.match(/\[Plan Ordered:\s*([^\]]+)\]/i);
+  const planName = planMatch ? planMatch[1].trim() : null;
+
+  const extrasMatch = reqText.match(/\[Ordered Extras\s*\/\s*Add-ons:\s*([\s\S]*?)\]/i);
+  let addonsList: { title: string; price: number }[] = [];
+  if (extrasMatch && extrasMatch[1]) {
+    const rawExtras = extrasMatch[1].trim();
+    const lines = rawExtras.split("\n").map((l: string) => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      const priceMatch = line.match(/(.*?)\(\+\$?([\d.]+)\)/);
+      if (priceMatch) {
+        const title = priceMatch[1].replace(/^[-\s]+/, "").trim();
+        const price = parseFloat(priceMatch[2]);
+        addonsList.push({ title, price });
+      } else {
+        const cleanTitle = line.replace(/^[-\s]+/, "").trim();
+        if (cleanTitle) addonsList.push({ title: cleanTitle, price: 0 });
+      }
+    }
+  }
+
+  let customFeaturesList: { title: string; price: number }[] = [];
+  let rawMilestones: any[] = [];
+  try {
+    rawMilestones = typeof app.milestones === "string" ? JSON.parse(app.milestones) : (app.milestones || []);
+  } catch (e) {}
+  for (const m of rawMilestones) {
+    if (!m.title) continue;
+    const titleLower = m.title.toLowerCase();
+    if (titleLower.includes("primary") || titleLower.includes("base") || titleLower.includes("entire gig scope")) {
+      continue;
+    }
+    const existsInAddons = addonsList.some(a => a.title.toLowerCase() === m.title.toLowerCase());
+    if (!existsInAddons) {
+      customFeaturesList.push({
+        title: m.title,
+        price: parseFloat(m.amount || 0)
+      });
+    }
+  }
+
+  const addonsSum = addonsList.reduce((sum, a) => sum + a.price, 0);
+  const featuresSum = customFeaturesList.reduce((sum, f) => sum + f.price, 0);
+  const baseCost = Math.max(0, total - (addonsSum + featuresSum));
+
+  return { baseCost, addonsList, customFeaturesList, total, planName };
 };
 
 export const getOriginalPackagePrice = (app: any) => {
@@ -222,16 +275,25 @@ export const renderOrderBreakdown = (app: any, t?: any) => {
         {addonsList.map((addon, idx) => (
           <div key={`addon-${idx}`} className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200/90 text-emerald-800 px-3 py-1.5 rounded-lg">
             <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">{translate("extra_addon_label", "Extra Add-on:")}</span>
-            <span className="font-extrabold">{addon.title} {addon.price > 0 ? `(+${app.currency_symbol || "$"}${addon.price})` : ""}</span>
+            <span className="font-extrabold">
+              {translate(addon.title, addon.title)} {addon.price > 0 ? `(+${app.currency_symbol || "$"}${addon.price})` : ""}
+            </span>
           </div>
         ))}
 
-        {customFeaturesList.map((feature, idx) => (
-          <div key={`feat-${idx}`} className="flex items-center gap-1.5 bg-indigo-50 border border-indigo-200/90 text-indigo-800 px-3 py-1.5 rounded-lg">
-            <span className="text-[10px] font-black text-indigo-600 uppercase tracking-wider">{translate("custom_feature_label", "Custom Feature:")}</span>
-            <span className="font-extrabold">{feature.title} {feature.price > 0 ? `(+${app.currency_symbol || "$"}${feature.price})` : ""}</span>
-          </div>
-        ))}
+        {customFeaturesList.map((feature, idx) => {
+          const translatedFeatTitle = feature.title.replace(/Milestone\s*#?(\d+)/gi, (_: string, num: string) => {
+            return translate("milestone_number_label", "Milestone #{num}").replace("{num}", num);
+          });
+          return (
+            <div key={`feat-${idx}`} className="flex items-center gap-1.5 bg-sky-50 border border-sky-200/90 px-3 py-1.5 rounded-lg animate-fadeIn">
+              <span className="text-[10px] font-black text-sky-600 uppercase tracking-wider">{translate("custom_feature_label", "Custom Feature:")}</span>
+              <span className="font-extrabold text-slate-750">
+                {translate(translatedFeatTitle, translatedFeatTitle)} {feature.price > 0 ? `(+${app.currency_symbol || "$"}${feature.price})` : ""}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {notes && (
@@ -267,6 +329,8 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
     title: string;
     orderId: string | number;
   } | null>(null);
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { handleStartConversation } = useDashboard();
 
@@ -279,18 +343,38 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
     }
   }, [congratsModalData]);
 
+  const hasAutoSelected = useRef(false);
+
   useEffect(() => {
-    if (typeof window !== "undefined" && clientApplications.length > 0 && !selectedGigOrderDetails) {
+    if (typeof window !== "undefined" && clientApplications.length > 0 && !selectedGigOrderDetails && !hasAutoSelected.current) {
       const params = new URLSearchParams(window.location.search);
       const appIdParam = params.get("application_id") || params.get("order_id");
       if (appIdParam) {
         const found = clientApplications.find((a: any) => a.application_id.toString() === appIdParam.toString());
         if (found) {
+          hasAutoSelected.current = true;
           setSelectedGigOrderDetails(found);
         }
       }
     }
   }, [clientApplications, selectedGigOrderDetails]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const currentAppId = params.get("application_id") || params.get("order_id");
+      if (selectedGigOrderDetails) {
+        const appId = selectedGigOrderDetails.application_id.toString();
+        if (currentAppId !== appId) {
+          window.history.pushState(null, "", `?application_id=${appId}`);
+        }
+      } else {
+        if (currentAppId) {
+          window.history.pushState(null, "", window.location.pathname);
+        }
+      }
+    }
+  }, [selectedGigOrderDetails]);
 
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeReason, setDisputeReason] = useState("Work quality is poor");
@@ -1074,6 +1158,14 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
             >
               <FiRefreshCw className="w-3 h-3" /> {t("refresh_btn", "Refresh")}
             </button>
+            {selectedGigOrderDetails.payment_status === "Paid" && (
+              <button
+                onClick={() => setShowInvoiceModal(true)}
+                className="text-[10px] font-extrabold text-primary bg-primary/[0.04] border border-primary/20 hover:bg-primary/[0.08] rounded-xl px-4 py-2.5 flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap animate-fadeIn"
+              >
+                <i className="fa-solid fa-file-invoice-dollar"></i> {t("view_invoice_btn", "View Invoice")}
+              </button>
+            )}
           </div>
         </div>
 
@@ -1115,7 +1207,7 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
                     if (isNegotiated && origPrice) {
                       return (
                         <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded uppercase tracking-wider">
-                          Negotiated from {selectedGigOrderDetails.currency_symbol || "$"}{origPrice.toLocaleString()}
+                          {t("negotiated_from_label", "Negotiated from")} {selectedGigOrderDetails.currency_symbol || "$"}{origPrice.toLocaleString()}
                         </span>
                       );
                     }
@@ -1200,6 +1292,139 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
           </div>
         )}
         {renderDisputeModal()}
+        {showInvoiceModal && selectedGigOrderDetails && typeof window !== "undefined" && createPortal(
+          <div className="fixed inset-0 z-[9999] bg-slate-950/40 flex items-center justify-center p-4 print:p-0 print:bg-white animate-fadeIn text-slate-800">
+            <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] border border-slate-200/80 shadow-2xl flex flex-col relative overflow-hidden print:shadow-none print:border-none print:max-w-none print:max-h-none">
+              {/* Header Bar */}
+              <div className="flex justify-between items-center p-4 border-b border-slate-100 shrink-0 print:hidden bg-slate-50/50">
+                <span className="text-xs font-bold text-slate-855">Gig Order Receipt</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => window.print()}
+                    className="text-[10px] font-extrabold text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-lg px-3 py-1.5 cursor-pointer transition-all flex items-center gap-1"
+                  >
+                    <i className="fa-solid fa-print"></i> Print
+                  </button>
+                  <button
+                    onClick={() => setShowInvoiceModal(false)}
+                    className="text-slate-400 hover:text-slate-650 hover:bg-slate-100 rounded-lg p-1.5 cursor-pointer transition-all border-0 flex items-center justify-center"
+                  >
+                    <i className="fa-solid fa-xmark text-sm"></i>
+                  </button>
+                </div>
+              </div>
+
+              {/* Content Area */}
+              <div className="flex-grow overflow-y-auto scrollbar-thin p-6 print:p-0 text-left">
+                <div id="printable-invoice-area" className="flex flex-col w-full text-slate-805">
+                  <div className="h-1.5 bg-gradient-to-r from-primary to-cyan-500 shrink-0 print:hidden -mx-6 -mt-6 mb-6" />
+
+                  <div className="flex justify-between items-start border-b border-slate-100 pb-5">
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900 tracking-wide">Buy2Lancer Invoice</h2>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Payment Receipt</p>
+                    </div>
+                    <div className="text-right">
+                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
+                        Paid & Released
+                      </span>
+                      <p className="text-[10px] font-semibold text-slate-550 mt-2">
+                        ID: <span className="text-slate-800 font-bold">INV-GIG-{selectedGigOrderDetails.application_id}-{new Date(selectedGigOrderDetails.created_at).getTime().toString().slice(-4)}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Billed To / From */}
+                  <div className="grid grid-cols-2 gap-6 py-5 border-b border-slate-100 text-xs">
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Billed To (Client Partner)</span>
+                      <p className="font-extrabold text-slate-705">{selectedGigOrderDetails.client_name || "Client Partner"}</p>
+                      <p className="text-slate-505 mt-0.5 font-medium">{selectedGigOrderDetails.client_email}</p>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Service Provider (Freelancer)</span>
+                      <p className="font-extrabold text-slate-705">{selectedGigOrderDetails.freelancer_name || "Freelancer Partner"}</p>
+                      <p className="text-slate-550 mt-0.5 font-medium">{selectedGigOrderDetails.freelancer_email}</p>
+                    </div>
+                  </div>
+
+                  {/* Order Details */}
+                  <div className="py-5 border-b border-slate-100 text-xs">
+                    <span className="text-[9px] font-black text-slate-405 uppercase tracking-wider block mb-2">Service Ordered</span>
+                    <p className="font-extrabold text-slate-800 text-sm">{selectedGigOrderDetails.gig_title}</p>
+                    <p className="text-slate-505 mt-1 font-semibold">Order ID: #{selectedGigOrderDetails.application_id} · Ordered on {new Date(selectedGigOrderDetails.created_at).toLocaleDateString()}</p>
+                  </div>
+
+                  {/* Itemized Table */}
+                  <div className="py-5 text-xs">
+                    <span className="text-[9px] font-black text-slate-405 uppercase tracking-wider block mb-3">Itemized Receipt Details</span>
+                    <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-405 uppercase tracking-wider">
+                            <th className="p-3 text-left w-3/5">Description</th>
+                            <th className="p-3 text-right w-2/5">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-bold text-slate-750">
+                          {(() => {
+                            const { baseCost, addonsList, customFeaturesList, total, planName } = getInvoiceBreakdown(selectedGigOrderDetails);
+                            return (
+                              <>
+                                <tr>
+                                  <td className="p-3 text-left font-extrabold">
+                                    {planName ? `${planName.toUpperCase()} Plan` : "Base Service Scope"}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    {selectedGigOrderDetails.currency_symbol || "$"}{baseCost.toLocaleString()}
+                                  </td>
+                                </tr>
+                                {addonsList.map((a, i) => (
+                                  <tr key={`addon-row-${i}`} className="text-emerald-805">
+                                    <td className="p-3 text-left font-semibold">
+                                      <span className="text-[9px] font-black text-emerald-605 bg-emerald-50 border border-emerald-200/50 px-1 py-0.5 rounded uppercase mr-1.5">Extra Add-on</span>
+                                      {a.title}
+                                    </td>
+                                    <td className="p-3 text-right">
+                                      +{selectedGigOrderDetails.currency_symbol || "$"}{a.price.toLocaleString()}
+                                    </td>
+                                  </tr>
+                                ))}
+                                {customFeaturesList.map((f, i) => (
+                                  <tr key={`feat-row-${i}`} className="text-sky-850">
+                                    <td className="p-3 text-left font-semibold">
+                                      <span className="text-[9px] font-black text-sky-600 bg-sky-50 border border-sky-200/50 px-1 py-0.5 rounded uppercase mr-1.5">Custom Feature</span>
+                                      {f.title}
+                                    </td>
+                                    <td className="p-3 text-right">
+                                      +{selectedGigOrderDetails.currency_symbol || "$"}{f.price.toLocaleString()}
+                                    </td>
+                                  </tr>
+                                ))}
+                                <tr className="bg-slate-50 font-black text-slate-900 border-t border-slate-200">
+                                  <td className="p-3.5 text-left text-sm">Total Paid</td>
+                                  <td className="p-3.5 text-right text-sm">
+                                    {selectedGigOrderDetails.currency_symbol || "$"}{total.toLocaleString()}
+                                  </td>
+                                </tr>
+                              </>
+                            );
+                          })()}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Footer Notes */}
+                  <div className="bg-slate-50/50 border border-slate-150 rounded-xl p-4 mt-2 text-[10px] text-slate-500 font-semibold leading-relaxed">
+                    <p>This is a payment confirmation receipt. Payments are processed securely via Stripe, PayPal, or User Wallet escrow system. Please email support@buy2lancer.com for any billing inquiries.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     );
   }
@@ -1215,6 +1440,18 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
             <span>{t("my_service_orders_title", "My Service Orders")}</span>
           </h2>
           <p className="text-slate-404 text-xs mt-1 font-semibold">{t("my_service_orders_subtitle", "Track status, pay accepted orders, and view milestones.")}</p>
+        </div>
+        <div className="w-full sm:w-64 relative">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={t("search_orders_placeholder", "Search by title, partner...")}
+            className="w-full pl-9 pr-4 py-2 text-xs font-semibold bg-slate-50 hover:bg-slate-100/75 focus:bg-white border border-slate-200 focus:border-primary/50 rounded-xl outline-none transition-all shadow-2xs"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+            <i className="fa-solid fa-magnifying-glass text-[11px]"></i>
+          </div>
         </div>
       </div>
 
@@ -1240,108 +1477,136 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {clientApplications.map((app) => {
-            const { hasMilestones, upfront, total } = getUpfront(app);
-            const isPaid = Boolean(
-              (app.contract_id && app.contract_status !== "Cancelled") || 
-              app.payment_status === "Paid" || 
-              app.contract_status === "In Progress" || 
-              app.contract_status === "Under Review" || 
-              app.contract_status === "Completed"
-            );
-            const needsPayment = app.status === "Accepted" && !isPaid;
+          {(() => {
+            const list = clientApplications.filter(app => {
+              const term = searchTerm.toLowerCase().trim();
+              if (!term) return true;
+              return (
+                (app.gig_title && app.gig_title.toLowerCase().includes(term)) ||
+                (app.freelancer_name && app.freelancer_name.toLowerCase().includes(term)) ||
+                (app.application_id && app.application_id.toString().includes(term))
+              );
+            });
+            if (list.length === 0) {
+              return (
+                <div className="flex flex-col items-center justify-center py-12 text-center bg-white border border-dashed border-slate-200 rounded-xl p-8 shadow-sm">
+                  <FiBriefcase className="w-8 h-8 text-slate-300 mb-2.5" />
+                  <h4 className="text-xs font-black text-slate-800">No matching orders found</h4>
+                  <p className="text-[11px] text-slate-400 font-medium mt-1">Try updating your search query or keywords.</p>
+                </div>
+              );
+            }
+            return list.map((app) => {
+              const { hasMilestones, upfront, total } = getUpfront(app);
+              const isPaid = Boolean(
+                (app.contract_id && app.contract_status !== "Cancelled") || 
+                app.payment_status === "Paid" || 
+                app.contract_status === "In Progress" || 
+                app.contract_status === "Under Review" || 
+                app.contract_status === "Completed"
+              );
+              const needsPayment = app.status === "Accepted" && !isPaid;
 
-            return (
-              <div
-                key={app.application_id}
-                className={`bg-white border rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden transition-all animate-fadeIn ${
-                  needsPayment ? "border-primary/30 ring-1 ring-primary/10" : "border-slate-200/80 hover:border-slate-300"
-                }`}
-              >
-                <div className={`absolute top-0 left-0 w-full h-1 ${
-                  needsPayment ? "bg-gradient-to-r from-primary to-emerald-400" : "bg-gradient-to-r from-primary to-cyan-500 opacity-60"
-                }`} />
+              return (
+                <div
+                  key={app.application_id}
+                  className={`bg-white border rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden transition-all animate-fadeIn ${
+                    needsPayment ? "border-primary/30 ring-1 ring-primary/10" : "border-slate-200/80 hover:border-slate-300"
+                  }`}
+                >
+                  <div className={`absolute top-0 left-0 w-full h-1 ${
+                    needsPayment ? "bg-gradient-to-r from-primary to-emerald-400" : "bg-gradient-to-r from-primary to-cyan-500 opacity-60"
+                  }`} />
 
-                {/* Top meta */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100/80 pb-4">
-                  <div className="cursor-pointer space-y-0.5 min-w-0" onClick={() => setSelectedGigOrderDetails(app)}>
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t("order_hash_indicator", "Order #")}{app.application_id}</span>
-                    <h3 className="text-sm sm:text-base font-black text-slate-800 hover:text-primary transition-colors truncate">{t(app.gig_title, app.gig_title)}</h3>
-                    <p className="text-xs text-slate-400 font-bold mt-1 truncate">{app.freelancer_name} · <span className="font-normal text-slate-450">{app.freelancer_email}</span></p>
-                  </div>
+                  {/* Top meta */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100/80 pb-4">
+                    <div className="cursor-pointer space-y-0.5 min-w-0" onClick={() => setSelectedGigOrderDetails(app)}>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">{t("order_hash_indicator", "Order #")}{app.application_id}</span>
+                      <h3 className="text-sm sm:text-base font-black text-slate-800 hover:text-primary transition-colors truncate">{t(app.gig_title, app.gig_title)}</h3>
+                      <p className="text-xs text-slate-400 font-bold mt-1 truncate">{app.freelancer_name} · <span className="font-normal text-slate-450">{app.freelancer_email}</span></p>
+                    </div>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("total_label", "Total:")}</span>
-                        <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
-                          {app.currency_symbol || "$"}{total.toLocaleString()}
-                          {(() => {
-                            const isNegotiated = checkIsNegotiated(app);
-                            const origPrice = getOriginalPackagePrice(app);
-                            if (isNegotiated && origPrice) {
-                              return (
-                                <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded uppercase tracking-wider">
-                                  {t("negotiated_from_label", "Negotiated from")} {app.currency_symbol || "$"}{origPrice.toLocaleString()}
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
-                        </span>
-                      </div>
-                      {needsPayment && (
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider">{t("due_label", "Due:")}</span>
-                          <span className="text-xs font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
-                            ${upfront.toFixed(2)}
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("total_label", "Total:")}</span>
+                          <span className="text-xs sm:text-sm font-black text-slate-800 bg-white sm:bg-slate-100 border border-slate-200/60 px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                            {app.currency_symbol || "$"}{total.toLocaleString()}
+                            {(() => {
+                              const isNegotiated = checkIsNegotiated(app);
+                              const origPrice = getOriginalPackagePrice(app);
+                              if (isNegotiated && origPrice) {
+                                return (
+                                  <span className="text-[8px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded uppercase tracking-wider">
+                                    {t("negotiated_from_label", "Negotiated from")} {app.currency_symbol || "$"}{origPrice.toLocaleString()}
+                                  </span>
+                                );
+                              }
+                              return null;
+                            })()}
                           </span>
                         </div>
-                      )}
+                        {needsPayment && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider">{t("due_label", "Due:")}</span>
+                            <span className="text-xs font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-lg">
+                              ${upfront.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {(() => {
+                        const badge = getOrderStatusPill(app, t);
+                        return (
+                          <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap shrink-0 ${badge.style}`}>
+                            {badge.text}
+                          </span>
+                        );
+                      })()}
                     </div>
-                    {(() => {
-                      const badge = getOrderStatusPill(app);
-                      return (
-                        <span className={`text-[9.5px] sm:text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider whitespace-nowrap shrink-0 ${badge.style}`}>
-                          {t(badge.text.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""), badge.text)}
+                  </div>
+
+                  {/* Requirements & Price Breakdown */}
+                  {renderOrderBreakdown(app, t)}
+
+                  {/* Footer action */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 pt-3 border-t border-slate-100 mt-2">
+                    <span 
+                      onClick={() => setSelectedGigOrderDetails(app)}
+                      className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                    >
+                      {t("click_card_details_hint", "Click card to view details & track milestones →")}
+                    </span>
+                    <div className="flex items-center gap-2.5 ml-auto w-full sm:w-auto justify-between sm:justify-end">
+                      {needsPayment ? (
+                        <span className="text-[10px] font-bold text-primary flex items-center gap-1">
+                          <FiCreditCard className="w-3 h-3" />
+                          {hasMilestones ? t("upfront_escrow_label", "100% upfront (escrow)") : t("full_payment_required_label", "Full payment required to start")}
                         </span>
-                      );
-                    })()}
+                      ) : isPaid ? (
+                        <span className="text-[10px] font-extrabold text-emerald-700 flex items-center gap-1">
+                          <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                          {t("paid_escrow_protected_label", "Paid & Escrow Protected")}
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      <button
+                        onClick={() => { setPayError(""); setPaySuccess(false); setSelectedGigOrderDetails(app); }}
+                        className={`text-[10px] font-bold text-white flex items-center gap-1.5 cursor-pointer py-2 px-4 rounded-lg transition-all shadow-sm ${
+                          needsPayment
+                            ? "bg-primary hover:bg-primary-hover shadow-primary/20"
+                            : "bg-slate-700 hover:bg-slate-800"
+                        }`}
+                      >
+                        {needsPayment ? t("pay_now_view_details_btn", "💳 Pay Now & View Details →") : t("view_details_arrow_btn", "View Details →")}
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                {/* Requirements & Price Breakdown */}
-                {renderOrderBreakdown(app, t)}
-
-                {/* Footer action */}
-                <div className="flex justify-between items-center">
-                  {needsPayment ? (
-                    <span className="text-[10px] font-bold text-primary flex items-center gap-1">
-                      <FiCreditCard className="w-3 h-3" />
-                      {hasMilestones ? t("upfront_escrow_label", "100% upfront (escrow)") : t("full_payment_required_label", "Full payment required to start")}
-                    </span>
-                  ) : isPaid ? (
-                    <span className="text-[10px] font-extrabold text-emerald-700 flex items-center gap-1">
-                      <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                      {t("paid_escrow_protected_label", "Paid & Escrow Protected")}
-                    </span>
-                  ) : (
-                    <span />
-                  )}
-                  <button
-                    onClick={() => { setPayError(""); setPaySuccess(false); setSelectedGigOrderDetails(app); }}
-                    className={`ml-auto text-[10px] font-bold text-white flex items-center gap-1.5 cursor-pointer py-2 px-4 rounded-lg transition-all shadow-sm ${
-                      needsPayment
-                        ? "bg-primary hover:bg-primary-hover shadow-primary/20"
-                        : "bg-slate-700 hover:bg-slate-800"
-                    }`}
-                  >
-                    {needsPayment ? t("pay_now_view_details_btn", "💳 Pay Now & View Details →") : t("view_details_arrow_btn", "View Details →")}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            });
+          })()}
         </div>
       )}
 
@@ -1546,6 +1811,139 @@ const ClientOrdersTab: React.FC<ClientOrdersTabProps> = ({
 
             <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mt-1">
               <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 animate-shrinkWidth" />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      {showInvoiceModal && selectedGigOrderDetails && typeof window !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-950/40 flex items-center justify-center p-4 print:p-0 print:bg-white animate-fadeIn">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] border border-slate-200/80 shadow-2xl flex flex-col relative overflow-hidden print:shadow-none print:border-none print:max-w-none print:max-h-none">
+            {/* Header Bar */}
+            <div className="flex justify-between items-center p-4 border-b border-slate-100 shrink-0 print:hidden bg-slate-50/50">
+              <span className="text-xs font-bold text-slate-800">Gig Order Receipt</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="text-[10px] font-extrabold text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100 rounded-lg px-3 py-1.5 cursor-pointer transition-all flex items-center gap-1"
+                >
+                  <i className="fa-solid fa-print"></i> Print
+                </button>
+                <button
+                  onClick={() => setShowInvoiceModal(false)}
+                  className="text-slate-400 hover:text-slate-650 hover:bg-slate-100 rounded-lg p-1.5 cursor-pointer transition-all border-0 flex items-center justify-center"
+                >
+                  <i className="fa-solid fa-xmark text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-grow overflow-y-auto scrollbar-thin p-6 print:p-0 text-left">
+              <div id="printable-invoice-area" className="flex flex-col w-full text-slate-800">
+                <div className="h-1.5 bg-gradient-to-r from-primary to-cyan-500 shrink-0 print:hidden -mx-6 -mt-6 mb-6" />
+
+                <div className="flex justify-between items-start border-b border-slate-100 pb-5">
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 tracking-wide">Buy2Lancer Invoice</h2>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Payment Receipt</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">
+                      Paid & Released
+                    </span>
+                    <p className="text-[10px] font-semibold text-slate-500 mt-2">
+                      ID: <span className="text-slate-800 font-bold">INV-GIG-{selectedGigOrderDetails.application_id}-{new Date(selectedGigOrderDetails.created_at).getTime().toString().slice(-4)}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Billed To / From */}
+                <div className="grid grid-cols-2 gap-6 py-5 border-b border-slate-100 text-xs">
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Billed To (Client Partner)</span>
+                    <p className="font-extrabold text-slate-700">{selectedGigOrderDetails.client_name || "Client Partner"}</p>
+                    <p className="text-slate-500 mt-0.5 font-medium">{selectedGigOrderDetails.client_email}</p>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Service Provider (Freelancer)</span>
+                    <p className="font-extrabold text-slate-700">{selectedGigOrderDetails.freelancer_name || "Freelancer Partner"}</p>
+                    <p className="text-slate-500 mt-0.5 font-medium">{selectedGigOrderDetails.freelancer_email}</p>
+                  </div>
+                </div>
+
+                {/* Order Details */}
+                <div className="py-5 border-b border-slate-100 text-xs">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-2">Service Ordered</span>
+                  <p className="font-extrabold text-slate-800 text-sm">{selectedGigOrderDetails.gig_title}</p>
+                  <p className="text-slate-500 mt-1 font-semibold">Order ID: #{selectedGigOrderDetails.application_id} · Ordered on {new Date(selectedGigOrderDetails.created_at).toLocaleDateString()}</p>
+                </div>
+
+                {/* Itemized Table */}
+                <div className="py-5 text-xs">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-3">Itemized Receipt Details</span>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-405 uppercase tracking-wider">
+                          <th className="p-3 text-left w-3/5">Description</th>
+                          <th className="p-3 text-right w-2/5">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-bold text-slate-750">
+                        {(() => {
+                          const { baseCost, addonsList, customFeaturesList, total, planName } = getInvoiceBreakdown(selectedGigOrderDetails);
+                          return (
+                            <>
+                              <tr>
+                                <td className="p-3 text-left font-extrabold">
+                                  {planName ? `${planName.toUpperCase()} Plan` : "Base Service Scope"}
+                                </td>
+                                <td className="p-3 text-right">
+                                  {selectedGigOrderDetails.currency_symbol || "$"}{baseCost.toLocaleString()}
+                                </td>
+                              </tr>
+                              {addonsList.map((a, i) => (
+                                <tr key={`addon-row-${i}`} className="text-emerald-800">
+                                  <td className="p-3 text-left font-semibold">
+                                    <span className="text-[9px] font-black text-emerald-605 bg-emerald-50 border border-emerald-200/50 px-1 py-0.5 rounded uppercase mr-1.5">Extra Add-on</span>
+                                    {a.title}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    +{selectedGigOrderDetails.currency_symbol || "$"}{a.price.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                              {customFeaturesList.map((f, i) => (
+                                <tr key={`feat-row-${i}`} className="text-sky-850">
+                                  <td className="p-3 text-left font-semibold">
+                                    <span className="text-[9px] font-black text-sky-600 bg-sky-50 border border-sky-200/50 px-1 py-0.5 rounded uppercase mr-1.5">Custom Feature</span>
+                                    {f.title}
+                                  </td>
+                                  <td className="p-3 text-right">
+                                    +{selectedGigOrderDetails.currency_symbol || "$"}{f.price.toLocaleString()}
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr className="bg-slate-50 font-black text-slate-900 border-t border-slate-200">
+                                <td className="p-3.5 text-left text-sm">Total Paid</td>
+                                <td className="p-3.5 text-right text-sm">
+                                  {selectedGigOrderDetails.currency_symbol || "$"}{total.toLocaleString()}
+                                </td>
+                              </tr>
+                            </>
+                          );
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Footer Notes */}
+                <div className="bg-slate-50/50 border border-slate-150 rounded-xl p-4 mt-2 text-[10px] text-slate-500 font-semibold leading-relaxed">
+                  <p>This is a payment confirmation receipt. Payments are processed securely via Stripe, PayPal, or User Wallet escrow system. Please email support@buy2lancer.com for any billing inquiries.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>,

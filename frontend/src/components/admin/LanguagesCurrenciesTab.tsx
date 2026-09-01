@@ -5,6 +5,7 @@ import { API_URL } from "@/config/api";
 import React, { useState, useEffect, useCallback } from "react";
 import { FiGlobe, FiDollarSign } from "react-icons/fi";
 import { useAdmin } from "@/app/admin/AdminContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 const API = `${API_URL}/admin`;
 
@@ -37,6 +38,7 @@ interface LanguagesCurrenciesTabProps {
 }
 
 export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrenciesTabProps = {}) {
+  const { t, direction } = useLanguage();
   const [subTab, setSubTab] = useState<"languages" | "currencies">(forceTab || "languages");
 
   useEffect(() => {
@@ -392,7 +394,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
   const paginatedTranslations = filteredTranslations.slice((transPage - 1) * transItemsPerPage, transPage * transItemsPerPage);
 
   return (
-    <div className="flex flex-col gap-6 animate-fadeIn">
+    <div className="flex flex-col gap-6 animate-fadeIn text-left rtl:text-right" dir={direction?.toLowerCase()}>
 
 
       {/* Sub Tab Toggle (only show if not translating and not forced) */}
@@ -411,12 +413,12 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               {tab === "languages" ? (
                 <>
                   <FiGlobe className="w-3.5 h-3.5" />
-                  <span>Languages</span>
+                  <span>{t("admin_languages", "Languages")}</span>
                 </>
               ) : (
                 <>
                   <FiDollarSign className="w-3.5 h-3.5" />
-                  <span>Currencies</span>
+                  <span>{t("admin_currencies", "Currencies")}</span>
                 </>
               )}
             </button>
@@ -435,16 +437,16 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                   onClick={() => setTranslatingLang(null)}
                   className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-[10px] font-black text-slate-500 cursor-pointer transition-colors"
                 >
-                  ← Back to Languages
+                  {t("admin_lang_back_btn", "← Back to Languages")}
                 </button>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-100 uppercase">
-                  Translate Editor
+                  {t("admin_lang_translate_editor", "Translate Editor")}
                 </span>
               </div>
               <h2 className="text-lg font-black text-slate-800 mt-2">
-                Manage Translations for {translatingLang.language_name} ({translatingLang.code})
+                {t("admin_lang_manage_translations", "Manage Translations for")} {translatingLang.language_name} ({translatingLang.code})
               </h2>
-              <p className="text-xs text-slate-400">Add global keys or modify translation values. Click Save to persist changes.</p>
+              <p className="text-xs text-slate-400">{t("admin_lang_editor_desc", "Add global keys or modify translation values. Click Save to persist changes.")}</p>
             </div>
 
             <div className="flex items-center gap-3 w-full md:w-auto">
@@ -452,7 +454,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                 type="text"
                 value={translatingSearch}
                 onChange={e => setTranslatingSearch(e.target.value)}
-                placeholder="Search keys or values..."
+                placeholder={t("admin_lang_search_placeholder", "Search keys or values...")}
                 className="w-full md:w-56 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition"
               />
               <button
@@ -460,7 +462,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                 disabled={transSaving}
                 className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-5 py-2.5 rounded-xl cursor-pointer shadow-md shadow-teal-700/10 shrink-0 transition"
               >
-                {transSaving ? "Saving..." : "Save Translations"}
+                {transSaving ? t("admin_lang_saving", "Saving...") : t("admin_lang_save_btn", "Save Translations")}
               </button>
             </div>
           </div>
@@ -469,12 +471,12 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
             {/* Left: Add New Translation Key Form */}
             <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-5 flex flex-col gap-4 self-start">
               <div>
-                <h3 className="text-xs font-black text-slate-800">Add Global Key</h3>
-                <p className="text-[11px] text-slate-400 mt-0.5">Declare a new translation key globally across all languages.</p>
+                <h3 className="text-xs font-black text-slate-800">{t("admin_lang_add_global_key", "Add Global Key")}</h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">{t("admin_lang_global_key_desc", "Declare a new translation key globally across all languages.")}</p>
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Key Name</label>
+                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t("admin_lang_key_name", "Key Name")}</label>
                 <input
                   type="text"
                   value={newKeyForm.key}
@@ -485,7 +487,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               </div>
 
               <div>
-                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Default English Value</label>
+                <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t("admin_lang_default_english_val", "Default English Value")}</label>
                 <input
                   type="text"
                   value={newKeyForm.defaultValue}
@@ -502,7 +504,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                 disabled={newKeySaving}
                 className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-black text-xs py-2 rounded-lg cursor-pointer transition"
               >
-                {newKeySaving ? "Declaring..." : "Add Global Key"}
+                {newKeySaving ? t("admin_lang_declaring", "Declaring...") : t("admin_lang_add_global_key", "Add Global Key")}
               </button>
             </div>
 
@@ -512,8 +514,8 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                 <table className="w-full text-left text-xs">
                   <thead>
                     <tr className="border-b border-slate-100 bg-slate-50/50 sticky top-0">
-                      <th className="py-2.5 px-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Translation Key</th>
-                      <th className="py-2.5 px-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Translated Value</th>
+                      <th className="py-2.5 px-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_lang_th_key", "Translation Key")}</th>
+                      <th className="py-2.5 px-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_lang_th_value", "Translated Value")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -547,7 +549,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                     {paginatedTranslations.length === 0 && (
                       <tr>
                         <td colSpan={2} className="text-center py-12 text-slate-400 text-xs font-semibold">
-                          No translation keys found matching search.
+                          {t("admin_lang_no_keys_found", "No translation keys found matching search.")}
                         </td>
                       </tr>
                     )}
@@ -559,9 +561,9 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               {totalTransPages > 1 && (
                 <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 mt-2 select-none">
                   <div className="text-[11px] text-slate-450 font-bold">
-                    Showing <span className="text-slate-600">{(transPage - 1) * transItemsPerPage + 1}</span> to{" "}
-                    <span className="text-slate-600">{Math.min(filteredTranslations.length, transPage * transItemsPerPage)}</span> of{" "}
-                    <span className="text-slate-600">{filteredTranslations.length}</span> entries
+                    {t("admin_showing", "Showing")} <span className="text-slate-600">{(transPage - 1) * transItemsPerPage + 1}</span> {t("admin_to", "to")}{" "}
+                    <span className="text-slate-600">{Math.min(filteredTranslations.length, transPage * transItemsPerPage)}</span> {t("admin_of", "of")}{" "}
+                    <span className="text-slate-600">{filteredTranslations.length}</span> {t("admin_entries", "entries")}
                   </div>
                   
                   <div className="flex items-center gap-1.5">
@@ -605,7 +607,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                       
                       return buttons.map((pageNum, idx) => {
                         if (pageNum === "...") {
-                          return <span key={`ellipsis-${idx}`} className="text-slate-400 px-1 text-xs select-none">...</span>;
+                           return <span key={`ellipsis-${idx}`} className="text-slate-400 px-1 text-xs select-none">...</span>;
                         }
                         
                         const isCurrent = pageNum === transPage;
@@ -642,14 +644,14 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               {Object.keys(modifiedTranslations).length > 0 && (
                 <div className="flex items-center justify-between bg-teal-50 border border-teal-200/80 rounded-xl px-4 py-2.5">
                   <span className="text-xs text-teal-800 font-bold">
-                    You have unsaved changes: {Object.keys(modifiedTranslations).length} translation string(s) modified.
+                    {t("admin_lang_unsaved_changes", "You have unsaved changes:")} {Object.keys(modifiedTranslations).length} {t("admin_lang_strings_modified", "translation string(s) modified.")}
                   </span>
                   <button
                     onClick={handleSaveTranslations}
                     disabled={transSaving}
                     className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-[10px] px-3.5 py-1.5 rounded-lg cursor-pointer transition"
                   >
-                    Save Changes Now
+                    {t("admin_lang_save_changes_btn", "Save Changes Now")}
                   </button>
                 </div>
               )}
@@ -666,13 +668,13 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               {/* Add / Edit Form */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4 self-start">
                 <div>
-                  <h4 className="text-sm font-black text-slate-800">{langEditId ? "Edit Language" : "Add Language"}</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">Enter name, code, writing direction and details.</p>
+                  <h4 className="text-sm font-black text-slate-800">{langEditId ? t("admin_lang_edit_title", "Edit Language") : t("admin_lang_add_title", "Add Language")}</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">{t("admin_lang_add_desc", "Enter name, code, writing direction and details.")}</p>
                 </div>
 
                 <div className="flex flex-col gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Language Name</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin_lang_form_name", "Language Name")}</label>
                     <input
                       type="text"
                       value={langForm.language_name}
@@ -684,7 +686,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
 
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                      Language Code {langForm.is_site_lang ? "" : "(Optional)"}
+                      {t("admin_lang_form_code", "Language Code")} {langForm.is_site_lang ? "" : t("admin_lang_optional", "(Optional)")}
                     </label>
                     <input
                       type="text"
@@ -697,26 +699,26 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Text Direction</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin_lang_form_direction", "Text Direction")}</label>
                     <select
                       value={langForm.direction}
                       onChange={e => setLangForm(f => ({ ...f, direction: e.target.value as "LTR" | "RTL" }))}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-700 transition"
                     >
-                      <option value="LTR">LTR (Left to Right)</option>
-                      <option value="RTL">RTL (Right to Left)</option>
+                      <option value="LTR">{t("admin_lang_dir_ltr", "LTR (Left to Right)")}</option>
+                      <option value="RTL">{t("admin_lang_dir_rtl", "RTL (Right to Left)")}</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Status</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">{t("admin_lang_form_status", "Status")}</label>
                     <select
                       value={langForm.status}
                       onChange={e => setLangForm(f => ({ ...f, status: e.target.value as "Active" | "Inactive" }))}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-700 transition"
                     >
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
+                      <option value="Active">{t("admin_lang_status_active", "Active")}</option>
+                      <option value="Inactive">{t("admin_lang_status_inactive", "Inactive")}</option>
                     </select>
                   </div>
 
@@ -729,7 +731,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                       className="rounded border-slate-350 text-teal-750 focus:ring-teal-700 w-4 h-4 cursor-pointer"
                     />
                     <label htmlFor="is_site_lang" className="text-xs font-bold text-slate-600 cursor-pointer select-none">
-                      Enable Site Translation
+                      {t("admin_lang_form_enable", "Enable Site Translation")}
                     </label>
                   </div>
                 </div>
@@ -742,7 +744,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                     disabled={langSaving}
                     className="flex-1 bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs py-2.5 rounded-xl transition cursor-pointer"
                   >
-                    {langSaving ? "Saving..." : langEditId ? "Update" : "Add Language"}
+                    {langSaving ? t("admin_lang_saving", "Saving...") : langEditId ? t("admin_lang_form_update_btn", "Update") : t("admin_lang_add_title", "Add Language")}
                   </button>
                   {langEditId && (
                     <button
@@ -753,7 +755,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                       }}
                       className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
                     >
-                      Cancel
+                      {t("admin_lang_form_cancel_btn", "Cancel")}
                     </button>
                   )}
                 </div>
@@ -763,14 +765,14 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
-                    <h4 className="text-sm font-black text-slate-800">All Languages</h4>
-                    <p className="text-xs text-slate-400 mt-0.5">{languages.length} language{languages.length !== 1 ? "s" : ""} configured</p>
+                    <h4 className="text-sm font-black text-slate-800">{t("admin_lang_table_title", "All Languages")}</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">{languages.length} {t("admin_lang_table_configured", "languages configured")}</p>
                   </div>
                   <input
                     type="text"
                     value={langSearch}
                     onChange={e => setLangSearch(e.target.value)}
-                    placeholder="Search languages..."
+                    placeholder={t("admin_lang_table_search", "Search languages...")}
                     className="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition"
                   />
                 </div>
@@ -785,12 +787,12 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                       <table className="w-full text-left text-xs">
                         <thead>
                           <tr className="border-b border-slate-100">
-                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">Language</th>
-                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">Code</th>
-                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">Direction</th>
-                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">Status</th>
-                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center">Translations</th>
-                            <th className="py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_lang_th_lang", "Language")}</th>
+                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_lang_th_code", "Code")}</th>
+                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_lang_th_dir", "Direction")}</th>
+                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_lang_th_status", "Status")}</th>
+                            <th className="py-3 pr-4 text-[10px] font-black text-slate-400 uppercase tracking-wider text-center">{t("admin_lang_th_trans", "Translations")}</th>
+                            <th className="py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">{t("admin_lang_th_actions", "Actions")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -812,7 +814,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                                   <span className={`text-[10px] font-bold ${
                                     (lang.status || "Active") === "Active" ? "text-teal-700" : "text-slate-400"
                                   }`}>
-                                    {lang.status || "Active"}
+                                    {(lang.status || "Active") === "Active" ? t("admin_lang_status_active", "Active") : t("admin_lang_status_inactive", "Inactive")}
                                   </span>
                                 </div>
                               </td>
@@ -822,14 +824,14 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                                     onClick={() => handleStartTranslate(lang)}
                                     className="px-3.5 py-1.5 text-[10px] font-black text-teal-700 bg-teal-50 border border-teal-200/70 rounded-lg hover:bg-teal-700 hover:text-white transition cursor-pointer"
                                   >
-                                    🗫 TRANSLATE
+                                    🗫 {t("admin_lang_translate_badge", "TRANSLATE")}
                                   </button>
                                 ) : (
                                   <button
                                     onClick={() => handlePromptEnableTranslation(lang)}
                                     className="px-3 py-1.5 text-[10px] font-extrabold text-slate-500 hover:bg-teal-700 hover:text-white border border-slate-200 rounded-lg transition cursor-pointer"
                                   >
-                                    + Enable Translation
+                                    {t("admin_lang_enable_badge", "+ Enable Translation")}
                                   </button>
                                 )}
                               </td>
@@ -849,20 +851,20 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                                     }}
                                     className="px-2.5 py-1 text-[10px] font-bold text-teal-700 hover:bg-teal-50 border border-teal-200/60 rounded-lg cursor-pointer transition"
                                   >
-                                    Edit
+                                    {t("edit", "Edit")}
                                   </button>
                                   <button
                                     onClick={() => handleLangDelete(lang.language_id)}
                                     className="px-2.5 py-1 text-[10px] font-bold text-rose-500 hover:bg-rose-50 border border-rose-100 rounded-lg cursor-pointer transition"
                                   >
-                                    Delete
+                                    {t("delete", "Delete")}
                                   </button>
                                 </div>
                               </td>
                             </tr>
                           ))}
                           {filteredLangs.length === 0 && (
-                            <tr><td colSpan={6} className="text-center py-8 text-slate-400 text-xs font-semibold">No languages found.</td></tr>
+                            <tr><td colSpan={6} className="text-center py-8 text-slate-400 text-xs font-semibold">{t("admin_lang_no_langs", "No languages found.")}</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -872,9 +874,9 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                     {totalLangPages > 1 && (
                       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 mt-4 select-none">
                         <div className="text-[11px] text-slate-450 font-bold">
-                          Showing <span className="text-slate-600">{(langPage - 1) * itemsPerPage + 1}</span> to{" "}
-                          <span className="text-slate-600">{Math.min(filteredLangs.length, langPage * itemsPerPage)}</span> of{" "}
-                          <span className="text-slate-600">{filteredLangs.length}</span> entries
+                          {t("admin_showing", "Showing")} <span className="text-slate-600">{(langPage - 1) * itemsPerPage + 1}</span> {t("admin_to", "to")}{" "}
+                          <span className="text-slate-600">{Math.min(filteredLangs.length, langPage * itemsPerPage)}</span> {t("admin_of", "of")}{" "}
+                          <span className="text-slate-600">{filteredLangs.length}</span> {t("admin_entries", "entries")}
                         </div>
                         
                         <div className="flex items-center gap-1.5">
@@ -931,15 +933,15 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               {/* Add / Edit Form */}
               <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4 self-start">
                 <div>
-                  <h4 className="text-sm font-black text-slate-800">{currEditId ? "Edit Currency" : "Add Currency"}</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">Enter currency code, display name and symbol.</p>
+                  <h4 className="text-sm font-black text-slate-800">{currEditId ? t("admin_curr_edit_title", "Edit Currency") : t("admin_curr_add_title", "Add Currency")}</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">{t("admin_curr_add_desc", "Enter currency code, display name and symbol.")}</p>
                 </div>
 
                 <input
                   type="text"
                   value={currForm.code}
                   onChange={e => { setCurrForm(f => ({ ...f, code: e.target.value.toUpperCase() })); setCurrError(""); }}
-                  placeholder="Code (e.g. USD)"
+                  placeholder={t("admin_curr_th_code", "Code")}
                   maxLength={10}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono text-slate-800 uppercase focus:outline-none focus:border-teal-700 transition"
                 />
@@ -950,7 +952,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                     c => c.code.toUpperCase() === inputCode && c.currency_id !== currEditId
                   );
                   if (duplicate) {
-                    return <p className="text-[10px] text-rose-500 font-bold -mt-2.5 select-none">⚠️ Currency code already exists.</p>;
+                    return <p className="text-[10px] text-rose-500 font-bold -mt-2.5 select-none">⚠️ {t("admin_curr_err_exists", "Currency code already exists.")}</p>;
                   }
                   return null;
                 })()}
@@ -958,14 +960,14 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                   type="text"
                   value={currForm.name}
                   onChange={e => { setCurrForm(f => ({ ...f, name: e.target.value })); setCurrError(""); }}
-                  placeholder="Name (e.g. US Dollar)"
+                  placeholder={t("admin_curr_th_name", "Name")}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:border-teal-700 transition"
                 />
                 <input
                   type="text"
                   value={currForm.symbol}
                   onChange={e => { setCurrForm(f => ({ ...f, symbol: e.target.value })); setCurrError(""); }}
-                  placeholder="Symbol (e.g. $)"
+                  placeholder={t("admin_curr_th_symbol", "Symbol")}
                   maxLength={5}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono text-slate-800 focus:outline-none focus:border-teal-700 transition"
                 />
@@ -974,7 +976,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                   step="any"
                   value={currForm.rate}
                   onChange={e => { setCurrForm(f => ({ ...f, rate: e.target.value })); setCurrError(""); }}
-                  placeholder="Exchange Rate (e.g. 1.0 for USD base)"
+                  placeholder={t("admin_curr_th_rate", "Exchange Rate")}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-mono text-slate-800 focus:outline-none focus:border-teal-700 transition"
                 />
 
@@ -986,14 +988,14 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                     disabled={currSaving}
                     className="flex-1 bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs py-2.5 rounded-xl transition cursor-pointer"
                   >
-                    {currSaving ? "Saving..." : currEditId ? "Update" : "Add Currency"}
+                    {currSaving ? t("admin_lang_saving", "Saving...") : currEditId ? t("admin_lang_form_update_btn", "Update") : t("admin_curr_add_title", "Add Currency")}
                   </button>
                   {currEditId && (
                     <button
                       onClick={() => { setCurrEditId(null); setCurrForm({ code: "", name: "", symbol: "", rate: "1.0" }); setCurrError(""); }}
                       className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
                     >
-                      Cancel
+                      {t("admin_lang_form_cancel_btn", "Cancel")}
                     </button>
                   )}
                 </div>
@@ -1003,14 +1005,14 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
               <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                   <div>
-                    <h4 className="text-sm font-black text-slate-800">All Currencies</h4>
-                    <p className="text-xs text-slate-400 mt-0.5">{currencies.length} currency records</p>
+                    <h4 className="text-sm font-black text-slate-800">{t("admin_curr_table_title", "All Currencies")}</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">{currencies.length} {t("admin_curr_table_records", "currency records")}</p>
                   </div>
                   <input
                     type="text"
                     value={currSearch}
                     onChange={e => setCurrSearch(e.target.value)}
-                    placeholder="Search currencies..."
+                    placeholder={t("admin_curr_table_search", "Search currencies...")}
                     className="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition"
                   />
                 </div>
@@ -1025,11 +1027,11 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                       <table className="w-full text-left text-xs">
                         <thead>
                           <tr className="border-b border-slate-100">
-                            <th className="py-2 pr-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Code</th>
-                            <th className="py-2 pr-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Name</th>
-                            <th className="py-2 pr-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Symbol</th>
-                            <th className="py-2 pr-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">Rate (to USD)</th>
-                            <th className="py-2 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                            <th className="py-2 pr-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_curr_th_code", "Code")}</th>
+                            <th className="py-2 pr-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_curr_th_name", "Name")}</th>
+                            <th className="py-2 pr-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_curr_th_symbol", "Symbol")}</th>
+                            <th className="py-2 pr-3 text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_curr_th_rate", "Rate (to USD)")}</th>
+                            <th className="py-2 text-[10px] font-black text-slate-400 uppercase tracking-wider text-right">{t("admin_lang_th_actions", "Actions")}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -1043,7 +1045,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                                   <span>{curr.name}</span>
                                   {curr.code === defaultCurrency && (
                                     <span className="bg-emerald-500 text-white text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md leading-none select-none">
-                                      Default
+                                      {t("admin_curr_default_badge", "Default")}
                                     </span>
                                   )}
                                 </div>
@@ -1062,20 +1064,20 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                                     }}
                                     className="px-3 py-1 text-[10px] font-bold text-teal-700 hover:bg-teal-50 border border-teal-200/60 rounded-lg cursor-pointer transition"
                                   >
-                                    Edit
+                                    {t("edit", "Edit")}
                                   </button>
                                   <button
                                     onClick={() => handleCurrDelete(curr.currency_id)}
                                     className="px-3 py-1 text-[10px] font-bold text-rose-500 hover:bg-rose-50 border border-rose-100 rounded-lg cursor-pointer transition"
                                   >
-                                    Delete
+                                    {t("delete", "Delete")}
                                   </button>
                                 </div>
                               </td>
                             </tr>
                           ))}
                           {filteredCurrs.length === 0 && (
-                            <tr><td colSpan={5} className="text-center py-8 text-slate-400 text-xs font-semibold">No currencies found.</td></tr>
+                            <tr><td colSpan={5} className="text-center py-8 text-slate-400 text-xs font-semibold">{t("admin_curr_no_currs", "No currencies found.")}</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -1085,9 +1087,9 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                     {totalCurrPages > 1 && (
                       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 mt-4 select-none">
                         <div className="text-[11px] text-slate-450 font-bold">
-                          Showing <span className="text-slate-600">{(currPage - 1) * itemsPerPage + 1}</span> to{" "}
-                          <span className="text-slate-600">{Math.min(filteredCurrs.length, currPage * itemsPerPage)}</span> of{" "}
-                          <span className="text-slate-600">{filteredCurrs.length}</span> entries
+                          {t("admin_showing", "Showing")} <span className="text-slate-600">{(currPage - 1) * itemsPerPage + 1}</span> {t("admin_to", "to")}{" "}
+                          <span className="text-slate-600">{Math.min(filteredCurrs.length, currPage * itemsPerPage)}</span> {t("admin_of", "of")}{" "}
+                          <span className="text-slate-600">{filteredCurrs.length}</span> {t("admin_entries", "entries")}
                         </div>
                         
                         <div className="flex items-center gap-1.5">
@@ -1142,14 +1144,14 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[1px]">
               <div className="bg-white border border-slate-200 rounded-xl p-6 w-96 shadow-2xl flex flex-col gap-4">
                 <div>
-                  <h3 className="text-sm font-black text-slate-800">Enable Translation</h3>
+                  <h3 className="text-sm font-black text-slate-800">{t("admin_lang_enable_modal_title", "Enable Translation")}</h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Configure translation support details for <strong>{enablingLang.language_name}</strong>.
+                    {t("admin_lang_enable_modal_desc", "Configure translation support details for")} <strong>{enablingLang.language_name}</strong>.
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Language Code</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t("admin_lang_form_code", "Language Code")}</label>
                   <input
                     type="text"
                     value={enablingForm.code}
@@ -1164,14 +1166,14 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Writing Direction</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t("admin_lang_enable_modal_direction", "Writing Direction")}</label>
                   <select
                     value={enablingForm.direction}
                     onChange={e => setEnablingForm(f => ({ ...f, direction: e.target.value as "LTR" | "RTL" }))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition"
                   >
-                    <option value="LTR">LTR (Left to Right)</option>
-                    <option value="RTL">RTL (Right to Left)</option>
+                    <option value="LTR">{t("admin_lang_dir_ltr", "LTR (Left to Right)")}</option>
+                    <option value="RTL">{t("admin_lang_dir_rtl", "RTL (Right to Left)")}</option>
                   </select>
                 </div>
 
@@ -1182,13 +1184,13 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
                     onClick={handleConfirmEnableTranslation}
                     className="flex-1 bg-teal-700 hover:bg-teal-800 text-white font-black text-xs py-2.5 rounded-xl transition cursor-pointer"
                   >
-                    Save & Enable
+                    {t("admin_lang_enable_modal_save", "Save & Enable")}
                   </button>
                   <button
                     onClick={() => { setEnablingLang(null); setEnablingError(""); }}
                     className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-100 border border-slate-200 transition cursor-pointer"
                   >
-                    Cancel
+                    {t("admin_lang_form_cancel_btn", "Cancel")}
                   </button>
                 </div>
               </div>
@@ -1207,7 +1209,7 @@ export default function LanguagesCurrenciesTab({ forceTab }: LanguagesCurrencies
           </div>
           <div className="flex flex-col text-left">
             <span className="text-xs font-black text-white leading-tight">
-              {toast.type === "success" ? "Success" : "Error"}
+              {toast.type === "success" ? t("success", "Success") : t("error", "Error")}
             </span>
             <span className="text-[11px] font-semibold text-slate-300 mt-0.5 leading-snug">{toast.text}</span>
           </div>

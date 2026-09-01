@@ -25,7 +25,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { FiStar, FiHeart, FiClock, FiSearch, FiSliders, FiRefreshCw, FiChevronRight, FiGrid, FiX, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 
 function GigsSearchContent() {
-  const { t, formatPrice } = useLanguage();
+  const { t, formatPrice, currency, currencySymbol, currencyRate } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -359,14 +359,15 @@ function GigsSearchContent() {
       if (!isMatch) return false;
     }
 
+    const convertedGigPrice = parseFloat(gig.price || 0) * (currencyRate || 1.0);
     // 4. Min price filter
     if (minPrice && !isNaN(parseFloat(minPrice))) {
-      if (parseFloat(gig.price) < parseFloat(minPrice)) return false;
+      if (convertedGigPrice < parseFloat(minPrice)) return false;
     }
 
     // 5. Max price filter
     if (maxPrice && !isNaN(parseFloat(maxPrice))) {
-      if (parseFloat(gig.price) > parseFloat(maxPrice)) return false;
+      if (convertedGigPrice > parseFloat(maxPrice)) return false;
     }
 
     // 6. Delivery time threshold
@@ -480,7 +481,7 @@ function GigsSearchContent() {
       {/* Search Type Switcher */}
       <div className="w-full bg-white border-b border-slate-200 py-3.5 select-none overflow-x-auto max-w-full no-scrollbar">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-4 sm:gap-6 shrink-0 w-max sm:w-full">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Category</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("search_category", "Search Category")}</span>
           <div className="flex gap-2">
             <button
               onClick={() => {
@@ -588,26 +589,32 @@ function GigsSearchContent() {
 
             {/* Price Filter */}
             <div className="space-y-2">
-              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("budget_usd", "Budget (USD)")}</label>
+              <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">
+                {t("budget_label", "Budget")} ({currency})
+              </label>
               <div className="grid grid-cols-2 gap-2">
-                <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xxs font-bold text-slate-400">$</span>
+                <div className="flex items-center bg-slate-50 border border-slate-200/90 hover:border-slate-300 focus-within:border-primary rounded-xl overflow-hidden transition-all">
+                  <span className="pl-3.5 pr-2.5 py-1.5 text-[10px] font-black text-slate-400 border-r border-slate-200 select-none shrink-0 min-w-[28px] text-center">
+                    {currencySymbol}
+                  </span>
                   <input
                     type="number"
                     placeholder={t("min", "Min")}
                     value={minPrice}
                     onChange={(e) => setMinPrice(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl pl-5 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none transition-all"
+                    className="w-full bg-transparent px-3 py-1.5 text-xs text-slate-800 font-bold border-none outline-none focus:outline-none focus:ring-0"
                   />
                 </div>
-                <div className="relative">
-                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xxs font-bold text-slate-400">$</span>
+                <div className="flex items-center bg-slate-50 border border-slate-200/90 hover:border-slate-300 focus-within:border-primary rounded-xl overflow-hidden transition-all">
+                  <span className="pl-3.5 pr-2.5 py-1.5 text-[10px] font-black text-slate-400 border-r border-slate-200 select-none shrink-0 min-w-[28px] text-center">
+                    {currencySymbol}
+                  </span>
                   <input
                     type="number"
                     placeholder={t("max", "Max")}
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl pl-5 pr-2 py-1.5 text-xs text-slate-800 font-bold focus:outline-none transition-all"
+                    className="w-full bg-transparent px-3 py-1.5 text-xs text-slate-800 font-bold border-none outline-none focus:outline-none focus:ring-0"
                   />
                 </div>
               </div>
@@ -665,9 +672,9 @@ function GigsSearchContent() {
         <section className="lg:col-span-9 w-full min-w-0 space-y-6">
           
           {/* Grid control bar */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
             {/* Search Input */}
-            <div className="flex-1 max-w-md relative select-none">
+            <div className="w-full lg:max-w-md relative select-none">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                 <FiSearch className="h-4 w-4 text-slate-400" />
               </span>
@@ -676,17 +683,17 @@ function GigsSearchContent() {
                 placeholder={t("search_gigs_placeholder", "Search for service gigs...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9.5 pr-4 text-xs font-bold text-slate-808 placeholder-slate-450 outline-none focus:border-primary transition-all"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-9.5 pr-4 text-xs font-bold text-slate-808 placeholder-slate-450 outline-none focus:border-primary transition-all"
               />
             </div>
 
             {/* Stats and Sort */}
-            <div className="flex flex-wrap items-center gap-4 shrink-0 select-none">
-              <p className="text-xs font-bold text-slate-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none w-full lg:w-auto">
+              <p className="text-xs font-bold text-slate-500 whitespace-nowrap">
                 {t("showing", "Showing")} <strong className="text-slate-800">{sortedGigs.length}</strong> {t("active_gigs", "active gigs")}
               </p>
               <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">{t("sort_by", "Sort by")}</span>
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider whitespace-nowrap shrink-0">{t("sort_by", "Sort by")}</span>
                 <CustomSelect
                   value={sortBy}
                   onChange={(val) => setSortBy(val)}
@@ -696,7 +703,7 @@ function GigsSearchContent() {
                     { value: "price_asc", label: t("price_low_high", "Price: Low to High") },
                     { value: "price_desc", label: t("price_high_low", "Price: High to Low") },
                   ]}
-                  className="w-52"
+                  className="w-36 sm:w-52"
                 />
               </div>
             </div>
@@ -824,7 +831,7 @@ function GigsSearchContent() {
                                  </div>
                                )}
                                <span className="text-[10px] text-slate-500 font-bold hover:text-teal-750 group-hover/author:text-teal-700 transition-colors">
-                                 {t("by", "By")} {gig.freelancer_name}
+                                  {t("by", "By")} {gig.freelancer_name && gig.freelancer_name.length > 15 ? `${gig.freelancer_name.substring(0, 15)}...` : gig.freelancer_name}
                                </span>
                              </div>
                            )}
@@ -851,7 +858,7 @@ function GigsSearchContent() {
                                 e.stopPropagation();
                                 setActiveShareGig(gig);
                               }}
-                              className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 rounded-xl shadow-sm transition cursor-pointer text-center block border-none"
+                              className="w-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 rounded-xl shadow-sm transition cursor-pointer flex items-center justify-center text-center leading-tight"
                               title="Share & Earn Affiliate Commission"
                             >
                                {t("share_earn_btn", "Share & Earn")}
@@ -859,7 +866,7 @@ function GigsSearchContent() {
                           )}
                           <div className="flex items-center justify-between text-xs font-bold text-slate-400 select-none">
                             <span className="uppercase tracking-wider">{t("starting_at", "Starting At")}</span>
-                            <span className="text-base font-extrabold text-slate-900">${parseFloat(gig.price || 0).toLocaleString()}</span>
+                            <span className="text-base font-extrabold text-slate-900">{formatPrice(gig.price || 0)}</span>
                           </div>
                         </div>
                      </div>
@@ -929,7 +936,7 @@ function GigsSearchContent() {
               itemTitle={activeShareGig.title || "Gig Service"}
               itemDescription={activeShareGig.description || ""}
               itemImage={activeShareGig.cover_image ? resolveMediaUrl(activeShareGig.cover_image) : ""}
-              priceOrBudget={`$${parseFloat(activeShareGig.price || 0).toLocaleString()}`}
+              priceOrBudget={formatPrice(activeShareGig.price || 0)}
               customUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/gigs/${activeShareGig.gig_id}`}
               referralCode={userReferralCode}
               isAffiliate={isAffiliate}

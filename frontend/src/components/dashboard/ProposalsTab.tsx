@@ -342,6 +342,52 @@ export default function ProposalsTab({
   useEffect(() => {
     setProposalPage(1);
   }, [freelancerFilter, searchProposalQuery]);
+
+  // Sync selectedProposalDetails with URL query parameter ?job_id=XXX
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (userRole === "client") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const jobIdParam = params.get("job_id");
+
+    if (jobIdParam) {
+      const targetJobId = parseInt(jobIdParam);
+      if (!selectedProposalDetails || selectedProposalDetails.job_id !== targetJobId) {
+        const foundProposal = freelancerProposals.find(p => p.job_id === targetJobId);
+        if (foundProposal) {
+          setSelectedProposalDetails(foundProposal);
+        }
+      }
+    } else {
+      if (selectedProposalDetails) {
+        setSelectedProposalDetails(null);
+      }
+    }
+  }, [freelancerProposals, userRole]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (userRole === "client") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const currentParam = params.get("job_id");
+
+    if (selectedProposalDetails) {
+      if (currentParam !== selectedProposalDetails.job_id.toString()) {
+        params.set("job_id", selectedProposalDetails.job_id.toString());
+        window.history.pushState({}, "", `${window.location.pathname}?${params.toString()}`);
+      }
+    } else {
+      if (currentParam) {
+        params.delete("job_id");
+        const searchStr = params.toString();
+        const newUrl = searchStr ? `${window.location.pathname}?${searchStr}` : window.location.pathname;
+        window.history.pushState({}, "", newUrl);
+      }
+    }
+  }, [selectedProposalDetails, userRole]);
+
   const [postJobSlug, setPostJobSlug] = useState("");
   const [postJobSeoTitle, setPostJobSeoTitle] = useState("");
   const [postJobSeoDescription, setPostJobSeoDescription] = useState("");
@@ -729,7 +775,7 @@ export default function ProposalsTab({
   if (userRole === "client") {
     if (isCreatingJob) {
       return (
-        <div className="relative z-10 max-w-2xl mx-auto w-full animate-fadeIn text-slate-800 text-left">
+        <div className="relative z-10 max-w-2xl mx-auto w-full animate-fadeIn text-slate-800 text-left rtl:text-right">
           <div className="bg-white border border-slate-200/80 rounded-xl p-6 sm:p-8 shadow-sm flex flex-col gap-6">
             
             {/* Form Header */}
@@ -739,20 +785,20 @@ export default function ProposalsTab({
                   <i className="fa-solid fa-file-signature text-primary"></i>
                 </div>
                 <div>
-                  <h2 className="text-base font-extrabold text-slate-800">Post a New Project</h2>
-                  <p className="text-slate-400 text-xs mt-0.5">Describe your requirements to receive bids from elite freelancers.</p>
+                  <h2 className="text-base font-extrabold text-slate-800">{t("post_new_project_header", "Post a New Project")}</h2>
+                  <p className="text-slate-400 text-xs mt-0.5">{t("post_new_project_desc", "Describe your requirements to receive bids from elite freelancers.")}</p>
                 </div>
               </div>
               <button
                 onClick={resetWizardState}
                 className="text-slate-550 hover:text-slate-750 text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
               >
-                Cancel
+                {t("cancel_btn", "Cancel")}
               </button>
             </div>
 
              {/* Progress Indicator */}
-             <div className="flex items-center justify-between bg-slate-50 border border-slate-100 p-4 rounded-xl">
+             <div className="flex items-center justify-between bg-slate-50 border border-slate-100 p-4 rounded-xl flex-wrap sm:flex-nowrap gap-3">
                <button
                  type="button"
                  onClick={() => setPostJobStep(1)}
@@ -764,11 +810,11 @@ export default function ProposalsTab({
                    1
                  </div>
                  <span className={`text-[10px] font-bold uppercase tracking-wider ${postJobStep === 1 ? "text-slate-800 font-extrabold" : "text-slate-400 font-semibold"}`}>
-                   Tell us about your project
+                   {t("tell_us_about_project_step", "Tell us about your project")}
                  </span>
                </button>
                
-               <div className="flex-grow h-0.5 bg-slate-200 mx-3 max-w-[40px]" />
+               <div className="flex-grow h-0.5 bg-slate-200 mx-3 max-w-[40px] hidden sm:block" />
                
                <button
                  type="button"
@@ -781,11 +827,11 @@ export default function ProposalsTab({
                    2
                  </div>
                  <span className={`text-[10px] font-bold uppercase tracking-wider ${postJobStep === 2 ? "text-slate-800 font-extrabold" : "text-slate-400 font-semibold"}`}>
-                   Skills & Preferences
+                   {t("skills_preferences_step", "Skills & Preferences")}
                  </span>
                </button>
 
-               <div className="flex-grow h-0.5 bg-slate-200 mx-3 max-w-[40px]" />
+               <div className="flex-grow h-0.5 bg-slate-200 mx-3 max-w-[40px] hidden sm:block" />
                
                <button
                  type="button"
@@ -798,7 +844,7 @@ export default function ProposalsTab({
                    3
                  </div>
                  <span className={`text-[10px] font-bold uppercase tracking-wider ${postJobStep === 3 ? "text-slate-800 font-extrabold" : "text-slate-400 font-semibold"}`}>
-                   URL Slug & SEO
+                   {t("url_slug_seo_step", "URL Slug & SEO")}
                  </span>
                </button>
              </div>
@@ -809,37 +855,37 @@ export default function ProposalsTab({
                 e.preventDefault();
                 if (postJobStep === 1) {
                   if (!postJobTitle.trim() || !postJobDescription.trim()) {
-                    triggerToast("error", "Title and description are required.");
+                    triggerToast("error", t("title_description_required_error", "Title and description are required."));
                     return;
                   }
                   if (!postJobCategoryId) {
-                    triggerToast("error", "Category is required.");
+                    triggerToast("error", t("category_required_error", "Category is required."));
                     return;
                   }
                   if (postJobMaxBudget <= 0 || postJobMinBudget <= 0) {
-                    triggerToast("error", "Budgets must be positive values.");
+                    triggerToast("error", t("budget_positive_error", "Budgets must be positive values."));
                     return;
                   }
                   if (postJobMaxBudget < postJobMinBudget) {
-                    triggerToast("error", "Maximum budget must be greater than or equal to minimum budget.");
+                    triggerToast("error", t("max_budget_greater_error", "Maximum budget must be greater than or equal to minimum budget."));
                     return;
                   }
                   // Hourly-specific validation
                   if (postJobType === "Hourly") {
                     if (postJobMinHours <= 0) {
-                      triggerToast("error", "Minimum hours must be a positive value.");
+                      triggerToast("error", t("min_hours_positive_error", "Minimum hours must be a positive value."));
                       return;
                     }
                     if (postJobMaxHours <= 0) {
-                      triggerToast("error", "Maximum hours per week must be a positive value.");
+                      triggerToast("error", t("max_hours_positive_error", "Maximum hours per week must be a positive value."));
                       return;
                     }
                     if (postJobMinHours > postJobMaxHours) {
-                      triggerToast("error", "Minimum hours cannot exceed maximum hours per week.");
+                      triggerToast("error", t("min_hours_exceed_max_error", "Minimum hours cannot exceed maximum hours per week."));
                       return;
                     }
                     if (postJobMinHours * postJobMinBudget > postJobMaxBudget) {
-                      triggerToast("error", `Invalid rate range: ${postJobMinHours} min hrs × $${postJobMinBudget}/hr = $${(postJobMinHours * postJobMinBudget).toLocaleString()}, which exceeds max budget ($${postJobMaxBudget.toLocaleString()}). Increase max rate or reduce min hours.`);
+                      triggerToast("error", t("invalid_rate_range_error_dynamic", "Invalid rate range: Minimum hours multiplied by min rate exceeds maximum budget. Increase max rate or reduce min hours."));
                       return;
                     }
                   }
@@ -903,8 +949,10 @@ export default function ProposalsTab({
                     
                     const data = await res.json();
                     if (res.ok) {
-                      const messageVerb = editingDraftJobId ? "published" : "posted";
-                      triggerToast("success", `Project "${postJobTitle}" ${messageVerb} to LancerFlow Network!`, `Budget: $${postJobMinBudget} - $${postJobMaxBudget} | ${postJobLocation}`);
+                      const successMsg = editingDraftJobId
+                        ? t("project_published_success", "Project successfully published to LancerFlow Network!")
+                        : t("project_posted_success", "Project successfully posted to LancerFlow Network!");
+                      triggerToast("success", successMsg, `Budget: $${postJobMinBudget} - $${postJobMaxBudget} | ${postJobLocation}`);
                       
                       const postedJobId = data.job?.job_id || data.job_id;
                       if (pendingInviteFreelancer && postedJobId) {
@@ -925,7 +973,7 @@ export default function ProposalsTab({
                             })
                           });
                           if (directHireRes.ok) {
-                            triggerToast("success", `Invite request sent to ${pendingInviteFreelancer.name}!`, `Project: ${postJobTitle}`);
+                            triggerToast("success", t("invite_request_sent_success", "Invite request sent successfully!"));
                           }
                         } catch (inviteErr) {
                           console.error("Failed to auto invite freelancer:", inviteErr);
@@ -937,11 +985,11 @@ export default function ProposalsTab({
                       resetWizardState();
                       fetchClientJobs();
                     } else {
-                      triggerToast("error", data.message || "Failed to publish project.");
+                      triggerToast("error", data.message || t("failed_publish_project_error", "Failed to publish project."));
                     }
                   } catch (err) {
                     console.error(err);
-                    triggerToast("error", "An error occurred while publishing project.");
+                    triggerToast("error", t("error_publishing_project", "An error occurred while publishing project."));
                   }
                 }
               }}
@@ -949,21 +997,21 @@ export default function ProposalsTab({
             >
               {postJobStep === 1 && (
                 <>
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Project Title *</label>
+                  <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("project_title_label", "Project Title *")}</label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Next.js SaaS Platform Development"
+                      placeholder={t("project_title_placeholder", "e.g. Next.js SaaS Platform Development")}
                       value={postJobTitle}
                       onChange={(e) => setPostJobTitle(e.target.value)}
                       className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-bold"
                     />
                   </div>
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Project URL Slug *</label>
+                  <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("project_url_slug_label", "Project URL Slug *")}</label>
                     <div className="flex items-center bg-slate-50/50 border border-slate-250 hover:border-slate-350 focus-within:border-primary/50 focus-within:bg-white rounded-xl overflow-hidden transition-all relative">
-                      <span className="bg-slate-100 text-slate-450 border-r border-slate-255 px-3.5 py-3 text-xxs font-extrabold select-none shrink-0">
+                      <span className="bg-slate-100 text-slate-450 border-r rtl:border-r-0 rtl:border-l border-slate-255 px-3.5 py-3 text-xxs font-extrabold select-none shrink-0">
                         {typeof window !== "undefined"
                           ? (process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin)
                               .replace(/^(https?:\/\/)?(www\.)?/, "") + "/projects/"
@@ -972,41 +1020,41 @@ export default function ProposalsTab({
                       <input
                         type="text"
                         required
-                        placeholder="project-slug-url"
+                        placeholder={t("project_url_slug_placeholder", "project-slug-url")}
                         value={postJobSlug}
                         onChange={(e) => {
                           setIsSlugManuallyEdited(true);
                           setPostJobSlug(slugifyText(e.target.value));
                         }}
-                        className="flex-1 bg-transparent px-4 py-3 text-xs focus:outline-none transition-all text-slate-850 font-bold border-none outline-none pr-10"
+                        className="flex-1 bg-transparent px-4 py-3 text-xs focus:outline-none transition-all text-slate-850 font-bold border-none outline-none pr-10 rtl:pr-4 rtl:pl-10"
                       />
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                      <div className="absolute right-3 rtl:right-auto rtl:left-3 top-1/2 -translate-y-1/2 flex items-center">
                         {slugValidating && (
                           <div className="w-3.5 h-3.5 border-2 border-t-transparent border-primary rounded-full animate-spin"></div>
                         )}
                         {!slugValidating && slugAvailable === true && (
-                          <span className="text-emerald-600 text-xs font-black" title="Slug is available">✓</span>
+                          <span className="text-emerald-600 text-xs font-black" title={t("slug_available_title", "Slug is available")}>✓</span>
                         )}
                         {!slugValidating && slugAvailable === false && (
-                          <span className="text-rose-500 text-xs font-black" title="Slug is already taken">✗</span>
+                          <span className="text-rose-500 text-xs font-black" title={t("slug_taken_title", "Slug is already taken")}>✗</span>
                         )}
                       </div>
                     </div>
                     {slugAvailable === true && (
-                      <p className="text-[9px] text-emerald-600 font-bold">✓ Project URL slug is available!</p>
+                      <p className="text-[9px] text-emerald-600 font-bold">{t("slug_available_msg", "✓ Project URL slug is available!")}</p>
                     )}
                     {slugAvailable === false && (
-                      <p className="text-[9px] text-rose-500 font-bold">✗ Slug is already taken by another project.</p>
+                      <p className="text-[9px] text-rose-500 font-bold">{t("slug_taken_msg", "✗ Slug is already taken by another project.")}</p>
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Project Type *</label>
+                  <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("project_type_label", "Project Type *")}</label>
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         type="button"
                         onClick={() => setPostJobType("Fixed")}
-                        className={`p-4 rounded-xl border text-left flex flex-col gap-2 transition-all cursor-pointer ${
+                        className={`p-4 rounded-xl border text-left rtl:text-right flex flex-col gap-2 transition-all cursor-pointer ${
                           postJobType === "Fixed"
                             ? "border-primary bg-primary/5 shadow-sm"
                             : "border-slate-200 hover:border-slate-350 bg-white"
@@ -1014,14 +1062,14 @@ export default function ProposalsTab({
                       >
                         <i className={`fa-solid fa-lock text-base ${postJobType === "Fixed" ? "text-primary" : "text-slate-400"}`}></i>
                         <div>
-                          <p className="text-xs font-bold text-slate-800">Fixed Budget</p>
-                          <p className="text-[10px] text-slate-400">Pay a fixed price for agreed deliverables.</p>
+                          <p className="text-xs font-bold text-slate-800">{t("fixed_budget_label", "Fixed Budget")}</p>
+                          <p className="text-[10px] text-slate-400">{t("fixed_budget_desc", "Pay a fixed price for agreed deliverables.")}</p>
                         </div>
                       </button>
                       <button
                         type="button"
                         onClick={() => setPostJobType("Hourly")}
-                        className={`p-4 rounded-xl border text-left flex flex-col gap-2 transition-all cursor-pointer ${
+                        className={`p-4 rounded-xl border text-left rtl:text-right flex flex-col gap-2 transition-all cursor-pointer ${
                           postJobType === "Hourly"
                             ? "border-primary bg-primary/5 shadow-sm"
                             : "border-slate-200 hover:border-slate-355 bg-white"
@@ -1029,20 +1077,20 @@ export default function ProposalsTab({
                       >
                         <i className={`fa-solid fa-clock text-base ${postJobType === "Hourly" ? "text-primary" : "text-slate-400"}`}></i>
                         <div>
-                          <p className="text-xs font-bold text-slate-800">Hourly Rate</p>
-                          <p className="text-[10px] text-slate-400">Pay for hours logged on a periodic basis.</p>
+                          <p className="text-xs font-bold text-slate-800">{t("hourly_rate_label", "Hourly Rate")}</p>
+                          <p className="text-[10px] text-slate-400">{t("hourly_rate_desc", "Pay for hours logged on a periodic basis.")}</p>
                         </div>
                       </button>
                     </div>
                   </div>
 
-                  {postJobType === "Fixed" && (
-                    <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Which milestones structure you want to select? *</label>
+                                  {postJobType === "Fixed" && (
+                    <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("milestone_structure_label", "Which milestones structure you want to select? *")}</label>
                       <div className="grid grid-cols-2 gap-3">
                         {[
-                          { value: "Fixed", label: "Fixed budget", desc: "Pay all at once" },
-                          { value: "Milestone", label: "Milestone wise", desc: "Pay in segments" },
+                          { value: "Fixed", label: t("fixed_budget_option", "Fixed budget"), desc: t("pay_all_at_once_desc", "Pay all at once") },
+                          { value: "Milestone", label: t("milestone_wise_option", "Milestone wise"), desc: t("pay_in_segments_desc", "Pay in segments") },
                         ].map((opt) => (
                           <button
                             key={opt.value}
@@ -1063,41 +1111,41 @@ export default function ProposalsTab({
                   )}
 
                   {postJobType === "Hourly" && (
-                    <div className="flex flex-col gap-5 text-left">
+                    <div className="flex flex-col gap-5 text-left rtl:text-right">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Minimum Hours Required *</label>
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("min_hours_required_label", "Minimum Hours Required *")}</label>
                           <input
                             type="number"
                             required
                             min="1"
-                            placeholder="e.g. 10"
+                            placeholder={t("min_hours_placeholder", "e.g. 10")}
                             value={postJobMinHours}
                             onChange={(e) => setPostJobMinHours(Number(e.target.value))}
                             className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-bold"
                           />
-                          <p className="text-[10px] text-slate-400">Minimum total hours expected from the freelancer</p>
+                          <p className="text-[10px] text-slate-400">{t("min_hours_desc", "Minimum total hours expected from the freelancer")}</p>
                         </div>
                         <div className="flex flex-col gap-1.5">
-                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Maximum Hours Per Week *</label>
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("max_hours_per_week_label", "Maximum Hours Per Week *")}</label>
                           <input
                             type="number"
                             required
                             min="1"
-                            placeholder="e.g. 40"
+                            placeholder={t("max_hours_placeholder", "e.g. 40")}
                             value={postJobMaxHours}
                             onChange={(e) => setPostJobMaxHours(Number(e.target.value))}
                             className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-850 font-bold"
                           />
-                          <p className="text-[10px] text-slate-400">Max hours the freelancer can work per week</p>
+                          <p className="text-[10px] text-slate-400">{t("max_hours_desc", "Max hours the freelancer can work per week")}</p>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1.5">
-                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Payment Mode *</label>
+                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("payment_mode_label", "Payment Mode *")}</label>
                         <CustomSelect
                           value={postJobPaymentMode}
                           onChange={(val) => setPostJobPaymentMode(val)}
-                          options={paymentModes.map((mode) => ({ value: mode, label: mode }))}
+                          options={paymentModes.map((mode) => ({ value: mode, label: t(mode.toLowerCase().replace(/\s+/g, "_"), mode) }))}
                         />
                       </div>
                       {/* Live cost preview */}
@@ -1107,27 +1155,27 @@ export default function ProposalsTab({
                             ? "bg-red-50 border border-red-200 text-red-700"
                             : "bg-emerald-50 border border-emerald-200 text-emerald-800"
                         }`}>
-                          <p className="font-bold">💡 Estimated Cost Preview</p>
-                          <p>Min: {postJobMinHours} hrs × ${postJobMinBudget}/hr = <strong>${(postJobMinHours * postJobMinBudget).toLocaleString()}</strong></p>
-                          <p>Max: {postJobMinHours} hrs × ${postJobMaxBudget}/hr = <strong>${(postJobMinHours * postJobMaxBudget).toLocaleString()}</strong></p>
+                          <p className="font-bold">{t("estimated_cost_preview_title", "💡 Estimated Cost Preview")}</p>
+                          <p>{t("min_label", "Min:")} {postJobMinHours} {t("hours_multiplied_label", "hrs ×")} ${postJobMinBudget}{t("per_hour_equal_label", "/hr =")} <strong>${(postJobMinHours * postJobMinBudget).toLocaleString()}</strong></p>
+                          <p>{t("max_label", "Max:")} {postJobMinHours} {t("hours_multiplied_label", "hrs ×")} ${postJobMaxBudget}{t("per_hour_equal_label", "/hr =")} <strong>${(postJobMinHours * postJobMaxBudget).toLocaleString()}</strong></p>
                           {postJobMinHours * postJobMinBudget > postJobMaxBudget && (
-                            <p className="font-semibold mt-1">⚠️ Minimum hours × min rate exceeds your max budget. Please adjust.</p>
+                            <p className="font-semibold mt-1">{t("min_hours_rate_exceeds_budget_error", "⚠️ Minimum hours × min rate exceeds your max budget. Please adjust.")}</p>
                           )}
                         </div>
                       )}
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left rtl:text-right">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">
-                        {postJobType === "Hourly" ? "Min Hourly Rate (USD/hr) *" : "Minimum Budget (USD) *"}
+                        {postJobType === "Hourly" ? t("min_hourly_rate_label", "Min Hourly Rate (USD/hr) *") : t("min_budget_label", "Minimum Budget (USD) *")}
                       </label>
                       <input
                         type="number"
                         required
                         min="1"
-                        placeholder={postJobType === "Hourly" ? "e.g. 25" : "e.g. 500"}
+                        placeholder={postJobType === "Hourly" ? t("min_hourly_rate_placeholder", "e.g. 25") : t("min_budget_placeholder", "e.g. 500")}
                         value={postJobMinBudget}
                         onChange={(e) => setPostJobMinBudget(Number(e.target.value))}
                         className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
@@ -1135,68 +1183,68 @@ export default function ProposalsTab({
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">
-                        {postJobType === "Hourly" ? "Max Hourly Rate (USD/hr) *" : "Maximum Budget (USD) *"}
+                        {postJobType === "Hourly" ? t("max_hourly_rate_label", "Max Hourly Rate (USD/hr) *") : t("max_budget_label", "Maximum Budget (USD) *")}
                       </label>
                       <input
                         type="number"
                         required
                         min="1"
-                        placeholder={postJobType === "Hourly" ? "e.g. 75" : "e.g. 5000"}
+                        placeholder={postJobType === "Hourly" ? t("max_hourly_rate_placeholder", "e.g. 75") : t("max_budget_placeholder", "e.g. 5000")}
                         value={postJobMaxBudget}
                         onChange={(e) => setPostJobMaxBudget(Number(e.target.value))}
-                        className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
+                        className="bg-slate-50/50 border border-slate-250 hover:border-slate-355 font-bold"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left rtl:text-right">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Category *</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("category_label", "Category *")}</label>
                       <CustomSelect
                         value={postJobCategoryId}
                         onChange={(val) => handlePostJobCategoryChange(val)}
-                        placeholder="Select Category"
-                        options={gigCategories.map((c) => ({ value: c.category_id.toString(), label: c.category_name }))}
+                        placeholder={t("select_category_placeholder", "Select Category")}
+                        options={gigCategories.map((c) => ({ value: c.category_id.toString(), label: t(c.category_name, c.category_name) }))}
                       />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Sub-category</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("sub_category_label", "Sub-category")}</label>
                       <CustomSelect
                         value={postJobSubCategoryId}
                         onChange={(val) => handlePostJobSubCategoryChange(val)}
-                        placeholder="Select Sub-category"
-                        options={postJobSubCategories.map((sc) => ({ value: sc.sub_category_id.toString(), label: sc.sub_category_name }))}
+                        placeholder={t("select_subcategory_placeholder", "Select Sub-category")}
+                        options={postJobSubCategories.map((sc) => ({ value: sc.sub_category_id.toString(), label: t(sc.sub_category_name, sc.sub_category_name) }))}
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-left rtl:text-right">
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Project Duration</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("project_duration_label", "Project Duration")}</label>
                       <CustomSelect
                         value={postJobDuration}
                         onChange={(val) => setPostJobDuration(val)}
-                        options={durations.map((d) => ({ value: d, label: d }))}
+                        options={durations.map((d) => ({ value: d, label: t(d.toLowerCase().replace(/\s+/g, "_"), d) }))}
                       />
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Location preference</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("location_preference_label", "Location preference")}</label>
                       <CustomSelect
                         value={postJobLocation}
                         onChange={(val) => setPostJobLocation(val)}
-                        options={locations.map((l) => ({ value: l, label: l }))}
+                        options={locations.map((l) => ({ value: l, label: t(l.toLowerCase().replace(/\s+/g, "_"), l) }))}
                       />
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Project Description *</label>
+                  <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("project_description_label", "Project Description *")}</label>
                     <textarea
                       required
                       rows={5}
-                      placeholder="Outline clear deliverables, timeline, required technologies, and scope of work..."
+                      placeholder={t("project_description_placeholder", "Outline clear deliverables, timeline, required technologies, and scope of work...")}
                       value={postJobDescription}
                       onChange={(e) => setPostJobDescription(e.target.value)}
                       className="bg-slate-50/50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-medium resize-none"
@@ -1209,7 +1257,7 @@ export default function ProposalsTab({
                       onClick={resetWizardState}
                       className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer whitespace-nowrap"
                     >
-                      Cancel
+                      {t("cancel_btn", "Cancel")}
                     </button>
                     <button
                       type="button"
@@ -1217,13 +1265,13 @@ export default function ProposalsTab({
                       className="w-full sm:w-auto px-5 py-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/60 text-amber-700 font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                     >
                       <i className="fa-solid fa-floppy-disk text-[10px]"></i>
-                      <span>Save as Draft</span>
+                      <span>{t("save_as_draft_btn", "Save as Draft")}</span>
                     </button>
                     <button
                       type="submit"
                       className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                     >
-                      <span>Save & continue</span>
+                      <span>{t("save_continue_btn_arrow", "Save & continue")}</span>
                       <span className="text-xxs">→</span>
                     </button>
                   </div>
@@ -1232,34 +1280,34 @@ export default function ProposalsTab({
 
               {postJobStep === 2 && (
                 <>
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">How many freelancers do you need for this job?</label>
+                  <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("num_freelancers_question", "How many freelancers do you need for this job?")}</label>
                     <CustomSelect
                       value={postJobNumFreelancers}
                       onChange={(val) => setPostJobNumFreelancers(val)}
                       options={[
-                        { value: "1 freelancer", label: "1 freelancer" },
-                        { value: "2-3 freelancers", label: "2-3 freelancers" },
-                        { value: "4+ freelancers", label: "4+ freelancers" },
+                        { value: "1 freelancer", label: t("one_freelancer_option", "1 freelancer") },
+                        { value: "2-3 freelancers", label: t("few_freelancers_option", "2-3 freelancers") },
+                        { value: "4+ freelancers", label: t("many_freelancers_option", "4+ freelancers") },
                       ]}
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Expertise Level Required</label>
+                  <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("expertise_level_label", "Expertise Level Required")}</label>
                     <CustomSelect
                       value={postJobExpLevel}
                       onChange={(val) => setPostJobExpLevel(val)}
                       options={[
-                        { value: "Beginner", label: "Entry (Beginner)" },
-                        { value: "Intermediate", label: "Intermediate (Mid-level)" },
-                        { value: "Expert", label: "Expert (Senior)" },
+                        { value: "Beginner", label: t("entry_beginner_option", "Entry (Beginner)") },
+                        { value: "Intermediate", label: t("intermediate_mid_level_option", "Intermediate (Mid-level)") },
+                        { value: "Expert", label: t("expert_senior_option", "Expert (Senior)") },
                       ]}
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Required Skills</label>
+                  <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("required_skills_label", "Required Skills")}</label>
                     {postJobAvailableSkills.length > 0 ? (
                       <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-3.5 pb-4 bg-slate-50 border border-slate-200 rounded-xl scrollbar-thin">
                         {postJobAvailableSkills.map((skill) => {
@@ -1282,13 +1330,13 @@ export default function ProposalsTab({
                       </div>
                     ) : (
                       <div className="text-xs text-slate-400 italic bg-slate-50 border border-slate-200 rounded-xl p-4 text-center">
-                        No skills available for the selected subcategory. Go back and select a category/subcategory if needed.
+                        {t("no_skills_available_msg", "No skills available for the selected subcategory. Go back and select a category/subcategory if needed.")}
                       </div>
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-1.5 text-left">
-                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Required Languages</label>
+                  <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">{t("required_languages_label", "Required Languages")}</label>
                     <CustomSelect
                       value=""
                       onChange={(val) => {
@@ -1297,10 +1345,10 @@ export default function ProposalsTab({
                           setPostJobSelectedLanguages([...postJobSelectedLanguages, id]);
                         }
                       }}
-                      placeholder="Add language..."
+                      placeholder={t("add_language_placeholder", "Add language...")}
                       options={postJobAvailableLanguages.map((l) => ({
                         value: l.language_id.toString(),
-                        label: l.language_name,
+                        label: t(l.language_name, l.language_name),
                       }))}
                     />
 
@@ -1314,7 +1362,7 @@ export default function ProposalsTab({
                               key={langId}
                               className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-xl text-xxs font-extrabold select-none"
                             >
-                              <span>{lang.language_name}</span>
+                              <span>{t(lang.language_name, lang.language_name)}</span>
                               <button
                                 type="button"
                                 onClick={() => setPostJobSelectedLanguages(postJobSelectedLanguages.filter((id) => id !== langId))}
@@ -1327,7 +1375,7 @@ export default function ProposalsTab({
                         })}
                       </div>
                     )}
-                                </div>
+                  </div>
 
                   <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mt-2 border-t border-slate-100 pt-4">
                     <button
@@ -1336,7 +1384,7 @@ export default function ProposalsTab({
                       className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap order-last sm:order-first"
                     >
                       <span className="text-xxs">←</span>
-                      <span>Back to Step 1</span>
+                      <span>{t("back_to_step_1_btn", "Back to Step 1")}</span>
                     </button>
                     <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full sm:w-auto">
                       <button
@@ -1344,7 +1392,7 @@ export default function ProposalsTab({
                         onClick={resetWizardState}
                         className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer whitespace-nowrap"
                       >
-                        Cancel
+                        {t("cancel_btn", "Cancel")}
                       </button>
                       <button
                         type="button"
@@ -1352,13 +1400,13 @@ export default function ProposalsTab({
                         className="w-full sm:w-auto px-5 py-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/60 text-amber-700 font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                       >
                         <i className="fa-solid fa-floppy-disk text-[10px]"></i>
-                        <span>Save as Draft</span>
+                        <span>{t("save_as_draft_btn", "Save as Draft")}</span>
                       </button>
                       <button
                         type="submit"
                         className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                       >
-                        <span>Save & Continue</span>
+                        <span>{t("save_continue_btn", "Save & Continue")}</span>
                         <span className="text-xxs">→</span>
                       </button>
                     </div>
@@ -1369,10 +1417,10 @@ export default function ProposalsTab({
               {postJobStep === 3 && (
                 <>
                   {/* SEO & Sharing Meta Settings */}
-                  <div className="flex flex-col gap-4 text-left">
+                  <div className="flex flex-col gap-4 text-left rtl:text-right">
                     <div>
-                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">SEO & Social Sharing Settings (Optional)</h4>
-                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">Customize the preview card displayed when your project is shared on social platforms like Facebook, WhatsApp, or LinkedIn.</p>
+                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t("seo_sharing_settings_header", "SEO & Social Sharing Settings (Optional)")}</h4>
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">{t("seo_sharing_settings_desc", "Customize the preview card displayed when your project is shared on social platforms like Facebook, WhatsApp, or LinkedIn.")}</p>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
@@ -1381,14 +1429,14 @@ export default function ProposalsTab({
                       <div className="flex flex-col gap-3">
                         <div>
                           <div className="flex justify-between items-center mb-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase">Meta SEO Title</label>
+                            <label className="text-[10px] font-bold text-slate-505 uppercase">{t("meta_seo_title_label", "Meta SEO Title")}</label>
                             <span className="text-[9px] text-slate-400 font-semibold">{postJobSeoTitle.length}/70</span>
                           </div>
                           <input
                             type="text"
                             maxLength={70}
                             value={postJobSeoTitle}
-                            placeholder={postJobTitle || "Defaults to Project Title"}
+                            placeholder={postJobTitle || t("defaults_to_project_title_placeholder", "Defaults to Project Title")}
                             onChange={(e) => setPostJobSeoTitle(e.target.value)}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none font-semibold"
                           />
@@ -1396,20 +1444,20 @@ export default function ProposalsTab({
                         
                         <div>
                           <div className="flex justify-between items-center mb-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase">Meta SEO Description</label>
+                            <label className="text-[10px] font-bold text-slate-505 uppercase">{t("meta_seo_description_label", "Meta SEO Description")}</label>
                             <span className="text-[9px] text-slate-400 font-semibold">{postJobSeoDescription.length}/160</span>
                           </div>
                           <textarea
                             maxLength={160}
                             value={postJobSeoDescription}
-                            placeholder={postJobDescription ? postJobDescription.replace(/<[^>]*>/g, '').substring(0, 120) + "..." : "Defaults to Project Description"}
+                            placeholder={postJobDescription ? postJobDescription.replace(/<[^>]*>/g, '').substring(0, 120) + "..." : t("defaults_to_project_description_placeholder", "Defaults to Project Description")}
                             onChange={(e) => setPostJobSeoDescription(e.target.value)}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-855 focus:border-primary focus:outline-none h-20 resize-none"
                           />
                         </div>
                         
                         <div>
-                          <label className="text-[10px] font-bold text-slate-505 uppercase block mb-1">Custom Sharing Image</label>
+                          <label className="text-[10px] font-bold text-slate-505 uppercase block mb-1">{t("custom_sharing_image_label", "Custom Sharing Image")}</label>
                           <div className="flex flex-col gap-1">
                             <div className="flex gap-2">
                               {postJobSeoImage && (
@@ -1418,7 +1466,7 @@ export default function ProposalsTab({
                               <label className="flex-1 cursor-pointer">
                                 <div className="bg-white border border-slate-200 hover:border-primary/60 hover:bg-primary/3 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-700 transition-all flex items-center justify-between gap-2">
                                   <span className={uploadingSeoImage ? "text-slate-400" : ""}>
-                                    {uploadingSeoImage ? "Uploading..." : postJobSeoImage ? "Change Image" : "Upload Image"}
+                                    {uploadingSeoImage ? t("uploading_image_status", "Uploading...") : postJobSeoImage ? t("change_image_btn", "Change Image") : t("upload_image_btn", "Upload Image")}
                                   </span>
                                   {uploadingSeoImage && (
                                     <div className="w-3.5 h-3.5 border-2 border-t-transparent border-primary rounded-full animate-spin shrink-0" />
@@ -1433,14 +1481,16 @@ export default function ProposalsTab({
                                 />
                               </label>
                             </div>
-                            <span className="text-[10px] text-slate-400 font-medium">Min 300×200px &bull; Large images auto-resized to 1200×630px</span>
+                            <span className="text-[10px] text-slate-400 font-medium">
+                              {t("image_dimension_guideline", "Min 300×200px")} &bull; {t("image_resize_guideline", "Large images auto-resized to 1200×630px")}
+                            </span>
                           </div>
                         </div>
                       </div>
                       
                       {/* Live Preview Card */}
-                      <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3 text-left">
-                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Social Share Preview Card:</span>
+                      <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3 text-left rtl:text-right">
+                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{t("social_share_preview_header", "Social Share Preview Card:")}</span>
                         
                         <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm flex flex-col">
                           <div className="relative aspect-[1.91/1] w-full bg-slate-100 border-b border-slate-100 flex items-center justify-center overflow-hidden">
@@ -1453,17 +1503,17 @@ export default function ProposalsTab({
                             ) : (
                               <div className="flex flex-col items-center gap-1.5 text-slate-355">
                                 <i className="fa-solid fa-earth-americas text-xl text-slate-300"></i>
-                                <span className="text-[9px] font-black uppercase tracking-widest text-center text-slate-400">Share Image Placeholder</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-center text-slate-400">{t("share_image_placeholder_label", "Share Image Placeholder")}</span>
                               </div>
                             )}
                           </div>
-                          <div className="p-3 flex flex-col gap-1 text-left">
+                          <div className="p-3 flex flex-col gap-1 text-left rtl:text-right">
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">lancerflow.net</span>
                             <h5 className="text-xs font-extrabold text-slate-800 line-clamp-1">
-                              {postJobSeoTitle.trim() || postJobTitle.trim() || "Awesome Freelancer Project Title"}
+                              {postJobSeoTitle.trim() || postJobTitle.trim() || t("awesome_project_title_placeholder", "Awesome Freelancer Project Title")}
                             </h5>
                             <p className="text-[10px] text-slate-500 font-medium line-clamp-2 leading-relaxed">
-                              {postJobSeoDescription.trim() || (postJobDescription ? postJobDescription.replace(/<[^>]*>/g, '').substring(0, 110) + "..." : "Hire the best freelance professionals for your project on lancerflow.net.")}
+                              {postJobSeoDescription.trim() || (postJobDescription ? postJobDescription.replace(/<[^>]*>/g, '').substring(0, 110) + "..." : t("hire_freelance_desc_placeholder", "Hire the best freelance professionals for your project on lancerflow.net."))}
                             </p>
                           </div>
                         </div>
@@ -1479,7 +1529,7 @@ export default function ProposalsTab({
                       className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap order-last sm:order-first"
                     >
                       <span className="text-xxs">←</span>
-                      <span>Back to Step 2</span>
+                      <span>{t("back_to_step_2_btn", "Back to Step 2")}</span>
                     </button>
                     <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full sm:w-auto">
                       <button
@@ -1487,7 +1537,7 @@ export default function ProposalsTab({
                         onClick={resetWizardState}
                         className="w-full sm:w-auto px-5 py-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs transition-all cursor-pointer whitespace-nowrap"
                       >
-                        Cancel
+                        {t("cancel_btn", "Cancel")}
                       </button>
                       <button
                         type="button"
@@ -1495,13 +1545,13 @@ export default function ProposalsTab({
                         className="w-full sm:w-auto px-5 py-3 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100/60 text-amber-700 font-extrabold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                       >
                         <i className="fa-solid fa-floppy-disk text-[10px]"></i>
-                        <span>Save as Draft</span>
+                        <span>{t("save_as_draft_btn", "Save as Draft")}</span>
                       </button>
                       <button
                         type="submit"
                         className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap"
                       >
-                        <span>{editingDraftJobId ? "Publish Project" : "Post Project to Network"}</span>
+                        <span>{editingDraftJobId ? t("publish_project_btn", "Publish Project") : t("post_project_network_btn", "Post Project to Network")}</span>
                         <FiCheck className="w-3.5 h-3.5 shrink-0" />
                       </button>
                     </div>
@@ -1516,30 +1566,30 @@ export default function ProposalsTab({
 
     if (selectedProjectDetails) {
       return (
-        <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left text-slate-800">
+        <div className="relative z-10 flex flex-col gap-6 w-full animate-fadeIn text-left rtl:text-right text-slate-800">
           <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4">
             <div>
               <button
                 onClick={() => setSelectedProjectDetails(null)}
                 className="text-slate-550 hover:text-slate-800 text-[10px] font-bold bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-slate-200 hover:bg-slate-200/60 mb-2.5 inline-flex items-center gap-1.5"
               >
-                ← Back to Projects
+                ← {t("btn_back_to_projects", "Back to Projects")}
               </button>
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
                 📁 {selectedProjectDetails.title}
               </h2>
-              <p className="text-slate-400 text-xs mt-1 font-semibold">Project overview, milestones tracking, and candidate bids.</p>
+              <p className="text-slate-400 text-xs mt-1 font-semibold">{t("project_overview_sub", "Project overview, milestones tracking, and candidate bids.")}</p>
             </div>
           </div>
 
-          <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-hidden text-left rtl:text-right">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
-            <h3 className="text-sm font-extrabold text-slate-855 border-b border-slate-100 pb-2">Project Overview</h3>
+            <h3 className="text-sm font-extrabold text-slate-855 border-b border-slate-100 pb-2">{t("project_overview_title", "Project Overview")}</h3>
             <p className="text-slate-600 text-xs font-medium leading-relaxed">{selectedProjectDetails.description}</p>
             <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-slate-100 mt-2 text-slate-500 text-xs font-semibold">
               <div className="flex items-center gap-1.5">
                 <i className="fa-solid fa-wallet text-slate-400 text-sm"></i>
-                <span>Budget: <strong className="text-slate-700 font-bold">
+                <span>{t("project_budget", "Project Budget")}: <strong className="text-slate-700 font-bold">
                   {selectedProjectDetails.min_budget && selectedProjectDetails.max_budget 
                     ? `$${parseFloat(selectedProjectDetails.min_budget).toLocaleString()} - $${parseFloat(selectedProjectDetails.max_budget).toLocaleString()}`
                     : `$${parseFloat(selectedProjectDetails.budget).toLocaleString()}`}
@@ -1548,18 +1598,18 @@ export default function ProposalsTab({
               </div>
               <div className="flex items-center gap-1.5">
                 <i className="fa-solid fa-graduation-cap text-slate-400 text-sm"></i>
-                <span>Experience: <strong className="text-slate-700 font-bold">{selectedProjectDetails.experience_level && selectedProjectDetails.experience_level !== "null" ? selectedProjectDetails.experience_level : "Intermediate"}</strong></span>
+                <span>{t("experience_label", "Experience")}: <strong className="text-slate-700 font-bold">{selectedProjectDetails.experience_level && selectedProjectDetails.experience_level !== "null" ? t(selectedProjectDetails.experience_level.toLowerCase().replace(/[^a-zA-Z0-9_]/g, "_"), selectedProjectDetails.experience_level) : t("intermediate", "Intermediate")}</strong></span>
               </div>
               {selectedProjectDetails.duration && (
                 <div className="flex items-center gap-1.5">
                   <i className="fa-solid fa-calendar text-slate-400 text-sm"></i>
-                  <span>Duration: <strong className="text-slate-700 font-bold">{selectedProjectDetails.duration}</strong></span>
+                  <span>{t("duration_label", "Duration")}: <strong className="text-slate-700 font-bold">{t(selectedProjectDetails.duration.toLowerCase().replace(/[^a-zA-Z0-9_]/g, "_"), selectedProjectDetails.duration)}</strong></span>
                 </div>
               )}
               {selectedProjectDetails.location && (
                 <div className="flex items-center gap-1.5">
                   <i className="fa-solid fa-location-dot text-slate-400 text-sm"></i>
-                  <span>Location: <strong className="text-slate-700 font-bold">{selectedProjectDetails.location}</strong></span>
+                  <span>{t("location_label", "Location")}: <strong className="text-slate-700 font-bold">{t(selectedProjectDetails.location.toLowerCase().replace(/[^a-zA-Z0-9_]/g, "_"), selectedProjectDetails.location)}</strong></span>
                 </div>
               )}
             </div>
@@ -1568,7 +1618,7 @@ export default function ProposalsTab({
           <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
             <h3 className="text-sm font-extrabold text-slate-855 border-b border-slate-100 pb-2">
-              {selectedProjectDetails.contract_id ? "Milestone & Delivery Tracker" : "Freelancer Proposals"}
+              {selectedProjectDetails.contract_id ? t("milestone_delivery_tracker", "Milestone & Delivery Tracker") : t("freelancer_proposals_title", "Freelancer Proposals")}
             </h3>
             <ProjectMilestoneTracker
               job={selectedProjectDetails}
@@ -1601,21 +1651,20 @@ export default function ProposalsTab({
           </button>
         </div>
 
-        {/* Project Filters Tab Bar & Search */}
         {!loadingClientJobs && clientJobs.length > 0 && (
-          <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-center gap-4">
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-1.5 flex flex-wrap gap-1 shadow-xs flex-1">
-              {[
-                { id: "all", label: t("all_projects_tab_filter", "All Projects"), icon: "fa-solid fa-list-check" },
-                { id: "pending", label: t("pending_tab_filter", "Pending"), icon: "fa-solid fa-clock text-amber-500" },
-                { id: "hired", label: t("hired_projects_tab_filter", "Hired Projects"), icon: "fa-solid fa-user-check text-teal-650" },
-                { id: "proposals_arrived", label: t("proposals_arrived_tab_filter", "Proposals Arrived"), icon: "fa-solid fa-envelope-open text-primary" },
-                { id: "proposals_not_arrived", label: t("proposals_not_arrived_tab_filter", "Proposals Not Arrived"), icon: "fa-solid fa-envelope text-slate-400" },
-                { id: "ongoing", label: t("ongoing_tab_filter", "Ongoing"), icon: "fa-solid fa-spinner text-emerald-600 animate-spin-slow" },
-                { id: "dispute", label: t("disputed_tab_filter", "Disputed"), icon: "fa-solid fa-triangle-exclamation text-rose-500" },
-                { id: "suspended", label: t("suspended_tab_filter", "Suspended"), icon: "fa-solid fa-ban text-rose-500" },
-                { id: "completed", label: t("completed_tab_filter", "Completed"), icon: "fa-solid fa-circle-check text-teal-600" },
-                { id: "draft", label: t("drafts_tab_filter", "Drafts"), icon: "fa-solid fa-file-signature text-slate-555" }
+          <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+            {(() => {
+              const filterOptions = [
+                { id: "all", label: t("all_projects_tab_filter", "All Projects") },
+                { id: "pending", label: t("pending_tab_filter", "Pending") },
+                { id: "hired", label: t("hired_projects_tab_filter", "Hired Projects") },
+                { id: "proposals_arrived", label: t("proposals_arrived_tab_filter", "Proposals Arrived") },
+                { id: "proposals_not_arrived", label: t("proposals_not_arrived_tab_filter", "Proposals Not Arrived") },
+                { id: "ongoing", label: t("ongoing_tab_filter", "Ongoing") },
+                { id: "dispute", label: t("disputed_tab_filter", "Disputed") },
+                { id: "suspended", label: t("suspended_tab_filter", "Suspended") },
+                { id: "completed", label: t("completed_tab_filter", "Completed") },
+                { id: "draft", label: t("drafts_tab_filter", "Drafts") }
               ].map((tab) => {
                 const count = clientJobs.filter(j => {
                   const cStatus = j.contract_status?.toLowerCase();
@@ -1631,28 +1680,27 @@ export default function ProposalsTab({
                   if (tab.id === "proposals_not_arrived") return !j.contract_id && parseInt(j.proposal_count || 0) === 0 && jStatus !== "draft" && jStatus !== "suspended";
                   return true;
                 }).length;
+                return {
+                  value: tab.id,
+                  label: `${tab.label} (${count})`
+                };
+              });
 
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setProjectFilter(tab.id as any)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all border-0 cursor-pointer ${
-                      projectFilter === tab.id
-                        ? "bg-white text-slate-800 shadow-sm border border-slate-200/60 font-bold"
-                        : "text-slate-500 hover:text-slate-800 hover:bg-white/40"
-                    }`}
-                  >
-                    <i className={tab.icon}></i>
-                    <span>{tab.label}</span>
-                    <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold ${
-                      projectFilter === tab.id ? "bg-slate-100 text-slate-700" : "bg-slate-200/50 text-slate-550"
-                    }`}>{count}</span>
-                  </button>
-                );
-              })}
-            </div>
+              return (
+                <div className="flex items-center gap-3 bg-white border border-slate-200/80 rounded-xl px-4 py-2.5 shadow-xs shrink-0">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide whitespace-nowrap">{t("filter_projects_label", "Filter Projects:")}</span>
+                  <div className="w-52">
+                    <CustomSelect
+                      value={projectFilter}
+                      onChange={(val) => setProjectFilter(val as any)}
+                      options={filterOptions}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
 
-            <div className="relative w-full xl:w-72 shrink-0">
+            <div className="relative w-full sm:w-72 shrink-0">
               <input
                 type="text"
                 value={searchProjectQuery}

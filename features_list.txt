@@ -15,23 +15,29 @@ Buy2Lancer - Complete Features List
    - Custom Project Posting (Fixed / Hourly)
    - Project Admin Moderation & Approval
    - Proposal Bidding & Moderation Approval
+   - Compact Client Proposals Dashboard: Replaced space-heavy button filters grid with a sleek CustomSelect dropdown listing live counts of projects per status (e.g. "Ongoing (1)", "Completed (3)").
 
 4. Freelancer Gigs Marketplace
    - Gig Creation & Package Pricing Tiers
+   - Pricing Tiers Fallback: Guarantees package price selector tabs (Basic, Standard, Premium) always render on Gig detail views, using preset multipliers if custom DB values are missing.
    - Gig Add-ons & Checkout Upsells (Optional Extras with real-time price calculation)
    - Compact Scrollable Add-ons: Long addon lists are styled compactly with overflow-y-auto to prevent layout stretching.
    - Premium Upsell & Upgrade Alternative Widget: Displays a single matching higher-priced gig from a Pro/Elite seller in the sidebar to boost platform conversion rate.
    - IP-Locked Unique View Tracking: Prevents view count manipulation by only incrementing views once per unique IP address using database logs.
    - Gig Order Tracking & Deliverables
+   - Gig Order Invoices & Receipts: Renders a premium, print-ready modal invoice showing itemized costs (Base plan cost, add-on extras, and custom features milestones).
+   - Gig Dashboard Search & Deep-linking: Features a premium search bar (filtering by order ID, gig title, or partner names) and dynamic URL parameters synchronization (`?application_id=X`) supporting direct deep-linked navigation on page refreshes.
 
 5. Payments, Escrow & Admin Commission
    - Stripe Milestone & Timecard Payments
    - Secure Platform Escrow Wallet
    - Platform Admin Commission Fee (Default 5%)
+   - Hourly Auto-Approval on Project Closure: When a client closes a project, any outstanding pending or requested timecard hour logs are automatically approved and funded before escrow release.
 
-6. Milestone Revisions Policy
-   - Free Revisions Limit (Default 3)
-   - Paid Revisions (Awaiting Client Funding & Fee Request)
+6. Contract Revisions Policy (Milestones & Hourly Timecards)
+   - Free Revisions Limit (Default 3 per contract milestone/timecard)
+   - Paid Revisions: Supports freelancer proposed revision fees when limits are exceeded. Renders inline fee inputs, progress banners (e.g. "Awaiting Funding", "In Progress"), and wallet checks to fund paid revisions.
+   - Detailed Revisions Panel: Renders a collapsible audit log displaying historical review feedback and uploaded deliverables files list.
 
 7. Dispute Resolution & Mediation
    - Escrow Wallet Split Locking
@@ -67,6 +73,9 @@ Buy2Lancer - Complete Features List
     - Light / Dark Mode Global Toggle
     - Color Palettes & Micro-animations
     - Social Media & App Store Link Customization
+    - Responsive Multi-Language & Multi-Currency Switchers (Admin/dashboard header toggles collapsing to compact icons on mobile)
+    - Real-Time Currency Conversions (Dynamic platform metric updates: Net Revenue, Profit, Escrows, Wallets, and Budgets)
+    - Unified currency inputs: Sidebar price filters (Gigs & Talent) display dynamic currency codes and symbol prepends in clean border-joined input group slots.
 
 14. Buy2Lancer AI Engine & Smart Features
     - Conversational Marketplace Guide: Responds to user queries about bidding, memberships, client settings, escrow, and platform usage.
@@ -79,6 +88,15 @@ Buy2Lancer - Complete Features List
     - AI Resume Reader & Auto-fill: Integrates with onboarding and settings, allowing freelancers to upload PDF/TXT resumes. AI extracts and auto-fills title, experience years, rate, bio, and highlights matching taxonomy skills/languages.
     - AI Gig Description Generator: Renders service descriptions instantly using AI. Freelancers provide the Gig title, category, and skills, and AI generates highly structured HTML content ready for the rich text editor.
 
+15. Database & Admin Operations
+    - Database Backup & Recovery (Triggering, downloading, and restoring database dumps directly from the control panel)
+    - Search Term Analytics & Query Logging (Records and monitors popular search keywords to analyze platform demand)
+    - Dynamic Page Content & Editor (Live section content customizer: Hero, Why Choose Us, FAQs, Footer details)
+    - Platform Taxonomy CRUD Management (Full control to configure categories, subcategories, and skill taxonomies)
+    - Subscription Tier Configurations (Add, edit, or adjust pricing plan membership allocations)
+    - Platform Wallet & Transaction Audits (Wallet balance adjustments, transaction tracking, ledger auditing)
+    - Inquiries & Marketing CRM (Manage contact tickets, inquiries, newsletter subscribers list, and CSV export tools)
+
 
 
 ====================================================================
@@ -90,11 +108,12 @@ CLIENT FEATURES (BUYER WORKSPACE)
 ---------------------------------
 - Dual Workspace Toggle: Clients can switch to the Buyer Dashboard to post projects, hire talent, and manage orders.
 - Custom Project Posting (Fixed / Hourly): Clients can post custom job listings with pricing structures, descriptions, locations, skills, and budgets.
+- Posted Projects CustomSelect Filter: Filter proposals and postings via a compact dropdown with interactive count metrics.
 - Gig Package Purchasing: Browse the marketplace, choose package tiers, and add upsell add-on extras.
 - Sidebar Upsell Widget: Recommends Pro/Elite seller upgrades in the sidebar.
-- Escrow Milestone Payments: Secure milestone-based payments funded via Stripe or virtual wallet balances.
+- Escrow Milestone & Timecard Payments: Secure milestone-based and hourly-based payments funded via Stripe or virtual wallet balances.
 - Secure Escrow Wallets: Escrow project funds safely on the platform.
-- Free Revision Allowance: Default allocation of up to 3 revisions on milestone deliverables.
+- Free Revision Allowance: Default allocation of up to 3 revisions on milestone and hourly timecard deliverables.
 - Paid Revision Funding: Approve and fund custom pricing fee requests from freelancers for extra revisions.
 - Escrow Split Locking: Lock project funds in escrow to halt release when a conflict arises.
 - Dispute Room Messaging: Message the freelancer and assigned mediator in the Dispute Room.
@@ -112,9 +131,9 @@ FREELANCER FEATURES (SELLER WORKSPACE)
 - Compact Scrollable Add-ons: Long addon lists styled compactly with scrolling overflow lists.
 - IP-Locked Unique View Tracking: Prevents view count manipulation on gig pages.
 - Proposal Bidding on Projects: Write cover letters and submit bid proposals using available credits.
-- Order Progress & Deliverables: Monitor active orders and submit deliverables or files for milestone reviews.
-- Wallet Withdrawals: Clear escrow funds into their local virtual wallet after milestone approvals.
-- Paid Revision Requests: Send custom fee requests for work exceeding the free revision limit.
+- Order Progress & Deliverables: Monitor active orders, check tracking milestones, and submit deliverables or files for milestone/hourly reviews.
+- Wallet Withdrawals: Clear escrow funds into their local virtual wallet after milestone/hourly approvals.
+- Paid Revision Requests: Send custom fee requests for work exceeding the free revision limit on milestones and timecards.
 - Escrow Split Locking: Hold contract funds securely in escrow to prevent unilateral release.
 - Dispute Room Mediation: Participate in dispute chats to defend deliverables and present evidence.
 - Affiliate Referral Program: Share signup link to track and earn lifetime affiliate commission.
@@ -140,3 +159,10 @@ ADMIN FEATURES (CONTROL PANEL)
 - XML Sitemap & Robots Crawling: Automate sitemap generation and robots.txt crawl control rules.
 - Site Settings & Branding: Admin controls to customize light/dark theme defaults, brand color schemes, social media profiles, app store links.
 - Chatbot Model Engine Configuration: Toggle chatbot between OpenAI Gemini and local Qwen/Ollama engine configurations.
+- Database Backup Management: Trigger, download, or restore database backup dumps directly from the dashboard.
+- Search Query Term Logging: Track user search terms and query frequencies to analyze user interest and trends.
+- Dynamic Page Layout Section Editor: Drag & drop live visual editor for landing page sections, Hero widgets, Testimonials, and FAQ listings.
+- Platform Taxonomies Configuration: CRUD operations for managing system categories, subcategories, and skill lists.
+- Subscription Pricing Builder: Configure billing periods, pricing plan credits, and membership tier allocations.
+- Platform Wallet & Transaction Audits: Manually adjust virtual wallet balances, view statement ledgers, and audit transaction records.
+- Marketing & Support CRM Panels: Moderate contact ticket inquiries, manage newsletter subscriber mailing lists, and export csv data.

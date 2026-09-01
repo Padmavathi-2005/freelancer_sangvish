@@ -6,6 +6,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Table from "@/components/Table";
 import { FiAlertTriangle, FiClock, FiCheck, FiX, FiUser, FiUsers, FiFileText, FiEye } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface OnboardingTabProps {
   onboardedSearch: string;
@@ -36,6 +37,7 @@ export default function OnboardingTab({
   handleToggleUserActive,
   onVettingUpdate
 }: OnboardingTabProps) {
+  const { t } = useLanguage();
 
   const [vettingLoading, setVettingLoading] = useState<number | null>(null);
   const [activeTabSection, setActiveTabSection] = useState<"freelancer" | "client">("freelancer");
@@ -139,20 +141,20 @@ export default function OnboardingTab({
     if (!status || status === "Pending") {
       return (
         <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-amber-50 text-amber-705 border border-amber-200">
-          <FiClock className="w-2.5 h-2.5 text-amber-600 shrink-0" /> Pending
+          <FiClock className="w-2.5 h-2.5 text-amber-600 shrink-0" /> {t("pending", "Pending")}
         </span>
       );
     }
     if (status === "Approved") {
       return (
         <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-705 border border-emerald-200">
-          <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Approved
+          <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> {t("approved", "Approved")}
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-rose-705 border border-rose-200">
-        <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> Rejected
+        <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> {t("rejected", "Rejected")}
       </span>
     );
   };
@@ -160,51 +162,51 @@ export default function OnboardingTab({
   // Freelancer tab columns
   const freelancerColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: any, idx: number) => ((onboardedPage - 1) * itemsPerPage) + idx + 1
     },
     {
-      header: "User Name",
+      header: t("user_name", "User Name"),
       accessor: (row: any) => `${row.first_name} ${row.last_name || ""}`
     },
     {
-      header: "Email",
+      header: t("email", "Email"),
       accessor: (row: any) => row.email
     },
     {
-      header: "Professional Title",
-      accessor: (row: any) => row.professional_title || "N/A"
+      header: t("profiles_title", "Professional Title"),
+      accessor: (row: any) => row.professional_title || t("not_applicable", "N/A")
     },
     {
-      header: "Vetting Status",
+      header: t("vetting_status_label", "Vetting Status"),
       accessor: (row: any) => <VettingBadge status={row.vetting_status} />
     },
     {
-      header: "Documents",
+      header: t("admin_documents_label", "Documents"),
       accessor: (row: any) => (
         <button
           onClick={() => handleViewUserDocuments(row)}
           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black border border-slate-200 bg-white text-slate-750 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors shadow-sm"
         >
           <FiFileText className="w-3 h-3 text-slate-500" />
-          <span>View Docs</span>
+          <span>{t("view_docs", "View Docs")}</span>
         </button>
       )
     },
     {
-      header: "Account",
+      header: t("account", "Account"),
       accessor: (row: any) => (
         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
           row.is_active !== false
             ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
             : "bg-rose-50 text-rose-700 border border-rose-200"
         }`}>
-          {row.is_active !== false ? "Active" : "Blocked"}
+          {row.is_active !== false ? t("active", "Active") : t("blocked", "Blocked")}
         </span>
       )
     },
     {
-      header: "Actions",
+      header: t("actions", "Actions"),
       accessor: (row: any) => (
         <div className="flex items-center gap-1.5 flex-wrap justify-center">
           {row.vetting_status === "Pending" && (
@@ -216,7 +218,7 @@ export default function OnboardingTab({
               >
                 {vettingLoading === row.user_id ? "..." : (
                   <>
-                    <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Approve
+                    <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> {t("approve", "Approve")}
                   </>
                 )}
               </button>
@@ -227,7 +229,7 @@ export default function OnboardingTab({
               >
                 {vettingLoading === row.user_id ? "..." : (
                   <>
-                    <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> Reject
+                    <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> {t("reject", "Reject")}
                   </>
                 )}
               </button>
@@ -242,7 +244,7 @@ export default function OnboardingTab({
             >
               {vettingLoading === row.user_id ? "..." : (
                 <>
-                  <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Approve
+                  <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> {t("approve", "Approve")}
                 </>
               )}
             </button>
@@ -256,7 +258,7 @@ export default function OnboardingTab({
                 : "text-emerald-600 hover:bg-emerald-50 border border-emerald-200/60 bg-white"
             }`}
           >
-            {row.is_active !== false ? "Block" : "Unblock"}
+            {row.is_active !== false ? t("block", "Block") : t("unblock", "Unblock")}
           </button>
         </div>
       )
@@ -266,44 +268,44 @@ export default function OnboardingTab({
   // Client tab columns
   const clientColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: any, idx: number) => ((onboardedPage - 1) * itemsPerPage) + idx + 1
     },
     {
-      header: "User Name",
+      header: t("user_name", "User Name"),
       accessor: (row: any) => `${row.first_name} ${row.last_name || ""}`
     },
     {
-      header: "Email",
+      header: t("email", "Email"),
       accessor: (row: any) => row.email
     },
     {
-      header: "Company Details",
+      header: t("company_details_label", "Company Details"),
       accessor: (row: any) => (
-        <div className="flex flex-col gap-0.5 text-left">
-          <span className="font-bold text-xs text-slate-800">{row.company_name || "N/A"}</span>
-          <span className="text-[10px] text-slate-400 font-semibold">{row.industry || "N/A"} • {row.company_size || "N/A"}</span>
+        <div className="flex flex-col gap-0.5 text-left rtl:text-right">
+          <span className="font-bold text-xs text-slate-800">{row.company_name || t("not_applicable", "N/A")}</span>
+          <span className="text-[10px] text-slate-400 font-semibold">{row.industry || t("not_applicable", "N/A")} • {row.company_size || t("not_applicable", "N/A")}</span>
         </div>
       )
     },
     {
-      header: "Vetting Status",
+      header: t("vetting_status_label", "Vetting Status"),
       accessor: (row: any) => <VettingBadge status={row.vetting_status} />
     },
     {
-      header: "Account",
+      header: t("account", "Account"),
       accessor: (row: any) => (
         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
           row.is_active !== false
             ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
             : "bg-rose-50 text-rose-700 border border-rose-200"
         }`}>
-          {row.is_active !== false ? "Active" : "Blocked"}
+          {row.is_active !== false ? t("active", "Active") : t("blocked", "Blocked")}
         </span>
       )
     },
     {
-      header: "Actions",
+      header: t("actions", "Actions"),
       accessor: (row: any) => (
         <div className="flex items-center gap-1.5 flex-wrap justify-center">
           {row.vetting_status === "Pending" && (
@@ -315,7 +317,7 @@ export default function OnboardingTab({
               >
                 {vettingLoading === row.user_id ? "..." : (
                   <>
-                    <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Approve
+                    <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> {t("approve", "Approve")}
                   </>
                 )}
               </button>
@@ -326,7 +328,7 @@ export default function OnboardingTab({
               >
                 {vettingLoading === row.user_id ? "..." : (
                   <>
-                    <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> Reject
+                    <FiX className="w-2.5 h-2.5 text-rose-600 shrink-0" /> {t("reject", "Reject")}
                   </>
                 )}
               </button>
@@ -341,7 +343,7 @@ export default function OnboardingTab({
             >
               {vettingLoading === row.user_id ? "..." : (
                 <>
-                  <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> Approve
+                  <FiCheck className="w-2.5 h-2.5 text-emerald-600 shrink-0" /> {t("approve", "Approve")}
                 </>
               )}
             </button>
@@ -355,7 +357,7 @@ export default function OnboardingTab({
                 : "text-emerald-600 hover:bg-emerald-50 border border-emerald-200/60 bg-white"
             }`}
           >
-            {row.is_active !== false ? "Block" : "Unblock"}
+            {row.is_active !== false ? t("block", "Block") : t("unblock", "Unblock")}
           </button>
         </div>
       )
@@ -389,24 +391,24 @@ export default function OnboardingTab({
   }, [filteredOnboardedUsers]);
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left rtl:text-right">
       <div>
-        <h3 className="text-lg font-bold text-slate-800">Onboarding Directory</h3>
-        <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Directory of clients and freelancers who have submitted or completed onboarding setup.</p>
+        <h3 className="text-lg font-bold text-slate-800">{t("admin_onboarding_directory", "Onboarding Directory")}</h3>
+        <p className="text-slate-505 text-xs sm:text-sm mt-0.5">{t("admin_onboarding_directory_desc", "Directory of clients and freelancers who have submitted or completed onboarding setup.")}</p>
       </div>
 
       {/* Onboarded Counts Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-5 flex flex-col justify-between h-24 shadow-sm">
-          <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Onboarded Freelancers</span>
+          <span className="text-[10px] font-bold text-purple-600 uppercase tracking-widest">{t("admin_onboarded_freelancers", "Onboarded Freelancers")}</span>
           <span className="text-2xl font-black text-purple-700 mt-1">{userCounts.freelancers}</span>
         </div>
         <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 flex flex-col justify-between h-24 shadow-sm">
-          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Onboarded Clients</span>
+          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{t("admin_onboarded_clients", "Onboarded Clients")}</span>
           <span className="text-2xl font-black text-blue-700 mt-1">{userCounts.clients}</span>
         </div>
         <div className={`border rounded-xl p-5 flex flex-col justify-between h-24 shadow-sm ${pendingVettingCount > 0 ? "bg-amber-50/50 border-amber-100" : "bg-slate-50/50 border-slate-100"}`}>
-          <span className={`text-[10px] font-bold uppercase tracking-widest ${pendingVettingCount > 0 ? "text-amber-600" : "text-slate-400"}`}>Pending Vetting</span>
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${pendingVettingCount > 0 ? "text-amber-600" : "text-slate-400"}`}>{t("admin_pending_vetting", "Pending Vetting")}</span>
           <span className={`text-2xl font-black mt-1 ${pendingVettingCount > 0 ? "text-amber-700" : "text-slate-400"}`}>{pendingVettingCount}</span>
         </div>
       </div>
@@ -418,11 +420,11 @@ export default function OnboardingTab({
             <FiAlertTriangle className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-xs font-black text-amber-800">
-              {pendingVettingCount} freelancer{pendingVettingCount > 1 ? "s" : ""} pending manual vetting review
+            <p className="text-xs font-black text-amber-805">
+              {pendingVettingCount} {t("admin_freelancers_pending_manual", "freelancer(s) pending manual vetting review")}
             </p>
             <p className="text-[10px] text-amber-600 font-semibold mt-0.5">
-              Auto-vetting is OFF. Review and approve or reject freelancers below before they can access their dashboard.
+              {t("admin_auto_vetting_off_desc", "Auto-vetting is OFF. Review and approve or reject freelancers below before they can access their dashboard.")}
             </p>
           </div>
         </div>
@@ -444,7 +446,7 @@ export default function OnboardingTab({
             }`}
           >
             <FiUser className="w-3.5 h-3.5" />
-            Freelancer Vetting
+            {t("admin_freelancer_vetting", "Freelancer Vetting")}
           </button>
           <button
             onClick={() => {
@@ -458,7 +460,7 @@ export default function OnboardingTab({
             }`}
           >
             <FiUsers className="w-3.5 h-3.5" />
-            Client Directory
+            {t("admin_client_directory", "Client Directory")}
           </button>
         </div>
 
@@ -466,7 +468,7 @@ export default function OnboardingTab({
         <div className="relative w-full md:w-64">
           <input
             type="text"
-            placeholder="Search onboarded users..."
+            placeholder={t("admin_search_onboarded_placeholder", "Search onboarded users...")}
             value={onboardedSearch}
             onChange={(e) => {
               setOnboardedSearch(e.target.value);
@@ -488,20 +490,20 @@ export default function OnboardingTab({
         onPageChange={setOnboardedPage}
         totalItems={tabFilteredUsers.length}
         itemsPerPage={itemsPerPage}
-        emptyMessage={activeTabSection === "freelancer" ? "No onboarded freelancers found." : "No onboarded clients found."}
+        emptyMessage={activeTabSection === "freelancer" ? t("admin_no_onboarded_freelancers", "No onboarded freelancers found.") : t("admin_no_onboarded_clients", "No onboarded clients found.")}
       />
 
       {/* Document Vetting Modal */}
       {selectedUserForDocs && mounted && createPortal(
         <div className="fixed inset-0 bg-slate-900/60 z-[9999] flex justify-center items-start p-4 backdrop-blur-[1px] overflow-y-auto select-none">
-          <div className="bg-white border border-slate-255 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden animate-fadeIn text-left flex flex-col my-8">
+          <div className="bg-white border border-slate-255 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden animate-fadeIn text-left rtl:text-right flex flex-col my-8">
             <div className="bg-white border-b border-slate-150 px-6 py-4 flex justify-between items-center text-slate-800 shrink-0">
               <div>
                 <h3 className="font-black text-xs uppercase tracking-wider text-slate-900">
-                  Vetting Documents
+                  {t("admin_vetting_documents_modal_title", "Vetting Documents")}
                 </h3>
                 <p className="text-[10px] text-slate-500 font-bold mt-0.5">
-                  Reviewing: <span className="text-teal-705 font-extrabold">{selectedUserForDocs.first_name} {selectedUserForDocs.last_name || ""}</span> ({selectedUserForDocs.email})
+                  {t("admin_reviewing", "Reviewing:")} <span className="text-teal-705 font-extrabold">{selectedUserForDocs.first_name} {selectedUserForDocs.last_name || ""}</span> ({selectedUserForDocs.email})
                 </p>
               </div>
               <button
@@ -520,7 +522,7 @@ export default function OnboardingTab({
                 </div>
               ) : userDocuments.length === 0 ? (
                 <div className="p-8 text-center text-slate-400 font-semibold text-xs bg-slate-50 rounded-xl border border-slate-100">
-                  No documents have been uploaded by this freelancer yet.
+                  {t("admin_no_docs_uploaded", "No documents have been uploaded by this freelancer yet.")}
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
@@ -530,7 +532,7 @@ export default function OnboardingTab({
                         <div className="flex items-center gap-2">
                           <span className="font-black text-slate-800 text-sm">{doc.field_name}</span>
                           {doc.is_required && (
-                            <span className="text-[9px] font-black uppercase bg-rose-50 text-rose-605 border border-rose-100 px-1.5 py-0.5 rounded-md">Required</span>
+                            <span className="text-[9px] font-black uppercase bg-rose-50 text-rose-605 border border-rose-100 px-1.5 py-0.5 rounded-md">{t("required_field", "Required")}</span>
                           )}
                           <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-md border ${
                             doc.status === "Approved"
@@ -539,30 +541,30 @@ export default function OnboardingTab({
                               ? "bg-rose-50 text-rose-700 border-rose-200"
                               : "bg-amber-50 text-amber-700 border-amber-200"
                           }`}>
-                            {doc.status}
+                            {doc.status === "Approved" ? t("approved", "Approved") : (doc.status === "Rejected" ? t("rejected", "Rejected") : t("pending", "Pending"))}
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{doc.field_description}</p>
                         
                         <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 text-[10px] font-bold text-slate-400">
                           <span className="flex items-center gap-1.5">
-                            Expiry Date: <strong className="text-slate-600">{doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString() : "N/A"}</strong>
+                            {t("expiry_date", "Expiry Date:")} <strong className="text-slate-600">{doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString() : t("not_applicable", "N/A")}</strong>
                           </span>
                           <span className="flex items-center gap-1.5">
-                            Submitted: <strong className="text-slate-600">{new Date(doc.submitted_at).toLocaleString()}</strong>
+                            {t("submitted", "Submitted:")} <strong className="text-slate-600">{new Date(doc.submitted_at).toLocaleString()}</strong>
                           </span>
                         </div>
 
                         {doc.status === "Rejected" && doc.rejection_reason && (
                           <div className="mt-2.5 p-2 bg-rose-50/50 border border-rose-100 rounded-lg text-[10px] text-rose-700 leading-relaxed font-bold">
-                            ⚠️ Rejection Reason: {doc.rejection_reason}
+                            ⚠️ {t("rejection_reason", "Rejection Reason:")} {doc.rejection_reason}
                           </div>
                         )}
 
                         {/* Text value rendering for text inputs */}
                         {doc.field_type && !doc.field_type.startsWith("file_") && (
                           <div className="mt-2.5 p-2.5 bg-slate-100/70 border border-slate-200/50 rounded-lg text-xs font-semibold text-slate-800">
-                            Submitted Value: <strong className="text-teal-700 font-mono text-[13px]">{doc.text_value || "N/A"}</strong>
+                            {t("submitted_value", "Submitted Value:")} <strong className="text-teal-700 font-mono text-[13px]">{doc.text_value || t("not_applicable", "N/A")}</strong>
                           </div>
                         )}
                       </div>
@@ -576,7 +578,7 @@ export default function OnboardingTab({
                             className="inline-flex items-center justify-center gap-1 px-3 py-1.5 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-[10px] font-bold uppercase rounded-xl transition shadow-sm text-center"
                           >
                             <FiEye className="w-3.5 h-3.5 shrink-0" />
-                            <span>View file</span>
+                            <span>{t("view_file", "View file")}</span>
                           </a>
                         )}
 
@@ -587,21 +589,21 @@ export default function OnboardingTab({
                               disabled={updatingDocId === doc.document_id}
                               className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold uppercase rounded-xl transition cursor-pointer shadow-sm disabled:opacity-50"
                             >
-                              <FiCheck className="w-3.5 h-3.5" /> Approve
+                              <FiCheck className="w-3.5 h-3.5" /> {t("approve", "Approve")}
                             </button>
                           )}
 
                           {doc.status !== "Rejected" && (
                             <button
                               onClick={() => {
-                                const reason = prompt("Enter the reason for rejecting this document:");
+                                const reason = prompt(t("prompt_reject_reason", "Enter the reason for rejecting this document:"));
                                 if (reason === null) return; // User cancelled
                                 handleUpdateDocStatus(doc.document_id, "Rejected", reason);
                               }}
                               disabled={updatingDocId === doc.document_id}
                               className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold uppercase rounded-xl transition cursor-pointer shadow-sm disabled:opacity-50"
                             >
-                              <FiX className="w-3.5 h-3.5" /> Reject
+                              <FiX className="w-3.5 h-3.5" /> {t("reject", "Reject")}
                             </button>
                           )}
                         </div>
@@ -617,7 +619,7 @@ export default function OnboardingTab({
                 onClick={() => setSelectedUserForDocs(null)}
                 className="px-5 py-2.5 bg-slate-200 hover:bg-slate-350 text-slate-700 text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer"
               >
-                Close
+                {t("close", "Close")}
               </button>
             </div>
           </div>

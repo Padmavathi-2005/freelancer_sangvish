@@ -2300,6 +2300,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       "/admin/referrals": "referrals",
       "/admin/affiliate": "affiliate",
       "/admin/subscription-plans": "subscription_plans",
+      "/admin/contact-inquiries": "contact-inquiries",
+      "/admin/newsletter": "newsletter",
+      "/admin/careers": "careers",
+      "/admin/dispute-reasons": "dispute_reasons",
     };
     return routeMap[pathname] || "overview";
   }, [pathname]);

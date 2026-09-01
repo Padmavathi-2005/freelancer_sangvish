@@ -3,6 +3,7 @@
 import React, { Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAdmin } from "../AdminContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { 
   FiSliders, 
   FiLayers, 
@@ -32,6 +33,7 @@ import DocumentVettingTab from "@/components/admin/DocumentVettingTab";
 import ApiIntegrationsTab from "@/components/admin/ApiIntegrationsTab";
 
 function SettingsPortalContent() {
+  const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTabQuery = searchParams.get("tab") || "general";
@@ -71,18 +73,18 @@ function SettingsPortalContent() {
   } = useAdmin();
 
   const tabs = [
-    { key: "general", label: "General Settings", icon: FiSliders },
-    { key: "site", label: "Site Settings", icon: FiSettings },
-    { key: "email", label: "Email Settings", icon: FiMail },
-    { key: "frontend", label: "Frontend Content", icon: FiLayers },
-    { key: "footer", label: "Footer & App Links", icon: FiLink },
-    { key: "social", label: "Social Login", icon: FiLock },
-    { key: "payment", label: "Payment Settings", icon: FiCreditCard },
-    { key: "disputes", label: "Dispute Reasons", icon: FiAlertTriangle },
-    { key: "seo", label: "SEO & Meta Preview", icon: FiSearch },
-    { key: "referral", label: "Referral & Earn", icon: FiUsers },
-    { key: "documents", label: "Document Verification", icon: FiFileText },
-    { key: "api_integrations", label: "API Integrations", icon: FiZap },
+    { key: "general", label: t("admin_tab_general", "General Settings"), icon: FiSliders },
+    { key: "site", label: t("admin_tab_site", "Site Settings"), icon: FiSettings },
+    { key: "email", label: t("admin_tab_email", "Email Settings"), icon: FiMail },
+    { key: "frontend", label: t("admin_tab_frontend", "Frontend Content"), icon: FiLayers },
+    { key: "footer", label: t("admin_tab_footer", "Footer & App Links"), icon: FiLink },
+    { key: "social", label: t("admin_tab_social", "Social Login"), icon: FiLock },
+    { key: "payment", label: t("admin_tab_payment", "Payment Settings"), icon: FiCreditCard },
+    { key: "disputes", label: t("admin_tab_disputes", "Dispute Reasons"), icon: FiAlertTriangle },
+    { key: "seo", label: t("admin_tab_seo", "SEO & Meta Preview"), icon: FiSearch },
+    { key: "referral", label: t("admin_tab_referral", "Referral & Earn"), icon: FiUsers },
+    { key: "documents", label: t("admin_tab_documents", "Document Verification"), icon: FiFileText },
+    { key: "api_integrations", label: t("admin_tab_api_integrations", "API Integrations"), icon: FiZap },
   ];
 
   const handleTabChange = (key: string) => {
@@ -90,20 +92,22 @@ function SettingsPortalContent() {
   };
 
   return (
-    <div className="flex-grow select-none animate-fadeIn">
+    <div className="flex-grow select-none animate-fadeIn text-left rtl:text-right">
       {/* Clean text-based header */}
-      <div className="flex flex-col gap-1.5 mb-8 text-left">
-        <h1 className="text-2xl font-black text-slate-800 dark:text-white leading-tight">System Settings Portal</h1>
+      <div className="flex flex-col gap-1.5 mb-8 text-left rtl:text-right">
+        <h1 className="text-2xl font-black text-slate-800 dark:text-white leading-tight">
+          {t("admin_settings_portal_title", "System Settings Portal")}
+        </h1>
         <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold">
-          Manage all core platform credentials, email templates, landing page designs, and system parameters.
+          {t("admin_settings_portal_desc", "Manage all core platform credentials, email templates, landing page designs, and system parameters.")}
         </p>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
+      <div className="flex flex-col lg:flex-row gap-8 items-start min-w-0 max-w-full w-full">
         {/* Sub-Sidebar Navigation */}
-        <div className="w-full lg:w-64 shrink-0 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-2 lg:gap-1.5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 lg:p-4 shadow-sm text-left backdrop-blur-md scrollbar-none whitespace-nowrap">
-          <div className="hidden lg:block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2.5 px-2 select-none">
-            Settings Categories
+        <div className="w-full lg:w-64 shrink-0 flex flex-row lg:flex-col overflow-x-auto lg:overflow-x-visible gap-2 lg:gap-1.5 bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 lg:p-4 shadow-sm text-left rtl:text-right backdrop-blur-md scrollbar-none whitespace-nowrap min-w-0 max-w-full">
+          <div className="hidden lg:block text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2.5 px-2 select-none text-left rtl:text-right">
+            {t("admin_settings_categories", "Settings Categories")}
           </div>
           {tabs.map((tab) => {
             const Icon = tab.icon;
@@ -112,33 +116,16 @@ function SettingsPortalContent() {
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                className={`w-auto lg:w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-black flex items-center gap-2.5 cursor-pointer border-none relative overflow-hidden isolate group transition-all duration-500 bg-transparent shrink-0 ${
+                className={`w-auto lg:w-full text-left px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-2.5 cursor-pointer border-none transition-all duration-200 bg-transparent shrink-0 group ${
                   isTabActive
-                    ? "text-white translate-x-0.5"
-                    : "text-slate-500 hover:text-teal-900 hover:translate-x-0.5"
+                    ? "text-primary"
+                    : "text-slate-500 hover:text-primary"
                 }`}
               >
-                {/* Active Background Pill with smooth slow horizontal slide-reveal */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-r from-teal-700 to-teal-800 rounded-xl transition-all duration-500 ease-out origin-left -z-10 ${
-                    isTabActive ? "scale-x-100 opacity-100 shadow-md shadow-teal-700/20" : "scale-x-0 opacity-0"
-                  }`}
-                />
-
-                {/* Hover background pill that slides in from left slowly (only if not active) */}
-                {!isTabActive && (
-                  <div className="absolute inset-0 bg-slate-100/80 rounded-xl transition-transform duration-500 ease-out origin-left scale-x-0 group-hover:scale-x-100 -z-10" />
-                )}
-
-                {/* Active Indicator Left Glow Line */}
-                <div className={`hidden lg:block absolute left-0 top-2.5 bottom-2.5 w-1 bg-teal-400 rounded-r-md transition-all duration-500 ${
-                  isTabActive ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
-                }`}></div>
-
-                <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover:scale-110 ${
-                  isTabActive ? "text-white" : "text-slate-400 group-hover:text-teal-700"
+                <Icon className={`w-4 h-4 shrink-0 transition-transform duration-300 group-hover:scale-105 ${
+                  isTabActive ? "text-primary" : "text-slate-400 group-hover:text-primary"
                 }`} />
-                <span className="relative z-10">{tab.label}</span>
+                <span>{tab.label}</span>
               </button>
             );
           })}

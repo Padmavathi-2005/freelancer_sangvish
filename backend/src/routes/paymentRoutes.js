@@ -1,5 +1,5 @@
 import express from "express";
-import auth, { checkApprovedClient } from "../middleware/auth.js";
+import auth, { checkApprovedClient, checkApprovedFreelancer } from "../middleware/auth.js";
 import {
   createStripeSession,
   createStripeSubscriptionSession,
@@ -23,7 +23,12 @@ import {
   fundMilestone,
   createStripeMilestoneSession,
   confirmStripeMilestonePayment,
-  requestMilestoneFunding
+  requestMilestoneFunding,
+  requestTimecardRevision,
+  acceptTimecardRevision,
+  rejectTimecardRevisionProposal,
+  fundTimecardRevision,
+  submitTimecardRevision
 } from "../controllers/paymentController.js";
 import {
   openDispute,
@@ -58,6 +63,11 @@ router.post("/proposal/pay", checkApprovedClient, payProposalDirectly);
 router.post("/timecard/stripe/create-session", checkApprovedClient, createStripeTimecardSession);
 router.post("/timecard/confirm", checkApprovedClient, confirmStripeTimecardPayment);
 router.post("/timecard/pay", checkApprovedClient, payTimecardDirectly);
+router.post("/contract/timecard/:id/revision", checkApprovedClient, requestTimecardRevision);
+router.post("/contract/timecard/:id/accept-revision", acceptTimecardRevision);
+router.post("/contract/timecard/:id/reject-revision-proposal", checkApprovedClient, rejectTimecardRevisionProposal);
+router.post("/contract/timecard/:id/fund-revision", checkApprovedClient, fundTimecardRevision);
+router.post("/contract/timecard/:id/submit-revision", checkApprovedFreelancer, submitTimecardRevision);
 
 // MILESTONE RELEASE & CONTRACT CANCELLATION/REFUNDS
 router.post("/contract/milestone/:id/release", checkApprovedClient, releaseMilestonePayment);

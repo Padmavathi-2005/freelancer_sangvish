@@ -252,8 +252,8 @@ export default function GigMilestoneTracker({
     if (application.status === "Pending") {
       triggerToast(
         "warning",
-        "Awaiting Freelancer Acceptance",
-        "Your order is waiting for freelancer approval. Payment options will unlock once the freelancer accepts your order application. No charges have been made yet."
+        t("awaiting_acceptance_toast", "Awaiting Freelancer Acceptance"),
+        t("awaiting_acceptance_toast_desc", "Your order is waiting for freelancer approval. Payment options will unlock once the freelancer accepts your order application. No charges have been made yet.")
       );
       return;
     }
@@ -298,7 +298,7 @@ export default function GigMilestoneTracker({
       if (res.ok) {
         const data = await res.json();
         onUpdateApplication(data.application);
-        triggerToast("success", "Gig milestone status updated!");
+        triggerToast("success", t("milestone_status_updated", "Gig milestone status updated!"));
       }
     } catch (e) {
       console.error(e);
@@ -332,7 +332,7 @@ export default function GigMilestoneTracker({
           <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
             <h4 className="text-[11px] font-black uppercase text-slate-500 tracking-wider">{t("project_timeline", "Project Timeline")}</h4>
             {(application.contract_status === "Disputed" || application.dispute_status === "Open") && (
-              <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full uppercase">Disputed</span>
+              <span className="text-[9px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full uppercase">{t("status_disputed", "Disputed")}</span>
             )}
           </div>
 
@@ -550,7 +550,7 @@ export default function GigMilestoneTracker({
                         if (!Array.isArray(filesList) || filesList.length === 0) return null;
                         return (
                           <div className="mt-2.5 bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-left">
-                            <span className="text-[9px] font-black text-slate-405 uppercase tracking-widest block mb-2">Submitted Deliverables</span>
+                            <span className="text-[9px] font-black text-slate-405 uppercase tracking-widest block mb-2">{t("submitted_deliverables", "Submitted Deliverables")}</span>
                             <div className="flex flex-col gap-1.5">
                               {filesList.map((file: any, idx: number) => (
                                 <a
@@ -558,10 +558,10 @@ export default function GigMilestoneTracker({
                                   href={resolveDownloadUrl(file.url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-2 text-xs font-bold text-teal-700 hover:text-teal-900 transition hover:underline"
+                                  className="flex items-center gap-2 text-xs font-bold text-teal-750 hover:text-teal-900 transition hover:underline"
                                 >
                                   <FiExternalLink className="w-3.5 h-3.5" />
-                                  <span className="truncate max-w-[250px]">{file.name || "View Deliverable"}</span>
+                                  <span className="truncate max-w-[250px]">{file.name || t("view_deliverable", "View Deliverable")}</span>
                                 </a>
                               ))}
                             </div>
@@ -578,11 +578,11 @@ export default function GigMilestoneTracker({
                       if (isDisputedOrder) {
                         return milestonePaid ? (
                           <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-150 px-2.5 py-1 rounded-lg uppercase tracking-wider">
-                            <FiCheck className="w-3.5 h-3.5 text-emerald-600" /> Paid
+                            <FiCheck className="w-3.5 h-3.5 text-emerald-600" /> {t("status_paid", "Paid")}
                           </span>
                         ) : (
                           <span className="text-[9.5px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider flex items-center gap-1 select-none">
-                            🔒 Frozen - Under Dispute
+                            {t("frozen_disputed", "🔒 Frozen - Under Dispute")}
                           </span>
                         );
                       }
@@ -591,7 +591,7 @@ export default function GigMilestoneTracker({
                         return (
                           <button
                             onClick={() => handleToggleMilestone(mIdentifier, 'paid')}
-                            title={application.status === "Pending" ? "Awaiting Freelancer Acceptance - Click for info" : "Pay milestone"}
+                            title={application.status === "Pending" ? t("awaiting_acceptance_title", "Awaiting Freelancer Acceptance - Click for info") : t("pay_milestone_title", "Pay milestone")}
                             className={`text-[9px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider cursor-pointer transition-all ${
                               milestonePaid
                                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
@@ -620,7 +620,7 @@ export default function GigMilestoneTracker({
                       if (milestonePaid) {
                         return (
                           <span className="flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-150 px-2.5 py-1 rounded-lg uppercase tracking-wider">
-                            <FiCheck className="w-3.5 h-3.5 text-emerald-600" /> Paid
+                            <FiCheck className="w-3.5 h-3.5 text-emerald-600" /> {t("status_paid", "Paid")}
                           </span>
                         );
                       }
@@ -628,7 +628,7 @@ export default function GigMilestoneTracker({
                       if (userRole === "freelancer") {
                         return m.status === "Under Review" ? (
                           <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider">
-                            ⏳ Under Review
+                            {t("under_review_status", "⏳ Under Review")}
                           </span>
                         ) : (
                           <button
@@ -639,7 +639,7 @@ export default function GigMilestoneTracker({
                             disabled={milestoneActionLoading}
                             className="bg-primary hover:bg-primary-hover text-white text-[10px] font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer shadow-sm hover:scale-[1.02] active:scale-95 transition-all"
                           >
-                            Submit Work
+                            {t("submit_work_btn", "Submit Work")}
                           </button>
                         );
                       }
@@ -651,7 +651,7 @@ export default function GigMilestoneTracker({
                               onClick={() => handleReleaseMilestone(m.milestone_id, m.title, parseFloat(m.amount))}
                               className="bg-emerald-600 hover:bg-emerald-750 text-white text-[10px] font-black px-3 py-1.5 rounded-lg border-0 cursor-pointer shadow-sm"
                             >
-                              Approve & Pay
+                              {t("approve_pay_btn", "Approve & Pay")}
                             </button>
                             <button
                               onClick={() => {
@@ -660,12 +660,12 @@ export default function GigMilestoneTracker({
                               }}
                               className="bg-rose-50 hover:bg-rose-100 text-rose-605 border border-rose-200 text-[10px] font-bold px-3 py-1.5 rounded-lg cursor-pointer"
                             >
-                              Request Revision
+                              {t("request_revision_btn", "Request Revision")}
                             </button>
                           </div>
                         ) : (
                           <span className="text-[10px] font-black text-slate-400 bg-slate-50 border border-slate-200 px-2.5 py-1.5 rounded-lg uppercase tracking-wider">
-                            ⏳ Awaiting Work
+                            {t("awaiting_work_status", "⏳ Awaiting Work")}
                           </span>
                         );
                       }
@@ -678,10 +678,10 @@ export default function GigMilestoneTracker({
                 {activeRevisionId === m.milestone_id && (
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 animate-fadeIn">
                     <div>
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Describe Revision Requirements *</label>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">{t("describe_revision_requirements", "Describe Revision Requirements *")}</label>
                       <textarea
                         rows={2}
-                        placeholder="e.g. Please update the wireframe styling and align colors with branding..."
+                        placeholder={t("revision_requirements_placeholder", "e.g. Please update the wireframe styling and align colors with branding...")}
                         value={milestoneFeedback}
                         onChange={(e) => setMilestoneFeedback(e.target.value)}
                         className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:border-primary focus:outline-none mt-1.5"
@@ -693,7 +693,7 @@ export default function GigMilestoneTracker({
                         onClick={() => setActiveRevisionId(null)}
                         className="px-3 py-1.5 bg-white border border-slate-250 rounded-lg text-[10px] font-bold text-slate-500 hover:bg-slate-100 cursor-pointer"
                       >
-                        Cancel
+                        {t("cancel_btn", "Cancel")}
                       </button>
                       <button
                         type="button"
@@ -701,7 +701,7 @@ export default function GigMilestoneTracker({
                         onClick={() => handleRejectMilestone(m.milestone_id)}
                         className="px-3 py-1.5 bg-rose-600 hover:bg-rose-750 text-white rounded-lg text-[10px] font-black border-0 cursor-pointer disabled:opacity-50"
                       >
-                        Submit Request
+                        {t("submit_request_btn", "Submit Request")}
                       </button>
                     </div>
                   </div>
@@ -721,7 +721,7 @@ export default function GigMilestoneTracker({
             <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FiFileText className="text-primary text-sm shrink-0" />
-                <h3 className="text-sm font-extrabold text-slate-800">Submit Milestone Deliverables</h3>
+                <h3 className="text-sm font-extrabold text-slate-800">{t("submit_milestone_deliverables", "Submit Milestone Deliverables")}</h3>
               </div>
               <button
                 onClick={() => {
@@ -736,12 +736,16 @@ export default function GigMilestoneTracker({
 
             <div className="p-6 flex flex-col gap-4 text-left">
               <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-4 flex flex-col gap-2">
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Milestone details</span>
+                <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{t("milestone_details", "Milestone details")}</span>
                 {(() => {
                   const currentM = milestoneList.find((m: any) => m.milestone_id === submittingMilestoneId || (m.id && m.id === submittingMilestoneId.toString()));
                   return (
                     <div>
-                      <h4 className="text-xs font-bold text-slate-850">{currentM?.title || "Milestone Deliverable"}</h4>
+                      <h4 className="text-xs font-bold text-slate-850">
+                        {currentM?.title && currentM.title.startsWith("Primary Service Package") 
+                          ? `${t("primary_service_package", "Primary Service Package")} (${t(`plan_${(currentM.title.match(/\((.*?)\)/)?.[1] || "BASIC").toLowerCase()}`, currentM.title.match(/\((.*?)\)/)?.[1] || "BASIC")})`
+                          : (currentM?.title || t("milestone_deliverable", "Milestone Deliverable"))}
+                      </h4>
                       <p className="text-[10px] text-primary font-extrabold mt-0.5">${parseFloat(currentM?.amount || "0").toLocaleString()}</p>
                     </div>
                   );
@@ -749,10 +753,10 @@ export default function GigMilestoneTracker({
               </div>
 
               <div>
-                <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Upload Files / Deliverables</h5>
+                <h5 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">{t("upload_files_deliverables", "Upload Files / Deliverables")}</h5>
                 <div className="flex items-center gap-3">
                   <label className="px-3.5 py-1.5 bg-primary hover:bg-primary-hover text-white font-extrabold text-[11px] rounded-xl cursor-pointer transition-all border-0 shadow-sm flex items-center gap-1.5 select-none">
-                    <span>Add Deliverable File</span>
+                    <span>{t("add_deliverable_file_btn", "Add Deliverable File")}</span>
                     <input 
                       type="file" 
                       multiple 
@@ -762,13 +766,13 @@ export default function GigMilestoneTracker({
                     />
                   </label>
                   {isMilestoneUploading && (
-                    <span className="text-xs text-slate-400 font-semibold italic animate-pulse">Uploading file(s)...</span>
+                    <span className="text-xs text-slate-400 font-semibold italic animate-pulse">{t("uploading_files_indicator", "Uploading file(s)...")}</span>
                   )}
                 </div>
 
                 {milestoneFiles.length > 0 && (
                   <div className="mt-3 border-t border-slate-200/60 pt-2.5">
-                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1.5">Files ready to submit ({milestoneFiles.length})</p>
+                    <p className="text-[9px] font-black text-slate-400 uppercase mb-1.5">{t("files_ready_to_submit", "Files ready to submit ({count})").replace("{count}", String(milestoneFiles.length))}</p>
                     <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto pr-1">
                       {milestoneFiles.map((file, idx) => (
                         <div key={idx} className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs">
@@ -778,7 +782,7 @@ export default function GigMilestoneTracker({
                             onClick={() => setMilestoneFiles(prev => prev.filter((_, i) => i !== idx))}
                             className="text-rose-650 hover:text-rose-805 font-bold bg-transparent border-0 cursor-pointer text-xs"
                           >
-                            Remove
+                            {t("remove_btn", "Remove")}
                           </button>
                         </div>
                       ))}
@@ -798,7 +802,7 @@ export default function GigMilestoneTracker({
                   disabled={milestoneActionLoading}
                   className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs font-bold transition-all cursor-pointer disabled:opacity-50"
                 >
-                  Cancel
+                  {t("cancel_btn", "Cancel")}
                 </button>
                 <button
                   type="button"
@@ -809,10 +813,10 @@ export default function GigMilestoneTracker({
                   {milestoneActionLoading ? (
                     <>
                       <div className="w-3.5 h-3.5 border-2 border-t-white border-primary/40 rounded-full animate-spin"></div>
-                      <span>Submitting...</span>
+                      <span>{t("submitting_indicator", "Submitting...")}</span>
                     </>
                   ) : (
-                    <span>Submit Deliverable</span>
+                    <span>{t("submit_deliverable_btn", "Submit Deliverable")}</span>
                   )}
                 </button>
               </div>

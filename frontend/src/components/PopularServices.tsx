@@ -112,7 +112,7 @@ export default function PopularServices() {
           >
             <FiGrid className="w-3.5 h-3.5 shrink-0" />
             <span>{t("view_all", "View All")}</span>
-            <FiArrowRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5" />
+            <FiArrowRight className="w-3 h-3 shrink-0 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
           </button>
         </div>
 

@@ -5,6 +5,7 @@ import { API_URL } from "@/config/api";
 import React, { createContext, useContext, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiX, FiAlertTriangle } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface AuthModalContextProps {
   openLoginModal: (redirectUrl?: string, onSuccess?: () => void) => void;
@@ -14,6 +15,7 @@ interface AuthModalContextProps {
 const AuthModalContext = createContext<AuthModalContextProps | undefined>(undefined);
 
 export function AuthModalProvider({ children }: { children: React.ReactNode }) {
+  const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
   const [onSuccess, setOnSuccess] = useState<(() => void) | null>(null);
@@ -95,54 +97,61 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
-      setError("Please fill in all fields.");
-      return;
-    }
-
     setError(null);
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/users/login`, {
+      const res = await fetch(`${API_URL}/users/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email: email.trim(), password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Invalid credentials. Please try again.");
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Login failed");
       }
 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        localStorage.removeItem("onboarding_completed");
-        localStorage.removeItem("onboarding_step");
-        localStorage.removeItem("onboarding_role");
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-        setIsOpen(false);
+      setIsOpen(false);
+      setEmail("");
+      setPassword("");
 
-        if (onSuccess) {
-          onSuccess();
-        } else if (redirectUrl) {
-          window.location.href = redirectUrl;
-        } else {
-          // Just reload page to refresh state globally
-          window.location.reload();
-        }
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        window.location.href = redirectUrl || "/dashboard";
       }
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : "Failed to connect to backend user service.";
-      setError(errorMsg);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  // Fetch social login settings from backend once mounted
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const fetchSocialSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/admin/site-settings/social-login`);
+        if (res.ok) {
+          const data = await res.json();
+          setSocialSettings({
+            googleEnabled: !!data.googleEnabled,
+            googleClientId: data.googleClientId || "",
+            facebookEnabled: !!data.facebookEnabled,
+            facebookAppId: data.facebookAppId || "",
+            loaded: true,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load social login configurations:", err);
+      }
+    };
+    fetchSocialSettings();
+  }, [isOpen]);
 
   return (
     <AuthModalContext.Provider value={{ openLoginModal, closeLoginModal }}>
@@ -162,20 +171,20 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
             {/* Close Button */}
             <button
               onClick={closeLoginModal}
-              className="absolute top-6 right-6 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 hover:text-slate-850 transition-all cursor-pointer z-20 flex items-center justify-center"
+              className="absolute top-6 right-6 rtl:right-auto rtl:left-6 p-2 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 hover:text-slate-850 transition-all cursor-pointer z-20 flex items-center justify-center"
               aria-label="Close login modal"
             >
               <FiX className="w-4 h-4" />
             </button>
 
             {/* Header */}
-            <div className="text-center sm:text-left pr-8">
-              <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase mb-1 block">Shortcut Login</span>
+            <div className="text-center sm:text-left rtl:sm:text-right pr-8 rtl:pr-0 rtl:pl-8">
+              <span className="text-[10px] font-black text-teal-700 tracking-widest uppercase mb-1 block">{t("shortcut_login_header", "Shortcut Login")}</span>
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight tracking-tight">
-                Sign In to Continue
+                {t("signin_continue_title", "Sign In to Continue")}
               </h2>
               <p className="text-xs font-semibold text-slate-400 mt-1.5 leading-relaxed">
-                Log in directly from this screen to unlock actions without leaving the page.
+                {t("shortcut_login_desc", "Log in directly from this screen to unlock actions without leaving the page.")}
               </p>
             </div>
 
@@ -185,14 +194,14 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
               {error && (
                 <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl flex items-start gap-2 animate-shake">
                   <FiAlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{error}</span>
+                  <span>{t(error.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""), error)}</span>
                 </div>
               )}
 
               {/* Email Input */}
-              <div className="flex flex-col gap-1.5 text-left font-sans">
+              <div className="flex flex-col gap-1.5 text-left rtl:text-right font-sans">
                 <label htmlFor="modal-email" className="text-xxs font-bold text-slate-500">
-                  Email Address
+                  {t("email_address_label", "Email Address")}
                 </label>
                 <input
                   id="modal-email"
@@ -206,9 +215,9 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
               </div>
 
               {/* Password Input */}
-              <div className="flex flex-col gap-1.5 text-left font-sans">
+              <div className="flex flex-col gap-1.5 text-left rtl:text-right font-sans">
                 <label htmlFor="modal-password" className="text-xxs font-bold text-slate-500">
-                  Password
+                  {t("password_label", "Password")}
                 </label>
                 <div className="relative font-sans">
                   <input
@@ -218,12 +227,12 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-355 rounded-xl pl-4 pr-12 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200 font-semibold text-slate-800"
+                    className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-355 rounded-xl pl-4 pr-12 rtl:pl-12 rtl:pr-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200 font-semibold text-slate-800"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-700 transition-colors p-1 flex items-center justify-center cursor-pointer"
+                    className="absolute right-3.5 rtl:right-auto rtl:left-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-700 transition-colors p-1 flex items-center justify-center cursor-pointer"
                   >
                     {showPassword ? (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
@@ -248,10 +257,10 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
                 {loading ? (
                   <>
                     <div className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
-                    <span>Signing in...</span>
+                    <span>{t("signing_in_status", "Signing in...")}</span>
                   </>
                 ) : (
-                  <span>Log In & Continue</span>
+                  <span>{t("login_continue_btn", "Log In & Continue")}</span>
                 )}
               </button>
             </form>
@@ -261,7 +270,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-3">
                   <hr className="flex-1 border-slate-100" />
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Or Continue With</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("or_continue_with_label", "Or Continue With")}</span>
                   <hr className="flex-1 border-slate-100" />
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -286,7 +295,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                       </svg>
-                      <span>Google</span>
+                      <span>{t("google_label", "Google")}</span>
                     </button>
                   )}
                   {socialSettings.facebookEnabled && (
@@ -307,7 +316,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
                       <svg className="w-4 h-4 shrink-0 fill-[#1877F2]" viewBox="0 0 24 24">
                         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                       </svg>
-                      <span>Facebook</span>
+                      <span>{t("facebook_label", "Facebook")}</span>
                     </button>
                   )}
                 </div>
@@ -316,9 +325,9 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
 
             {/* Register Link */}
             <p className="text-center text-xs font-bold text-slate-500">
-              Don&apos;t have an account?{" "}
-              <a href="/register" className="text-teal-700 hover:text-teal-850 font-black hover:underline font-sans">
-                Register Now
+              {t("dont_have_account_msg", "Don't have an account?")}{" "}
+              <a href="/register" className="text-teal-700 hover:text-teal-855 font-black hover:underline font-sans">
+                {t("register_now_btn", "Register Now")}
               </a>
             </p>
           </div>

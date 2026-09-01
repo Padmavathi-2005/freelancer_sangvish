@@ -7,6 +7,7 @@ import Table from "@/components/Table";
 import CustomSelect from "@/components/CustomSelect";
 import { Category, Subcategory, Skill } from "@/app/admin/AdminContext";
 import LanguagesCurrenciesTab from "@/components/admin/LanguagesCurrenciesTab";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface TaxonomiesTabProps {
   categoriesSubTab: "categories" | "subcategories" | "skills" | "languages" | "currencies" | "cleanup";
@@ -185,6 +186,7 @@ export default function TaxonomiesTab({
   handleEditSkillClick,
   handleAddSkillClick
 }: TaxonomiesTabProps) {
+  const { t } = useLanguage();
   const [cleaning, setCleaning] = React.useState(false);
   const [uploadingImage, setUploadingImage] = React.useState(false);
   const [uploadingVideo, setUploadingVideo] = React.useState(false);
@@ -266,7 +268,7 @@ export default function TaxonomiesTab({
   };
 
   const handleCleanDb = async () => {
-    if (!window.confirm("WARNING: This will permanently delete all Gig Orders, Contracts, and Wallet Transactions, and reset all wallet balances to $0.00. Are you sure you want to proceed?")) {
+    if (!window.confirm(t("admin_cleanup_confirm_msg", "WARNING: This will permanently delete all Gig Orders, Contracts, and Wallet Transactions, and reset all wallet balances to $0.00. Are you sure you want to proceed?"))) {
       return;
     }
     setCleaning(true);
@@ -280,14 +282,14 @@ export default function TaxonomiesTab({
         }
       });
       if (res.ok) {
-        alert("Database cleaned successfully and all wallet balances reset to $0.00!");
+        alert(t("admin_cleanup_success_msg", "Database cleaned successfully and all wallet balances reset to $0.00!"));
       } else {
         const err = await res.json();
-        alert(err.message || "Failed to clean database.");
+        alert(err.message || t("admin_cleanup_fail_msg", "Failed to clean database."));
       }
     } catch (e) {
       console.error(e);
-      alert("Network error cleaning database.");
+      alert(t("admin_cleanup_network_error_msg", "Network error cleaning database."));
     } finally {
       setCleaning(false);
     }
@@ -304,18 +306,18 @@ export default function TaxonomiesTab({
 
   const categoryColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: Category, idx: number) => ((categoriesPage - 1) * itemsPerPage) + idx + 1
     },
     { 
-      header: "Category", 
+      header: t("category", "Category"), 
       accessor: (row: Category) => (
         <div className="flex items-center gap-3 py-1">
           <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
             {row.category_image ? (
               <img src={resolveCategoryImageUrl(row.category_image)} className="w-full h-full object-cover" alt="" />
             ) : (
-              <div className="text-[9px] font-black text-slate-400">No Image</div>
+              <div className="text-[9px] font-black text-slate-400">{t("no_image", "No Image")}</div>
             )}
           </div>
           <span className="font-bold text-slate-800 text-xs">{row.category_name || row.name || ""}</span>
@@ -323,7 +325,7 @@ export default function TaxonomiesTab({
       )
     },
     {
-      header: "Description",
+      header: t("description", "Description"),
       accessor: (row: Category) => (
         <span className="text-[11px] text-slate-500 line-clamp-2 max-w-xs block leading-relaxed py-1">
           {row.description || "-"}
@@ -331,7 +333,7 @@ export default function TaxonomiesTab({
       )
     },
     { 
-      header: "Status", 
+      header: t("status_label", "Status"), 
       accessor: (row: Category) => {
         const isActive = row.status === true || row.status === 1 || String(row.status).toLowerCase() === "active" || String(row.status).toLowerCase() === "true";
         return (
@@ -340,33 +342,33 @@ export default function TaxonomiesTab({
               ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" 
               : "bg-slate-50 text-slate-400 border border-slate-200"
           }`}>
-            {isActive ? "Active" : "Inactive"}
+            {isActive ? t("status_active", "Active") : t("status_inactive", "Inactive")}
           </span>
         );
       }
     },
     { 
-      header: "Created Date", 
+      header: t("created_date", "Created Date"), 
       accessor: (row: Category) => {
         const val = row.createdAt || row.created_at || "";
         return val ? new Date(val).toLocaleDateString() : "-";
       }
     },
     {
-      header: "Actions",
+      header: t("actions", "Actions"),
       accessor: (row: Category) => (
         <div className="flex items-center justify-center gap-2 select-none">
           <button
             onClick={() => handleEditCategoryClick(row)}
             className="px-2.5 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-50 border border-teal-200/60 rounded-lg cursor-pointer transition-colors bg-white"
           >
-            Edit
+            {t("edit", "Edit")}
           </button>
           <button
             onClick={() => handleDeleteCategory(row.id || row.category_id || "")}
             className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200/60 rounded-lg cursor-pointer transition-colors bg-white"
           >
-            Delete
+            {t("delete", "Delete")}
           </button>
         </div>
       )
@@ -375,19 +377,19 @@ export default function TaxonomiesTab({
 
   const subcategoryColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: Subcategory, idx: number) => ((subcategoriesPage - 1) * itemsPerPage) + idx + 1
     },
     { 
-      header: "Subcategory Name", 
+      header: t("subcategory_name_label", "Subcategory Name"), 
       accessor: (row: Subcategory) => row.sub_category_name || row.name || ""
     },
     { 
-      header: "Parent Category", 
+      header: t("parent_category", "Parent Category"), 
       accessor: (row: Subcategory) => row.category_name || row.categoryName || ""
     },
     { 
-      header: "Status", 
+      header: t("status_label", "Status"), 
       accessor: (row: Subcategory) => {
         const isActive = row.status === true || row.status === 1 || String(row.status).toLowerCase() === "active" || String(row.status).toLowerCase() === "true";
         return (
@@ -396,33 +398,33 @@ export default function TaxonomiesTab({
               ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" 
               : "bg-slate-50 text-slate-400 border border-slate-200"
           }`}>
-            {isActive ? "Active" : "Inactive"}
+            {isActive ? t("status_active", "Active") : t("status_inactive", "Inactive")}
           </span>
         );
       }
     },
     { 
-      header: "Created Date", 
+      header: t("created_date", "Created Date"), 
       accessor: (row: Subcategory) => {
         const val = row.createdAt || row.created_at || "";
         return val ? new Date(val).toLocaleDateString() : "-";
       }
     },
     {
-      header: "Actions",
+      header: t("actions", "Actions"),
       accessor: (row: Subcategory) => (
         <div className="flex items-center justify-center gap-2 select-none">
           <button
             onClick={() => handleEditSubcategoryClick(row)}
             className="px-2.5 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-50 border border-teal-200/60 rounded-lg cursor-pointer transition-colors bg-white"
           >
-            Edit
+            {t("edit", "Edit")}
           </button>
           <button
             onClick={() => handleDeleteSubcategory(row.sub_category_id || row.id || "")}
             className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200/60 rounded-lg cursor-pointer transition-colors bg-white"
           >
-            Delete
+            {t("delete", "Delete")}
           </button>
         </div>
       )
@@ -431,19 +433,19 @@ export default function TaxonomiesTab({
 
   const skillColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: Skill, idx: number) => ((skillsPage - 1) * itemsPerPage) + idx + 1
     },
     { 
-      header: "Skill Name", 
+      header: t("skill_name_label", "Skill Name"), 
       accessor: (row: Skill) => row.skill_name || row.name || ""
     },
     { 
-      header: "Parent Subcategory", 
+      header: t("parent_subcategory", "Parent Subcategory"), 
       accessor: (row: Skill) => row.sub_category_name || row.subcategoryName || ""
     },
     { 
-      header: "Status", 
+      header: t("status_label", "Status"), 
       accessor: (row: Skill) => {
         const isActive = row.status === true || row.status === 1 || String(row.status).toLowerCase() === "active" || String(row.status).toLowerCase() === "true";
         return (
@@ -452,33 +454,33 @@ export default function TaxonomiesTab({
               ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" 
               : "bg-slate-50 text-slate-400 border border-slate-200"
           }`}>
-            {isActive ? "Active" : "Inactive"}
+            {isActive ? t("status_active", "Active") : t("status_inactive", "Inactive")}
           </span>
         );
       }
     },
     { 
-      header: "Created Date", 
+      header: t("created_date", "Created Date"), 
       accessor: (row: Skill) => {
         const val = row.createdAt || row.created_at || "";
         return val ? new Date(val).toLocaleDateString() : "-";
       }
     },
     {
-      header: "Actions",
+      header: t("actions", "Actions"),
       accessor: (row: Skill) => (
         <div className="flex items-center justify-center gap-2 select-none">
           <button
             onClick={() => handleEditSkillClick(row)}
             className="px-2.5 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-50 border border-teal-200/60 rounded-lg cursor-pointer transition-colors bg-white"
           >
-            Edit
+            {t("edit", "Edit")}
           </button>
           <button
             onClick={() => handleDeleteSkill(row.skill_id || row.id || "")}
             className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200/60 rounded-lg cursor-pointer transition-colors bg-white"
           >
-            Delete
+            {t("delete", "Delete")}
           </button>
         </div>
       )
@@ -490,44 +492,44 @@ export default function TaxonomiesTab({
 
   if (tabName === "cleanup") {
     return (
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 shadow-sm flex flex-col gap-6 animate-fadeIn text-left">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 shadow-sm flex flex-col gap-6 animate-fadeIn text-left rtl:text-right">
         <div>
-          <h3 className="text-lg font-black text-slate-800 dark:text-white">Database Cleanup & Reset</h3>
-          <p className="text-slate-500 dark:text-slate-300 text-xs sm:text-sm mt-0.5">
-            Reset transaction and order data. The following database table records will be permanently deleted:
+          <h3 className="text-lg font-black text-slate-800 dark:text-white">{t("admin_cleanup_title", "Database Cleanup & Reset")}</h3>
+          <p className="text-slate-505 dark:text-slate-300 text-xs sm:text-sm mt-0.5">
+            {t("admin_cleanup_subtitle", "Reset transaction and order data. The following database table records will be permanently deleted:")}
           </p>
         </div>
 
         <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-6 flex flex-col gap-4">
-          <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Affected Tables</h4>
-          <ul className="list-disc pl-5 text-xs text-slate-700 dark:text-white font-medium space-y-2.5 leading-relaxed">
+          <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">{t("admin_cleanup_affected_tables", "Affected Tables")}</h4>
+          <ul className="list-disc pl-5 rtl:pl-0 rtl:pr-5 text-xs text-slate-700 dark:text-white font-medium space-y-2.5 leading-relaxed">
             <li>
-              <strong className="text-slate-900 dark:text-white">Gigs & Skills (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">gigs</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">gig_skills</code>)</strong>:
-              <span className="dark:text-white"> Deletes all listed freelancer services and skill associations.</span>
+              <strong className="text-slate-900 dark:text-white">{t("admin_cleanup_gigs_skills", "Gigs & Skills")} (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">gigs</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">gig_skills</code>)</strong>:
+              <span className="dark:text-white"> {t("admin_cleanup_gigs_skills_desc", "Deletes all listed freelancer services and skill associations.")}</span>
             </li>
             <li>
-              <strong className="text-slate-900 dark:text-white">Jobs & Bid Proposals (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">jobs</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">proposals</code>)</strong>:
-              <span className="dark:text-white"> Deletes all client-posted custom jobs and developer bid proposals.</span>
+              <strong className="text-slate-900 dark:text-white">{t("admin_cleanup_jobs_proposals", "Jobs & Bid Proposals")} (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">jobs</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">proposals</code>)</strong>:
+              <span className="dark:text-white"> {t("admin_cleanup_jobs_proposals_desc", "Deletes all client-posted custom jobs and developer bid proposals.")}</span>
             </li>
             <li>
-              <strong className="text-slate-900 dark:text-white">Gig Applications & Orders (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">gig_applications</code>)</strong>:
-              <span className="dark:text-white"> Deletes all client applications and active/completed gig orders.</span>
+              <strong className="text-slate-900 dark:text-white">{t("admin_cleanup_gig_apps_orders", "Gig Applications & Orders")} (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">gig_applications</code>)</strong>:
+              <span className="dark:text-white"> {t("admin_cleanup_gig_apps_orders_desc", "Deletes all client applications and active/completed gig orders.")}</span>
             </li>
             <li>
-              <strong className="text-slate-900 dark:text-white">Contracts (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">contracts</code>)</strong>:
-              <span className="dark:text-white"> Deletes all escrow contracts, milestones progress, and project history.</span>
+              <strong className="text-slate-900 dark:text-white">{t("admin_cleanup_contracts", "Contracts")} (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">contracts</code>)</strong>:
+              <span className="dark:text-white"> {t("admin_cleanup_contracts_desc", "Deletes all escrow contracts, milestones progress, and project history.")}</span>
             </li>
             <li>
-              <strong className="text-slate-900 dark:text-white">Wallet Transactions & Withdrawals (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">wallet_transactions</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">withdrawal_requests</code>)</strong>:
-              <span className="dark:text-slate-200"> Deletes all transfer logs, deposit records, and withdrawal requests.</span>
+              <strong className="text-slate-900 dark:text-white">{t("admin_cleanup_wallets_tx", "Wallet Transactions & Withdrawals")} (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">wallet_transactions</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">withdrawal_requests</code>)</strong>:
+              <span className="dark:text-slate-200"> {t("admin_cleanup_wallets_tx_desc", "Deletes all transfer logs, deposit records, and withdrawal requests.")}</span>
             </li>
             <li>
-              <strong className="text-slate-900 dark:text-white">User & Escrow Wallets (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">wallets</code>)</strong>:
-              <span className="dark:text-white"> Resets all client, freelancer, and system wallets back to an initial balance of </span><code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">$0.00</code>.
+              <strong className="text-slate-900 dark:text-white">{t("admin_cleanup_wallets", "User & Escrow Wallets")} (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">wallets</code>)</strong>:
+              <span className="dark:text-white"> {t("admin_cleanup_wallets_desc", "Resets all client, freelancer, and system wallets back to an initial balance of ")}</span><code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">$0.00</code>.
             </li>
             <li>
-              <strong className="text-slate-900 dark:text-white">Messages & Conversations (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">messages</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">conversations</code>)</strong>:
-              <span className="dark:text-white"> Deletes all chat messages and workspace communication channels.</span>
+              <strong className="text-slate-900 dark:text-white">{t("admin_cleanup_messages", "Messages & Conversations")} (<code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">messages</code>, <code className="bg-slate-200/70 dark:bg-slate-900 text-slate-800 dark:text-white border border-slate-300/40 dark:border-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">conversations</code>)</strong>:
+              <span className="dark:text-white"> {t("admin_cleanup_messages_desc", "Deletes all chat messages and workspace communication channels.")}</span>
             </li>
           </ul>
         </div>
@@ -538,15 +540,13 @@ export default function TaxonomiesTab({
             disabled={cleaning}
             className="px-6 py-3.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl cursor-pointer transition-all shadow-md shadow-rose-600/10 flex items-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
           >
-            {cleaning ? "Cleaning Database..." : "Delete All Orders & Transactions Data ✓"}
+            {cleaning ? t("admin_cleanup_cleaning", "Cleaning Database...") : t("admin_cleanup_delete_btn", "Delete All Orders & Transactions Data ✓")}
           </button>
         </div>
       </div>
     );
-  }
-
-  return (
-    <div className={`flex flex-col gap-6 animate-fadeIn text-left ${
+  }  return (
+    <div className={`flex flex-col gap-6 animate-fadeIn text-left rtl:text-right ${
       isLangOrCurr
         ? ""
         : "bg-white border border-slate-200 rounded-xl p-6 shadow-sm"
@@ -556,12 +556,12 @@ export default function TaxonomiesTab({
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
           <h3 className="text-lg font-bold text-slate-800">
-            {isLangOrCurr ? "Taxonomies, Languages & Currencies" : "Categories & Skills Management"}
+            {isLangOrCurr ? t("admin_taxonomies_languages_currencies", "Taxonomies, Languages & Currencies") : t("admin_categories_skills_management", "Categories & Skills Management")}
           </h3>
-          <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
+          <p className="text-slate-505 text-xs sm:text-sm mt-0.5">
             {isLangOrCurr 
-              ? "Configure supported site languages, dictionary translation keys, and platform currencies." 
-              : "Configure developer categories, nested subcategories, and searchable technical skills."}
+              ? t("admin_taxonomies_languages_currencies_desc", "Configure supported site languages, dictionary translation keys, and platform currencies.") 
+              : t("admin_categories_skills_management_desc", "Configure developer categories, nested subcategories, and searchable technical skills.")}
           </p>
         </div>
         
@@ -571,7 +571,7 @@ export default function TaxonomiesTab({
               onClick={handleBulkDeleteCategories}
               className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 border border-rose-200/60 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-md shadow-rose-600/10 flex items-center gap-2 animate-fadeIn"
             >
-              Delete Selected ({selectedCategoryIds.length})
+              {t("delete_selected", "Delete Selected")} ({selectedCategoryIds.length})
             </button>
           )}
           {categoriesSubTab === "subcategories" && selectedSubcategoryIds.length > 0 && (
@@ -579,7 +579,7 @@ export default function TaxonomiesTab({
               onClick={handleBulkDeleteSubcategories}
               className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 border border-rose-200/60 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-md shadow-rose-600/10 flex items-center gap-2 animate-fadeIn"
             >
-              Delete Selected ({selectedSubcategoryIds.length})
+              {t("delete_selected", "Delete Selected")} ({selectedSubcategoryIds.length})
             </button>
           )}
           {categoriesSubTab === "skills" && selectedSkillIds.length > 0 && (
@@ -587,7 +587,7 @@ export default function TaxonomiesTab({
               onClick={handleBulkDeleteSkills}
               className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 border border-rose-200/60 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-md shadow-rose-600/10 flex items-center gap-2 animate-fadeIn"
             >
-              Delete Selected ({selectedSkillIds.length})
+              {t("delete_selected", "Delete Selected")} ({selectedSkillIds.length})
             </button>
           )}
           {(categoriesSubTab === "categories" || categoriesSubTab === "subcategories" || categoriesSubTab === "skills") && (
@@ -603,7 +603,7 @@ export default function TaxonomiesTab({
               }}
               className="px-4 py-2.5 bg-teal-700 hover:bg-teal-800 border border-teal-700/20 text-white font-bold text-xs rounded-xl cursor-pointer transition-colors shadow-md shadow-teal-700/10 flex items-center gap-2"
             >
-              Add {categoriesSubTab === "categories" ? "Category" : categoriesSubTab === "subcategories" ? "Subcategory" : "Skill"}
+              {categoriesSubTab === "categories" ? t("add_category", "Add Category") : categoriesSubTab === "subcategories" ? t("add_subcategory", "Add Subcategory") : t("add_skill", "Add Skill")}
             </button>
           )}
         </div>
@@ -624,7 +624,7 @@ export default function TaxonomiesTab({
                     : "text-slate-500 hover:text-slate-850"
                 }`}
               >
-                Categories
+                {t("categories", "Categories")}
               </button>
               <button
                 onClick={() => setCategoriesSubTab("subcategories")}
@@ -634,7 +634,7 @@ export default function TaxonomiesTab({
                     : "text-slate-505 hover:text-slate-850"
                 }`}
               >
-                Subcategories
+                {t("subcategories", "Subcategories")}
               </button>
               <button
                 onClick={() => setCategoriesSubTab("skills")}
@@ -644,7 +644,7 @@ export default function TaxonomiesTab({
                     : "text-slate-500 hover:text-slate-805"
                 }`}
               >
-                Skills
+                {t("skills", "Skills")}
               </button>
             </>
           ) : (
@@ -657,7 +657,7 @@ export default function TaxonomiesTab({
                     : "text-slate-500 hover:text-slate-805"
                 }`}
               >
-                Language
+                {t("language", "Language")}
               </button>
               <button
                 onClick={() => setCategoriesSubTab("currencies")}
@@ -667,7 +667,7 @@ export default function TaxonomiesTab({
                     : "text-slate-500 hover:text-slate-805"
                 }`}
               >
-                Currency
+                {t("currency", "Currency")}
               </button>
             </>
           )}
@@ -678,7 +678,11 @@ export default function TaxonomiesTab({
           <div className="w-full md:w-64 relative">
             <input
               type="text"
-              placeholder={`Search ${categoriesSubTab}...`}
+              placeholder={
+                categoriesSubTab === "categories" ? t("search_categories_placeholder", "Search categories...") :
+                categoriesSubTab === "subcategories" ? t("search_subcategories_placeholder", "Search subcategories...") :
+                t("search_skills_placeholder", "Search skills...")
+              }
               value={categoriesSearch}
               onChange={(e) => setCategoriesSearch(e.target.value)}
               className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200"

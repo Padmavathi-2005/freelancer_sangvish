@@ -71,10 +71,11 @@ export async function handlePostHireNotificationsAndActions({ proposalId, bidAmo
       [proposalDetails.job_id]
     );
     const hiredCount = parseInt(hiredCountRes.rows[0].count || 0);
-    const limitReached = hiredCount >= limit;
 
+    // Auto-decline and notify other applicants only if it's a single-freelancer project (limit === 1)
+    const shouldCleanOtherProposals = limit === 1;
     let otherProposalsRes = { rows: [] };
-    if (limitReached) {
+    if (shouldCleanOtherProposals) {
       // 4. Fetch other applicants to decline
       otherProposalsRes = await pool.query(
         `SELECT p.proposal_id, p.freelancer_id, p.bid_amount, u.email, u.first_name || ' ' || COALESCE(u.last_name, '') as name
@@ -89,11 +90,13 @@ export async function handlePostHireNotificationsAndActions({ proposalId, bidAmo
         "UPDATE proposals SET status = 'Declined', updated_at = CURRENT_TIMESTAMP WHERE job_id = $1 AND proposal_id != $2 AND status NOT IN ('Declined', 'Accepted')",
         [proposalDetails.job_id, proposalId]
       );
+    }
 
-      // Set job status to Closed
+    // Update job status separately depending on limitReached
+    const limitReached = hiredCount >= limit;
+    if (limitReached) {
       await pool.query("UPDATE jobs SET status = 'Closed' WHERE job_id = $1", [proposalDetails.job_id]);
     } else {
-      // Ensure job remains open
       await pool.query("UPDATE jobs SET status = 'Open' WHERE job_id = $1", [proposalDetails.job_id]);
     }
 

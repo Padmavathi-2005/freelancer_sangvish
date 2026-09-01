@@ -4,6 +4,18 @@ import React, { useMemo, useState } from "react";
 import { useDashboard } from "../DashboardContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { FiTrendingUp, FiArrowUpRight, FiArrowDownRight, FiClock, FiLayers, FiFileText, FiDownload, FiDollarSign } from "react-icons/fi";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts";
 
 export default function ReportsPage() {
   const { t } = useLanguage();
@@ -13,7 +25,9 @@ export default function ReportsPage() {
     freelancerContracts,
     gigApplications,
     clientApplications,
-    siteName
+    siteName,
+    clientJobs,
+    clientGigs
   } = useDashboard();
 
   const [filterType, setFilterType] = useState<"all" | "credit" | "debit">("all");
@@ -160,6 +174,104 @@ export default function ReportsPage() {
       return filterType === "credit" ? t.isCredit : !t.isCredit;
     });
   }, [allLedgerItems, filterType]);
+
+  const monthlyCashflowData = useMemo(() => {
+    const monthsMap: { [key: string]: { month: string; Income: number; Expenses: number } } = {};
+    
+    // Process transactions from oldest to newest for chronological trend
+    const chronologicalItems = [...allLedgerItems].reverse();
+    
+    chronologicalItems.forEach((tx: any) => {
+      if (!tx.createdAt || tx.status !== "COMPLETED") return;
+      
+      const date = new Date(tx.createdAt);
+      if (isNaN(date.getTime())) return;
+      const monthLabel = date.toLocaleDateString(undefined, { year: '2-digit', month: 'short' });
+      
+      if (!monthsMap[monthLabel]) {
+        monthsMap[monthLabel] = { month: monthLabel, Income: 0, Expenses: 0 };
+      }
+      
+      if (tx.isCredit) {
+        monthsMap[monthLabel].Income += tx.amount;
+      } else {
+        monthsMap[monthLabel].Expenses += tx.amount;
+      }
+    });
+
+    // Supplement with actual contract/gig earnings and expenses to ensure the chart reflects portfolio stats
+    if (userRole === "freelancer") {
+      if (Array.isArray(freelancerContracts)) {
+        freelancerContracts.forEach((c) => {
+          if (c.status === "Completed") {
+            const date = new Date(c.updated_at || c.created_at || new Date());
+            if (isNaN(date.getTime())) return;
+            const monthLabel = date.toLocaleDateString(undefined, { year: '2-digit', month: 'short' });
+            if (!monthsMap[monthLabel]) monthsMap[monthLabel] = { month: monthLabel, Income: 0, Expenses: 0 };
+            monthsMap[monthLabel].Income += parseFloat(c.budget) || 0;
+          }
+        });
+      }
+      if (Array.isArray(gigApplications)) {
+        gigApplications.forEach((g) => {
+          if (g.status === "Accepted" && g.order_status === "Completed") {
+            const date = new Date(g.updated_at || g.created_at || new Date());
+            if (isNaN(date.getTime())) return;
+            const monthLabel = date.toLocaleDateString(undefined, { year: '2-digit', month: 'short' });
+            if (!monthsMap[monthLabel]) monthsMap[monthLabel] = { month: monthLabel, Income: 0, Expenses: 0 };
+            monthsMap[monthLabel].Income += parseFloat(g.gig?.price) || 0;
+          }
+        });
+      }
+    }
+
+    if (userRole === "client") {
+      if (Array.isArray(clientJobs)) {
+        clientJobs.forEach((job) => {
+          if (job.status === "Completed") {
+            const date = new Date(job.updated_at || job.created_at || new Date());
+            if (isNaN(date.getTime())) return;
+            const monthLabel = date.toLocaleDateString(undefined, { year: '2-digit', month: 'short' });
+            if (!monthsMap[monthLabel]) monthsMap[monthLabel] = { month: monthLabel, Income: 0, Expenses: 0 };
+            monthsMap[monthLabel].Expenses += parseFloat(job.budget) || 0;
+          }
+        });
+      }
+    }
+    
+    const dataArray = Object.values(monthsMap);
+    
+    // Sort by actual date
+    dataArray.sort((a, b) => {
+      const dateA = new Date("01 " + a.month);
+      const dateB = new Date("01 " + b.month);
+      return dateA.getTime() - dateB.getTime();
+    });
+    
+    if (dataArray.length === 0) {
+      return [{ month: "No Data", Income: 0, Expenses: 0 }];
+    }
+    
+    return dataArray;
+  }, [allLedgerItems, userRole, freelancerContracts, gigApplications, clientJobs]);
+
+  const compositionData = useMemo(() => {
+    const result = userRole === "client" ? [
+      { name: t("composition_spent", "Total Spent"), value: clientStats.spent, color: "#0d9488" },
+      { name: t("composition_escrow", "Locked in Escrow"), value: clientStats.escrow, color: "#d97706" },
+      { name: t("composition_wallet", "Wallet Balance"), value: balance, color: "#0284c7" }
+    ] : [
+      { name: t("composition_earnings", "Net Earnings"), value: freelancerStats.released, color: "#0d9488" },
+      { name: t("composition_escrow", "Locked in Escrow"), value: freelancerStats.escrow, color: "#d97706" },
+      { name: t("composition_wallet", "Wallet Balance"), value: balance, color: "#0284c7" }
+    ];
+
+    const filtered = result.filter(d => d.value > 0);
+    if (filtered.length === 0) {
+      return [{ name: t("no_funds_composition", "No Activity"), value: 1, color: "#cbd5e1" }];
+    }
+    return filtered;
+  }, [userRole, clientStats, freelancerStats, balance, t]);
 
   const handlePrint = () => {
     if (typeof window !== "undefined") {
@@ -308,6 +420,134 @@ export default function ReportsPage() {
             <p className="text-slate-500 text-[10px] font-bold mt-1 print:text-slate-700">
               {t("available_wallet_balance_desc", "Withdrawable balance or funds ready for deployment")}
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Visual Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 print:hidden">
+        {/* Cashflow Trend Chart */}
+        <div className="lg:col-span-2 bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1">
+              {userRole === "client" ? t("expenditure_trend", "Expenditures Trend") : t("income_trend", "Income Trend")}
+            </h3>
+            <p className="text-slate-400 text-xxs font-bold mb-4">
+              {t("cashflow_trend_desc", "Monthly comparison of cash flow credits and debits")}
+            </p>
+          </div>
+          <div className="h-[260px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={monthlyCashflowData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorExpenses" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#e11d48" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#e11d48" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="month" 
+                  tickLine={false} 
+                  axisLine={false}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                />
+                <YAxis 
+                  tickLine={false} 
+                  axisLine={false}
+                  tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                  tickFormatter={(val) => `$${val}`}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  labelStyle={{ fontWeight: 900, color: '#1e293b', fontSize: '11px', marginBottom: '4px' }}
+                  itemStyle={{ fontSize: '11px', fontWeight: 700 }}
+                  formatter={(value: any) => [`$${parseFloat(value).toFixed(2)}`]}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="Income" 
+                  stroke="#0d9488" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorIncome)" 
+                  name={userRole === "client" ? t("income_credits", "Deposits/Credits") : t("net_earnings", "Earnings")}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="Expenses" 
+                  stroke="#e11d48" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorExpenses)" 
+                  name={userRole === "client" ? t("expenditures", "Spent/Debits") : t("withdrawals", "Withdrawals")}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Composition Pie Chart */}
+        <div className="lg:col-span-1 bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1">
+              {t("portfolio_composition", "Portfolio Composition")}
+            </h3>
+            <p className="text-slate-400 text-xxs font-bold mb-4">
+              {t("portfolio_composition_desc", "Asset allocation across active escrow, balance, and spend")}
+            </p>
+          </div>
+          <div className="h-[200px] w-full flex items-center justify-center relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={compositionData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={75}
+                  paddingAngle={4}
+                  dataKey="value"
+                >
+                  {compositionData.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  itemStyle={{ fontSize: '11px', fontWeight: 700 }}
+                  formatter={(value: any) => [`$${parseFloat(value).toFixed(2)}`]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            {/* Center Text inside Donut */}
+            <div className="absolute flex flex-col items-center justify-center select-none">
+              <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">{t("total", "Total")}</span>
+              <span className="text-lg font-black text-slate-800 leading-tight">
+                ${compositionData.reduce((acc: number, curr: any) => curr.name === t("no_funds_composition", "No Activity") ? acc : acc + curr.value, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </span>
+            </div>
+          </div>
+          {/* Custom Legends */}
+          <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-slate-100">
+            {compositionData.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center justify-between text-[11px] font-bold text-slate-650">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+                  <span>{entry.name}</span>
+                </div>
+                <span className="font-black text-slate-800">
+                  {entry.name === t("no_funds_composition", "No Activity") ? "$0.00" : `$${entry.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

@@ -232,7 +232,7 @@ export default function ShareSection({
   };
 
   return (
-    <div className={hideHeader ? className : `bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col gap-3 text-left ${className}`}>
+    <div className={hideHeader ? className : `bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm flex flex-col gap-3 text-left rtl:text-right ${className}`}>
       {!hideHeader && (
         <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest border-b border-slate-100 pb-2.5 flex items-center gap-2 select-none">
           <i className="fa-solid fa-share-nodes text-teal-700"></i>

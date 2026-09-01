@@ -4,6 +4,7 @@ import React from "react";
 import Table from "@/components/Table";
 import { useAdmin } from "@/app/admin/AdminContext";
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ProjectsTabProps {
   projectsSubTab: "projects" | "proposals" | "maintenance";
@@ -45,6 +46,7 @@ export default function ProjectsTab({
   pendingProposals,
   handleUpdateProposalVettingStatus
 }: ProjectsTabProps) {
+  const { t } = useLanguage();
 
   const [approvalFilter, setApprovalFilter] = React.useState<"all" | "approved" | "pending">("all");
   const [localPage, setLocalPage] = React.useState(1);
@@ -175,27 +177,27 @@ export default function ProjectsTab({
 
   const projectColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: any, idx: number) => ((localPage - 1) * itemsPerPage) + idx + 1
     },
     {
-      header: "Title",
-      accessor: (row: any) => <div className="max-w-[200px] truncate font-bold text-slate-805" title={row.title}>{row.title}</div>
+      header: t("title", "Title"),
+      accessor: (row: any) => <div className="max-w-[200px] truncate font-bold text-slate-805 text-left rtl:text-right" title={row.title}>{row.title}</div>
     },
     {
-      header: "Client",
+      header: t("client", "Client"),
       accessor: (row: any) => row.client_name
     },
     {
-      header: "Category",
-      accessor: (row: any) => row.category_name || row.sub_category_name || "Uncategorized"
+      header: t("category", "Category"),
+      accessor: (row: any) => row.category_name || row.sub_category_name || t("uncategorized", "Uncategorized")
     },
     {
-      header: "Budget",
+      header: t("budget", "Budget"),
       accessor: (row: any) => `$${Number(row.budget).toLocaleString()}`
     },
     {
-      header: "Status",
+      header: t("status_label", "Status"),
       accessor: (row: any) => (
         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap border ${
           row.status === "Open" ? "bg-emerald-50 text-emerald-707 border-emerald-200/60" :
@@ -203,12 +205,15 @@ export default function ProjectsTab({
           row.status === "Pending Approval" ? "bg-amber-50 text-amber-700 border-amber-200" :
           "bg-rose-50 text-rose-700 border-rose-200"
         }`}>
-          {row.status === "Flagged" ? "Suspended" : row.status}
+          {row.status === "Open" ? t("status_open", "Open") :
+           row.status === "Closed" ? t("status_closed", "Closed") :
+           row.status === "Pending Approval" ? t("status_pending_approval", "Pending Vetting") :
+           row.status === "Flagged" ? t("status_suspended", "Suspended") : row.status}
         </span>
       )
     },
     {
-      header: "Actions",
+      header: t("actions", "Actions"),
       accessor: (row: any) => (
         <div className="flex gap-2 select-none justify-center">
           {row.status === "Pending Approval" ? (
@@ -217,13 +222,13 @@ export default function ProjectsTab({
                 onClick={() => handleUpdateProjectStatus(row.job_id, "Open")}
                 className="px-2.5 py-1 text-[11px] font-bold text-emerald-600 hover:bg-emerald-50 border border-emerald-250/60 rounded-lg cursor-pointer transition-colors bg-white"
               >
-                Approve
+                {t("approve", "Approve")}
               </button>
               <button
                 onClick={() => handleUpdateProjectStatus(row.job_id, "Declined")}
                 className="px-2.5 py-1 text-[11px] font-bold text-rose-605 hover:bg-rose-50 border border-rose-250/60 rounded-lg cursor-pointer transition-colors bg-white"
               >
-                Decline
+                {t("decline", "Decline")}
               </button>
             </>
           ) : (
@@ -232,13 +237,13 @@ export default function ProjectsTab({
                 onClick={() => handleUpdateProjectStatus(row.job_id, row.status === "Open" ? "Flagged" : "Open")}
                 className="px-2.5 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-50 border border-teal-200/60 rounded-lg cursor-pointer transition-colors bg-white"
               >
-                {row.status === "Open" ? "Suspend" : "Activate"}
+                {row.status === "Open" ? t("suspend", "Suspend") : t("activate", "Activate")}
               </button>
               <button
                 onClick={() => handleDeleteProject(row.job_id)}
                 className="px-2.5 py-1 text-[11px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200/60 rounded-lg cursor-pointer transition-colors bg-white"
               >
-                Delete
+                {t("delete", "Delete")}
               </button>
             </>
           )}
@@ -249,59 +254,59 @@ export default function ProjectsTab({
 
   const proposalColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: any, idx: number) => idx + 1
     },
     {
-      header: "Project",
-      accessor: (row: any) => <div className="font-bold text-slate-800">{row.job_title}</div>
+      header: t("project", "Project"),
+      accessor: (row: any) => <div className="font-bold text-slate-800 text-left rtl:text-right">{row.job_title}</div>
     },
     {
-      header: "Client",
+      header: t("client", "Client"),
       accessor: (row: any) => (
-        <div>
+        <div className="text-left rtl:text-right">
           <div className="font-semibold text-slate-700">{row.client_name}</div>
           <div className="text-[10px] text-slate-400">{row.client_email}</div>
         </div>
       )
     },
     {
-      header: "Freelancer",
+      header: t("freelancer", "Freelancer"),
       accessor: (row: any) => (
-        <div>
+        <div className="text-left rtl:text-right">
           <div className="font-semibold text-slate-700">{row.freelancer_name}</div>
           <div className="text-[10px] text-slate-400">{row.freelancer_email}</div>
         </div>
       )
     },
     {
-      header: "Bid / Delivery",
+      header: t("bid_delivery", "Bid / Delivery"),
       accessor: (row: any) => (
-        <div>
+        <div className="text-left rtl:text-right">
           <div className="font-extrabold text-teal-600">${Number(row.bid_amount).toLocaleString()}</div>
-          <div className="text-[10px] text-slate-500">{row.delivery_days} days</div>
+          <div className="text-[10px] text-slate-500">{row.delivery_days} {t("days", "days")}</div>
         </div>
       )
     },
     {
-      header: "Cover Letter",
-      accessor: (row: any) => <div className="max-w-[200px] truncate text-slate-600" title={row.cover_letter}>{row.cover_letter}</div>
+      header: t("cover_letter", "Cover Letter"),
+      accessor: (row: any) => <div className="max-w-[200px] truncate text-slate-600 text-left rtl:text-right" title={row.cover_letter}>{row.cover_letter}</div>
     },
     {
-      header: "Actions",
+      header: t("actions", "Actions"),
       accessor: (row: any) => (
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-center">
           <button
             onClick={() => handleUpdateProposalVettingStatus && handleUpdateProposalVettingStatus(row.proposal_id, "Approved")}
             className="px-2.5 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all text-[10px] font-bold rounded-lg cursor-pointer"
           >
-            Approve
+            {t("approve", "Approve")}
           </button>
           <button
             onClick={() => handleUpdateProposalVettingStatus && handleUpdateProposalVettingStatus(row.proposal_id, "Rejected")}
             className="px-2.5 py-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-600 hover:bg-rose-600 hover:text-white transition-all text-[10px] font-bold rounded-lg cursor-pointer"
           >
-            Reject
+            {t("reject", "Reject")}
           </button>
         </div>
       )
@@ -309,9 +314,9 @@ export default function ProjectsTab({
   ];
 
   return (
-    <div className="flex flex-col gap-6 animate-fadeIn">
+    <div className="flex flex-col gap-6 animate-fadeIn text-left rtl:text-right">
       {/* Project management sub tabs */}
-      <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start select-none">
+      <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start select-none flex-wrap gap-1">
         <button
           onClick={() => setProjectsSubTab("projects")}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -320,7 +325,7 @@ export default function ProjectsTab({
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          Posted projects
+          {t("admin_posted_projects", "Posted projects")}
         </button>
         <button
           onClick={() => setProjectsSubTab("proposals")}
@@ -330,7 +335,7 @@ export default function ProjectsTab({
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          Proposal vetting queue
+          {t("admin_proposal_vetting_queue", "Proposal vetting queue")}
         </button>
         <button
           onClick={() => setProjectsSubTab("maintenance")}
@@ -340,20 +345,20 @@ export default function ProjectsTab({
               : "text-slate-500 hover:text-slate-800"
           }`}
         >
-          Form Fields
+          {t("admin_form_fields", "Form Fields")}
         </button>
       </div>
 
       {projectsSubTab === "projects" ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left rtl:text-right">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-bold text-slate-800">Project management</h3>
-              <p className="text-slate-505 text-xs sm:text-sm mt-0.5 font-semibold">Manage, review, and approve client-posted projects/jobs across the platform.</p>
+              <h3 className="text-lg font-bold text-slate-800">{t("admin_project_management", "Project management")}</h3>
+              <p className="text-slate-505 text-xs sm:text-sm mt-0.5 font-semibold">{t("admin_project_management_desc", "Manage, review, and approve client-posted projects/jobs across the platform.")}</p>
             </div>
 
             {/* Approval Tab Filters */}
-            <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 self-start select-none gap-1 shrink-0">
+            <div className="flex bg-slate-100 p-1.5 rounded-xl border border-slate-200 self-start select-none gap-1 shrink-0 flex-wrap">
               <button
                 onClick={() => setApprovalFilter("all")}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer ${
@@ -362,7 +367,7 @@ export default function ProjectsTab({
                     : "text-slate-500 hover:text-slate-800 bg-transparent"
                 }`}
               >
-                All Posted ({filteredProjects.length})
+                {t("admin_all_posted", "All Posted")} ({filteredProjects.length})
               </button>
               <button
                 onClick={() => setApprovalFilter("approved")}
@@ -372,7 +377,7 @@ export default function ProjectsTab({
                     : "text-slate-500 hover:text-slate-800 bg-transparent"
                 }`}
               >
-                Approved & Live ({filteredProjects.filter((p: any) => p.status !== "Pending Approval" && p.status !== "Declined").length})
+                {t("admin_approved_live", "Approved & Live")} ({filteredProjects.filter((p: any) => p.status !== "Pending Approval" && p.status !== "Declined").length})
               </button>
               <button
                 onClick={() => setApprovalFilter("pending")}
@@ -382,7 +387,7 @@ export default function ProjectsTab({
                     : "text-slate-500 hover:text-slate-800 bg-transparent"
                 }`}
               >
-                <span>Pending Vetting</span>
+                <span>{t("admin_pending_vetting", "Pending Vetting")}</span>
                 {filteredProjects.filter((p: any) => p.status === "Pending Approval").length > 0 && (
                   <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black leading-none animate-pulse">
                     {filteredProjects.filter((p: any) => p.status === "Pending Approval").length}
@@ -396,7 +401,7 @@ export default function ProjectsTab({
             <div className="relative w-full md:w-64">
               <input
                 type="text"
-                placeholder="Search projects..."
+                placeholder={t("admin_search_projects_placeholder", "Search projects...")}
                 value={projectsSearch}
                 onChange={(e) => setProjectsSearch(e.target.value)}
                 className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200"
@@ -417,16 +422,16 @@ export default function ProjectsTab({
             itemsPerPage={itemsPerPage}
             emptyMessage={
               approvalFilter === "pending"
-                ? "No project listings require vetting approval."
-                : (approvalFilter === "approved" ? "No active/approved project listings found." : "No project listings found.")
+                ? t("admin_no_projects_pending_vetting", "No project listings require vetting approval.")
+                : (approvalFilter === "approved" ? t("admin_no_projects_approved", "No active/approved project listings found.") : t("admin_no_projects_found", "No project listings found."))
             }
           />
         </div>
       ) : projectsSubTab === "proposals" ? (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left rtl:text-right">
           <div>
-            <h3 className="text-lg font-bold text-slate-800">Proposal Vetting Queue</h3>
-            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Approve or reject bids submitted by freelancers before clients can see them.</p>
+            <h3 className="text-lg font-bold text-slate-800">{t("admin_proposal_vetting_queue_title", "Proposal Vetting Queue")}</h3>
+            <p className="text-slate-500 text-xs sm:text-sm mt-0.5">{t("admin_proposal_vetting_queue_desc", "Approve or reject bids submitted by freelancers before clients can see them.")}</p>
           </div>
           <Table
             columns={proposalColumns}
@@ -436,14 +441,14 @@ export default function ProjectsTab({
             onPageChange={() => {}}
             totalItems={(pendingProposals || []).length}
             itemsPerPage={100}
-            emptyMessage="No pending proposals to vet."
+            emptyMessage={t("admin_no_pending_proposals", "No pending proposals to vet.")}
           />
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left animate-fadeIn">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm text-left rtl:text-right animate-fadeIn">
           <div className="border-b border-slate-100 pb-4">
-            <h3 className="text-lg font-bold text-slate-800">Project Form Fields Config</h3>
-            <p className="text-slate-550 text-xs sm:text-sm mt-0.5 font-semibold">Manage the available select options for project posting fields.</p>
+            <h3 className="text-lg font-bold text-slate-800">{t("admin_form_fields_config_title", "Project Form Fields Config")}</h3>
+            <p className="text-slate-550 text-xs sm:text-sm mt-0.5 font-semibold">{t("admin_form_fields_config_desc", "Manage the available select options for project posting fields.")}</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -451,9 +456,14 @@ export default function ProjectsTab({
               const options = fieldsConfig[field.key] || [];
               const inputValue = newOptionInputs[field.key] || "";
               
+              const fieldLabelTranslated = 
+                field.key === "project_durations" ? t("project_durations_label", "Project Durations") :
+                field.key === "location_preferences" ? t("location_preferences_label", "Location Preferences") :
+                field.key === "payment_modes" ? t("payment_modes_label", "Payment Modes") : field.label;
+
               return (
                 <div key={field.key} className="flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-2xl p-5">
-                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">{field.label}</h4>
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider mb-1">{fieldLabelTranslated}</h4>
                   
                   <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
                     {options.map((opt, idx) => (
@@ -463,14 +473,14 @@ export default function ProjectsTab({
                           onClick={() => handleRemoveOption(opt.option_id)}
                           disabled={savingFields}
                           className="text-rose-500 hover:text-rose-700 disabled:opacity-50 bg-transparent border-none cursor-pointer p-1 font-semibold text-xs"
-                          title="Remove Option"
+                          title={t("remove", "Remove")}
                         >
-                          Remove
+                          {t("remove", "Remove")}
                         </button>
                       </div>
                     ))}
                     {options.length === 0 && (
-                      <p className="text-slate-400 text-xs font-semibold italic text-center py-4">No options configured.</p>
+                      <p className="text-slate-400 text-xs font-semibold italic text-center py-4">{t("admin_no_options_configured", "No options configured.")}</p>
                     )}
                   </div>
 
@@ -497,7 +507,7 @@ export default function ProjectsTab({
                       disabled={savingFields}
                       className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white text-xs font-bold px-4 py-2 rounded-lg cursor-pointer border-none"
                     >
-                      Add
+                      {t("add", "Add")}
                     </button>
                   </form>
                 </div>

@@ -116,8 +116,17 @@ export default function ProposalsPage() {
             if (res.ok) {
               triggerToast("success", `Hired successfully! $${parseFloat(amount).toFixed(2)} escrow escrow payment confirmed.`, "Your project contract is now active.");
               fetchClientJobs();
-              // Remove query params cleanly
-              window.history.replaceState({}, document.title, window.location.pathname);
+              // Remove query params cleanly, keeping project_id in url to auto-open it!
+              const cleanParams = new URLSearchParams(window.location.search);
+              cleanParams.delete("stripe_proposal_success");
+              cleanParams.delete("proposal_id");
+              cleanParams.delete("amount");
+              if (data.job_id) {
+                cleanParams.set("project_id", data.job_id.toString());
+              }
+              const searchStr = cleanParams.toString();
+              const newUrl = searchStr ? `${window.location.pathname}?${searchStr}` : window.location.pathname;
+              window.history.replaceState({}, document.title, newUrl);
             } else {
               triggerToast("error", data.message || "Failed to confirm payment.");
             }

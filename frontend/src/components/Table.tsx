@@ -2,6 +2,7 @@
 
 import React from "react";
 import { useDragScroll } from "@/hooks/useDragScroll";
+import { useLanguage } from "@/context/LanguageContext";
 
 export interface Column<T> {
   header: string;
@@ -41,6 +42,7 @@ export default function Table<T>({
   getRowId,
 }: TableProps<T>) {
   const { props: dragScrollProps } = useDragScroll();
+  const { t } = useLanguage();
   
   // Calculate index range
   const startIdx = totalItems === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
@@ -88,7 +90,7 @@ export default function Table<T>({
     <div className="w-full flex flex-col bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
       {/* Table Content Scroll wrapper */}
       <div className="w-full overflow-x-auto" {...dragScrollProps}>
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left rtl:text-right border-collapse">
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50/80">
               {onSelectionChange && getRowId && (
@@ -113,7 +115,7 @@ export default function Table<T>({
               {columns.map((col, idx) => (
                 <th
                   key={idx}
-                  className={`px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-widest ${col.className || ""}`}
+                  className={`px-4 sm:px-6 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-widest text-left rtl:text-right whitespace-nowrap ${col.className || ""}`}
                 >
                   {col.header}
                 </th>
@@ -126,12 +128,12 @@ export default function Table<T>({
               Array.from({ length: itemsPerPage }).map((_, rIdx) => (
                 <tr key={rIdx} className="hover:bg-slate-50/10">
                   {onSelectionChange && getRowId && (
-                    <td className="px-6 py-4.5 w-12 text-center">
+                    <td className="px-4 sm:px-6 py-4 w-12 text-center">
                       <div className="w-4 h-4 bg-slate-200 rounded animate-pulse mx-auto" />
                     </td>
                   )}
                   {columns.map((_, cIdx) => (
-                    <td key={cIdx} className="px-6 py-4.5">
+                    <td key={cIdx} className="px-4 sm:px-6 py-4">
                       <div className="h-4 bg-slate-200/60 rounded-md animate-pulse w-3/4" />
                     </td>
                   ))}
@@ -140,7 +142,7 @@ export default function Table<T>({
             ) : data.length === 0 ? (
               // Empty state row
               <tr>
-                <td colSpan={columns.length + (onSelectionChange && getRowId ? 1 : 0)} className="px-6 py-12 text-center">
+                <td colSpan={columns.length + (onSelectionChange && getRowId ? 1 : 0)} className="px-4 sm:px-6 py-12 text-center">
                   <div className="flex flex-col items-center justify-center gap-3 text-slate-400">
                     <svg className="w-10 h-10 stroke-current text-slate-300" fill="none" viewBox="0 0 24 24" strokeWidth="1.5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 012.008 1.24l.885 1.77a2.25 2.25 0 002.007 1.24h1.98a2.25 2.25 0 002.007-1.24l.885-1.77a2.25 2.25 0 012.007-1.24h3.86m-18 0h18M2.25 13.5l1.125-11.25a2.25 2.25 0 012.237-2.025h12.776a2.25 2.25 0 012.236 2.025l1.125 11.25M2.25 13.5v7.5A2.25 2.25 0 004.5 23.25h15a2.25 2.25 0 002.25-2.25v-7.5" />
@@ -157,7 +159,7 @@ export default function Table<T>({
                   className="hover:bg-slate-50/50 transition-colors"
                 >
                   {onSelectionChange && getRowId && (
-                    <td className="px-6 py-4.5 w-12 text-center select-none">
+                    <td className="px-4 sm:px-6 py-4 w-12 text-center select-none">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(getRowId(row))}
@@ -183,7 +185,7 @@ export default function Table<T>({
                     return (
                       <td
                         key={cIdx}
-                        className={`px-6 py-4.5 text-sm text-slate-700 font-medium ${col.className || ""}`}
+                        className={`px-4 sm:px-6 py-4 text-xs sm:text-sm text-slate-700 font-medium text-left rtl:text-right whitespace-nowrap ${col.className || ""}`}
                       >
                         {cellVal}
                       </td>
@@ -198,9 +200,9 @@ export default function Table<T>({
 
       {/* Pagination Bar */}
       {totalPages > 0 && (
-        <div className="px-6 pr-20 py-4.5 bg-slate-50/40 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="px-4 sm:px-6 py-4 bg-slate-50/40 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="text-xs text-slate-500 font-bold select-none whitespace-nowrap">
-            Showing <span className="text-slate-700">{startIdx}</span> to <span className="text-slate-700">{endIdx}</span> of <span className="text-slate-700">{totalItems}</span> entries
+            {t("table_showing", "Showing")} <span className="text-slate-700">{startIdx}</span> {t("table_to", "to")} <span className="text-slate-700">{endIdx}</span> {t("table_of", "of")} <span className="text-slate-700">{totalItems}</span> {t("table_entries", "entries")}
           </div>
 
           <div className="flex items-center gap-1">
@@ -211,7 +213,7 @@ export default function Table<T>({
               className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors cursor-pointer flex items-center justify-center"
               aria-label="Previous Page"
             >
-              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <svg className="w-4.5 h-4.5 rtl-flip" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
               </svg>
             </button>
@@ -252,7 +254,7 @@ export default function Table<T>({
               className="p-2.5 rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-30 disabled:hover:text-slate-500 transition-colors cursor-pointer flex items-center justify-center"
               aria-label="Next Page"
             >
-              <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <svg className="w-4.5 h-4.5 rtl-flip" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
               </svg>
             </button>

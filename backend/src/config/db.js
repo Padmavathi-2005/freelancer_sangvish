@@ -30,6 +30,24 @@ try {
         console.error('Schema auto-migration notice:', schemaErr.message);
     }
 
+    // Auto-migration for contract_timecards revision columns
+    try {
+        await client.query(`
+            ALTER TABLE contract_timecards ADD COLUMN IF NOT EXISTS feedback TEXT;
+            ALTER TABLE contract_timecards ADD COLUMN IF NOT EXISTS submitted_files TEXT;
+            ALTER TABLE contract_timecards ADD COLUMN IF NOT EXISTS revision_count INT DEFAULT 0;
+            ALTER TABLE contract_timecards ADD COLUMN IF NOT EXISTS revision_status VARCHAR(50) DEFAULT 'None';
+            ALTER TABLE contract_timecards ADD COLUMN IF NOT EXISTS extra_revision_fee NUMERIC DEFAULT 0.00;
+            ALTER TABLE contract_timecards ADD COLUMN IF NOT EXISTS revision_feedback TEXT;
+            ALTER TABLE contract_timecards ADD COLUMN IF NOT EXISTS revision_submitted_files TEXT;
+            ALTER TABLE contract_timecards ADD COLUMN IF NOT EXISTS free_revision_count INT DEFAULT 0;
+            ALTER TABLE contract_timecards ADD COLUMN IF NOT EXISTS paid_revision_count INT DEFAULT 0;
+        `);
+        console.log('✅ Timecards revision columns schema migration verified');
+    } catch (schemaErr) {
+        console.error('Timecards schema migration notice:', schemaErr.message);
+    }
+
     client.release();
 } catch (error) {
     console.error('❌ PostgreSQL Connection Failed');

@@ -29,6 +29,11 @@ POST,/api/payments/contract/milestone/:id/reject,User/Auth,Client rejects delive
 POST,/api/payments/contract/milestone/:id/accept-revision,User/Auth,Freelancer accepts revision request (free or starts paid request)
 POST,/api/payments/contract/milestone/:id/fund-revision,User/Auth,Client funds proposed extra revision fee
 POST,/api/payments/contract/milestone/:id/reject-revision-proposal,User/Auth,Client declines extra revision fee
+POST,/api/payments/contract/timecard/:id/revision,User/Auth,Client requests revision for timecard hours log
+POST,/api/payments/contract/timecard/:id/accept-revision,User/Auth,Freelancer accepts timecard revision request (free or proposes paid fee)
+POST,/api/payments/contract/timecard/:id/reject-revision-proposal,User/Auth,Client declines proposed extra timecard revision fee
+POST,/api/payments/contract/timecard/:id/fund-revision,User/Auth,Client funds proposed extra timecard revision fee using wallet balance
+POST,/api/payments/contract/timecard/:id/submit-revision,User/Auth,Freelancer submits revised deliverables and notes for timecard
 POST,/api/payments/contract/milestone/:id/fund,User/Auth,Client funds a milestone deposit
 POST,/api/payments/contract/milestone/:id/request-funding,User/Auth,Freelancer requests funding for next milestone
 POST,/api/payments/contract/milestone/stripe/create-session,User/Auth,Initialize Stripe checkout for revision fee / milestone funding

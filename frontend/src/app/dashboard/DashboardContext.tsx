@@ -547,6 +547,7 @@ interface DashboardContextType {
   approveContractPayment: (contractId: number) => Promise<void>;
   startWorkContract: (contractId: number) => Promise<void>;
   requestMilestoneFunding: (milestoneId: number) => Promise<void>;
+  fetchOnboardingDetails: () => Promise<void>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -941,6 +942,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     resume_url: "",
     slug: "",
     display_name: "",
+    first_name: "",
+    last_name: "",
     seo: {
       meta_title: "",
       meta_description: "",
@@ -1118,23 +1121,65 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }, 4500);
   };
 
+  const clientFields = useMemo(() => {
+    return enabledDocFields.filter(f => f.applicable_to === 'client' || f.applicable_to === 'both');
+  }, [enabledDocFields]);
+
+  const totalClientSteps = useMemo(() => {
+    return clientFields.length > 0
+      ? Math.max(4, ...clientFields.map(f => f.step_number || 4))
+      : 4;
+  }, [clientFields]);
+
   // Dynamic values
   const stepsStatus = useMemo(() => {
     if (userRole === "client") {
-      return [
+      const baseSteps = [
         { number: 1, label: t("company_basics", "Company Basics"), done: Boolean(companyName?.trim()) },
         { number: 2, label: t("company_details", "Company Details"), done: Boolean(companyWebsite?.trim() || companyDescription?.trim()) },
         { number: 3, label: t("hiring_contact", "Hiring Contact"), done: Boolean(hiringContactName?.trim() && hiringContactDesignation?.trim()) }
       ];
+
+      for (let s = 4; s <= totalClientSteps; s++) {
+        let label = "";
+        if (s === 4) {
+          label = t("document_verification_title", "Document Verification");
+        } else if (s === 5) {
+          label = t("documents", "Documents");
+        } else {
+          label = t("onboarding_step_num", "Onboarding Step {num}").replace("{num}", s.toString());
+        }
+
+        const fieldsForStep = clientFields.filter(f => (f.step_number === s) || (s === 4 && !f.step_number));
+        const requiredFieldsForStep = fieldsForStep.filter(f => f.is_required == 1 || f.is_required === true || f.is_required === "1" || f.is_required === "true");
+
+        let done = true;
+        if (requiredFieldsForStep.length > 0) {
+          done = requiredFieldsForStep.every(reqField =>
+            userUploadedDocs.some(d => d.field_id === reqField.field_id)
+          );
+        } else if (fieldsForStep.length > 0) {
+          done = fieldsForStep.some(field =>
+            userUploadedDocs.some(d => d.field_id === field.field_id)
+          );
+        } else {
+          done = onboardingCompleted;
+        }
+
+        baseSteps.push({ number: s, label, done });
+      }
+
+      return baseSteps;
     } else {
       return [
         { number: 1, label: t("basics", "Basics"), done: Boolean(profileBasics?.professional_title) },
         { number: 2, label: t("career", "Career"), done: experiences.length > 0 || educations.length > 0 },
         { number: 3, label: t("verification", "Verification"), done: emailVerified || phoneVerified },
-        { number: 4, label: t("portfolio", "Portfolio"), done: certifications.length > 0 || selectedSkills.length > 0 }
+        { number: 4, label: t("portfolio", "Portfolio"), done: certifications.length > 0 || selectedSkills.length > 0 },
+        { number: 5, label: t("documents", "Documents"), done: userUploadedDocs.length > 0 || onboardingCompleted }
       ];
     }
-  }, [userRole, companyName, companyWebsite, companyDescription, hiringContactName, hiringContactDesignation, profileBasics, experiences, educations, emailVerified, phoneVerified, certifications, selectedSkills, t]);
+  }, [userRole, companyName, companyWebsite, companyDescription, hiringContactName, hiringContactDesignation, profileBasics, experiences, educations, emailVerified, phoneVerified, certifications, selectedSkills, userUploadedDocs, onboardingCompleted, t, totalClientSteps, clientFields]);
 
   const profileCompletionProgress = useMemo(() => {
     if (stepsStatus.length === 0) return 0;
@@ -1504,11 +1549,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("vetting_status", fallbackVetting);
 
         const profileExists = activeRole === "client" ? !!data.hasClientProfile : !!data.hasFreelancerProfile;
-        const isApproved = profileExists && fallbackVetting === "Approved";
 
-        setOnboardingCompleted(isApproved);
-        setShowOnboardingModal(!isApproved);
-        localStorage.setItem("onboarding_completed", isApproved ? "true" : "false");
+        setOnboardingCompleted(profileExists);
+        setShowOnboardingModal(!profileExists);
+        localStorage.setItem("onboarding_completed", profileExists ? "true" : "false");
 
         if (!data.hasFreelancerProfile && !data.hasClientProfile) {
           setOnboardingStep("role_selection");
@@ -1608,6 +1652,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             resume_url: data.profile.resume_url || "",
             slug: data.user.slug || "",
             display_name: data.user.display_name || data.user.name || "",
+            first_name: data.user.first_name || "",
+            last_name: data.user.last_name || "",
             seo: parsedSeo
           };
           setProfileBasics(loadedBasics);
@@ -2372,20 +2418,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        if (userRole === "client") {
-          if (ref) {
-            const foundJob = clientJobs.find((j: any) => j.contract_id === parseInt(ref) || j.job_id === parseInt(ref));
-            const jobId = foundJob ? foundJob.job_id : ref;
-            router.push(`/dashboard/proposals?project_id=${jobId}`);
-          } else {
-            router.push("/dashboard/proposals");
-          }
+        if (ref) {
+          router.push(`/dashboard/my-projects?contract_id=${ref}`);
         } else {
-          if (ref) {
-            router.push(`/dashboard/my-projects?contract_id=${ref}`);
-          } else {
-            router.push("/dashboard/my-projects");
-          }
+          router.push("/dashboard/my-projects");
         }
       } 
       // 6. Fallback redirection
@@ -3360,6 +3396,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             resume_url: profileBasics.resume_url || null,
             slug: profileBasics.slug || null,
             display_name: profileBasics.display_name || null,
+            first_name: profileBasics.first_name || null,
+            last_name: profileBasics.last_name || null,
             seo: profileBasics.seo || null
           })
         });
@@ -3640,13 +3678,11 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
           setVettingStatus(activeVettingStatus);
           localStorage.setItem("vetting_status", activeVettingStatus);
 
-          const isApproved = currentProfileExists && activeVettingStatus === "Approved";
+          setOnboardingCompleted(currentProfileExists);
+          localStorage.setItem("onboarding_completed", currentProfileExists ? "true" : "false");
+          setShowOnboardingModal(!currentProfileExists);
 
-          setOnboardingCompleted(isApproved);
-          localStorage.setItem("onboarding_completed", isApproved ? "true" : "false");
-          setShowOnboardingModal(!isApproved);
-
-          if (!isApproved) {
+          if (!currentProfileExists) {
             setOnboardingStep(isClient ? "client_flow" : "freelancer_flow");
             if (isClient) {
               setClientWizardStep(1);
@@ -3718,15 +3754,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     return field ? field.is_required : false;
   };
 
-  const clientFields = useMemo(() => {
-    return enabledDocFields.filter(f => f.applicable_to === 'client' || f.applicable_to === 'both');
-  }, [enabledDocFields]);
-
-  const totalClientSteps = useMemo(() => {
-    return clientFields.length > 0
-      ? Math.max(4, ...clientFields.map(f => f.step_number || 4))
-      : 4;
-  }, [clientFields]);
+  // Client fields and steps count moved to the top of DashboardContext to prevent ReferenceError in stepsStatus useMemo
 
   const freelancerFields = useMemo(() => {
     return enabledDocFields.filter(f => f.applicable_to === 'freelancer' || f.applicable_to === 'both');
@@ -3907,8 +3935,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       const stepFields = clientFields.filter(f => f.step_number === stepNum && (f.is_required == 1 || f.is_required === true || f.is_required === "1" || f.is_required === "true") && f.is_enabled);
       const incomplete = stepFields.filter(f => !userUploadedDocs.some(d => d.field_id === f.field_id));
       if (incomplete.length > 0) {
-        triggerToast("error", `Please complete all required fields for this step: ${incomplete.map(f => f.field_name).join(", ")}`);
-        return;
+        triggerToast("warning", `Warning: Some required fields were not uploaded: ${incomplete.map(f => f.field_name).join(", ")}. Your profile review may be delayed.`);
       }
       
       if (stepNum < totalClientSteps) {
@@ -4465,7 +4492,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     freelancerContracts, recommendedClients,
     fetchFreelancerContracts, fetchRecommendedClients,
     requestContractPayment, approveContractPayment, startWorkContract, requestMilestoneFunding,
-    pendingInviteFreelancer, setPendingInviteFreelancer
+    pendingInviteFreelancer, setPendingInviteFreelancer, fetchOnboardingDetails
   }), [
     isAuthenticated, onboardingCompleted, showOnboardingModal, forceShowOnboarding, onboardingStep, selectedRole, activeView,
     clientNotice, isSidebarOpen, categories, subCategories, availableSkills, languages,
@@ -4515,7 +4542,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     requestContractPayment, approveContractPayment, startWorkContract, requestMilestoneFunding,
     selectedFreelancerFullProfile, loadingFullProfile,
     pendingInviteFreelancer,
-    isFieldEnabled, isFieldRequired, totalClientSteps, totalFreelancerSteps
+    isFieldEnabled, isFieldRequired, totalClientSteps, totalFreelancerSteps, fetchOnboardingDetails
   ]);
 
   return (

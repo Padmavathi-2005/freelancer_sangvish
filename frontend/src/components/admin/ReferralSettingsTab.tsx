@@ -4,6 +4,7 @@ import { API_URL } from "@/config/api";
 import React, { useState, useEffect, useCallback } from "react";
 import { FiPlus, FiTrash2, FiSave, FiAlertCircle, FiImage, FiSettings, FiPenTool, FiUpload, FiCheckCircle } from "react-icons/fi";
 import { useAdmin } from "@/app/admin/AdminContext";
+import { useLanguage } from "@/context/LanguageContext";
 import CanvasEditor from "@/components/CanvasEditor";
 
 interface ReferralTier {
@@ -16,6 +17,7 @@ interface ReferralSettingsTabProps {
 }
 
 export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSettingsTabProps) {
+  const { t, direction } = useLanguage();
   const { adminTheme } = useAdmin();
   const isDark = adminTheme === "dark";
 
@@ -265,7 +267,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
 
   return (
     <>
-    <form onSubmit={handleSave} className={`rounded-2xl shadow-sm p-6 lg:p-8 flex flex-col gap-6 text-left relative border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`}>
+    <form onSubmit={handleSave} className={`rounded-2xl shadow-sm p-6 lg:p-8 flex flex-col gap-6 text-left rtl:text-right relative border ${isDark ? "bg-slate-950 border-slate-800" : "bg-white border-slate-200"}`} dir={direction?.toLowerCase()}>
       
       {/* Toast Notification */}
       {showToast && (
@@ -285,8 +287,8 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
       )}
 
       <div className={`border-b pb-4 ${isDark ? "border-slate-800" : "border-slate-100"}`}>
-        <h3 className={`text-base font-black ${isDark ? "text-slate-100" : "text-slate-800"}`}>Refer & Earn Configuration</h3>
-        <p className={`text-[11px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Configure sign-up rewards and tiered promoter bonuses based on referral volumes</p>
+        <h3 className={`text-base font-black ${isDark ? "text-slate-100" : "text-slate-800"}`}>{t("admin_ref_title", "Refer & Earn Configuration")}</h3>
+        <p className={`text-[11px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>{t("admin_ref_subtitle", "Configure sign-up rewards and tiered promoter bonuses based on referral volumes")}</p>
       </div>
 
       {error && (
@@ -299,7 +301,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
       {/* Row 1: Referred Sign-up reward configuration (Boxed) */}
       <div className={`p-5 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/50 border-slate-200/80"} flex flex-col gap-4 max-w-2xl`}>
         <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-          Sign-up Bonus settings
+          {t("admin_ref_signup_title", "Sign-up Bonus settings")}
         </h4>
         <div className="flex items-center gap-3">
           <input
@@ -310,13 +312,13 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             className="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500 cursor-pointer"
           />
           <label htmlFor="enableSignupBonus" className={`text-xs font-extrabold cursor-pointer ${isDark ? "text-slate-200" : "text-slate-800"}`}>
-            Enable Referred Sign-up Bonus
+            {t("admin_ref_enable_signup", "Enable Referred Sign-up Bonus")}
           </label>
         </div>
 
         {enableSignupBonus && (
           <div className="flex flex-col gap-1.5 animate-fadeIn mt-2">
-            <label className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>Referred User Sign-up Bonus ($)</label>
+            <label className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>{t("admin_ref_referred_user_bonus", "Referred User Sign-up Bonus ($)")}</label>
             <input
               type="number"
               step="0.01"
@@ -327,14 +329,14 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                 isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
               }`}
             />
-            <span className={`text-[9px] font-semibold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Amount credited to referred user's wallet after admin review and approval</span>
+            <span className={`text-[9px] font-semibold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>{t("admin_ref_referred_user_bonus_desc", "Amount credited to referred user's wallet after admin review and approval")}</span>
           </div>
         )}
 
         {/* Referral Purchase Completion Window (Days) */}
         <div className="flex flex-col gap-1.5 border-t pt-3.5 mt-1">
           <label className={`text-[10px] font-black uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-            Referral Purchase Window (Days)
+            {t("admin_ref_purchase_window", "Referral Purchase Window (Days)")}
           </label>
           <div className="flex items-center gap-2">
             <input
@@ -347,10 +349,10 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                 isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
               }`}
             />
-            <span className={`text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-600"}`}>Days from Registration</span>
+            <span className={`text-xs font-bold ${isDark ? "text-slate-300" : "text-slate-600"}`}>{t("admin_ref_days_from_reg", "Days from Registration")}</span>
           </div>
           <span className={`text-[9px] font-semibold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>
-            Referred friends must complete their first project milestone or gig purchase within this number of days. If exceeded, the referral is marked unsuccessful and reward payout is forfeited.
+            {t("admin_ref_purchase_window_desc", "Referred friends must complete their first project milestone or gig purchase within this number of days. If exceeded, the referral is marked unsuccessful and reward payout is forfeited.")}
           </span>
         </div>
 
@@ -361,11 +363,11 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
         <div className="flex items-center gap-2">
           <FiSettings className="w-4 h-4 text-teal-600" />
           <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>
-            Payout Approval Requirements &amp; Auto-Credit Workflow
+            {t("admin_ref_payout_requirements", "Payout Approval Requirements & Auto-Credit Workflow")}
           </h4>
         </div>
         <p className={`text-[11px] font-semibold ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-          Choose whether payouts require manual admin approval or get automatically credited into active wallet balances instantly.
+          {t("admin_ref_payout_requirements_desc", "Choose whether payouts require manual admin approval or get automatically credited into active wallet balances instantly.")}
         </p>
 
         <div className="flex flex-col gap-3.5 mt-1">
@@ -374,12 +376,12 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
           <div className="flex items-center justify-between gap-4 p-4 rounded-xl border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xs">
             <div className="flex flex-col text-left">
               <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                <span>🎁 Require Admin Approval for Sign-Up Bonus</span>
+                <span>{t("admin_ref_require_signup_approval", "🎁 Require Admin Approval for Sign-Up Bonus")}</span>
               </span>
               <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {requireSignupBonusApproval
-                  ? "ENABLED: Sign-up bonuses ($2.00) are logged as Pending Admin Approval."
-                  : "DISABLED (AUTO-CREDIT): Sign-up bonuses ($2.00) are credited automatically to user active wallet balance immediately upon onboarding setup."}
+                  ? t("admin_ref_require_signup_approval_enabled", "ENABLED: Sign-up bonuses ($2.00) are logged as Pending Admin Approval.")
+                  : t("admin_ref_require_signup_approval_disabled", "DISABLED (AUTO-CREDIT): Sign-up bonuses ($2.00) are credited automatically to user active wallet balance immediately upon onboarding setup.")}
               </span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -397,12 +399,12 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
           <div className="flex items-center justify-between gap-4 p-4 rounded-xl border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xs">
             <div className="flex flex-col text-left">
               <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                <span>💰 Require Admin Approval for Referral Rewards</span>
+                <span>{t("admin_ref_require_rewards_approval", "💰 Require Admin Approval for Referral Rewards")}</span>
               </span>
               <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {requireReferralRewardApproval
-                  ? "ENABLED: Referral promoter rewards require admin approval before wallet release."
-                  : "DISABLED (AUTO-CREDIT): Referral promoter rewards are credited automatically to referrer active wallet balance upon first completed order."}
+                  ? t("admin_ref_require_rewards_approval_enabled", "ENABLED: Referral promoter rewards require admin approval before wallet release.")
+                  : t("admin_ref_require_rewards_approval_disabled", "DISABLED (AUTO-CREDIT): Referral promoter rewards are credited automatically to referrer active wallet balance upon first completed order.")}
               </span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -420,12 +422,12 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
           <div className="flex items-center justify-between gap-4 p-4 rounded-xl border bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 shadow-xs">
             <div className="flex flex-col text-left">
               <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                <span>⚡ Require Admin Approval for Affiliate Commissions</span>
+                <span>{t("admin_ref_require_aff_approval", "⚡ Require Admin Approval for Affiliate Commissions")}</span>
               </span>
               <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {requireAffiliateApproval
-                  ? "ENABLED: Affiliate commissions require admin approval before wallet release."
-                  : "DISABLED (AUTO-CREDIT): Affiliate commissions are credited automatically to affiliate active wallet balance immediately upon earning."}
+                  ? t("admin_ref_require_aff_approval_enabled", "ENABLED: Affiliate commissions require admin approval before wallet release.")
+                  : t("admin_ref_require_aff_approval_disabled", "DISABLED (AUTO-CREDIT): Affiliate commissions are credited automatically to affiliate active wallet balance immediately upon earning.")}
               </span>
             </div>
             <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -446,8 +448,8 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
       <div className={`p-5 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/50 border-slate-200/80"} flex flex-col gap-4`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-150/20 pb-3.5">
           <div>
-            <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Referral Promoter Payout Tiers</h4>
-            <p className={`text-[10px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Determine how much referrers earn based on successful referral counts</p>
+            <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t("admin_ref_promoter_payout_tiers", "Referral Promoter Payout Tiers")}</h4>
+            <p className={`text-[10px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>{t("admin_ref_promoter_payout_tiers_desc", "Determine how much referrers earn based on successful referral counts")}</p>
           </div>
           <button
             type="button"
@@ -455,37 +457,37 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             className="flex items-center gap-1.5 px-3 py-2 border border-teal-200 bg-teal-50 text-teal-750 text-[10px] font-black uppercase rounded-lg hover:bg-teal-100 hover:border-teal-300 transition-all cursor-pointer border-none"
           >
             <FiPlus className="w-3.5 h-3.5" />
-            Add Referral Payout Rule
+            {t("admin_ref_add_rule_btn", "Add Referral Payout Rule")}
           </button>
         </div>
 
         {tiers.length > 0 ? (
-          <div className={`border rounded-xl overflow-hidden ${isDark ? "border-slate-800" : "border-slate-150/80"}`}>
-            <table className="w-full text-left border-collapse">
+          <div className={`border rounded-xl overflow-x-auto min-w-0 max-w-full ${isDark ? "border-slate-800" : "border-slate-150/80"}`}>
+            <table className="w-full text-left border-collapse min-w-[450px]">
               <thead>
                 <tr className={`border-b text-[9px] font-black uppercase tracking-widest select-none ${isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-50 border-slate-150/70 text-slate-400"}`}>
-                  <th className="px-5 py-3">Min Successful Referrals</th>
-                  <th className="px-5 py-3">Referrer Payout Amount ($)</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
+                  <th className="px-4 sm:px-5 py-3 whitespace-nowrap">{t("admin_ref_th_min_referrals", "Min Successful Referrals")}</th>
+                  <th className="px-4 sm:px-5 py-3 whitespace-nowrap">{t("admin_ref_th_payout_amount", "Referrer Payout Amount ($)")}</th>
+                  <th className="px-4 sm:px-5 py-3 text-right whitespace-nowrap">{t("admin_ref_actions", "Actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {tiers.map((tier, idx) => (
                   <tr key={idx} className={`border-b last:border-0 transition ${isDark ? "border-slate-800 hover:bg-slate-950/40 text-slate-300" : "border-slate-100 hover:bg-slate-50/50 text-slate-750"}`}>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 sm:px-5 py-3.5 whitespace-nowrap">
                       <input
                         type="number"
                         min="1"
                         required
                         value={tier.min_referrals}
                         onChange={(e) => handleUpdateTierField(idx, "min_referrals", parseInt(e.target.value) || 0)}
-                        className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-32 ${
+                        className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-28 sm:w-32 ${
                           isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
                         }`}
                         placeholder="e.g. 1"
                       />
                     </td>
-                    <td className="px-5 py-3.5">
+                    <td className="px-4 sm:px-5 py-3.5 whitespace-nowrap">
                       <input
                         type="number"
                         step="0.01"
@@ -493,13 +495,13 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                         required
                         value={tier.reward}
                         onChange={(e) => handleUpdateTierField(idx, "reward", parseFloat(e.target.value) || 0)}
-                        className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-32 ${
+                        className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-28 sm:w-32 ${
                           isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
                         }`}
                         placeholder="e.g. 10.00"
                       />
                     </td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-4 sm:px-5 py-3.5 text-right whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => handleRemoveTier(idx)}
@@ -516,17 +518,17 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
           </div>
         ) : (
           <div className={`border border-dashed rounded-xl p-8 text-center text-xs font-semibold ${isDark ? "border-slate-800 text-slate-500" : "border-slate-200 text-slate-400"}`}>
-            No referral payout tiers configured. Promoters will fall back to a default payout of $10.00.
+            {t("admin_ref_no_tiers", "No referral payout tiers configured. Promoters will fall back to a default payout of $10.00.")}
           </div>
         )}
       </div>
 
       {/* Row 3: Affiliate Tiers Grid (Boxed) */}
-      <div className={`p-5 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/50 border-slate-200/80"} flex flex-col gap-4`}>
+      <div className={`p-5 rounded-xl border ${isDark ? "bg-slate-900/60 border-slate-800" : "bg-slate-50/50 border-slate-200/80"} flex flex-col gap-4 min-w-0 max-w-full`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-150/20 pb-3.5">
           <div>
-            <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>Affiliate Promoter Payout Tiers</h4>
-            <p className={`text-[10px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>Determine the percentage (%) affiliates earn from the product / order price based on successful conversions</p>
+            <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? "text-slate-300" : "text-slate-700"}`}>{t("admin_ref_aff_payout_tiers", "Affiliate Promoter Payout Tiers")}</h4>
+            <p className={`text-[10px] font-bold mt-0.5 ${isDark ? "text-slate-500" : "text-slate-400"}`}>{t("admin_ref_aff_payout_tiers_desc", "Determine the percentage (%) affiliates earn from the product / order price based on successful conversions")}</p>
           </div>
           <button
             type="button"
@@ -534,38 +536,38 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             className="flex items-center gap-1.5 px-3 py-2 border border-teal-200 bg-teal-50 text-teal-750 text-[10px] font-black uppercase rounded-lg hover:bg-teal-100 hover:border-teal-300 transition-all cursor-pointer border-none"
           >
             <FiPlus className="w-3.5 h-3.5" />
-            Add Affiliate Payout Rule
+            {t("admin_ref_add_aff_rule_btn", "Add Affiliate Payout Rule")}
           </button>
         </div>
 
         {affiliateTiers.length > 0 ? (
           <>
-            <div className={`border rounded-xl overflow-hidden ${isDark ? "border-slate-800" : "border-slate-150/80"}`}>
-              <table className="w-full text-left border-collapse">
+            <div className={`border rounded-xl overflow-x-auto min-w-0 max-w-full ${isDark ? "border-slate-800" : "border-slate-150/80"}`}>
+              <table className="w-full text-left border-collapse min-w-[450px]">
                 <thead>
                   <tr className={`border-b text-[9px] font-black uppercase tracking-widest select-none ${isDark ? "bg-slate-950 border-slate-800 text-slate-400" : "bg-slate-50 border-slate-150/70 text-slate-400"}`}>
-                    <th className="px-5 py-3">Min Successful Conversions</th>
-                    <th className="px-5 py-3">Affiliate Commission Rate (%)</th>
-                    <th className="px-5 py-3 text-right">Actions</th>
+                    <th className="px-4 sm:px-5 py-3 whitespace-nowrap">{t("admin_ref_th_min_conversions", "Min Successful Conversions")}</th>
+                    <th className="px-4 sm:px-5 py-3 whitespace-nowrap">{t("admin_ref_th_commission_rate", "Affiliate Commission Rate (%)")}</th>
+                    <th className="px-4 sm:px-5 py-3 text-right whitespace-nowrap">{t("admin_ref_actions", "Actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {affiliateTiers.map((tier, idx) => (
                     <tr key={idx} className={`border-b last:border-0 transition ${isDark ? "border-slate-800 hover:bg-slate-950/40 text-slate-300" : "border-slate-100 hover:bg-slate-50/50 text-slate-750"}`}>
-                      <td className="px-5 py-3.5">
+                      <td className="px-4 sm:px-5 py-3.5 whitespace-nowrap">
                         <input
                           type="number"
                           min="1"
                           required
                           value={tier.min_referrals}
                           onChange={(e) => handleUpdateAffiliateTierField(idx, "min_referrals", parseInt(e.target.value) || 0)}
-                          className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-32 ${
+                          className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-28 sm:w-32 ${
                             isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
                           }`}
                           placeholder="e.g. 1"
                         />
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-4 sm:px-5 py-3.5 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           <input
                             type="number"
@@ -575,20 +577,20 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
                             required
                             value={tier.reward}
                             onChange={(e) => handleUpdateAffiliateTierField(idx, "reward", parseFloat(e.target.value) || 0)}
-                            className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-28 ${
+                            className={`border rounded-lg px-3 py-1.5 text-xs font-semibold focus:outline-none focus:border-teal-700 w-28 sm:w-32 ${
                               isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-700"
                             }`}
-                            placeholder="e.g. 5"
+                            placeholder="e.g. 10.0"
                           />
                           <span className={`text-xs font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>%</span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="px-4 sm:px-5 py-3.5 text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => handleRemoveAffiliateTier(idx)}
                           className={`p-2 rounded-lg transition-colors cursor-pointer border-none bg-transparent ${isDark ? "text-rose-400 hover:bg-rose-950/20" : "text-rose-500 hover:bg-rose-50"}`}
-                          title="Delete tier"
+                          title="Delete affiliate tier"
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </button>
@@ -602,19 +604,19 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
             {/* Dynamic Product Price Calculation Breakdown Preview */}
             <div className={`p-4 rounded-xl border text-xs font-semibold flex flex-col gap-2 ${isDark ? "bg-slate-950/80 border-slate-800 text-slate-300" : "bg-teal-50/60 border-teal-100/80 text-slate-700"}`}>
               <span className="font-black text-teal-700 dark:text-teal-400 flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
-                <span>💡 Dynamic Product Price & Payout Preview</span>
+                <span>{t("admin_ref_preview_title", "💡 Dynamic Product Price & Payout Preview")}</span>
               </span>
               <div className="flex flex-col gap-1 text-[11px] leading-relaxed">
-                {affiliateTiers.map((t, idx) => {
+                {affiliateTiers.map((tierItem, idx) => {
                   const samplePrice = 100;
-                  const earnedAmount = (samplePrice * (t.reward || 0)) / 100;
+                  const earnedAmount = (samplePrice * (tierItem.reward || 0)) / 100;
                   return (
                     <div key={idx} className="flex flex-wrap items-center gap-1.5">
                       <span className="font-extrabold text-slate-800 dark:text-slate-200">
-                        Tier {idx + 1} ({t.min_referrals}+ sales @ {t.reward}%):
+                        {t("admin_ref_preview_tier", "Tier")} {idx + 1} ({tierItem.min_referrals}+ {t("admin_ref_preview_sales", "sales @")} {tierItem.reward}%):
                       </span>
                       <span>
-                        For a product/order price of <strong className="text-teal-700 dark:text-teal-300">$100.00</strong>, affiliate receives <strong className="text-emerald-600 dark:text-emerald-400">${earnedAmount.toFixed(2)}</strong> payout.
+                        {t("admin_ref_preview_for_product", "For a product/order price of")} <strong className="text-teal-700 dark:text-teal-300">$100.00</strong>{t("admin_ref_preview_receives", ", affiliate receives")} <strong className="text-emerald-600 dark:text-emerald-400">${earnedAmount.toFixed(2)}</strong> {t("admin_ref_preview_payout", "payout.")}
                       </span>
                     </div>
                   );
@@ -624,7 +626,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
           </>
         ) : (
           <div className={`border border-dashed rounded-xl p-8 text-center text-xs font-semibold ${isDark ? "border-slate-800 text-slate-500" : "border-slate-200 text-slate-400"}`}>
-            No affiliate payout tiers configured. Affiliates will fall back to default payout percentage.
+            {t("admin_ref_no_aff_tiers", "No affiliate payout tiers configured. Affiliates will fall back to default payout percentage.")}
           </div>
         )}
       </div>
@@ -637,7 +639,7 @@ export default function ReferralSettingsTab({ handleSaveSetting }: ReferralSetti
           className="flex items-center gap-2 px-5 py-2.5 bg-teal-700 text-white text-xs font-black uppercase rounded-xl hover:bg-teal-650 hover:shadow-lg hover:shadow-teal-700/15 disabled:opacity-50 transition-all cursor-pointer border-none"
         >
           <FiSave className="w-4 h-4" />
-          {saving ? "Saving Changes..." : "Save Referral Configurations"}
+          {saving ? t("admin_ref_saving", "Saving Changes...") : t("admin_ref_save_btn", "Save Referral Configurations")}
         </button>
       </div>
 

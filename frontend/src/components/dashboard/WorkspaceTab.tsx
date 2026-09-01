@@ -220,7 +220,13 @@ export default function WorkspaceTab({
             </div>
           </div>
           
-          <div className="flex flex-wrap gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className={userRole === "client" 
+              ? "grid grid-cols-2 md:grid-cols-3 gap-2 w-full md:w-auto md:max-w-[35rem] shrink-0" 
+              : "flex flex-wrap md:flex-nowrap gap-2 shrink-0"
+            } 
+            onClick={(e) => e.stopPropagation()}
+          >
             {stepsStatus.map((step) => (
               <button
                 key={step.number}
@@ -232,18 +238,20 @@ export default function WorkspaceTab({
                     setProfileStep(step.number);
                   }
                 }}
-                className={`text-xs font-black px-3.5 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                className={`text-xs font-black px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                  userRole === "client" ? "w-full justify-start" : ""
+                } ${
                   step.done
                     ? "bg-emerald-100/90 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-700 hover:bg-emerald-200 dark:hover:bg-emerald-900"
                     : "bg-white dark:bg-zinc-900 border-teal-700/40 dark:border-zinc-700 hover:border-teal-700 hover:bg-teal-50/50 dark:hover:bg-zinc-800"
                 }`}
               >
                 {step.done ? (
-                  <FiCheckCircle className="step-pill-icon-done w-4 h-4 shrink-0" />
+                  <FiCheckCircle className="step-pill-icon-done w-4 h-4 shrink-0 animate-fadeIn" />
                 ) : (
                   <FiCircle className="step-pill-icon-todo w-4 h-4 shrink-0" />
                 )}
-                <span className="step-pill-text font-black">
+                <span className="step-pill-text font-black truncate max-w-[8rem] sm:max-w-none" title={step.label}>
                   {step.label}
                 </span>
               </button>
@@ -258,9 +266,9 @@ export default function WorkspaceTab({
             <div className="w-12 h-12 bg-white border border-slate-200/60 text-slate-800 rounded-full flex items-center justify-center shadow-md animate-pulse mb-4">
               <span className="text-base">⏳</span>
             </div>
-            <h3 className="text-sm font-extrabold text-slate-800 max-w-md">Verification Pending</h3>
+            <h3 className="text-sm font-extrabold text-slate-800 max-w-md">{t("verification_pending", "Verification Pending")}</h3>
             <p className="text-slate-500 text-xxs mt-1.5 max-w-sm font-semibold leading-relaxed">
-              Your profile is currently under review by our administration team. You will be granted full access once your credentials have been approved.
+              {t("verification_pending_desc", "Your profile is currently under review by our administration team. You will be granted full access once your credentials have been approved.")}
             </p>
           </div>
         )}
@@ -270,11 +278,11 @@ export default function WorkspaceTab({
             <div className="w-12 h-12 bg-white border border-slate-200/60 text-slate-800 rounded-full flex items-center justify-center shadow-md animate-bounce mb-4">
               <FiLock className="w-5 h-5 text-slate-750" />
             </div>
-            <h3 className="text-sm font-extrabold text-slate-800 max-w-md">Workspace Hub Locked</h3>
+            <h3 className="text-sm font-extrabold text-slate-800 max-w-md">{t("workspace_hub_locked", "Workspace Hub Locked")}</h3>
             <p className="text-slate-500 text-xxs mt-1.5 max-w-sm font-semibold leading-relaxed">
               {userRole === "client"
-                ? "You must complete your client profile to unlock active project milestones, cost calculators, messaging threads, and contractor stats."
-                : "You must complete your freelancer profile to unlock active milestones, bidding simulators, messaging threads, and contract stats."}
+                ? t("client_profile_locked_desc", "You must complete your client profile to unlock active project milestones, cost calculators, messaging threads, and contractor stats.")
+                : t("freelancer_profile_locked_desc", "You must complete your freelancer profile to unlock active milestones, bidding simulators, messaging threads, and contract stats.")}
             </p>
             <button
               onClick={() => {
@@ -288,7 +296,7 @@ export default function WorkspaceTab({
               }}
               className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-2.5 rounded-xl shadow-md transition-all cursor-pointer mt-5 hover:scale-105"
             >
-              Complete Profile Wizard
+              {t("complete_profile_wizard", "Complete Profile Wizard")}
             </button>
           </div>
         )}
@@ -302,31 +310,31 @@ export default function WorkspaceTab({
                   <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-505 opacity-80" />
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
-                      <h3 className="text-xs font-extrabold uppercase tracking-wide">Project Milestone & Escrow</h3>
+                      <h3 className="text-xs font-extrabold uppercase tracking-wide">{t("project_milestone_escrow", "Project Milestone & Escrow")}</h3>
                       <button
                         onClick={() => setSelectedProjectDetails(null)}
                         className="text-[10px] text-teal-755 bg-teal-50 hover:bg-teal-100 font-bold border border-teal-150 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
                       >
-                        Back to Dashboard
+                        {t("back_to_dashboard", "Back to Dashboard")}
                       </button>
                     </div>
                     <ProjectMilestoneTracker
-                      job={selectedProjectDetails}
-                      onUpdateJob={(updatedJob) => setSelectedProjectDetails(updatedJob)}
-                      triggerToast={triggerToast}
-                      setSelectedFreelancerProfile={setSelectedFreelancerProfile}
+                       job={selectedProjectDetails}
+                       onUpdateJob={(updatedJob) => setSelectedProjectDetails(updatedJob)}
+                       triggerToast={triggerToast}
+                       setSelectedFreelancerProfile={setSelectedFreelancerProfile}
                     />
                   </div>
                 ) : selectedGigOrderDetails ? (
                   <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 relative overflow-visible">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-cyan-500 opacity-80" />
                     <div className="flex justify-between items-center border-b border-slate-100 pb-2 text-slate-800">
-                      <h3 className="text-xs font-extrabold uppercase tracking-wide">Gig Order Tracker</h3>
+                      <h3 className="text-xs font-extrabold uppercase tracking-wide">{t("gig_order_tracker", "Gig Order Tracker")}</h3>
                       <button
                         onClick={() => setSelectedGigOrderDetails(null)}
                         className="text-[10px] text-teal-755 bg-teal-55 hover:bg-teal-100 font-bold border border-teal-155 rounded-lg px-2.5 py-1.5 transition-all cursor-pointer border-0"
                       >
-                        Back to Dashboard
+                        {t("back_to_dashboard", "Back to Dashboard")}
                       </button>
                     </div>
                     <GigMilestoneTracker

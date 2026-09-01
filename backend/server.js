@@ -172,6 +172,50 @@ try {
     `);
     console.log('✅ unique_views_log table check completed');
 
+    // Startup migration for user_languages unique constraint (required for ON CONFLICT during onboarding)
+    try {
+      // 1. Clean up duplicate rows first to ensure constraint creation does not fail
+      await pool.query(`
+        DELETE FROM user_languages a USING user_languages b 
+        WHERE a.user_language_id < b.user_language_id 
+          AND a.user_id = b.user_id 
+          AND a.language_id = b.language_id
+      `);
+
+      // 2. Add the unique constraint
+      await pool.query(`
+        ALTER TABLE user_languages 
+        ADD CONSTRAINT user_languages_user_id_language_id_key UNIQUE (user_id, language_id)
+      `);
+      console.log('✅ user_languages unique constraint check completed');
+    } catch (err) {
+      if (!err.message.includes('already exists')) {
+        console.log('Notice on user_languages unique constraint migration:', err.message);
+      }
+    }
+
+    // Startup migration for freelancer_documents unique constraint (required for ON CONFLICT during vetting onboarding)
+    try {
+      // 1. Clean up duplicate rows first
+      await pool.query(`
+        DELETE FROM freelancer_documents a USING freelancer_documents b 
+        WHERE a.document_id < b.document_id 
+          AND a.user_id = b.user_id 
+          AND a.field_id = b.field_id
+      `);
+
+      // 2. Add the unique constraint
+      await pool.query(`
+        ALTER TABLE freelancer_documents 
+        ADD CONSTRAINT freelancer_documents_user_id_field_id_key UNIQUE (user_id, field_id)
+      `);
+      console.log('✅ freelancer_documents unique constraint check completed');
+    } catch (err) {
+      if (!err.message.includes('already exists')) {
+        console.log('Notice on freelancer_documents unique constraint migration:', err.message);
+      }
+    }
+
     // Startup migration for gig_reviews
     await pool.query(`
       CREATE TABLE IF NOT EXISTS gig_reviews (

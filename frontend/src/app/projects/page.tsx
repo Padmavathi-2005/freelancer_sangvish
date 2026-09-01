@@ -664,7 +664,7 @@ function ProjectsSearchContent() {
         </div>
 
         {/* Left Side: Filtering Sidebar */}
-        <aside className={`lg:col-span-3 space-y-6 ${showMobileFilter ? "block animate-fadeIn" : "hidden lg:block"}`}>
+        <aside className={`lg:col-span-3 space-y-6 relative z-40 ${showMobileFilter ? "block animate-fadeIn" : "hidden lg:block"}`}>
           <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xxs space-y-5 sticky top-24 h-fit z-20">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-sm font-black text-slate-850 uppercase tracking-wider flex items-center gap-2 select-none">
@@ -796,12 +796,12 @@ function ProjectsSearchContent() {
             </div>
 
             {/* Stats, Sort and AI Match Tab */}
-            <div className="flex flex-wrap items-center gap-4 shrink-0 select-none">
-              <p className="text-slate-500 text-xs font-bold">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 select-none w-full lg:w-auto">
+              <p className="text-slate-500 text-xs font-bold whitespace-nowrap">
                 {t("showing_label", "Showing")} <span className="text-slate-800 font-extrabold">{sortedJobs.length}</span> {t("active_projects_label", "active projects")}
               </p>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none">{t("sort_by_label", "Sort By")}</span>
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none whitespace-nowrap shrink-0">{t("sort_by_label", "Sort By")}</span>
                 <CustomSelect
                   value={sortBy}
                   onChange={(val) => setSortBy(val)}
@@ -810,7 +810,7 @@ function ProjectsSearchContent() {
                     { value: "budget_desc", label: t("budget_high_low_opt", "Budget: High to Low") },
                     { value: "budget_asc", label: t("budget_low_high_opt", "Budget: Low to High") },
                   ]}
-                  className="w-48"
+                  className="w-36 sm:w-48"
                 />
               </div>
               {/* AI Match Tab Button */}
@@ -997,8 +997,8 @@ function ProjectsSearchContent() {
                         </div>
 
                         {/* Bottom row */}
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
-                          <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-4 pt-3 border-t border-slate-100 gap-3 sm:gap-0">
+                          <div className="flex items-center gap-4 text-slate-400 flex-wrap">
                             {budget > 0 && (
                               <span className="flex items-center gap-1 text-xs font-extrabold text-slate-800">
                                 <FiDollarSign className="w-3.5 h-3.5 text-primary" />
@@ -1166,7 +1166,7 @@ function ProjectsSearchContent() {
                       </div>
 
                       {/* Bottom bar */}
-                      <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-100 pt-4 mt-2 gap-3 sm:gap-0">
                         <div className="flex items-center gap-4 text-[10px] font-bold text-slate-400">
                           {job.project_type && (
                             <span className="flex items-center gap-1">
@@ -1189,7 +1189,7 @@ function ProjectsSearchContent() {
                                 e.stopPropagation();
                                 setActiveShareProject(job);
                               }}
-                              className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-250 text-emerald-700 text-[10px] font-black py-2 px-4 rounded-xl shadow-sm transition cursor-pointer border-none"
+                              className="bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 px-3 rounded-xl shadow-sm transition cursor-pointer text-center flex items-center justify-center text-center leading-tight"
                               title="Share & Earn Affiliate Commission"
                             >
                               {t("share_earn_btn", "Share & Earn")}
@@ -1198,7 +1198,7 @@ function ProjectsSearchContent() {
                           {appliedJobIds.has(job.job_id) ? (
                             <button
                               disabled
-                              className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 px-4 rounded-xl shadow-sm cursor-not-allowed select-none"
+                              className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black py-2 px-3 rounded-xl shadow-sm cursor-not-allowed select-none flex items-center justify-center text-center leading-tight"
                             >
                               {t("proposal_submitted_btn", "Proposal Submitted")}
                             </button>

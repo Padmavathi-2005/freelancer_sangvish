@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { AdminProvider, useAdmin } from "./AdminContext";
 import { FiMenu, FiX, FiBell, FiAlertTriangle, FiCheckCircle, FiUser, FiLayers, FiSettings, FiDollarSign, FiBriefcase, FiZap, FiUsers, FiClipboard, FiCreditCard, FiFileText, FiGlobe, FiHardDrive, FiMail } from "react-icons/fi";
 import { API_URL, API_BASE_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 const resolveLogoUrl = (url: string) => {
   if (!url) return "";
@@ -23,6 +24,17 @@ const resolveLogoUrl = (url: string) => {
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const {
+    lang,
+    direction,
+    currency,
+    currencySymbol,
+    activeLanguages,
+    currencies,
+    changeLanguage,
+    changeCurrency,
+    t
+  } = useLanguage();
   const {
     isAuthenticated,
     activeTab,
@@ -54,7 +66,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   } = useAdmin();
 
   const [isAdminNotificationsOpen, setIsAdminNotificationsOpen] = useState(false);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const [isCurrDropdownOpen, setIsCurrDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
+  const currDropdownRef = useRef<HTMLDivElement>(null);
   const DEFAULT_SITE_LOGO = "/public/images/onboard/file-1783600571599-686657795.png";
   const [siteLogo, setSiteLogo] = useState(DEFAULT_SITE_LOGO);
   const [siteLogoDark, setSiteLogoDark] = useState(DEFAULT_SITE_LOGO);
@@ -106,17 +122,24 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
         setIsAdminNotificationsOpen(false);
       }
+      if (langDropdownRef.current && !langDropdownRef.current.contains(target)) {
+        setIsLangDropdownOpen(false);
+      }
+      if (currDropdownRef.current && !currDropdownRef.current.contains(target)) {
+        setIsCurrDropdownOpen(false);
+      }
     };
-    if (isAdminNotificationsOpen) {
+    if (isAdminNotificationsOpen || isLangDropdownOpen || isCurrDropdownOpen) {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isAdminNotificationsOpen]);
+  }, [isAdminNotificationsOpen, isLangDropdownOpen, isCurrDropdownOpen]);
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -275,14 +298,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="w-full min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-4 border-t-teal-700 border-slate-200 rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-semibold text-sm">Verifying administration access session...</p>
+          <p className="text-slate-500 font-semibold text-sm">{t("admin_verifying_access", "Verifying administration access session...")}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={containerClass}>
+    <div className={containerClass} dir={direction?.toLowerCase()}>
       {/* Backdrop overlay for mobile drawer */}
       {isSidebarOpen && (
         <div
@@ -326,54 +349,54 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               A
             </div>
             <div>
-              <div className={profileNameClass}>{adminUser?.full_name || "Admin"}</div>
+              <div className={profileNameClass}>{adminUser?.full_name === "Admin" ? t("admin", "Admin") : (adminUser?.full_name === "Administrator" ? t("admin_administrator", "Administrator") : (adminUser?.full_name || t("admin_administrator", "Administrator")))}</div>
               <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                Active
+                {t("active", "Active")}
               </div>
             </div>
           </div>
         </div>
 
-        <nav onClick={() => setIsSidebarOpen(false)} className={navClass}>
+        <nav className={navClass}>
           {/* Group 1: Core Overview */}
           <div className="text-[9px] font-black tracking-widest uppercase text-slate-450 dark:text-slate-500 mt-1 mb-2 px-2.5 select-none">
-            Core Overview
+            {t("admin_core_overview", "Core Overview")}
           </div>
 
           <button
-            onClick={() => setActiveTab("profile")}
+            onClick={() => { setActiveTab("profile"); setIsSidebarOpen(false); }}
             className={navBtnClass("profile", ["overview"])}
           >
             <div className="flex items-center gap-3 w-full">
               <FiUser className="w-4 h-4 shrink-0" />
-              <span>My profile</span>
+              <span>{t("admin_my_profile", "My profile")}</span>
             </div>
           </button>
 
           <button
-            onClick={() => setActiveTab("users")}
+            onClick={() => { setActiveTab("users"); setIsSidebarOpen(false); }}
             className={navBtnClass("users")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiUsers className="w-4 h-4 shrink-0" />
-              <span>User Management</span>
+              <span>{t("admin_user_management", "User Management")}</span>
             </div>
           </button>
 
           <button
-            onClick={() => setActiveTab("onboarding")}
+            onClick={() => { setActiveTab("onboarding"); setIsSidebarOpen(false); }}
             className={navBtnClass("onboarding")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiClipboard className="w-4 h-4 shrink-0" />
-              <span>Onboarding directory</span>
+              <span>{t("admin_onboarding_directory", "Onboarding directory")}</span>
             </div>
           </button>
 
           {/* Group 2: Marketplace */}
           <div className="text-[9px] font-black tracking-widest uppercase text-slate-450 dark:text-slate-500 mt-4 mb-2 px-2.5 select-none">
-            Marketplace
+            {t("admin_marketplace", "Marketplace")}
           </div>
 
           <div className="flex flex-col gap-1">
@@ -384,6 +407,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 if (nextVal) {
                   setGigMenuOpen(false);
                   setSettingsMenuOpen(false);
+                  setMarketingMenuOpen(false);
                 }
               }}
               className={navDropdownHeaderClass(projectMenuOpen, ["projects", "project_orders"])}
@@ -391,11 +415,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-3">
                   <FiBriefcase className="w-4 h-4 shrink-0" />
-                  <span>Project management</span>
+                  <span>{t("admin_project_management", "Project management")}</span>
                 </div>
                 <svg
                   className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
-                    projectMenuOpen || activeTab === "projects" || activeTab === "project_orders" ? "rotate-180" : ""
+                    projectMenuOpen ? "rotate-180" : ""
                   }`}
                   fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
                 >
@@ -404,43 +428,48 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
             </button>
             
-            {(projectMenuOpen || activeTab === "projects" || activeTab === "project_orders") && (
-              <div className={`pl-6 flex flex-col gap-1 border-l ml-6 mt-1 mb-2 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-                <button
-                  onClick={() => {
-                    setActiveTab("projects");
-                    setProjectsSubTab("projects");
-                  }}
-                  className={subNavBtnClass("projects", [], activeTab === "projects" && projectsSubTab === "projects")}
-                >
-                  Project listings
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab("projects");
-                    setProjectsSubTab("proposals");
-                  }}
-                  className={subNavBtnClass("projects", [], activeTab === "projects" && projectsSubTab === "proposals")}
-                >
-                  Project proposals
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveTab("projects");
-                    setProjectsSubTab("maintenance");
-                  }}
-                  className={subNavBtnClass("projects", [], activeTab === "projects" && projectsSubTab === "maintenance")}
-                >
-                  Form Config
-                </button>
-                <button
-                  onClick={() => setActiveTab("project_orders")}
-                  className={subNavBtnClass("project_orders")}
-                >
-                  Project contracts
-                </button>
-              </div>
-            )}
+            <div className={`pl-6 flex flex-col gap-1 border-l ml-6 transition-all duration-300 ease-in-out overflow-hidden ${
+              projectMenuOpen 
+                ? "max-h-[250px] opacity-100 mt-1 mb-2" 
+                : "max-h-0 opacity-0 pointer-events-none"
+            } ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+              <button
+                onClick={() => {
+                  setActiveTab("projects");
+                  setProjectsSubTab("projects");
+                  setIsSidebarOpen(false);
+                }}
+                className={subNavBtnClass("projects", [], activeTab === "projects" && projectsSubTab === "projects")}
+              >
+                {t("admin_project_listings", "Project listings")}
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab("projects");
+                  setProjectsSubTab("proposals");
+                  setIsSidebarOpen(false);
+                }}
+                className={subNavBtnClass("projects", [], activeTab === "projects" && projectsSubTab === "proposals")}
+              >
+                {t("admin_project_proposals", "Project proposals")}
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab("projects");
+                  setProjectsSubTab("maintenance");
+                  setIsSidebarOpen(false);
+                }}
+                className={subNavBtnClass("projects", [], activeTab === "projects" && projectsSubTab === "maintenance")}
+              >
+                {t("admin_form_config", "Form Config")}
+              </button>
+              <button
+                onClick={() => { setActiveTab("project_orders"); setIsSidebarOpen(false); }}
+                className={subNavBtnClass("project_orders")}
+              >
+                {t("admin_project_contracts", "Project contracts")}
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-1">
@@ -451,6 +480,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 if (nextVal) {
                   setProjectMenuOpen(false);
                   setSettingsMenuOpen(false);
+                  setMarketingMenuOpen(false);
                 }
               }}
               className={navDropdownHeaderClass(gigMenuOpen, ["gigs_list", "gig_orders"])}
@@ -458,11 +488,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-3">
                   <FiZap className="w-4 h-4 shrink-0" />
-                  <span>Gig management</span>
+                  <span>{t("admin_gig_management", "Gig management")}</span>
                 </div>
                 <svg
                   className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
-                    gigMenuOpen || activeTab === "gigs_list" || activeTab === "gig_orders" ? "rotate-180" : ""
+                    gigMenuOpen ? "rotate-180" : ""
                   }`}
                   fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
                 >
@@ -471,62 +501,67 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               </div>
             </button>
             
-            {(gigMenuOpen || activeTab === "gigs_list" || activeTab === "gig_orders") && (
-              <div className={`pl-6 flex flex-col gap-1 border-l ml-6 mt-1 mb-2 ${isDark ? "border-slate-800" : "border-slate-200"}`}>
-                <button
-                  onClick={() => setActiveTab("gigs_list")}
-                  className={subNavBtnClass("gigs_list")}
-                >
-                  Gig listings
-                </button>
-                <button
-                  onClick={() => setActiveTab("gig_orders")}
-                  className={subNavBtnClass("gig_orders")}
-                >
-                  Gig contracts
-                </button>
-              </div>
-            )}
+            <div className={`pl-6 flex flex-col gap-1 border-l ml-6 transition-all duration-300 ease-in-out overflow-hidden ${
+              gigMenuOpen 
+                ? "max-h-[150px] opacity-100 mt-1 mb-2" 
+                : "max-h-0 opacity-0 pointer-events-none"
+            } ${isDark ? "border-slate-800" : "border-slate-200"}`}>
+              <button
+                onClick={() => { setActiveTab("gigs_list"); setIsSidebarOpen(false); }}
+                className={subNavBtnClass("gigs_list")}
+              >
+                {t("admin_gig_listings", "Gig listings")}
+              </button>
+              <button
+                onClick={() => { setActiveTab("gig_orders"); setIsSidebarOpen(false); }}
+                className={subNavBtnClass("gig_orders")}
+              >
+                {t("admin_gig_contracts", "Gig contracts")}
+              </button>
+            </div>
           </div>
 
           <button
             onClick={() => {
               setActiveTab("taxonomies");
               setCategoriesSubTab("categories");
+              setIsSidebarOpen(false);
             }}
             className={navBtnClass("taxonomies")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiLayers className="w-4 h-4 shrink-0" />
-              <span>Categories & Skills</span>
+              <span>{t("admin_categories_skills", "Categories & Skills")}</span>
             </div>
           </button>
 
           <Link
             href="/admin/subscription-plans"
+            onClick={() => setIsSidebarOpen(false)}
             className={navBtnClass("subscription_plans")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiLayers className="w-4 h-4 shrink-0" />
-              <span>Subscription Plans</span>
+              <span>{t("admin_subscription_plans", "Subscription Plans")}</span>
             </div>
           </Link>
 
           {/* Group 3: Financials & Mediation */}
           <div className="text-[9px] font-black tracking-widest uppercase text-slate-450 dark:text-slate-500 mt-4 mb-2 px-2.5 select-none">
-            Finance & Mediation
+            {t("admin_finance_mediation", "Finance & Mediation")}
           </div>
 
           <button
             onClick={() => {
               setActiveTab("transactions");
               setTransactionsSubTab("transactions");
+              setIsSidebarOpen(false);
             }}
             className={navBtnClass("transactions", [], activeTab === "transactions" && transactionsSubTab !== "disputes")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiDollarSign className="w-4 h-4 shrink-0" />
-              <span>Transaction & payments</span>
+              <span>{t("admin_transaction_payments", "Transaction & payments")}</span>
             </div>
           </button>
 
@@ -534,13 +569,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             onClick={() => {
               setActiveTab("transactions");
               setTransactionsSubTab("disputes");
+              setIsSidebarOpen(false);
             }}
             className={navBtnClass("notifications", [], activeTab === "transactions" && transactionsSubTab === "disputes")}
           >
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-3">
                 <FiBell className="w-4 h-4 shrink-0" />
-                <span>Disputes & Alerts</span>
+                <span>{t("admin_disputes_alerts", "Disputes & Alerts")}</span>
               </div>
               {adminNotifications.filter((n: any) => !n.read).length > 0 && (
                 <span className="bg-rose-500 text-[9px] font-black text-white px-2 py-0.5 rounded-full shrink-0 animate-pulse">
@@ -551,68 +587,71 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </button>
 
           <button
-            onClick={() => setActiveTab("wallet_management")}
+            onClick={() => { setActiveTab("wallet_management"); setIsSidebarOpen(false); }}
             className={navBtnClass("wallet_management")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiCreditCard className="w-4 h-4 shrink-0" />
-              <span>Payouts & Wallets</span>
+              <span>{t("admin_payouts_wallets", "Payouts & Wallets")}</span>
             </div>
           </button>
 
           <button
-            onClick={() => setActiveTab("referrals")}
+            onClick={() => { setActiveTab("referrals"); setIsSidebarOpen(false); }}
             className={navBtnClass("referrals")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiUsers className="w-4 h-4 shrink-0" />
-              <span>Referral Payouts</span>
+              <span>{t("admin_referral_payouts", "Referral Payouts")}</span>
             </div>
           </button>
 
           <button
-            onClick={() => setActiveTab("affiliate")}
+            onClick={() => { setActiveTab("affiliate"); setIsSidebarOpen(false); }}
             className={navBtnClass("affiliate")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiBriefcase className="w-4 h-4 shrink-0" />
-              <span>Affiliate Payouts</span>
+              <span>{t("admin_affiliate_payouts", "Affiliate Payouts")}</span>
             </div>
           </button>
 
           <Link
             href="/admin/contact-inquiries"
+            onClick={() => setIsSidebarOpen(false)}
             className={navBtnClass("contact-inquiries", [], pathname === "/admin/contact-inquiries")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiMail className="w-4 h-4 shrink-0" />
-              <span>Contact Inquiries</span>
+              <span>{t("admin_contact_inquiries", "Contact Inquiries")}</span>
             </div>
           </Link>
 
           <Link
             href="/admin/newsletter"
+            onClick={() => setIsSidebarOpen(false)}
             className={navBtnClass("newsletter", [], pathname === "/admin/newsletter")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiUsers className="w-4 h-4 shrink-0" />
-              <span>Newsletter Subscribers</span>
+              <span>{t("admin_newsletter_subscribers", "Newsletter Subscribers")}</span>
             </div>
           </Link>
 
           <Link
             href="/admin/careers"
+            onClick={() => setIsSidebarOpen(false)}
             className={navBtnClass("careers", [], pathname === "/admin/careers")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiFileText className="w-4 h-4 shrink-0" />
-              <span>Career Applications</span>
+              <span>{t("admin_career_applications", "Career Applications")}</span>
             </div>
           </Link>
 
           {/* Group 3.5: Marketing & Discovery */}
           <div className="text-[9px] font-black tracking-widest uppercase text-slate-450 dark:text-slate-500 mt-4 mb-2 px-2.5 select-none">
-            Marketing & SEO
+            {t("admin_marketing_seo", "Marketing & SEO")}
           </div>
 
           <div className="flex flex-col gap-1">
@@ -631,7 +670,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center gap-3">
                   <FiGlobe className="w-4 h-4 shrink-0" />
-                  <span>Marketing & SEO</span>
+                  <span>{t("admin_marketing_seo", "Marketing & SEO")}</span>
                 </div>
                 <svg
                   className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${
@@ -646,103 +685,102 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 </svg>
               </div>
             </button>
-            {marketingMenuOpen && (
-              <div className="pl-4 flex flex-col gap-1 mt-1 border-l border-slate-200/60 dark:border-slate-800 ml-4.5">
-                <button
-                  onClick={() => setActiveTab("search_logs")}
-                  className={subNavBtnClass("search_logs")}
-                >
-                  Search Analytics
-                </button>
-                <button
-                  onClick={() => setActiveTab("seo_settings")}
-                  className={subNavBtnClass("seo_settings")}
-                >
-                  SEO & Meta Preview
-                </button>
-                <Link
-                  href="/admin/newsletter"
-                  className={subNavBtnClass("newsletter", [], pathname === "/admin/newsletter")}
-                >
-                  Newsletter Subscribers
-                </Link>
-              </div>
-            )}
+            <div className={`pl-4 flex flex-col gap-1 border-l ml-4.5 transition-all duration-300 ease-in-out overflow-hidden ${
+              marketingMenuOpen 
+                ? "max-h-[150px] opacity-100 mt-1 mb-2" 
+                : "max-h-0 opacity-0 pointer-events-none"
+            } border-slate-200/60 dark:border-slate-800`}>
+              <button
+                onClick={() => { setActiveTab("search_logs"); setIsSidebarOpen(false); }}
+                className={subNavBtnClass("search_logs")}
+              >
+                {t("admin_search_analytics", "Search Analytics")}
+              </button>
+              <button
+                onClick={() => { setActiveTab("seo_settings"); setIsSidebarOpen(false); }}
+                className={subNavBtnClass("seo_settings")}
+              >
+                {t("admin_seo_preview", "SEO & Meta Preview")}
+              </button>
+            </div>
           </div>
 
           {/* Group 4: Site Content & Settings */}
           <div className="text-[9px] font-black tracking-widest uppercase text-slate-450 dark:text-slate-500 mt-4 mb-2 px-2.5 select-none">
-            Content & Settings
+            {t("admin_content_settings", "Content & Settings")}
           </div>
 
           <button
-            onClick={() => setActiveTab("cms_pages")}
+            onClick={() => { setActiveTab("cms_pages"); setIsSidebarOpen(false); }}
             className={navBtnClass("cms_pages")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiFileText className="w-4 h-4 shrink-0" />
-              <span>CMS Pages</span>
+              <span>{t("admin_cms_pages", "CMS Pages")}</span>
             </div>
           </button>
 
           <button
-            onClick={() => setActiveTab("blogs")}
+            onClick={() => { setActiveTab("blogs"); setIsSidebarOpen(false); }}
             className={navBtnClass("blogs")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiFileText className="w-4 h-4 shrink-0" />
-              <span>Manage Blogs</span>
+              <span>{t("admin_manage_blogs", "Manage Blogs")}</span>
             </div>
           </button>
 
           <button
-            onClick={() => setActiveTab("settings")}
+            onClick={() => { setActiveTab("settings"); setIsSidebarOpen(false); }}
             className={navBtnClass("settings", ["general_settings", "site_settings", "email_settings", "frontend_content", "footer_links", "social_login", "payment_settings", "dispute_reasons", "seo_settings"])}
           >
             <div className="flex items-center gap-3 w-full">
               <FiSettings className="w-4 h-4 shrink-0" />
-              <span>System Settings</span>
+              <span>{t("admin_system_settings", "System Settings")}</span>
             </div>
           </button>
 
           {/* Group 5: System Maintenance */}
           <div className="text-[9px] font-black tracking-widest uppercase text-rose-500/80 dark:text-rose-450/70 mt-4 mb-2 px-2.5 select-none">
-            System & Maintenance
+            {t("admin_system_maintenance", "System & Maintenance")}
           </div>
 
           <button
             onClick={() => {
               setActiveTab("languages");
+              setIsSidebarOpen(false);
             }}
             className={navBtnClass("languages")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiGlobe className="w-4 h-4 shrink-0" />
-              <span>Languages & Currencies</span>
+              <span>{t("admin_languages_currencies", "Languages & Currencies")}</span>
             </div>
           </button>
 
           <button
             onClick={() => {
               setActiveTab("cleanup");
+              setIsSidebarOpen(false);
             }}
             className={navBtnClass("cleanup")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiAlertTriangle className="w-4 h-4 shrink-0 text-rose-500" />
-              <span>Database Cleanup</span>
+              <span>{t("admin_db_cleanup", "Database Cleanup")}</span>
             </div>
           </button>
 
           <button
             onClick={() => {
               setActiveTab("backups");
+              setIsSidebarOpen(false);
             }}
             className={navBtnClass("backups")}
           >
             <div className="flex items-center gap-3 w-full">
               <FiHardDrive className="w-4 h-4 shrink-0" />
-              <span>DB Backups</span>
+              <span>{t("admin_db_backups", "DB Backups")}</span>
             </div>
           </button>
         </nav>
@@ -756,13 +794,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 : "text-rose-600 hover:text-rose-700 bg-rose-50 border border-rose-200/60 hover:bg-rose-100"
             }`}
           >
-            Logout
+            {t("admin_logout", "Logout")}
           </button>
         </div>
       </aside>
 
       {/* Main Workspace Area */}
-      <div className="flex-grow flex flex-col max-w-full lg:h-screen lg:overflow-hidden relative z-10">
+      <div className="flex-grow flex flex-col min-w-0 max-w-full lg:h-screen lg:overflow-hidden relative z-10 overflow-x-hidden">
         
         {/* Dashboard Top Header Bar */}
         <header className={headerClass}>
@@ -777,13 +815,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
             <h1 className={headerTitleClass}>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${
-                isDark ? "bg-teal-500/10 text-teal-400 border border-teal-500/30" : "bg-teal-50 text-teal-750 border border-teal-200"
-              }`}>Admin</span>
-              <span className="hidden sm:inline">Control Terminal</span>
+                isDark ? "bg-teal-500/10 text-white border border-teal-500/30" : "bg-teal-700 text-white"
+              }`}>{t("admin", "Admin")}</span>
+              <span className="hidden sm:inline">{t("admin_control_terminal", "Control Terminal")}</span>
             </h1>
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center sm:gap-3 gap-1.5">
             {/* Notifications Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
@@ -808,20 +846,20 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
                 }`}>
                   <div className="flex items-center justify-between border-b pb-2.5 border-slate-100 dark:border-slate-850">
-                    <span className="text-xs font-black uppercase tracking-wider">Mediation Center</span>
+                    <span className="text-xs font-black uppercase tracking-wider">{t("admin_mediation_center", "Mediation Center")}</span>
                     <button
                       onClick={() => {
                         setAdminNotifications((prev: any) => prev.map((n: any) => ({ ...n, read: true })));
                       }}
                       className="text-[10px] font-bold text-teal-600 hover:text-teal-700 cursor-pointer"
                     >
-                      Mark all read
+                      {t("admin_mark_all_read", "Mark all read")}
                     </button>
                   </div>
 
                   <div className="max-h-60 overflow-y-auto flex flex-col gap-2 pr-2">
                     {adminNotifications.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center py-4">No dispute notifications.</p>
+                      <p className="text-xs text-slate-400 text-center py-4">{t("admin_no_dispute_notifications", "No dispute notifications.")}</p>
                     ) : (
                       adminNotifications.map((notif: any) => (
                         <div
@@ -896,7 +934,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 const nextTheme = adminTheme === "light" ? "dark" : "light";
                 setAdminTheme(nextTheme);
               }}
-              className={`p-2 rounded-xl border transition-all duration-300 cursor-pointer flex items-center justify-center ${
+              className={`p-2 rounded-xl border transition-all duration-350 cursor-pointer flex items-center justify-center ${
                 isDark 
                   ? "bg-slate-900 border-slate-800 text-amber-400 hover:text-amber-300 hover:bg-slate-800" 
                   : "bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
@@ -916,53 +954,140 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               )}
             </button>
 
-            <div className={`flex items-center gap-2 border rounded-xl px-3 py-1.5 text-[10px] shadow-sm select-none transition-all duration-300 ${
-              isDark ? "bg-slate-900 border-slate-800 text-slate-400" : "bg-slate-50 border-slate-200/80 text-slate-600"
-            }`}>
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-              <span className="font-bold">Secure</span>
+            {/* Language Switcher */}
+            <div className="relative" ref={langDropdownRef}>
+              <button
+                onClick={() => {
+                  setIsLangDropdownOpen(!isLangDropdownOpen);
+                  setIsCurrDropdownOpen(false);
+                  setIsAdminNotificationsOpen(false);
+                }}
+                className={`p-2 rounded-xl border transition-all duration-300 cursor-pointer flex items-center justify-center gap-1.5 text-xs font-bold ${
+                  isDark
+                    ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
+                    : "bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                }`}
+                aria-label={t("admin_select_language", "Select language")}
+              >
+                <FiGlobe className="w-3.5 h-3.5 shrink-0" />
+                <span className="uppercase hidden sm:inline">{lang}</span>
+              </button>
+
+              {isLangDropdownOpen && (
+                <div
+                  dir="ltr"
+                  className={`absolute right-0 mt-3 w-40 rounded-xl border shadow-xl py-1.5 z-50 max-h-64 overflow-y-auto scrollbar-thin select-none animate-fadeIn ${
+                    isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
+                  }`}
+                >
+                  {activeLanguages.map((l: any, idx: number) => (
+                    <button
+                      key={l.code || idx}
+                      onClick={() => {
+                        changeLanguage(l.code);
+                        setIsLangDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-4 py-2 text-xs font-bold transition-colors cursor-pointer text-left hover:bg-slate-50 dark:hover:bg-slate-900 ${
+                        lang === l.code
+                          ? (isDark ? "text-teal-400 bg-teal-950/20" : "text-teal-700 bg-teal-50/50")
+                          : (isDark ? "text-slate-300" : "text-slate-650")
+                      }`}
+                    >
+                      <span className="truncate">{l.name}</span>
+                      <span className="text-[10px] text-slate-400 font-bold shrink-0 ml-1">({l.code})</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Currency Switcher */}
+            <div className="relative" ref={currDropdownRef}>
+              <button
+                onClick={() => {
+                  setIsCurrDropdownOpen(!isCurrDropdownOpen);
+                  setIsLangDropdownOpen(false);
+                  setIsAdminNotificationsOpen(false);
+                }}
+                className={`p-2 rounded-xl border transition-all duration-300 cursor-pointer flex items-center justify-center gap-1 text-xs font-bold ${
+                  isDark
+                    ? "bg-slate-900 border-slate-800 text-slate-300 hover:text-white hover:bg-slate-800"
+                    : "bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+                }`}
+                aria-label={t("admin_select_currency", "Select currency")}
+              >
+                <span className={`font-extrabold ${isDark ? "text-teal-400" : "text-teal-600"}`}>{currencySymbol}</span>
+                <span className="uppercase hidden sm:inline">{currency}</span>
+              </button>
+
+              {isCurrDropdownOpen && (
+                <div
+                  dir="ltr"
+                  className={`absolute right-0 mt-3 w-40 rounded-xl border shadow-xl py-1.5 z-50 max-h-64 overflow-y-auto scrollbar-thin select-none animate-fadeIn ${
+                    isDark ? "bg-slate-950 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
+                  }`}
+                >
+                  {currencies.map((c: any, idx: number) => (
+                    <button
+                      key={c.code || idx}
+                      onClick={() => {
+                        changeCurrency(c.code);
+                        setIsCurrDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-xs font-bold transition-colors cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 flex items-center gap-2 ${
+                        currency === c.code
+                          ? (isDark ? "text-teal-400 bg-teal-950/20" : "text-teal-700 bg-teal-50/50")
+                          : (isDark ? "text-slate-300" : "text-slate-650")
+                      }`}
+                    >
+                      <span className={`font-extrabold ${isDark ? "text-teal-400" : "text-teal-605"}`}>{c.symbol}</span>
+                      <span className="truncate">{c.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </header>
 
         {/* Scrollable Main Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-10 overflow-y-visible lg:overflow-y-auto relative z-10 w-full flex flex-col gap-8">
+        <main className="flex-1 min-w-0 max-w-full p-4 sm:p-6 lg:p-10 overflow-y-visible lg:overflow-y-auto overflow-x-hidden relative z-10 w-full flex flex-col gap-8">
           
           {/* Stats metrics widgets row */}
           {pathname === "/admin" && (
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className={statsCardClass}>
-                <span className={statsTitleClass}>Active Talent Pool</span>
+                <span className={statsTitleClass}>{t("admin_active_talent_pool", "Active Talent Pool")}</span>
                 <div className="flex flex-col mt-1.5">
                   <span className={statsValueClass}>
                     {usersList.filter((u: any) => u.freelancer_onboarding).length}
                   </span>
-                  <span className="text-[10px] text-emerald-600 font-bold mt-1">Registered Contractors</span>
+                  <span className="text-[10px] text-emerald-600 font-bold mt-1">{t("admin_registered_contractors", "Registered Contractors")}</span>
                 </div>
               </div>
               
               <div className={statsCardClass}>
-                <span className={statsTitleClass}>Vetting Applications</span>
+                <span className={statsTitleClass}>{t("admin_vetting_applications", "Vetting Applications")}</span>
                 <div className="flex flex-col mt-1.5">
                   <span className={statsValueClass}>{pendingVettingCount}</span>
-                  <span className={statsSubValueClass + " mt-1"}>in review queue</span>
+                  <span className={statsSubValueClass + " mt-1"}>{t("admin_in_review_queue", "in review queue")}</span>
                 </div>
               </div>
 
               <div className={statsCardClass}>
-                <span className={statsTitleClass}>Total User Accounts</span>
+                <span className={statsTitleClass}>{t("admin_total_user_accounts", "Total User Accounts")}</span>
                 <div className="flex flex-col mt-1.5">
                   <span className={statsValueClass}>{usersList?.length || 0}</span>
-                  <span className={statsSubValueClass + " mt-1"}>registered members</span>
+                  <span className={statsSubValueClass + " mt-1"}>{t("admin_registered_members", "registered members")}</span>
                 </div>
               </div>
 
               <div className={statsCardClass}>
-                <span className={statsTitleClass}>Dispute Cases</span>
+                <span className={statsTitleClass}>{t("admin_dispute_cases", "Dispute Cases")}</span>
                 <div className="flex flex-col mt-1.5">
                   <span className={statsValueClass}>{activeDisputesCount}</span>
                   <span className={`text-[10px] font-bold mt-1 ${activeDisputesCount > 0 ? "text-rose-500" : (isDark ? "text-slate-400" : "text-slate-500")}`}>
-                    {activeDisputesCount > 0 ? "requires resolution" : "clear slate"}
+                    {activeDisputesCount > 0 ? t("admin_requires_resolution", "requires resolution") : t("admin_clear_slate", "clear slate")}
                   </span>
                 </div>
               </div>
@@ -970,7 +1095,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           )}
 
           {/* Child pages content */}
-          <section className="flex-1">
+          <section className="flex-1 min-w-0 max-w-full w-full">
             {children}
           </section>
 

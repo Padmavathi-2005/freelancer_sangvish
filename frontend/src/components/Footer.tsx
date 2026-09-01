@@ -91,15 +91,15 @@ export default function Footer({ transparent = false }: FooterProps) {
       title: t("footer_connect", "Connect"),
       links: [
         { label: t("footer_newsletter", "Newsletter"), href: "/newsletter" },
-        { label: "Instagram", href: "/download" },
-        { label: "LinkedIn", href: "/download" },
+        { label: t("instagram", "Instagram"), href: "/download" },
+        { label: t("linkedin", "LinkedIn"), href: "/download" },
       ],
     },
     mobileApp: {
       title: t("footer_mobile_app", "Mobile App"),
       links: [
-        { label: "App Store", href: "/download" },
-        { label: "Google Play", href: "/download" },
+        { label: t("app_store", "App Store"), href: "/download" },
+        { label: t("google_play", "Google Play"), href: "/download" },
       ],
     },
   };
@@ -116,7 +116,7 @@ export default function Footer({ transparent = false }: FooterProps) {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-8 pt-4">
           
           {/* Logo & Brand Copy Column */}
-          <div className="md:col-span-5 flex flex-col gap-4 text-left">
+          <div className="md:col-span-5 flex flex-col gap-4 text-left rtl:text-right items-start rtl:items-end">
             <a href="/" className="inline-flex items-center gap-2 select-none w-fit">
               <img
                 src={resolveLogoUrl(siteLogoDark || siteLogo || "/logo.png")}
@@ -137,11 +137,11 @@ export default function Footer({ transparent = false }: FooterProps) {
           {/* Directory Links Columns */}
           <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-10">
             {Object.entries(footerLinks).map(([key, group]) => (
-              <div key={key} className="flex flex-col text-left">
+              <div key={key} className="flex flex-col text-left rtl:text-right items-start rtl:items-end">
                 <h3 className="font-black text-white text-xs sm:text-sm tracking-widest uppercase mb-5 font-display select-none">
                   {group.title}
                 </h3>
-                <ul className="flex flex-col gap-3 text-xs sm:text-sm text-slate-300 font-semibold font-sans">
+                <ul className="flex flex-col gap-3 text-xs sm:text-sm text-slate-300 font-semibold font-sans items-start rtl:items-end">
                   {group.links.map((link, i) => (
                     <li key={i}>
                       <a

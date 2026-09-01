@@ -9,13 +9,13 @@ import {
   FiSearch, 
   FiExternalLink, 
   FiAlertCircle, 
-  FiRefreshCw, 
   FiInbox,
   FiX,
   FiLoader,
   FiDownload
 } from "react-icons/fi";
 import { API_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface Application {
   id: number;
@@ -33,6 +33,7 @@ interface CareerApplicationsTabProps {
 }
 
 export default function CareerApplicationsTab({ isDark = false }: CareerApplicationsTabProps) {
+  const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,37 +67,37 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
         const data = await res.json();
         setApplications(data);
       } else {
-        setError("Failed to fetch career applications.");
+        setError(t("admin_loading_career_applications", "Failed to fetch career applications."));
       }
     } catch {
-      setError("Network error while connecting to server.");
+      setError(t("admin_failed_connect_server", "Network error while connecting to server."));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchApplications();
   }, [fetchApplications]);
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this career application?")) return;
+    if (!window.confirm(t("admin_confirm_delete_application", "Are you sure you want to delete this career application?"))) return;
     try {
       const res = await fetch(`${API_URL}/admin/careers/applications/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       if (res.ok) {
-        showToast("Application deleted successfully.");
+        showToast(t("admin_application_deleted_success", "Application deleted successfully."));
         setApplications((prev) => prev.filter((app) => app.id !== id));
         if (selectedApp?.id === id) {
           setSelectedApp(null);
         }
       } else {
-        showToast("Failed to delete application.", "error");
+        showToast(t("admin_failed_delete_application", "Failed to delete application."), "error");
       }
     } catch {
-      showToast("Network error deleting application.", "error");
+      showToast(t("admin_network_error_delete_application", "Network error deleting application."), "error");
     }
   };
 
@@ -126,7 +127,7 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
   if (!mounted) return null;
 
   return (
-    <div className="space-y-6 w-full animate-fadeIn text-left">
+    <div className="space-y-6 w-full animate-fadeIn text-left rtl:text-right">
       {/* Toast Notification */}
       {toast && (
         <div className="fixed bottom-5 right-5 z-[9999] flex items-center gap-2.5 px-4.5 py-3 rounded-xl shadow-lg border animate-slideUp bg-white text-slate-800 border-slate-200">
@@ -139,24 +140,12 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className={`text-xl font-black ${isDark ? "text-slate-100" : "text-slate-800"}`}>
-            Career Applications
+            {t("admin_career_applications", "Career Applications")}
           </h2>
           <p className={`text-xs ${isDark ? "text-slate-400" : "text-slate-500"} mt-1 font-semibold`}>
-            Manage job applications, review CVs, and assess candidates.
+            {t("admin_career_applications_desc", "Manage job applications, review CVs, and assess candidates.")}
           </p>
         </div>
-        
-        <button
-          onClick={fetchApplications}
-          className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-            isDark 
-              ? "bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800" 
-              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          <FiRefreshCw className={loading ? "animate-spin" : ""} />
-          Refresh
-        </button>
       </div>
 
       {/* Filters Bar */}
@@ -167,10 +156,10 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
           <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search candidates by name, email, cover letter..."
+            placeholder={t("admin_search_candidates_placeholder", "Search candidates by name, email, cover letter...")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none transition-all ${
+            className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs font-semibold focus:outline-none transition-all text-left rtl:text-right ${
               isDark 
                 ? "bg-slate-900 border-slate-800 text-slate-200 focus:border-teal-600" 
                 : "bg-slate-50 border-slate-200 focus:bg-white focus:border-teal-500"
@@ -180,7 +169,7 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
 
         <div className="flex items-center gap-3 w-full md:w-auto">
           <label className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-slate-400" : "text-slate-505"}`}>
-            Position:
+            {t("admin_position_filter_label", "Position:")}
           </label>
           <select
             value={roleFilter}
@@ -191,7 +180,7 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
                 : "bg-slate-50 border-slate-200 focus:bg-white"
             }`}
           >
-            <option value="All">All Positions</option>
+            <option value="All">{t("admin_all_positions", "All Positions")}</option>
             {uniqueRoles.map((r) => (
               <option key={r} value={r}>{r}</option>
             ))}
@@ -204,7 +193,7 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
         <div className="py-20 flex flex-col items-center justify-center gap-3">
           <FiLoader className="w-8 h-8 text-teal-600 animate-spin" />
           <p className={`text-xs font-bold ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-            Loading career applications...
+            {t("admin_loading_career_applications", "Loading career applications...")}
           </p>
         </div>
       ) : error ? (
@@ -215,9 +204,9 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
           <span className="text-sm font-bold">{error}</span>
           <button 
             onClick={fetchApplications}
-            className="mt-2 text-xs font-bold text-teal-600 hover:underline"
+            className="mt-2 text-xs font-bold text-teal-600 hover:underline border-0 bg-transparent cursor-pointer"
           >
-            Try Again
+            {t("admin_try_again_btn", "Try Again")}
           </button>
         </div>
       ) : filteredApps.length === 0 ? (
@@ -226,9 +215,9 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
         }`}>
           <FiInbox className="w-10 h-10 text-slate-350" />
           <div>
-            <p className="text-sm font-black">No Applications Found</p>
+            <p className="text-sm font-black">{t("admin_no_applications_found", "No Applications Found")}</p>
             <p className="text-[11px] font-semibold text-slate-400 mt-1">
-              {applications.length === 0 ? "No candidates have submitted their CVs yet." : "No applications match your search filters."}
+              {applications.length === 0 ? t("admin_no_candidates_cvs_yet", "No candidates have submitted their CVs yet.") : t("admin_no_applications_fit_filters", "No applications match your search filters.")}
             </p>
           </div>
         </div>
@@ -237,17 +226,17 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
           isDark ? "border-slate-800 bg-slate-950" : "border-slate-200/80 bg-white"
         }`}>
           <div className="overflow-x-auto w-full">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left rtl:text-right border-collapse">
               <thead>
                 <tr className={`border-b text-[10px] font-bold uppercase tracking-wider select-none ${
                   isDark ? "border-slate-800 bg-slate-900/60 text-slate-400" : "border-slate-100 bg-slate-50/50 text-slate-505"
                 }`}>
-                  <th className="py-3.5 px-4.5 font-bold">Candidate</th>
-                  <th className="py-3.5 px-4.5 font-bold">Target Position</th>
-                  <th className="py-3.5 px-4.5 font-bold">Phone Number</th>
-                  <th className="py-3.5 px-4.5 font-bold">Submission Date</th>
-                  <th className="py-3.5 px-4.5 font-bold">CV / Resume</th>
-                  <th className="py-3.5 px-4.5 font-bold text-center">Actions</th>
+                  <th className="py-3.5 px-4.5 font-bold text-left rtl:text-right">{t("admin_candidate_header", "Candidate")}</th>
+                  <th className="py-3.5 px-4.5 font-bold text-left rtl:text-right">{t("admin_target_position_header", "Target Position")}</th>
+                  <th className="py-3.5 px-4.5 font-bold text-left rtl:text-right">{t("admin_phone_number_header", "Phone Number")}</th>
+                  <th className="py-3.5 px-4.5 font-bold text-left rtl:text-right">{t("admin_submission_date_header", "Submission Date")}</th>
+                  <th className="py-3.5 px-4.5 font-bold text-left rtl:text-right">{t("admin_cv_resume_header", "CV / Resume")}</th>
+                  <th className="py-3.5 px-4.5 font-bold text-center">{t("actions", "Actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -258,25 +247,25 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
                       isDark ? "text-slate-300" : "text-slate-700"
                     }`}
                   >
-                    <td className="py-3.5 px-4.5">
+                    <td className="py-3.5 px-4.5 text-left rtl:text-right">
                       <div>
                         <span className="font-extrabold text-slate-800 dark:text-slate-100 block">
                           {app.name}
                         </span>
-                        <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
+                        <span className="text-[10px] text-slate-400 font-semibold block mt-0.5 animate-pulse">
                           {app.email}
                         </span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4.5">
+                    <td className="py-3.5 px-4.5 text-left rtl:text-right">
                       <span className="inline-block whitespace-nowrap bg-teal-50 dark:bg-teal-950/45 border border-teal-100 dark:border-teal-900 text-teal-800 dark:text-teal-400 px-2.5 py-0.5 rounded-full font-bold text-[10px]">
                         {app.role}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4.5 text-slate-500 dark:text-slate-400">
+                    <td className="py-3.5 px-4.5 text-slate-500 dark:text-slate-400 text-left rtl:text-right">
                       {app.phone || "—"}
                     </td>
-                    <td className="py-3.5 px-4.5 text-slate-400 font-semibold text-[10px]">
+                    <td className="py-3.5 px-4.5 text-slate-400 font-semibold text-[10px] text-left rtl:text-right">
                       <div className="flex items-center gap-1.5">
                         <FiClock />
                         {new Date(app.created_at).toLocaleDateString(undefined, {
@@ -288,7 +277,7 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
                         })}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4.5">
+                    <td className="py-3.5 px-4.5 text-left rtl:text-right">
                       {app.resume_url ? (
                         <a
                           href={getResumeLink(app.resume_url)}
@@ -297,25 +286,25 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
                           className="inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 hover:underline font-bold text-[11px]"
                         >
                           <FiFileText />
-                          <span>View Resume</span>
+                          <span>{t("admin_view_resume_btn", "View Resume")}</span>
                           <FiExternalLink className="w-3 h-3" />
                         </a>
                       ) : (
-                        <span className="text-slate-400 italic">No File</span>
+                        <span className="text-slate-400 italic">{t("admin_no_file", "No File")}</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-4.5">
+                    <td className="py-3.5 px-4.5 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => setSelectedApp(app)}
-                          className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold transition-all cursor-pointer"
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold transition-all cursor-pointer border-0"
                         >
-                          View Details
+                          {t("admin_view_details_btn", "View Details")}
                         </button>
                         <button
                           onClick={() => handleDelete(app.id)}
-                          className="p-1.5 rounded-lg border border-slate-200/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-450 hover:text-rose-600 transition-all cursor-pointer"
-                          title="Delete application"
+                          className="p-1.5 rounded-lg border border-slate-200/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-slate-455 hover:text-rose-600 transition-all cursor-pointer bg-transparent"
+                          title={t("admin_delete_application_title", "Delete application")}
                         >
                           <FiTrash2 className="w-4 h-4" />
                         </button>
@@ -332,12 +321,12 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
       {/* DETAIL MODAL OVERLAY */}
       {selectedApp && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-[10000] flex items-center justify-center p-4">
-          <div className={`rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border relative animate-scaleUp text-left ${
+          <div className={`rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border relative animate-scaleUp text-left rtl:text-right ${
             isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-800"
           }`}>
             <button
               onClick={() => setSelectedApp(null)}
-              className="absolute top-4 right-4 p-2 rounded-xl text-slate-405 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              className="absolute top-4 right-4 p-2 rounded-xl text-slate-405 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer border-0 bg-transparent"
             >
               <FiX className="w-5 h-5" />
             </button>
@@ -345,31 +334,31 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
             <div className="space-y-6">
               <div>
                 <span className="bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-400 text-[10px] font-black tracking-wider uppercase py-1 px-3.5 rounded-full select-none">
-                  Application Details
+                  {t("admin_application_details_badge", "Application Details")}
                 </span>
                 <h3 className="text-xl font-black mt-3 leading-tight">{selectedApp.name}</h3>
                 <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                  Submitted on {new Date(selectedApp.created_at).toLocaleString()}
+                  {t("admin_submitted_on_label", "Submitted on")} {new Date(selectedApp.created_at).toLocaleString()}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-y py-4 border-slate-100 dark:border-slate-800">
                 <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Email Address</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t("email_address", "Email Address")}</span>
                   <a href={`mailto:${selectedApp.email}`} className="text-xs font-bold text-teal-600 hover:underline">
                     {selectedApp.email}
                   </a>
                 </div>
                 <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Phone Number</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t("admin_phone_number_label", "Phone Number")}</span>
                   <span className="text-xs font-bold">{selectedApp.phone || "—"}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Target Position</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t("admin_target_position_label", "Target Position")}</span>
                   <span className="text-xs font-extrabold text-slate-700 dark:text-slate-200">{selectedApp.role}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Resume Attachment</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t("admin_resume_attachment_label", "Resume Attachment")}</span>
                   {selectedApp.resume_url ? (
                     <a
                       href={getResumeLink(selectedApp.resume_url)}
@@ -379,29 +368,29 @@ export default function CareerApplicationsTab({ isDark = false }: CareerApplicat
                       className="inline-flex items-center gap-1.5 text-xs font-bold text-teal-600 hover:underline mt-0.5"
                     >
                       <FiDownload />
-                      <span>Download CV File</span>
+                      <span>{t("admin_download_cv_file", "Download CV File")}</span>
                     </a>
                   ) : (
-                    <span className="text-xs italic text-slate-400">None</span>
+                    <span className="text-xs italic text-slate-400">{t("admin_none_label", "None")}</span>
                   )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Cover Letter / Message</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">{t("admin_cover_letter_message_label", "Cover Letter / Message")}</span>
                 <div className={`p-4 rounded-xl text-xs font-semibold leading-relaxed whitespace-pre-wrap max-h-48 overflow-y-auto ${
                   isDark ? "bg-slate-950 text-slate-300" : "bg-slate-50 text-slate-655"
                 }`}>
-                  {selectedApp.cover_letter || <span className="italic text-slate-450">No cover letter message provided.</span>}
+                  {selectedApp.cover_letter || <span className="italic text-slate-450">{t("admin_no_cover_letter_provided", "No cover letter message provided.")}</span>}
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-end pt-2 rtl:justify-start">
                 <button
                   onClick={() => setSelectedApp(null)}
-                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-250 hover:text-slate-800 text-xs font-bold rounded-xl transition cursor-pointer"
+                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-250 hover:text-slate-800 text-xs font-bold rounded-xl transition cursor-pointer border-0"
                 >
-                  Close Details
+                  {t("admin_close_details_btn", "Close Details")}
                 </button>
               </div>
             </div>

@@ -1045,31 +1045,49 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
   };
 
   const renderPackagePricingCard = () => (
-    <div className="bg-white border border-slate-200 shadow-lg rounded-xl overflow-hidden flex flex-col text-left">
+    <div className="bg-white border border-slate-200 shadow-lg rounded-xl overflow-hidden flex flex-col text-left rtl:text-right">
       {/* Package Tabs */}
-      {hasCustomPlans && (
-        <div className="flex border-b border-slate-155 bg-slate-50/80">
-          {parsedPlans.map((p: any) => (
-            <button
-              key={p.name}
-              onClick={() => setActivePackageTab(p.name)}
-              className={`flex-1 text-center py-3.5 text-xs font-black capitalize border-b-2 transition-all cursor-pointer ${
-                activePackageTab.toLowerCase() === p.name.toLowerCase()
-                  ? "border-teal-700 text-teal-700 bg-white"
-                  : "border-transparent text-slate-400 hover:text-slate-700"
-              }`}
-            >
-              {p.title?.trim() ? p.title : `${p.name} Package`}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex border-b border-slate-155 bg-slate-50/80">
+        {(hasCustomPlans ? parsedPlans : [{ name: "basic" }, { name: "popular" }, { name: "premium" }]).map((p: any) => (
+          <button
+            key={p.name}
+            onClick={() => setActivePackageTab(p.name)}
+            className={`flex-1 text-center py-3.5 text-xs font-black capitalize border-b-2 transition-all cursor-pointer ${
+              activePackageTab.toLowerCase() === p.name.toLowerCase()
+                ? "border-teal-700 text-teal-700 bg-white"
+                : "border-transparent text-slate-400 hover:text-slate-700"
+            }`}
+          >
+            {p.title?.trim()
+              ? p.title
+              : p.name.toLowerCase() === "basic"
+              ? t("basic_package_tab", "Basic Package")
+              : p.name.toLowerCase() === "popular"
+              ? t("standard_package_tab", "Standard Package")
+              : p.name.toLowerCase() === "premium"
+              ? t("premium_package_tab", "Premium Package")
+              : t(p.name + "_package", `${p.name} Package`)}
+          </button>
+        ))}
+      </div>
 
       {/* Package Content */}
       <div className="p-6 flex flex-col gap-5">
         <div className="flex flex-row justify-between items-start gap-3 border-b border-slate-100/80 pb-3">
           <span className="text-slate-400 block font-bold uppercase tracking-widest text-[9px] shrink-0 pt-0.5 max-w-[50%] truncate">
-            {hasCustomPlans && activePlan ? (activePlan.title?.trim() ? activePlan.title : `${activePlan.name} Package`) : (activePackageTab === "popular" ? "🚀 Recommended TIER" : t("pricing_package", "Pricing Package"))}
+            {hasCustomPlans && activePlan
+              ? activePlan.title?.trim()
+                ? activePlan.title
+                : activePlan.name.toLowerCase() === "basic"
+                ? t("basic_package_tab", "Basic Package")
+                : activePlan.name.toLowerCase() === "popular"
+                ? t("standard_package_tab", "Standard Package")
+                : activePlan.name.toLowerCase() === "premium"
+                ? t("premium_package_tab", "Premium Package")
+                : t(activePlan.name + "_package", `${activePlan.name} Package`)
+              : activePackageTab === "popular"
+              ? t("recommended_tier", "🚀 Recommended TIER")
+              : t("pricing_package", "Pricing Package")}
           </span>
           <div className="text-right flex flex-col items-end shrink-0 min-w-0">
             {hasPlanDiscount ? (
@@ -1089,8 +1107,8 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wide block mt-1 leading-tight">
               {currency} 
               {hasPlanDiscount 
-                ? ` (${planDiscountPercent}% off)` 
-                : (gig.discount_percent && parseFloat(gig.discount_percent) > 0 ? ` (${parseFloat(gig.discount_percent)}% off)` : "")
+                ? ` (${planDiscountPercent}% ${t("off_label", "off")})` 
+                : (gig.discount_percent && parseFloat(gig.discount_percent) > 0 ? ` (${parseFloat(gig.discount_percent)}% ${t("off_label", "off")})` : "")
               }
             </span>
           </div>
@@ -1098,17 +1116,36 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
 
         <div className="text-xs font-semibold text-slate-550 leading-relaxed">
           {hasCustomPlans && activePlan ? (
-            <p className="font-bold text-slate-700">{activePlan.description || `${activePlan.name} package deliverables.`}</p>
+            <p className="font-bold text-slate-700">
+              {activePlan.description ||
+                t("package_deliverables_desc", "{{name}} package deliverables.").replace("{{name}}", activePlan.name)}
+            </p>
           ) : (
             <>
               {activePackageTab === "basic" && (
-                <p>{stripHtml(gig.description) || "Standard delivery package of the service, containing basic setup, core deliverables, and initial configuration."}</p>
+                <p>
+                  {stripHtml(gig.description) ||
+                    t(
+                      "basic_pkg_desc",
+                      "Standard delivery package of the service, containing basic setup, core deliverables, and initial configuration."
+                    )}
+                </p>
               )}
               {activePackageTab === "popular" && (
-                <p>Recommended complete service package, including intermediate features, custom revisions, and priority support.</p>
+                <p>
+                  {t(
+                    "popular_pkg_desc",
+                    "Recommended complete service package, including intermediate features, custom revisions, and priority support."
+                  )}
+                </p>
               )}
               {activePackageTab === "premium" && (
-                <p>Elite full-scale service delivery package, including comprehensive source deliverables, maximum revisions, and post-delivery assistance.</p>
+                <p>
+                  {t(
+                    "premium_pkg_desc",
+                    "Elite full-scale service delivery package, including comprehensive source deliverables, maximum revisions, and post-delivery assistance."
+                  )}
+                </p>
               )}
             </>
           )}
@@ -1222,12 +1259,12 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative" suppressHydrationWarning>
+    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 font-sans w-full max-w-full relative text-left rtl:text-right" suppressHydrationWarning>
       <Header />
 
       {/* Floating Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 inset-x-4 sm:left-auto sm:right-6 max-w-md mx-auto sm:mx-0 z-[99999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-200 bg-white/95 backdrop-blur-md animate-slideIn text-left">
+        <div className="fixed bottom-6 inset-x-4 sm:left-auto sm:right-6 max-w-md mx-auto sm:mx-0 z-[99999] flex items-center gap-3 px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-200 bg-white/95 backdrop-blur-md animate-slideIn text-left rtl:text-right">
           {toast.type === "success" ? (
             <FiCheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
           ) : (
@@ -1250,7 +1287,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             }}
             className="flex items-center gap-1.5 text-xs font-extrabold text-slate-600 hover:text-teal-750 transition-colors cursor-pointer"
           >
-            <FiArrowLeft className="w-4 h-4" />
+            <FiArrowLeft className="w-4 h-4 rtl-flip" />
             <span>{t("btn_back", "Back")}</span>
           </button>
           <div className="flex items-center gap-2 text-xs font-extrabold text-slate-400 overflow-x-auto whitespace-nowrap py-0.5">
@@ -1295,11 +1332,15 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                   ? parseFloat(gig.reviews_avg_rating).toFixed(1) 
                   : "0.0"}
               </span>
-              <span className="text-slate-400 font-medium">({gig.reviews_count || 0} {t("reviews", "reviews")})</span>
+              <span className="text-slate-400 font-medium">
+                {t("reviews_count_format", "({{count}} reviews)").replace("{{count}}", (gig.reviews_count || 0).toString())}
+              </span>
             </div>
             <div className="h-4 w-px bg-slate-200 hidden sm:block" />
             <div>
-              <span>{gig.views || 0} {t("views", "views")}</span>
+              <span>
+                {t("views_count_format", "{{count}} views").replace("{{count}}", (gig.views || 0).toString())}
+              </span>
             </div>
             {!isOwnGig && (
               <>
@@ -1370,9 +1411,9 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                    )}
                  </>
                ) : (
-                 <div className="w-full aspect-video bg-gradient-to-tr from-teal-700/5 to-cyan-500/5 flex flex-col items-center justify-center text-slate-400 gap-1 rounded-xl border border-slate-200">
+                 <div className="w-full aspect-video bg-gradient-to-tr from-teal-700/5 to-cyan-500/5 flex flex-col items-center justify-center text-slate-400 gap-1 rounded-xl border border-slate-200 text-left rtl:text-right">
                    <FiShoppingBag className="w-12 h-12 text-slate-300 mb-2" />
-                   <span className="font-extrabold text-slate-500 uppercase tracking-widest text-xs">Premium Service Showcase</span>
+                   <span className="font-extrabold text-slate-500 uppercase tracking-widest text-xs">{t("service_preview", "Service Preview")}</span>
                  </div>
                )}
              </div>
@@ -1380,12 +1421,12 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
              <hr className="border-t border-slate-200/60" />
 
              {/* Service Description */}
-             <div className="flex flex-col gap-4 text-left">
+             <div className="flex flex-col gap-4 text-left rtl:text-right">
                <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3">
                  {t("service_description", "Service Description")}
                </h2>
                <div 
-                 className="text-sm leading-relaxed text-slate-600 font-medium prose prose-slate max-w-full text-left"
+                 className="text-sm leading-relaxed text-slate-600 font-medium prose prose-slate max-w-full text-left rtl:text-right"
                  dangerouslySetInnerHTML={{ __html: gig.description }}
                />
                
@@ -1418,7 +1459,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                  <hr className="border-t border-slate-200/60" />
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                    {gig.video_url && (
-                     <div className="text-left">
+                     <div className="text-left rtl:text-right">
                        <h3 className="text-sm font-black text-slate-900 mb-3 uppercase tracking-wider">{t("showcase_video", "Showcase Video")}</h3>
                        <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-200 shadow-inner relative group">
                          <video 
@@ -1442,13 +1483,13 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                      </div>
                    )}
                    {gigDocuments.length > 0 && (
-                     <div className="text-left">
+                     <div className="text-left rtl:text-right">
                        <h3 className="text-sm font-black text-slate-900 mb-3 uppercase tracking-wider">{t("showcase_documents", "Showcase Documents")}</h3>
                        <div className="flex flex-col gap-2.5">
                          {gigDocuments.map((doc: string, idx: number) => {
                            const name = doc.split("/").pop() || `document_${idx + 1}`;
                            const isPdf = name.toLowerCase().endsWith(".pdf");
-                           const fileType = isPdf ? "PDF Document" : "Attachment File";
+                           const fileType = isPdf ? t("pdf_document_type", "PDF Document") : t("attachment_file_type", "Attachment File");
                            return (
                              <a 
                                key={idx} 
@@ -1460,7 +1501,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 group-hover/doc:scale-105 transition-transform ${isPdf ? "bg-rose-500/10 text-rose-605" : "bg-teal-500/10 text-teal-700"}`}>
                                  <FiFileText className="w-5 h-5" />
                                </div>
-                               <div className="flex-1 min-w-0 text-left">
+                               <div className="flex-1 min-w-0 text-left rtl:text-right">
                                  <p className="text-xs font-extrabold text-slate-700 truncate group-hover/doc:text-teal-750 transition-colors" title={name}>
                                    {name}
                                  </p>
@@ -1482,7 +1523,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
              <hr className="border-t border-slate-200/60" />
  
              {/* FAQ Accordion Section */}
-             <div className="flex flex-col gap-4 text-left">
+             <div className="flex flex-col gap-4 text-left rtl:text-right">
                <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3">
                  {t("faq_title", "Frequently Asked Questions")}
                </h2>
@@ -1513,55 +1554,57 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
              <hr className="border-t border-slate-200/60" />
  
              {/* Customer Reviews Section */}
-             <div className="flex flex-col gap-4 text-left">
-               <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
-                 <span>{t("customer_reviews", "Customer Reviews")}</span>
-                 <span className="text-xs font-bold text-slate-400">
-                   {gig.reviews_count || 0} {t("reviews", "reviews")}
-                 </span>
-               </h2>
-               {gig.reviews && gig.reviews.length > 0 ? (
-                 <div className="flex flex-col gap-6 divide-y divide-slate-100">
-                   {gig.reviews.map((rev: any, idx: number) => (
-                     <div key={rev.review_id} className={`pt-6 ${idx === 0 ? 'pt-0' : ''}`}>
-                       <div className="flex items-center gap-3">
-                         {rev.client_image ? (
-                           <img
-                             src={resolveMediaUrl(rev.client_image)}
-                             alt={rev.client_name}
-                             className="w-10 h-10 rounded-full object-cover"
-                           />
-                         ) : (
-                           <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-sm text-slate-600">
-                             {rev.client_name.substring(0, 2).toUpperCase()}
-                           </div>
-                         )}
-                         <div>
-                           <p className="text-xs font-black text-slate-800">{rev.client_name}</p>
-                           <div className="flex items-center gap-1.5 mt-0.5">
-                             <div className="flex text-amber-400">
-                               {Array.from({ length: Math.round(parseFloat(rev.rating)) }).map((_, i) => (
-                                 <FiStar key={i} className="w-3 h-3 fill-current" />
-                               ))}
-                             </div>
-                             <span className="text-[10px] text-slate-455 font-bold">
-                               {new Date(rev.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
-                             </span>
-                           </div>
-                         </div>
-                       </div>
-                       <p className="text-xs text-slate-650 leading-relaxed font-semibold mt-3 bg-slate-50/50 p-3 rounded-xl border border-slate-150/40">
-                         {rev.comment}
-                       </p>
-                     </div>
-                   ))}
-                 </div>
-               ) : (
-                 <div className="text-center py-6 border border-dashed border-slate-150 rounded-xl bg-slate-50/20">
-                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t("no_reviews_yet", "No Reviews Yet")}</p>
-                 </div>
-               )}
-             </div>
+              <div className="flex flex-col gap-4 text-left rtl:text-right">
+                <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+                  <span>{t("customer_reviews", "Customer Reviews")}</span>
+                  <span className="text-xs font-bold text-slate-400">
+                    {t("reviews_count_plain", "{{count}} reviews").replace("{{count}}", (gig.reviews_count || 0).toString())}
+                  </span>
+                </h2>
+                {gig.reviews && gig.reviews.length > 0 ? (
+                  <div className="flex flex-col gap-6 divide-y divide-slate-100">
+                    {gig.reviews.map((rev: any, idx: number) => (
+                      <div key={rev.review_id} className={`pt-6 ${idx === 0 ? 'pt-0' : ''}`}>
+                        <div className="flex items-center gap-3">
+                          {rev.client_image ? (
+                            <img
+                              src={resolveMediaUrl(rev.client_image)}
+                              alt={rev.client_name}
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-sm text-slate-600">
+                              {rev.client_name.substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-xs font-black text-slate-800">
+                              {rev.client_name && rev.client_name.length > 15 ? `${rev.client_name.substring(0, 15)}...` : rev.client_name}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <div className="flex text-amber-400">
+                                {Array.from({ length: Math.round(parseFloat(rev.rating)) }).map((_, i) => (
+                                  <FiStar key={i} className="w-3 h-3 fill-current" />
+                                ))}
+                              </div>
+                              <span className="text-[10px] text-slate-455 font-bold">
+                                {new Date(rev.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-650 leading-relaxed font-semibold mt-3 bg-slate-50/50 p-3 rounded-xl border border-slate-150/40">
+                          {rev.comment}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 border border-dashed border-slate-150 rounded-xl bg-slate-50/20">
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t("no_reviews_yet", "No Reviews Yet")}</p>
+                  </div>
+                )}
+              </div>
 
           </div>
 
@@ -1570,13 +1613,13 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             
             {/* Affiliate Share card */}
             {isAffiliate && (
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left relative overflow-hidden">
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left rtl:text-right relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-3 flex items-center gap-1.5">
-                  <span className="text-emerald-600">★</span> Affiliate Share
+                  {t("affiliate_share_card_title", "★ Affiliate Share")}
                 </h3>
                 <p className="text-[11px] font-semibold text-slate-500 leading-normal">
-                  Share this gig service link. If a client registers and buys this gig service, you will earn a recurring 10% commission on the platform service fee!
+                  {t("affiliate_share_card_desc", "Share this gig service link. If a client registers and buys this gig service, you will earn a recurring 10% commission on the platform service fee!")}
                 </p>
                 <div className="flex items-center gap-2 bg-slate-100/80 border border-slate-200 rounded-xl p-1.5 pl-3 mt-1">
                   <input
@@ -1592,7 +1635,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                       const link = `${origin || (typeof window !== "undefined" ? window.location.origin : "")}/gigs/${gig?.gig_id}?ref=${userReferralCode || "REF_USER"}`;
                       navigator.clipboard.writeText(link);
                       setCopiedAffiliate(true);
-                      setToast({ type: "success", message: "Affiliate referral link copied!" });
+                      setToast({ type: "success", message: t("affiliate_copied_toast", "Affiliate referral link copied!") });
                       setTimeout(() => setCopiedAffiliate(false), 2000);
                     }}
                     className={`px-3 py-1.5 rounded-lg font-extrabold text-xs transition-all cursor-pointer flex items-center gap-1.5 shrink-0 border-none text-white shadow-xs ${
@@ -1605,12 +1648,12 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                     {copiedAffiliate ? (
                       <>
                         <FiCheck className="w-3.5 h-3.5" />
-                        <span>Copied!</span>
+                        <span>{t("btn_copied", "Copied!")}</span>
                       </>
                     ) : (
                       <>
                         <FiCopy className="w-3.5 h-3.5" />
-                        <span>Copy</span>
+                        <span>{t("btn_copy", "Copy")}</span>
                       </>
                     )}
                   </button>
@@ -1619,7 +1662,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 {/* Direct Social Share Options with Affiliate Link */}
                 <div className="pt-2.5 border-t border-slate-100 flex flex-col gap-2">
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                    Quick Social Share:
+                    {t("quick_social_share", "Quick Social Share:")}
                   </span>
                   <ShareSection
                     type="gig"
@@ -1644,17 +1687,17 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             {premiumUpgradeGig && (
               <div 
                 onClick={() => router.push(`/gigs/${premiumUpgradeGig.slug || premiumUpgradeGig.gig_id}`)}
-                className="bg-gradient-to-br from-amber-50 to-orange-50/70 border border-amber-200 rounded-xl p-5 text-left cursor-pointer hover:shadow-md hover:border-amber-300 transition-all duration-300 select-none group relative overflow-hidden animate-fadeIn"
+                className="bg-gradient-to-br from-amber-50 to-orange-50/70 border border-amber-200 rounded-xl p-5 text-left rtl:text-right cursor-pointer hover:shadow-md hover:border-amber-300 transition-all duration-300 select-none group relative overflow-hidden animate-fadeIn"
               >
                 {/* Micro-glow effect */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-amber-200/10 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-200/20 transition-all duration-500"></div>
 
                 <div className="flex items-center justify-between mb-3.5">
                   <span className="text-[9px] font-black text-amber-800 bg-amber-100/80 border border-amber-200/60 px-2 py-0.5 rounded uppercase tracking-wider flex items-center gap-1 shadow-sm">
-                    💎 Premium Upgrade
+                    {t("premium_upgrade_tag", "💎 Premium Upgrade")}
                   </span>
                   <span className="text-[10px] font-extrabold text-amber-700 bg-amber-100/50 px-2 py-0.5 rounded border border-amber-200/40">
-                    {premiumUpgradeGig.freelancer_plan_name && premiumUpgradeGig.freelancer_plan_name.toLowerCase() === 'enterprise' ? "👑 Elite" : "⚡ Pro"}
+                    {premiumUpgradeGig.freelancer_plan_name && premiumUpgradeGig.freelancer_plan_name.toLowerCase() === 'enterprise' ? t("elite_seller_tag", "👑 Elite") : t("pro_seller_tag", "⚡ Pro")}
                   </span>
                 </div>
                 
@@ -1677,7 +1720,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
             )}
 
             {/* ABOUT THE SELLER CARD */}
-            <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left">
+            <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col gap-4 text-left rtl:text-right">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2">
                 {t("about_the_seller", "About the Seller")}
               </h3>
@@ -1712,7 +1755,9 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                           ? parseFloat(gig.reviews_avg_rating).toFixed(1) 
                           : "0.0"}
                     </span>
-                    <span className="text-slate-400 font-semibold">({gig.reviews_count || 0} {t("reviews", "reviews")})</span>
+                    <span className="text-slate-400 font-semibold">
+                      {t("reviews_count_format", "({{count}} reviews)").replace("{{count}}", (gig.reviews_count || 0).toString())}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1792,7 +1837,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
         </div>
 
         {/* BOTTOM SECTION: SIMILAR GIGS */}
-        <div className="mt-16 border-t border-slate-200 pt-12 text-left">
+        <div className="mt-16 border-t border-slate-200 pt-12 text-left rtl:text-right">
           <div className="flex justify-between items-end mb-8">
             <div>
               <h2 className="text-xl sm:text-2.5xl font-black text-slate-900 leading-tight">
@@ -1846,7 +1891,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-tr from-slate-100 to-slate-200 flex items-center justify-center text-slate-400 select-none text-xs">
-                            💼 Service Preview
+                            💼 {t("service_preview", "Service Preview")}
                           </div>
                         )}
                         
@@ -1867,7 +1912,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                               ? "bg-amber-100/90 text-amber-800 border-amber-250"
                               : "bg-indigo-100/90 text-indigo-800 border-indigo-250"
                           }`}>
-                            {sg.freelancer_plan_name.toLowerCase() === 'enterprise' ? "👑 Elite Seller" : "⚡ Pro Seller"}
+                            {sg.freelancer_plan_name.toLowerCase() === 'enterprise' ? t("elite_seller_badge", "👑 Elite Seller") : t("pro_seller_badge", "⚡ Pro Seller")}
                           </span>
                         )}
                       </div>
@@ -1876,7 +1921,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                         <h3 className="text-xs sm:text-sm font-black text-slate-900 line-clamp-2 leading-snug group-hover:text-teal-900 transition-colors">
                           {sg.title}
                         </h3>
-                        <p className="text-slate-400 text-[9px] font-black block mt-1 uppercase tracking-wider select-none">By {sg.freelancer_name}</p>
+                        <p className="text-slate-400 text-[9px] font-black block mt-1 uppercase tracking-wider select-none">{t("by_author", "By")} {sg.freelancer_name}</p>
                         
                         {/* Rating & Delivery Info Line */}
                         <div className="flex items-center gap-3 mt-3 text-[10px] font-semibold text-slate-400 select-none">
@@ -1888,7 +1933,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                           <div className="w-1 h-1 bg-slate-300 rounded-full" />
                           <div className="flex items-center gap-1">
                             <FiClock className="w-3 h-3 text-slate-400" />
-                            <span>{sg.delivery_days}d delivery</span>
+                            <span>{sg.delivery_days}{t("d_delivery", "d delivery")}</span>
                           </div>
                         </div>
 
@@ -1899,7 +1944,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                     </div>
 
                     <div className="px-5 py-4 bg-slate-50/50 border-t border-slate-100 mt-auto flex items-center justify-between">
-                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-black">Starting At</span>
+                      <span className="text-[10px] uppercase tracking-wider text-slate-400 font-black">{t("starting_at", "Starting At")}</span>
                       <span className="text-sm sm:text-base font-extrabold text-slate-900">
                         {sg.currency_symbol || "$"}{parseFloat(sg.price).toLocaleString()}
                       </span>
@@ -1918,7 +1963,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
       {/* Order Gig Application Modal Portal */}
       {isApplying && createPortal(
         <div className="fixed inset-0 z-[99999] bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left relative max-h-[95vh] flex flex-col">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-2xl overflow-hidden p-6 sm:p-8 animate-fadeIn text-left rtl:text-right relative max-h-[95vh] flex flex-col">
             <button
               onClick={() => {
                 setIsApplying(false);
@@ -1926,38 +1971,38 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 setCustomProposedPrice("");
                 setSelectedAddons([]);
               }}
-              className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-500 hover:text-slate-850 cursor-pointer"
+              className="absolute top-6 right-6 rtl:right-auto rtl:left-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-500 hover:text-slate-850 cursor-pointer"
             >
-              Close
+              {t("btn_close", "Close")}
             </button>
 
-            <div className="border-b border-slate-100 pb-4 pr-16 text-left">
-              <span className="text-[10px] font-bold text-teal-700 tracking-widest uppercase mb-1">Place Service Order</span>
+            <div className="border-b border-slate-100 pb-4 pr-16 rtl:pr-4 rtl:pl-16 text-left rtl:text-right">
+              <span className="text-[10px] font-bold text-teal-700 tracking-widest uppercase mb-1">{t("place_service_order_title", "Place Service Order")}</span>
               <h2 className="text-base font-black text-slate-855 line-clamp-1">{gig.title}</h2>
-              <p className="text-slate-405 text-xs font-semibold mt-1">Service provider: {gig.freelancer_name}</p>
+              <p className="text-slate-405 text-xs font-semibold mt-1">{t("service_provider_label", "Service provider:")} {gig.freelancer_name}</p>
             </div>
 
             <form onSubmit={handleApplyGigSubmit} className="flex-grow flex flex-col overflow-hidden min-h-0">
               {orderError && (
-                <div className="p-3 bg-rose-50 border border-rose-200/60 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 mt-5 text-left">
+                <div className="p-3 bg-rose-50 border border-rose-200/60 text-rose-600 text-xs font-bold rounded-xl flex items-center gap-1.5 shrink-0 mt-5 text-left rtl:text-right">
                   <FiAlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{orderError}</span>
                 </div>
               )}
               {orderSuccess && (
-                <div className="p-3 bg-emerald-50 border border-emerald-250 text-emerald-650 text-xs font-bold rounded-xl animate-pulse flex items-center gap-1.5 shrink-0 mt-5 text-left">
+                <div className="p-3 bg-emerald-50 border border-emerald-250 text-emerald-650 text-xs font-bold rounded-xl animate-pulse flex items-center gap-1.5 shrink-0 mt-5 text-left rtl:text-right">
                   <FiCheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
-                  <span>Order request submitted successfully!</span>
+                  <span>{t("order_success_msg", "Order request submitted successfully!")}</span>
                 </div>
               )}
 
-              <div className="flex-grow overflow-y-auto my-3 flex flex-col gap-4 pr-1.5 min-h-0 text-left">
+              <div className="flex-grow overflow-y-auto my-3 flex flex-col gap-4 pr-1.5 min-h-0 text-left rtl:text-right">
                 
                 {/* Price Details banner with clean single bottom divider line */}
-                <div className="border-b border-slate-200/80 pb-3.5 px-1 flex justify-between items-center text-xs shrink-0 text-left">
+                <div className="border-b border-slate-200/80 pb-3.5 px-1 flex justify-between items-center text-xs shrink-0 text-left rtl:text-right">
                   <div>
                     <span className="text-slate-400 block font-bold uppercase tracking-wider text-[9px]">
-                      Selected Package Price
+                      {t("selected_package_price_label", "Selected Package Price")}
                     </span>
                     <span className="text-sm font-black text-slate-800 mt-0.5 block">
                       {(() => {
@@ -1970,7 +2015,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                                 {gig.currency_symbol || "$"}{originalPrice.toLocaleString()}
                               </span>
                               <span className="text-teal-700 font-black">
-                                {gig.currency_symbol || "$"}{selectedPrice.toLocaleString()} (Proposed)
+                                {gig.currency_symbol || "$"}{selectedPrice.toLocaleString()} ({t("proposed_label", "Proposed")})
                               </span>
                             </>
                           );
@@ -1980,22 +2025,22 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                     </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-slate-400 block font-bold uppercase tracking-wider text-[9px]">Delivery Timeline</span>
-                    <span className="text-slate-800 font-extrabold mt-0.5 block">{getPackageDeliveryDays()} days (with {getPackageRevisions()})</span>
+                    <span className="text-slate-400 block font-bold uppercase tracking-wider text-[9px]">{t("delivery_timeline_label", "Delivery Timeline")}</span>
+                    <span className="text-slate-800 font-extrabold mt-0.5 block">{getPackageDeliveryDays()} {t("days_with", "days (with")} {getPackageRevisions()})</span>
                   </div>
                 </div>
 
                 {/* Price Negotiation Section with clean divider line & live 50% discount validation */}
                 {gig.negotiation && (
-                  <div className="border-b border-slate-200/80 pb-4 pt-1 flex flex-col gap-2 text-left">
+                  <div className="border-b border-slate-200/80 pb-4 pt-1 flex flex-col gap-2 text-left rtl:text-right">
                     <div className="flex justify-between items-center">
-                      <label className="text-xs font-black text-slate-800 block uppercase tracking-wider">Propose a Negotiated Price</label>
+                      <label className="text-xs font-black text-slate-800 block uppercase tracking-wider">{t("propose_negotiated_price", "Propose a Negotiated Price")}</label>
                       <span className="text-[9px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
-                        Max 50% Discount
+                        {t("max_50_discount", "Max 50% Discount")}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-500 font-medium">
-                      Enter your budget offer below (minimum allowed is 50% off original package price):
+                      {t("negotiation_input_desc", "Enter your budget offer below (minimum allowed is 50% off original package price):")}
                     </p>
                     <div className="flex flex-col gap-1.5 mt-0.5">
                       <div className="flex items-center gap-1.5 w-full bg-slate-50 border border-slate-200 focus-within:bg-white focus-within:border-teal-600 rounded-xl px-3 py-2 max-w-xs transition-all">
@@ -2023,26 +2068,26 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                         if (!rawVal) {
                           return (
                             <span className="text-[10px] text-slate-400 font-semibold">
-                              Min offer: {gig.currency_symbol || "$"}{minAllowed.toFixed(2)} · Max offer: {gig.currency_symbol || "$"}{maxAllowed.toFixed(2)}
+                              {t("min_offer", "Min offer:")} {gig.currency_symbol || "$"}{minAllowed.toFixed(2)} · {t("max_offer", "Max offer:")} {gig.currency_symbol || "$"}{maxAllowed.toFixed(2)}
                             </span>
                           );
                         }
 
                         const num = parseFloat(rawVal);
                         if (isNaN(num) || num <= 0) {
-                          return <span className="text-[10px] text-rose-500 font-bold">⚠️ Please enter a valid positive offer amount.</span>;
+                          return <span className="text-[10px] text-rose-500 font-bold">{t("valid_positive_offer_err", "⚠️ Please enter a valid positive offer amount.")}</span>;
                         }
                         if (num < minAllowed) {
                           return (
                             <span className="text-[10px] text-rose-500 font-bold">
-                              ⚠️ Offer cannot be lower than 50% of original price ({gig.currency_symbol || "$"}{minAllowed.toFixed(2)} minimum).
+                              {t("offer_too_low_err", "⚠️ Offer cannot be lower than 50% of original price ({{min}} minimum).").replace("{{min}}", `${gig.currency_symbol || "$"}${minAllowed.toFixed(2)}`)}
                             </span>
                           );
                         }
                         if (num > maxAllowed) {
                           return (
                             <span className="text-[10px] text-rose-500 font-bold">
-                              ⚠️ Offer cannot exceed package price ({gig.currency_symbol || "$"}{maxAllowed.toFixed(2)} maximum).
+                              {t("offer_too_high_err", "⚠️ Offer cannot exceed package price ({{max}} maximum).").replace("{{max}}", `${gig.currency_symbol || "$"}${maxAllowed.toFixed(2)}`)}
                             </span>
                           );
                         }
@@ -2050,7 +2095,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                         const discountPct = Math.round(((basePkgPrice - num) / basePkgPrice) * 100);
                         return (
                           <span className="text-[10px] text-emerald-600 font-bold">
-                            ✓ Valid offer ({discountPct}% discount · saves {gig.currency_symbol || "$"}{(basePkgPrice - num).toFixed(2)})
+                            {t("valid_offer_msg", "✓ Valid offer ({{pct}}% discount · saves {{save}})").replace("{{pct}}", discountPct.toString()).replace("{{save}}", `${gig.currency_symbol || "$"}${(basePkgPrice - num).toFixed(2)}`)}
                           </span>
                         );
                       })()}
@@ -2068,11 +2113,11 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                   if (!Array.isArray(parsedAddons) || parsedAddons.length === 0) return null;
                   
                   return (
-                    <div className="flex flex-col gap-2.5 border-b border-slate-200/80 pb-4 pt-1 text-left animate-fadeIn">
+                    <div className="flex flex-col gap-2.5 border-b border-slate-200/80 pb-4 pt-1 text-left rtl:text-right animate-fadeIn">
                       <div>
-                        <label className="text-xs font-black text-slate-800 uppercase tracking-wide">Customize Order with Extras</label>
+                        <label className="text-xs font-black text-slate-800 uppercase tracking-wide">{t("customize_order_extras", "Customize Order with Extras")}</label>
                         <p className="text-[10px] text-slate-400 font-semibold mt-0.5 leading-relaxed">
-                          Select optional add-ons to upgrade this package.
+                          {t("select_addons_desc", "Select optional add-ons to upgrade this package.")}
                         </p>
                       </div>
                       
@@ -2083,11 +2128,11 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                             <div
                               key={addon.id || idx}
                               onClick={() => {
-                                if (isSelected) {
-                                  setSelectedAddons(selectedAddons.filter(a => !(a.id === addon.id || (a.title === addon.title && a.price === addon.price))));
-                                } else {
-                                  setSelectedAddons([...selectedAddons, addon]);
-                                }
+                                  if (isSelected) {
+                                    setSelectedAddons(selectedAddons.filter(a => !(a.id === addon.id || (a.title === addon.title && a.price === addon.price))));
+                                  } else {
+                                    setSelectedAddons([...selectedAddons, addon]);
+                                  }
                               }}
                               className={`flex items-center justify-between p-2.5 rounded-xl border transition-all duration-200 cursor-pointer select-none ${
                                 isSelected
@@ -2116,27 +2161,27 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 })()}
 
                 {/* Payment info notice */}
-                <div className="flex items-start gap-3 bg-blue-50/80 border border-blue-200/80 rounded-xl p-4 text-left">
+                <div className="flex items-start gap-3 bg-blue-50/80 border border-blue-200/80 rounded-xl p-4 text-left rtl:text-right">
                   <FiInfo className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-black text-blue-800">Payment is requested after the freelancer accepts</p>
+                    <p className="text-xs font-black text-blue-800">{t("payment_notice_title", "Payment is requested after the freelancer accepts")}</p>
                     <p className="text-[10px] text-blue-705 font-semibold mt-0.5 leading-relaxed">
-                      No charge is made when you place this order. Once the freelancer accepts, you'll be prompted to pay via <strong>Stripe</strong>, <strong>PayPal</strong>, or your <strong>Wallet</strong> from My Orders.
+                      {t("payment_notice_desc", "No charge is made when you place this order. Once the freelancer accepts, you'll be prompted to pay via Stripe, PayPal, or your Wallet from My Orders.")}
                     </p>
                   </div>
                 </div>
 
                 {/* Extra Features / Add-ons Builder */}
-                <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200/80 rounded-xl p-4 text-left">
-                  <div className="flex justify-between items-center text-left">
+                <div className="flex flex-col gap-3 bg-slate-50/50 border border-slate-200/80 rounded-xl p-4 text-left rtl:text-right">
+                  <div className="flex justify-between items-center text-left rtl:text-right">
                     <div>
-                      <label className="text-xs font-black text-slate-800 uppercase tracking-wide">Extra Features / Add-ons</label>
+                      <label className="text-xs font-black text-slate-800 uppercase tracking-wide">{t("extra_features_addons", "Extra Features / Add-ons")}</label>
                       <p className="text-[10px] text-slate-500 font-semibold mt-0.5 leading-relaxed">
-                        Add extra deliverables on top of the base package.
+                        {t("extra_features_desc", "Add extra deliverables on top of the base package.")}
                         {orderMilestones.length > 0 ? (
-                          <span className="text-amber-600 font-bold"> · 100% paid upfront into Escrow.</span>
+                          <span className="text-amber-600 font-bold">{t("escrow_notice_1", " · 100% paid upfront into Escrow.")}</span>
                         ) : (
-                          <span className="text-slate-400"> · 100% paid upfront.</span>
+                          <span className="text-slate-400">{t("escrow_notice_2", " · 100% paid upfront.")}</span>
                         )}
                       </p>
                     </div>
@@ -2147,14 +2192,14 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                       }}
                       className="shrink-0 text-[10px] bg-white hover:bg-slate-50 text-slate-700 font-extrabold px-3 py-1.5 rounded-lg border border-slate-200/60 transition-all cursor-pointer ml-3 shadow-sm"
                     >
-                      + Add Feature
+                      {t("btn_add_feature", "+ Add Feature")}
                     </button>
                   </div>
 
                   {orderMilestones.length > 0 && (
-                    <div className="flex flex-col gap-3.5 mt-1 border-t border-slate-150 pt-3">
+                    <div className="flex flex-col gap-3.5 mt-1 border-t border-slate-155 pt-3">
                       {orderMilestones.map((m, idx) => (
-                        <div key={idx} className="flex flex-col gap-2 bg-white border border-slate-200 p-3.5 rounded-xl shadow-sm relative text-left">
+                        <div key={idx} className="flex flex-col gap-2 bg-white border border-slate-200 p-3.5 rounded-xl shadow-sm relative text-left rtl:text-right">
                           <button
                             type="button"
                             onClick={() => {
@@ -2168,11 +2213,11 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                           </button>
                           <div className="grid grid-cols-3 gap-2 items-end">
                             <div className="col-span-2 flex flex-col justify-end">
-                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1" title="Feature / Milestone Title *">Feature / Milestone Title *</label>
+                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1" title={t("feature_title_label", "Feature / Milestone Title *")}>{t("feature_title_label", "Feature / Milestone Title *")}</label>
                               <input
                                 type="text"
                                 required
-                                placeholder="e.g. Extra Revision Round"
+                                placeholder={t("feature_title_placeholder", "e.g. Extra Revision Round")}
                                 value={m.title}
                                 onChange={(e) => {
                                   const updated = [...orderMilestones];
@@ -2183,7 +2228,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                               />
                             </div>
                             <div className="flex flex-col justify-end">
-                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1" title={`Extra Cost (${gig.currency_symbol || "$"})`}>Extra Cost ({gig.currency_symbol || "$"})</label>
+                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1" title={`${t("extra_cost_label", "Extra Cost")} (${gig.currency_symbol || "$"})`}>{t("extra_cost_label", "Extra Cost")} ({gig.currency_symbol || "$"})</label>
                               <input
                                 type="number"
                                 min="0"
@@ -2201,7 +2246,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                           </div>
                           <div className="grid grid-cols-2 gap-2 mt-1 items-end">
                             <div className="flex flex-col justify-end">
-                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1">Start Date</label>
+                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1">{t("start_date_label", "Start Date")}</label>
                               <input
                                 type="date"
                                 value={m.start_date || ""}
@@ -2214,7 +2259,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                               />
                             </div>
                             <div className="flex flex-col justify-end">
-                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1">End Date</label>
+                              <label className="text-[9px] font-black text-slate-400 uppercase tracking-wide block truncate mb-1">{t("end_date_label", "End Date")}</label>
                               <input
                                 type="date"
                                 value={m.end_date || ""}
@@ -2228,10 +2273,10 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                             </div>
                           </div>
                           <div className="flex flex-col gap-1 mt-1">
-                            <label className="text-[9px] font-black text-slate-400 uppercase">Description / Scope</label>
+                            <label className="text-[9px] font-black text-slate-400 uppercase">{t("description_scope_label", "Description / Scope")}</label>
                             <textarea
                               rows={1}
-                              placeholder="Describe specific tasks or scope..."
+                              placeholder={t("description_scope_placeholder", "Describe specific tasks or scope...")}
                               value={m.description || ""}
                               onChange={(e) => {
                                 const updated = [...orderMilestones];
@@ -2251,7 +2296,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 {/* Premium Cost breakdown */}
                 <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm shrink-0">
                   <div className="flex justify-between items-center text-xs text-slate-500 font-bold">
-                    <span>Base Package ({activePackageTab.toUpperCase()})</span>
+                    <span>{t("base_package_label", "Base Package")} ({activePackageTab.toLowerCase() === 'popular' ? 'STANDARD' : activePackageTab.toUpperCase()})</span>
                     <span className="font-extrabold text-slate-700">
                       {gig.currency_symbol || "$"}{(
                         getSelectedBasePrice()
@@ -2261,20 +2306,20 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                   
                   {selectedAddons.map((a, i) => (
                     <div key={`addon-${i}`} className="flex justify-between items-center text-xs text-slate-500 font-bold mt-2 animate-fadeIn">
-                      <span className="text-teal-700 font-black">+ Extra: {a.title}</span>
+                      <span className="text-teal-700 font-black">{t("extra_prefix", "+ Extra:")} {a.title}</span>
                       <span className="font-extrabold text-teal-750">{gig.currency_symbol || "$"}{parseFloat(a.price).toLocaleString()}</span>
                     </div>
                   ))}
 
                   {orderMilestones.map((m, i) => (
                     <div key={`milestone-${i}`} className="flex justify-between items-center text-xs text-slate-500 font-bold mt-2 animate-fadeIn">
-                      <span className="text-slate-400">+ Milestone: {m.title || `Extra Item #${i + 1}`}</span>
+                      <span className="text-slate-400">{t("milestone_prefix", "+ Milestone:")} {m.title || `${t("extra_item_label", "Extra Item")} #${i + 1}`}</span>
                       <span className="font-extrabold text-slate-650">{gig.currency_symbol || "$"}{parseFloat(m.amount || 0).toLocaleString()}</span>
                     </div>
                   ))}
 
                   <div className="border-t border-slate-150 mt-3 pt-3 flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-800 uppercase tracking-wide">Total Estimated Cost</span>
+                    <span className="text-xs font-black text-slate-800 uppercase tracking-wide">{t("total_estimated_cost_label", "Total Estimated Cost")}</span>
                     <span className="text-sm font-black text-teal-700 bg-teal-50/50 border border-teal-100/60 px-3 py-1 rounded-xl">
                       {gig.currency_symbol || "$"}{(
                         getSelectedBasePrice() + getAddonsPriceTotal() + orderMilestones.reduce((acc, m) => acc + parseFloat(m.amount || 0), 0)
@@ -2284,22 +2329,22 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                 </div>
 
                 {/* Requirements text box */}
-                <div className="flex flex-col gap-1.5 text-left">
+                <div className="flex flex-col gap-1.5 text-left rtl:text-right">
                   <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Project Requirements *</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wide">{t("project_requirements_label", "Project Requirements *")}</label>
                     <button
                       type="button"
                       onClick={() => setPreviewRequirements(!previewRequirements)}
                       className="text-[10px] font-black text-teal-700 hover:underline flex items-center gap-1 cursor-pointer"
                     >
-                      {previewRequirements ? "Edit Requirements" : "Preview Markdown"}
+                      {previewRequirements ? t("edit_requirements", "Edit Requirements") : t("preview_markdown", "Preview Markdown")}
                     </button>
                   </div>
                   
                   {previewRequirements ? (
                     <div 
-                      className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-3 text-xs text-slate-800 min-h-[120px] overflow-y-auto font-medium prose prose-slate max-w-full text-left"
-                      dangerouslySetInnerHTML={{ __html: orderRequirements || '<span class="italic text-slate-400">No requirements entered yet.</span>' }}
+                      className="bg-slate-50 border border-slate-205 rounded-xl px-4 py-3 text-xs text-slate-800 min-h-[120px] overflow-y-auto font-medium prose prose-slate max-w-full text-left rtl:text-right"
+                      dangerouslySetInnerHTML={{ __html: orderRequirements || `<span class="italic text-slate-400">${t("no_requirements_yet", "No requirements entered yet.")}</span>` }}
                     />
                   ) : (
                     <div className="flex flex-col">
@@ -2334,14 +2379,14 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                           title="Bullet List <ul>"
                           className="p-1 hover:text-slate-800 hover:bg-slate-200/60 rounded cursor-pointer text-xs"
                         >
-                          • List
+                          • {t("bullet_list_editor", "List")}
                         </button>
                       </div>
                       <textarea
                         id="project-requirements-textarea"
                         required
                         rows={4}
-                        placeholder="Provide detailed instructions, references, guidelines, specifications or requirements..."
+                        placeholder={t("requirements_placeholder", "Provide detailed instructions, references, guidelines, specifications or requirements...")}
                         value={orderRequirements}
                         onChange={(e) => setOrderRequirements(e.target.value)}
                         className="bg-slate-50/50 border border-slate-205 hover:border-slate-350 rounded-b-xl px-4 py-3 text-xs focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all text-slate-800 font-medium resize-none"
@@ -2353,7 +2398,7 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
               </div>
 
               {/* Footer Actions */}
-              <div className="flex justify-end gap-3 mt-2 shrink-0 pt-3.5 border-t border-slate-100 text-left">
+              <div className="flex justify-end gap-3 mt-2 shrink-0 pt-3.5 border-t border-slate-100 text-left rtl:text-right">
                 <button
                   type="button"
                   onClick={() => {
@@ -2363,14 +2408,14 @@ export default function GigDetailsClient({ initialGig, initialSimilarGigs }: Gig
                   }}
                   className="px-5 py-2.5 rounded-xl font-bold text-xs border border-slate-200 text-slate-500 hover:text-slate-805 bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer"
                 >
-                  Cancel
+                  {t("btn_cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={orderSubmitting}
                   className="bg-teal-700 hover:bg-teal-800 text-white font-black text-xs px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50 border-none"
                 >
-                  {orderSubmitting ? "Ordering..." : "Submit Order Request"}
+                  {orderSubmitting ? t("btn_ordering", "Ordering...") : t("btn_submit_order_request", "Submit Order Request")}
                 </button>
               </div>
             </form>

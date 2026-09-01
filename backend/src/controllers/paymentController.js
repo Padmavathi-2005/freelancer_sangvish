@@ -1086,13 +1086,16 @@ const processProposalHireTransaction = async (proposal, upfrontAmount, method) =
 
     if (hiredCount >= limit) {
       await pool.query("UPDATE jobs SET status = 'Closed' WHERE job_id = $1", [proposal.job_id]);
-      // Auto-decline other proposals for this job
+    } else {
+      await pool.query("UPDATE jobs SET status = 'Open' WHERE job_id = $1", [proposal.job_id]);
+    }
+
+    // Auto-decline other proposals only if it's a single-freelancer project
+    if (limit === 1) {
       await pool.query(
         "UPDATE proposals SET status = 'Declined', updated_at = CURRENT_TIMESTAMP WHERE job_id = $1 AND proposal_id != $2 AND status NOT IN ('Declined', 'Accepted')",
         [proposal.job_id, proposal.proposal_id]
       );
-    } else {
-      await pool.query("UPDATE jobs SET status = 'Open' WHERE job_id = $1", [proposal.job_id]);
     }
 
     // 8. Update Proposal Status to 'Accepted'
@@ -1283,6 +1286,7 @@ export const confirmStripeProposalPayment = async (req, res) => {
     return res.status(200).json({
       message: "Payment confirmed. Contract is now active.",
       amount: upfrontAmount,
+      job_id: proposal.job_id,
     });
   } catch (err) {
     console.error("Stripe proposal confirm error:", err);
@@ -2202,8 +2206,8 @@ export const createStripeTimecardSession = async (req, res) => {
     if (!timecard) {
       return res.status(404).json({ message: "Timecard not found." });
     }
-    if (timecard.status !== "Requested") {
-      return res.status(400).json({ message: `Timecard status must be 'Requested'. Current status: ${timecard.status}` });
+    if (timecard.status !== "Pending" && timecard.status !== "Requested") {
+      return res.status(400).json({ message: `Timecard status must be 'Pending' or 'Requested'. Current status: ${timecard.status}` });
     }
 
     const amount = parseFloat(timecard.amount);
@@ -2250,8 +2254,8 @@ export const createStripeTimecardSession = async (req, res) => {
         },
       ],
       mode: "payment",
-      success_url: `${FRONTEND_URL}${path}?project_id=${contract.job_id}&stripe_timecard_success=1&contract_id=${contract_id}&timecard_id=${timecard_id}&amount=${extraPayment}`,
-      cancel_url:  `${FRONTEND_URL}${path}?project_id=${contract.job_id}&stripe_timecard_cancel=1&contract_id=${contract_id}&timecard_id=${timecard_id}`,
+      success_url: `${FRONTEND_URL}${path}${path.includes("?") ? "&" : "?"}${path.includes("my-projects") ? `contract_id=${contract_id}` : (contract.job_id ? `project_id=${contract.job_id}` : `contract_id=${contract_id}`)}&stripe_timecard_success=1&contract_id=${contract_id}&timecard_id=${timecard_id}&amount=${extraPayment}`,
+      cancel_url:  `${FRONTEND_URL}${path}${path.includes("?") ? "&" : "?"}${path.includes("my-projects") ? `contract_id=${contract_id}` : (contract.job_id ? `project_id=${contract.job_id}` : `contract_id=${contract_id}`)}&stripe_timecard_cancel=1&contract_id=${contract_id}&timecard_id=${timecard_id}`,
       metadata: {
         contract_id: contract_id.toString(),
         timecard_id: timecard_id.toString(),
@@ -2291,12 +2295,12 @@ export const confirmStripeTimecardPayment = async (req, res) => {
     if (!timecard) {
       return res.status(404).json({ message: "Timecard not found." });
     }
-    if (timecard.status !== "Requested") {
+    if (timecard.status !== "Pending" && timecard.status !== "Requested") {
       // If already Paid, return success early (idempotent)
       if (timecard.status === "Paid") {
         return res.status(200).json({ message: "Timecard already paid." });
       }
-      return res.status(400).json({ message: `Timecard status must be 'Requested'. Current status: ${timecard.status}` });
+      return res.status(400).json({ message: `Timecard status must be 'Pending' or 'Requested'. Current status: ${timecard.status}` });
     }
 
     // 1. Credit client's wallet with the paid amount first
@@ -2376,8 +2380,8 @@ export const payTimecardDirectly = async (req, res) => {
     if (!timecard) {
       return res.status(404).json({ message: "Timecard not found." });
     }
-    if (timecard.status !== "Requested") {
-      return res.status(400).json({ message: `Timecard status must be 'Requested'. Current status: ${timecard.status}` });
+    if (timecard.status !== "Pending" && timecard.status !== "Requested") {
+      return res.status(400).json({ message: `Timecard status must be 'Pending' or 'Requested'. Current status: ${timecard.status}` });
     }
 
     const amount = parseFloat(timecard.amount);
@@ -2893,43 +2897,70 @@ export const requestMilestoneFunding = async (req, res) => {
   }
 };
 
-
 export const createStripeMilestoneSession = async (req, res) => {
   try {
     const userId = req.user.user_id;
-    const { milestone_id, type, redirect_path } = req.body; // type can be 'milestone' or 'revision'
+    const { milestone_id, type, redirect_path } = req.body; // type can be 'milestone', 'revision' or 'timecard_revision'
     const path = redirect_path || "/dashboard/proposals";
 
     if (!milestone_id || !type) {
       return res.status(400).json({ message: "milestone_id and type are required." });
     }
 
-    // Fetch milestone details
-    const milestoneRes = await pool.query(
-      `SELECT cm.*, c.title as contract_title, c.client_id, c.job_id
-       FROM contract_milestones cm
-       JOIN contracts c ON cm.contract_id = c.contract_id
-       WHERE cm.milestone_id = $1`,
-      [parseInt(milestone_id)]
-    );
-    if (milestoneRes.rows.length === 0) {
-      return res.status(404).json({ message: "Milestone not found." });
-    }
-    const milestone = milestoneRes.rows[0];
-    if (milestone.client_id !== userId) {
-      return res.status(403).json({ message: "Access denied. You do not own the contract for this milestone." });
-    }
-
     let payAmount = 0;
     let description = "";
-    if (type === "milestone") {
-      payAmount = parseFloat(milestone.amount);
-      description = `Milestone Escrow Funding: ${milestone.title}`;
-    } else if (type === "revision") {
-      payAmount = parseFloat(milestone.extra_revision_fee);
-      description = `Extra Revision Fee: ${milestone.title}`;
+    let contractTitle = "";
+    let contractId = 0;
+    let jobId = null;
+
+    if (type === "timecard_revision") {
+      const tcRes = await pool.query(
+        `SELECT tc.*, c.title as contract_title, c.client_id, c.job_id
+         FROM contract_timecards tc
+         JOIN contracts c ON tc.contract_id = c.contract_id
+         WHERE tc.timecard_id = $1`,
+        [parseInt(milestone_id)]
+      );
+      if (tcRes.rows.length === 0) {
+        return res.status(404).json({ message: "Timecard not found." });
+      }
+      const timecard = tcRes.rows[0];
+      if (timecard.client_id !== userId) {
+        return res.status(403).json({ message: "Access denied. You do not own the contract for this timecard." });
+      }
+      payAmount = parseFloat(timecard.extra_revision_fee);
+      description = `Extra Revision Fee for Timecard logged on: ${new Date(timecard.work_date).toLocaleDateString()}`;
+      contractTitle = timecard.contract_title;
+      contractId = timecard.contract_id;
+      jobId = timecard.job_id;
     } else {
-      return res.status(400).json({ message: "Invalid type. Must be 'milestone' or 'revision'." });
+      const milestoneRes = await pool.query(
+        `SELECT cm.*, c.title as contract_title, c.client_id, c.job_id
+         FROM contract_milestones cm
+         JOIN contracts c ON cm.contract_id = c.contract_id
+         WHERE cm.milestone_id = $1`,
+        [parseInt(milestone_id)]
+      );
+      if (milestoneRes.rows.length === 0) {
+        return res.status(404).json({ message: "Milestone not found." });
+      }
+      const milestone = milestoneRes.rows[0];
+      if (milestone.client_id !== userId) {
+        return res.status(403).json({ message: "Access denied. You do not own the contract for this milestone." });
+      }
+      contractTitle = milestone.contract_title;
+      contractId = milestone.contract_id;
+      jobId = milestone.job_id;
+
+      if (type === "milestone") {
+        payAmount = parseFloat(milestone.amount);
+        description = `Milestone Escrow Funding: ${milestone.title}`;
+      } else if (type === "revision") {
+        payAmount = parseFloat(milestone.extra_revision_fee);
+        description = `Extra Revision Fee: ${milestone.title}`;
+      } else {
+        return res.status(400).json({ message: "Invalid type. Must be 'milestone', 'revision' or 'timecard_revision'." });
+      }
     }
 
     if (payAmount <= 0) {
@@ -2964,7 +2995,7 @@ export const createStripeMilestoneSession = async (req, res) => {
             currency: "usd",
             product_data: {
               name: description,
-              description: `Contract: ${milestone.contract_title}`,
+              description: `Contract: ${contractTitle}`,
             },
             unit_amount: amountCents,
           },
@@ -2972,8 +3003,8 @@ export const createStripeMilestoneSession = async (req, res) => {
         },
       ],
       mode: "payment",
-      success_url: `${FRONTEND_URL}${path}?project_id=${milestone.job_id}&stripe_milestone_success=1&milestone_id=${milestone_id}&type=${type}&amount=${payAmount}`,
-      cancel_url:  `${FRONTEND_URL}${path}?project_id=${milestone.job_id}&stripe_milestone_cancel=1&milestone_id=${milestone_id}`,
+      success_url: `${FRONTEND_URL}${path}${path.includes("?") ? "&" : "?"}${path.includes("my-projects") ? `contract_id=${contractId}` : (jobId ? `project_id=${jobId}` : `contract_id=${contractId}`)}&stripe_milestone_success=1&milestone_id=${milestone_id}&type=${type}&amount=${payAmount}`,
+      cancel_url:  `${FRONTEND_URL}${path}${path.includes("?") ? "&" : "?"}${path.includes("my-projects") ? `contract_id=${contractId}` : (jobId ? `project_id=${jobId}` : `contract_id=${contractId}`)}&stripe_milestone_cancel=1&milestone_id=${milestone_id}`,
       metadata: {
         milestone_id: milestone_id.toString(),
         user_id: userId.toString(),
@@ -3002,20 +3033,48 @@ export const confirmStripeMilestonePayment = async (req, res) => {
     const milestoneId = parseInt(milestone_id);
     const payAmount = parseFloat(amount_usd);
 
-    // Fetch milestone details
-    const milestoneRes = await pool.query(
-      `SELECT cm.*, c.title as contract_title, c.client_id, c.freelancer_id
-       FROM contract_milestones cm
-       JOIN contracts c ON cm.contract_id = c.contract_id
-       WHERE cm.milestone_id = $1`,
-      [milestoneId]
-    );
-    if (milestoneRes.rows.length === 0) {
-      return res.status(404).json({ message: "Milestone not found." });
-    }
-    const milestone = milestoneRes.rows[0];
-    if (milestone.client_id !== userId) {
-      return res.status(403).json({ message: "Access denied." });
+    let contractTitle = "";
+    let contractId = 0;
+    let freelancerId = 0;
+    let timecard;
+    let milestone;
+
+    if (type === "timecard_revision") {
+      const tcRes = await pool.query(
+        `SELECT tc.*, c.title as contract_title, c.client_id, c.freelancer_id
+         FROM contract_timecards tc
+         JOIN contracts c ON tc.contract_id = c.contract_id
+         WHERE tc.timecard_id = $1`,
+        [milestoneId]
+      );
+      if (tcRes.rows.length === 0) {
+        return res.status(404).json({ message: "Timecard not found." });
+      }
+      timecard = tcRes.rows[0];
+      if (timecard.client_id !== userId) {
+        return res.status(403).json({ message: "Access denied." });
+      }
+      contractTitle = timecard.contract_title;
+      contractId = timecard.contract_id;
+      freelancerId = timecard.freelancer_id;
+    } else {
+      const milestoneRes = await pool.query(
+        `SELECT cm.*, c.title as contract_title, c.client_id, c.freelancer_id
+         FROM contract_milestones cm
+         JOIN contracts c ON cm.contract_id = c.contract_id
+         WHERE cm.milestone_id = $1`,
+        [milestoneId]
+      );
+      if (milestoneRes.rows.length === 0) {
+        return res.status(404).json({ message: "Milestone not found." });
+      }
+      milestone = milestoneRes.rows[0];
+      if (milestone.client_id !== userId) {
+        return res.status(403).json({ message: "Access denied." });
+      }
+      contractTitle = milestone.contract_title;
+      contractId = milestone.contract_id;
+      freelancerId = milestone.freelancer_id;
     }
 
     // 1. Get or create client's wallet
@@ -3030,11 +3089,15 @@ export const confirmStripeMilestonePayment = async (req, res) => {
         [payAmount, wallet.wallet_id]
       );
 
+      const descriptionLabel = type === "timecard_revision" 
+        ? `Stripe payment for timecard revision fee`
+        : `Stripe payment for ${type}: ${milestone.title}`;
+
       // Record deposit transaction
       await pool.query(
         `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
          VALUES (NULL, $1, $2, 'Stripe Deposit', 'Completed', $3)`,
-        [wallet.wallet_id, payAmount, `Stripe payment for ${type}: ${milestone.title}`]
+        [wallet.wallet_id, payAmount, descriptionLabel]
       );
 
       await pool.query("COMMIT");
@@ -3067,7 +3130,7 @@ export const confirmStripeMilestonePayment = async (req, res) => {
         await pool.query(
           `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, type, status, description)
            VALUES ($1, $2, $3, 'Transfer', 'Completed', $4)`,
-          [wallet.wallet_id, systemWalletId, payAmount, `Escrow funding for milestone: ${milestone.title} (contract: ${milestone.contract_title})`]
+          [wallet.wallet_id, systemWalletId, payAmount, `Escrow funding for milestone: ${milestone.title} (contract: ${contractTitle})`]
         );
 
         // Update milestone
@@ -3075,14 +3138,14 @@ export const confirmStripeMilestonePayment = async (req, res) => {
           "UPDATE contract_milestones SET payment_status = 'Funded', status = 'Pending', updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
           [milestoneId]
         );
-      } else {
+      } else if (type === "revision" || type === "timecard_revision") {
         // Get freelancer wallet
-        let freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [milestone.freelancer_id]);
+        let freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [freelancerId]);
         let freelancerWallet = freelancerWalletRes.rows[0];
         if (!freelancerWallet) {
           const ins = await pool.query(
             "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
-            [milestone.freelancer_id]
+            [freelancerId]
           );
           freelancerWallet = ins.rows[0];
         }
@@ -3115,6 +3178,10 @@ export const confirmStripeMilestonePayment = async (req, res) => {
           [commissionAmount, systemWalletId]
         );
 
+        const txDesc = type === "timecard_revision"
+          ? `Direct payment for revision fee on timecard logged on: ${new Date(timecard.work_date).toLocaleDateString()} (contract: ${contractTitle})`
+          : `Direct payment for revision fee on milestone: ${milestone.title} (contract: ${contractTitle})`;
+
         // Record transaction
         await pool.query(
           `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, commission_amount, type, status, description)
@@ -3124,15 +3191,23 @@ export const confirmStripeMilestonePayment = async (req, res) => {
             freelancerWallet.wallet_id,
             freelancerAmount,
             commissionAmount,
-            `Direct payment for revision fee on milestone: ${milestone.title} (contract: ${milestone.contract_title})`
+            txDesc
           ]
         );
 
-        // Update milestone revision status and increment revision_count
-        await pool.query(
-          "UPDATE contract_milestones SET revision_status = 'In Progress', revision_count = COALESCE(revision_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
-          [milestoneId]
-        );
+        if (type === "timecard_revision") {
+          // Update timecard revision status and increment revision_count
+          await pool.query(
+            "UPDATE contract_timecards SET revision_status = 'In Progress', status = 'Revision Requested', revision_count = COALESCE(revision_count, 0) + 1, paid_revision_count = COALESCE(paid_revision_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE timecard_id = $1",
+            [milestoneId]
+          );
+        } else {
+          // Update milestone revision status and increment revision_count
+          await pool.query(
+            "UPDATE contract_milestones SET revision_status = 'In Progress', status = 'Revision Requested', revision_count = COALESCE(revision_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE milestone_id = $1",
+            [milestoneId]
+          );
+        }
       }
 
       await pool.query("COMMIT");
@@ -3140,21 +3215,25 @@ export const confirmStripeMilestonePayment = async (req, res) => {
       // Notify freelancer
       try {
         const { default: Notification } = await import("../models/notificationModel.js");
+        const notifMsg = type === "timecard_revision"
+          ? `Client funded extra revision fee for timecard logged on: ${new Date(timecard.work_date).toLocaleDateString()} ($${payAmount.toFixed(2)}).`
+          : (type === "milestone" 
+              ? `Client funded milestone "${milestone.title}" ($${payAmount.toFixed(2)}).`
+              : `Client funded extra revision fee for milestone "${milestone.title}" ($${payAmount.toFixed(2)}).`);
+
         await Notification.create({
-          userId: milestone.freelancer_id,
+          userId: freelancerId,
           title: type === "milestone" ? "Milestone Funded! 💰" : "Revision Funded! 💰",
-          message: type === "milestone" 
-            ? `Client funded milestone "${milestone.title}" ($${payAmount.toFixed(2)}).`
-            : `Client funded extra revision fee for "${milestone.title}" ($${payAmount.toFixed(2)}).`,
+          message: notifMsg,
           type: "contract",
-          referenceId: milestone.contract_id.toString(),
+          referenceId: contractId.toString(),
         });
       } catch {}
 
       return res.status(200).json({
         message: type === "milestone" ? "Milestone funded successfully." : "Extra revision funded successfully.",
         payment_status: type === "milestone" ? "Funded" : undefined,
-        revision_status: type === "revision" ? "In Progress" : undefined
+        revision_status: (type === "revision" || type === "timecard_revision") ? "In Progress" : undefined
       });
     } catch (txErr) {
       await pool.query("ROLLBACK");
@@ -3164,5 +3243,469 @@ export const confirmStripeMilestonePayment = async (req, res) => {
     fs.appendFileSync("api_logs.txt", `[${new Date().toISOString()}] confirmStripeMilestonePayment ERROR: ${err.message}\n`);
     console.error("Stripe milestone confirmation error:", err);
     return res.status(500).json({ message: err.message || "Failed to confirm Stripe payment." });
+  }
+};
+
+export const requestTimecardRevision = async (req, res) => {
+  try {
+    const clientId = req.user.user_id;
+    const timecardId = parseInt(req.params.id);
+    const { feedback, submitted_files } = req.body;
+
+    if (!timecardId || isNaN(timecardId)) {
+      return res.status(400).json({ message: "Invalid timecard ID." });
+    }
+    if (!feedback || !feedback.trim()) {
+      return res.status(400).json({ message: "Revision feedback is required." });
+    }
+
+    const tcRes = await pool.query("SELECT * FROM contract_timecards WHERE timecard_id = $1", [timecardId]);
+    if (tcRes.rows.length === 0) {
+      return res.status(404).json({ message: "Timecard not found." });
+    }
+    const timecard = tcRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [timecard.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with timecard not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.client_id !== clientId) {
+      return res.status(403).json({ message: "Access denied. You do not own this contract." });
+    }
+
+    let existingHistory = [];
+    const currentFeedback = timecard.revision_feedback;
+    if (currentFeedback) {
+      if (currentFeedback.trim().startsWith("[")) {
+        try {
+          existingHistory = JSON.parse(currentFeedback);
+        } catch (e) {
+          existingHistory = [{
+            revision_number: 1,
+            feedback: currentFeedback,
+            files: timecard.revision_submitted_files ? JSON.parse(timecard.revision_submitted_files) : [],
+            timestamp: timecard.updated_at || new Date().toISOString()
+          }];
+        }
+      } else {
+        let filesArr = [];
+        if (timecard.revision_submitted_files) {
+          try {
+            filesArr = JSON.parse(timecard.revision_submitted_files);
+          } catch (e) {}
+        }
+        existingHistory = [{
+          revision_number: 1,
+          feedback: currentFeedback,
+          files: filesArr,
+          timestamp: timecard.updated_at || new Date().toISOString()
+        }];
+      }
+    }
+
+    const newRevisionNumber = existingHistory.length + 1;
+    let newFilesArr = [];
+    if (submitted_files) {
+      try {
+        newFilesArr = typeof submitted_files === "string" ? JSON.parse(submitted_files) : submitted_files;
+      } catch (e) {}
+    }
+
+    const newRevisionObj = {
+      revision_number: newRevisionNumber,
+      feedback: feedback.trim(),
+      files: newFilesArr,
+      timestamp: new Date().toISOString()
+    };
+
+    existingHistory.push(newRevisionObj);
+    const updatedFeedbackJson = JSON.stringify(existingHistory);
+
+    await pool.query(
+      "UPDATE contract_timecards SET status = 'Revision Requested', feedback = $1, revision_feedback = $2, revision_submitted_files = $3, revision_status = 'Pending Acceptance', updated_at = CURRENT_TIMESTAMP WHERE timecard_id = $4",
+      [feedback.trim(), updatedFeedbackJson, newFilesArr.length > 0 ? JSON.stringify(newFilesArr) : null, timecardId]
+    );
+
+    try {
+      const { default: Notification } = await import("../models/notificationModel.js");
+      const clientUserRes = await pool.query("SELECT first_name || ' ' || COALESCE(last_name, '') as name FROM users WHERE user_id = $1", [clientId]);
+      const clientName = clientUserRes.rows[0]?.name || "Client";
+
+      const notif = await Notification.create({
+        userId: contract.freelancer_id,
+        title: "Revision Requested for Timecard ⚠️",
+        message: `Client ${clientName} requested revisions for timecard logged on: ${new Date(timecard.work_date).toLocaleDateString()}. Feedback: "${feedback.trim()}"`,
+        type: "contract",
+        referenceId: contract.contract_id.toString(),
+      });
+      if (req.io) {
+        req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", notif);
+      }
+    } catch (nErr) {
+      console.error("Failed to notify freelancer on timecard revision request:", nErr);
+    }
+
+    return res.status(200).json({
+      message: "Timecard revision requested successfully."
+    });
+  } catch (err) {
+    console.error("Request timecard revision error:", err);
+    return res.status(500).json({ message: err.message || "Failed to request timecard revision." });
+  }
+};
+
+export const acceptTimecardRevision = async (req, res) => {
+  try {
+    const freelancerId = req.user.user_id;
+    const timecardId = parseInt(req.params.id);
+    const { extra_fee } = req.body;
+
+    if (!timecardId || isNaN(timecardId)) {
+      return res.status(400).json({ message: "Invalid timecard ID." });
+    }
+
+    const tcRes = await pool.query("SELECT * FROM contract_timecards WHERE timecard_id = $1", [timecardId]);
+    if (tcRes.rows.length === 0) {
+      return res.status(404).json({ message: "Timecard not found." });
+    }
+    const timecard = tcRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [timecard.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with timecard not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.freelancer_id !== freelancerId) {
+      return res.status(403).json({ message: "Access denied. You do not own this contract." });
+    }
+
+    if (timecard.revision_status !== "Pending Acceptance") {
+      return res.status(400).json({ message: "This revision request has already been accepted or handled." });
+    }
+
+    const currentCount = parseInt(timecard.revision_count || "0");
+    const limit = parseInt(contract.revisions_limit || "3");
+    const fee = parseFloat(extra_fee || "0");
+
+    if (currentCount < limit && fee <= 0) {
+      await pool.query(
+        "UPDATE contract_timecards SET revision_status = 'In Progress', status = 'Revision Requested', revision_count = COALESCE(revision_count, 0) + 1, free_revision_count = COALESCE(free_revision_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE timecard_id = $1",
+        [timecardId]
+      );
+      
+      try {
+        const { default: Notification } = await import("../models/notificationModel.js");
+        const notif = await Notification.create({
+          userId: contract.client_id,
+          title: "Revision Accepted (Free)!",
+          message: `Freelancer started work on the revision for timecard logged on: ${new Date(timecard.work_date).toLocaleDateString()}.`,
+          type: "contract",
+          referenceId: contract.contract_id.toString(),
+        });
+        if (req.io) {
+          req.io.to(`user_${contract.client_id}`).emit("new_notification", notif);
+        }
+      } catch {}
+
+      return res.status(200).json({
+        message: "Revision accepted successfully.",
+        revision_status: "In Progress"
+      });
+    } else {
+      await pool.query(
+        "UPDATE contract_timecards SET revision_status = 'Awaiting Funding', extra_revision_fee = $1, updated_at = CURRENT_TIMESTAMP WHERE timecard_id = $2",
+        [fee, timecardId]
+      );
+
+      try {
+        const { default: Notification } = await import("../models/notificationModel.js");
+        const notif = await Notification.create({
+          userId: contract.client_id,
+          title: "Extra Revision Fee Proposed",
+          message: `Freelancer accepted revision for timecard but proposed extra fee of $${fee.toFixed(2)} (limit reached).`,
+          type: "contract",
+          referenceId: contract.contract_id.toString(),
+        });
+        if (req.io) {
+          req.io.to(`user_${contract.client_id}`).emit("new_notification", notif);
+        }
+      } catch {}
+
+      return res.status(200).json({
+        message: `Proposed extra revision fee of $${fee.toFixed(2)} to client.`,
+        revision_status: "Awaiting Funding"
+      });
+    }
+  } catch (err) {
+    console.error("Accept timecard revision error:", err);
+    return res.status(500).json({ message: err.message || "Failed to accept revision request." });
+  }
+};
+
+export const rejectTimecardRevisionProposal = async (req, res) => {
+  try {
+    const clientId = req.user.user_id;
+    const timecardId = parseInt(req.params.id);
+
+    if (!timecardId || isNaN(timecardId)) {
+      return res.status(400).json({ message: "Invalid timecard ID." });
+    }
+
+    const tcRes = await pool.query("SELECT * FROM contract_timecards WHERE timecard_id = $1", [timecardId]);
+    if (tcRes.rows.length === 0) {
+      return res.status(404).json({ message: "Timecard not found." });
+    }
+    const timecard = tcRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [timecard.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with timecard not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.client_id !== clientId) {
+      return res.status(403).json({ message: "Access denied. You do not own this contract." });
+    }
+
+    if (timecard.revision_status !== "Awaiting Funding") {
+      return res.status(400).json({ message: "This revision proposal is not pending or is already funded." });
+    }
+
+    await pool.query(
+      "UPDATE contract_timecards SET revision_status = 'Pending Acceptance', extra_revision_fee = 0.00, updated_at = CURRENT_TIMESTAMP WHERE timecard_id = $1",
+      [timecardId]
+    );
+
+    try {
+      const { default: Notification } = await import("../models/notificationModel.js");
+      const notif = await Notification.create({
+        userId: contract.freelancer_id,
+        title: "Revision Fee Proposal Rejected ❌",
+        message: `Client rejected extra revision fee proposal for timecard logged on: ${new Date(timecard.work_date).toLocaleDateString()}.`,
+        type: "contract",
+        referenceId: contract.contract_id.toString(),
+      });
+      if (req.io) {
+        req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", notif);
+      }
+    } catch {}
+
+    return res.status(200).json({
+      message: "Revision fee proposal rejected."
+    });
+  } catch (err) {
+    console.error("Reject timecard revision proposal error:", err);
+    return res.status(500).json({ message: err.message || "Failed to reject revision proposal." });
+  }
+};
+
+export const fundTimecardRevision = async (req, res) => {
+  try {
+    const clientId = req.user.user_id;
+    const timecardId = parseInt(req.params.id);
+
+    if (!timecardId || isNaN(timecardId)) {
+      return res.status(400).json({ message: "Invalid timecard ID." });
+    }
+
+    const tcRes = await pool.query("SELECT * FROM contract_timecards WHERE timecard_id = $1", [timecardId]);
+    if (tcRes.rows.length === 0) {
+      return res.status(404).json({ message: "Timecard not found." });
+    }
+    const timecard = tcRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [timecard.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with timecard not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.client_id !== clientId) {
+      return res.status(403).json({ message: "Access denied. You do not own this contract." });
+    }
+
+    if (timecard.revision_status !== "Awaiting Funding") {
+      return res.status(400).json({ message: "This revision fee has already been funded or is not pending." });
+    }
+
+    const fee = parseFloat(timecard.extra_revision_fee || "0");
+    if (fee <= 0) {
+      return res.status(400).json({ message: "No extra revision fee is pending for this timecard." });
+    }
+
+    const clientWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [clientId]);
+    const clientWallet = clientWalletRes.rows[0];
+
+    if (!clientWallet || parseFloat(clientWallet.balance) < fee) {
+      return res.status(400).json({
+        message: `Insufficient wallet balance. Funding requires $${fee.toFixed(2)}, but you only have $${parseFloat(clientWallet?.balance || "0").toFixed(2)}.`
+      });
+    }
+
+    const sysRes = await pool.query("SELECT * FROM wallets WHERE is_system = TRUE");
+    const sysWallet = sysRes.rows[0];
+
+    await pool.query("BEGIN");
+    try {
+      await pool.query(
+        "UPDATE wallets SET balance = balance - $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [fee, clientWallet.wallet_id]
+      );
+
+      let freelancerWalletRes = await pool.query("SELECT * FROM wallets WHERE user_id = $1", [contract.freelancer_id]);
+      let freelancerWallet = freelancerWalletRes.rows[0];
+      if (!freelancerWallet) {
+        const ins = await pool.query(
+          "INSERT INTO wallets (user_id, balance, currency) VALUES ($1, 0.00, 'USD') RETURNING *",
+          [contract.freelancer_id]
+        );
+        freelancerWallet = ins.rows[0];
+      }
+
+      let commissionPercent = 0.05;
+      const feeRes = await pool.query("SELECT setting_value FROM settings WHERE setting_key = 'platform_fee'");
+      if (feeRes.rows.length > 0) {
+        let feeVal = feeRes.rows[0].setting_value;
+        if (typeof feeVal === "string") {
+          try { feeVal = JSON.parse(feeVal); } catch {}
+        }
+        if (feeVal?.fee) {
+          commissionPercent = parseFloat(feeVal.fee) / 100;
+        }
+      }
+
+      const commissionAmount = fee * commissionPercent;
+      const freelancerAmount = fee - commissionAmount;
+
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [freelancerAmount, freelancerWallet.wallet_id]
+      );
+
+      await pool.query(
+        "UPDATE wallets SET balance = balance + $1, updated_at = CURRENT_TIMESTAMP WHERE wallet_id = $2",
+        [commissionAmount, sysWallet.wallet_id]
+      );
+
+      await pool.query(
+        `INSERT INTO wallet_transactions (sender_wallet_id, receiver_wallet_id, amount, commission_amount, type, status, description)
+         VALUES ($1, $2, $3, $4, 'Revision_Direct_Payment', 'Completed', $5)`,
+        [
+          clientWallet.wallet_id,
+          freelancerWallet.wallet_id,
+          freelancerAmount,
+          commissionAmount,
+          `Direct payment for revision fee on timecard logged on: ${new Date(timecard.work_date).toLocaleDateString()} (contract: ${contract.title})`
+        ]
+      );
+
+      await pool.query(
+        "UPDATE contract_timecards SET revision_status = 'In Progress', status = 'Revision Requested', revision_count = COALESCE(revision_count, 0) + 1, paid_revision_count = COALESCE(paid_revision_count, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE timecard_id = $1",
+        [timecardId]
+      );
+
+      await pool.query("COMMIT");
+
+      try {
+        const { default: Notification } = await import("../models/notificationModel.js");
+        const notif = await Notification.create({
+          userId: contract.freelancer_id,
+          title: "Extra Revision Funded! 💰",
+          message: `Client funded extra revision fee of $${fee.toFixed(2)} for timecard logged on: ${new Date(timecard.work_date).toLocaleDateString()}. Work started.`,
+          type: "contract",
+          referenceId: contract.contract_id.toString(),
+        });
+        if (req.io) {
+          req.io.to(`user_${contract.freelancer_id}`).emit("new_notification", notif);
+        }
+      } catch {}
+
+      return res.status(200).json({
+        message: "Revision fee funded successfully.",
+        revision_status: "In Progress"
+      });
+    } catch (txErr) {
+      await pool.query("ROLLBACK");
+      throw txErr;
+    }
+  } catch (err) {
+    console.error("Fund timecard revision error:", err);
+    return res.status(500).json({ message: err.message || "Failed to fund revision fee." });
+  }
+};
+
+export const submitTimecardRevision = async (req, res) => {
+  try {
+    const freelancerId = req.user.user_id;
+    const timecardId = parseInt(req.params.id);
+    const { submitted_files, description } = req.body;
+
+    if (!timecardId || isNaN(timecardId)) {
+      return res.status(400).json({ message: "Invalid timecard ID." });
+    }
+
+    const tcRes = await pool.query("SELECT * FROM contract_timecards WHERE timecard_id = $1", [timecardId]);
+    if (tcRes.rows.length === 0) {
+      return res.status(404).json({ message: "Timecard not found." });
+    }
+    const timecard = tcRes.rows[0];
+
+    const contractRes = await pool.query("SELECT * FROM contracts WHERE contract_id = $1", [timecard.contract_id]);
+    if (contractRes.rows.length === 0) {
+      return res.status(404).json({ message: "Contract associated with timecard not found." });
+    }
+    const contract = contractRes.rows[0];
+
+    if (contract.freelancer_id !== freelancerId) {
+      return res.status(403).json({ message: "Access denied. You do not own this contract." });
+    }
+
+    if (timecard.revision_status !== "In Progress") {
+      return res.status(400).json({ message: "No revision is currently in progress for this timecard." });
+    }
+
+    const originalDesc = timecard.description || "";
+    const noteText = description && description.trim() ? `\n\n[Revision Note]: ${description.trim()}` : "";
+    const updatedDesc = originalDesc + noteText;
+
+    await pool.query(
+      "UPDATE contract_timecards SET status = 'Requested', revision_status = 'Completed', submitted_files = $1, description = $2, updated_at = CURRENT_TIMESTAMP WHERE timecard_id = $3",
+      [submitted_files || timecard.submitted_files || null, updatedDesc || null, timecardId]
+    );
+
+    try {
+      const { default: Notification } = await import("../models/notificationModel.js");
+      const freelancerUserRes = await pool.query("SELECT first_name || ' ' || COALESCE(last_name, '') as name FROM users WHERE user_id = $1", [freelancerId]);
+      const freelancerName = freelancerUserRes.rows[0]?.name || "Freelancer";
+
+      const notifMsg = description && description.trim()
+        ? `${freelancerName} has submitted revised deliverables. Note: "${description.trim()}"`
+        : `${freelancerName} has submitted revised deliverables for timecard logged on: ${new Date(timecard.work_date).toLocaleDateString()}.`;
+
+      const notif = await Notification.create({
+        userId: contract.client_id,
+        title: "Revised Work Submitted! 📝",
+        message: notifMsg,
+        type: "contract",
+        referenceId: contract.contract_id.toString(),
+      });
+      if (req.io) {
+        req.io.to(`user_${contract.client_id}`).emit("new_notification", notif);
+      }
+    } catch (nErr) {
+      console.error("Failed to notify client on revised work submission:", nErr);
+    }
+
+    return res.status(200).json({
+      message: "Revised work submitted successfully.",
+      status: "Requested",
+      revision_status: "None"
+    });
+  } catch (err) {
+    console.error("Submit timecard revision error:", err);
+    return res.status(500).json({ message: err.message || "Failed to submit revised work." });
   }
 };

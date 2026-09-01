@@ -2,6 +2,7 @@
 
 import React from "react";
 import Table from "@/components/Table";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ProjectOrdersTabProps {
   transactionsSearch: string;
@@ -24,62 +25,73 @@ export default function ProjectOrdersTab({
   filteredTransactions,
   itemsPerPage
 }: ProjectOrdersTabProps) {
+  const { t } = useLanguage();
 
   const transactionColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: any, idx: number) => ((transactionsPage - 1) * itemsPerPage) + idx + 1
     },
     {
-      header: "Contract Title",
-      accessor: (row: any) => <div className="font-bold text-slate-800">{row.title}</div>
+      header: t("contract_title", "Contract Title"),
+      accessor: (row: any) => <div className="font-bold text-slate-800 text-left rtl:text-right">{row.title}</div>
     },
     {
-      header: "Job",
-      accessor: (row: any) => row.job_title || "Direct Gig Order"
+      header: t("job", "Job"),
+      accessor: (row: any) => row.job_title || t("direct_gig_order", "Direct Gig Order")
     },
     {
-      header: "Client",
+      header: t("client", "Client"),
       accessor: (row: any) => row.client_name
     },
     {
-      header: "Freelancer",
+      header: t("freelancer", "Freelancer"),
       accessor: (row: any) => row.freelancer_name
     },
     {
-      header: "Budget",
+      header: t("budget", "Budget"),
       accessor: (row: any) => `$${Number(row.budget).toLocaleString()}`
     },
     {
-      header: "Progress",
+      header: t("progress", "Progress"),
       accessor: (row: any) => `${row.progress || 0}%`
     },
     {
-      header: "Status",
-      accessor: (row: any) => (
-        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
-          row.status === "Completed" ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" :
-          row.status === "In Progress" ? "bg-teal-50 text-teal-705 border border-teal-200" :
-          "bg-rose-50 text-rose-700 border border-rose-250"
-        }`}>
-          {row.status}
-        </span>
-      )
+      header: t("status_label", "Status"),
+      accessor: (row: any) => {
+        const displayStatus = 
+          row.status === "Completed" ? t("status_completed", "Completed") :
+          row.status === "In Progress" ? t("status_in_progress", "In Progress") :
+          row.status === "Cancelled" ? t("status_cancelled", "Cancelled") :
+          row.status === "Hired" ? t("status_hired", "Hired") :
+          row.status;
+
+        return (
+          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border whitespace-nowrap ${
+            row.status === "Completed" ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60" :
+            row.status === "In Progress" ? "bg-teal-50 text-teal-705 border border-teal-200" :
+            row.status === "Cancelled" ? "bg-rose-50 text-rose-700 border border-rose-250" :
+            "bg-slate-50 text-slate-700 border border-slate-200"
+          }`}>
+            {displayStatus}
+          </span>
+        );
+      }
     }
   ];
 
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left">
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-6 shadow-sm animate-fadeIn text-left rtl:text-right">
       <div>
-        <h3 className="text-lg font-bold text-slate-800">Project orders & contracts</h3>
-        <p className="text-slate-500 text-xs sm:text-sm mt-0.5">Monitor client-freelancer active project agreements, milestones development, and escrow payments.</p>
+        <h3 className="text-lg font-bold text-slate-800">{t("admin_project_orders_contracts", "Project orders & contracts")}</h3>
+        <p className="text-slate-500 text-xs sm:text-sm mt-0.5">{t("admin_project_orders_contracts_desc", "Monitor client-freelancer active project agreements, milestones development, and escrow payments.")}</p>
       </div>
 
       <div className="flex justify-between items-center gap-4">
         <div className="relative w-full md:w-64">
           <input
             type="text"
-            placeholder="Search orders..."
+            placeholder={t("admin_search_orders_placeholder", "Search orders...")}
             value={transactionsSearch}
             onChange={(e) => setTransactionsSearch(e.target.value)}
             className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700/50 focus:bg-white transition-all duration-200"
@@ -98,7 +110,7 @@ export default function ProjectOrdersTab({
         onPageChange={setTransactionsPage}
         totalItems={filteredTransactions.length}
         itemsPerPage={itemsPerPage}
-        emptyMessage="No project orders found."
+        emptyMessage={t("admin_no_project_orders_found", "No project orders found.")}
       />
     </div>
   );

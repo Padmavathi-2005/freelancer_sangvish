@@ -4,8 +4,10 @@ import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect } from "react";
 import { useAdmin } from "@/app/admin/AdminContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function SocialLoginTab() {
+  const { t } = useLanguage();
   const { handleSaveSetting } = useAdmin();
 
   const [googleEnabled, setGoogleEnabled] = useState(false);
@@ -60,10 +62,10 @@ export default function SocialLoginTab() {
       await handleSaveSetting("facebook_login_enabled", facebookEnabled, "site_settings");
       await handleSaveSetting("facebook_app_id", facebookAppId, "site_settings");
 
-      setSaveStatus({ type: "success", text: "✓ Social login settings saved successfully!" });
+      setSaveStatus({ type: "success", text: t("admin_social_login_success", "✓ Social login settings saved successfully!") });
       setTimeout(() => setSaveStatus(null), 4000);
     } catch (err) {
-      setSaveStatus({ type: "error", text: "Failed to save settings." });
+      setSaveStatus({ type: "error", text: t("admin_error_saving", "Failed to save settings.") });
     } finally {
       setSaving(false);
     }
@@ -75,48 +77,46 @@ export default function SocialLoginTab() {
         <div className="w-8 h-8 border-4 border-teal-700 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
-  }
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left max-w-4xl">
+  }  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col gap-8 shadow-sm animate-fadeIn text-left rtl:text-right max-w-4xl">
       {/* HEADER SECTION with Save Action */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100">
-        <div>
-          <h3 className="text-lg font-bold text-slate-800 font-sans">Social Login Settings</h3>
-          <p className="text-slate-500 text-xs mt-0.5 font-medium leading-normal">
-            Configure integration parameters and client keys for third-party social auth providers (Google & Facebook).
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-slate-100 text-left rtl:text-right">
+        <div className="text-left rtl:text-right">
+          <h3 className="text-lg font-bold text-slate-800 font-sans text-left rtl:text-right">{t("admin_social_login_title", "Social Login Settings")}</h3>
+          <p className="text-slate-500 text-xs mt-0.5 font-medium leading-normal text-left rtl:text-right">
+            {t("admin_social_login_desc", "Configure integration parameters and client keys for third-party social auth providers (Google & Facebook).")}
           </p>
         </div>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-6 py-3 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer"
+          className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-black text-xs px-5 py-2.5 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer border-none whitespace-nowrap w-full sm:w-auto text-center"
         >
-          {saving ? "Saving..." : "Save Configuration"}
+          {saving ? t("admin_saving_btn", "Saving...") : t("admin_save_btn", "Save Configuration")}
         </button>
       </div>
 
       {saveStatus && (
         <div className={`p-4 rounded-xl text-xs font-bold ${
-          saveStatus.type === "success" ? "bg-emerald-50 border border-emerald-250 text-emerald-700" : "bg-rose-50 border border-rose-250 text-rose-700"
+          saveStatus.type === "success" ? "bg-emerald-50 border border-emerald-250 text-emerald-700" : "bg-rose-50 border border-rose-255 text-rose-700"
         }`}>
           {saveStatus.text}
         </div>
       )}
 
-      <form onSubmit={handleSave} className="flex flex-col gap-8">
+      <form onSubmit={handleSave} className="flex flex-col gap-8 text-left rtl:text-right">
         {/* Google Authentication Settings */}
-        <div className="flex flex-col gap-5 border-b border-slate-100 pb-6 text-slate-800">
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="text-sm font-extrabold text-slate-800 font-sans">Google OAuth Authentication</h4>
-              <p className="text-xs text-slate-500 mt-1 leading-normal">Enable or disable Google Sign-In button on the registration and login pages.</p>
+        <div className="flex flex-col gap-5 border-b border-slate-100 pb-6 text-slate-800 text-left rtl:text-right">
+          <div className="flex justify-between items-center gap-3">
+            <div className="text-left rtl:text-right min-w-0">
+              <h4 className="text-sm font-extrabold text-slate-800 font-sans text-left rtl:text-right">{t("admin_google_oauth_title", "Google OAuth Authentication")}</h4>
+              <p className="text-xs text-slate-500 mt-1 leading-normal text-left rtl:text-right">{t("admin_google_oauth_desc", "Enable or disable Google Sign-In button on the registration and login pages.")}</p>
             </div>
             
             <button
               type="button"
               onClick={() => setGoogleEnabled(!googleEnabled)}
-              className={`w-12 h-6.5 rounded-full p-1 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center ${
+              className={`w-12 h-6.5 rounded-full p-1 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center border-none shrink-0 ${
                 googleEnabled ? "bg-teal-700" : "bg-slate-200"
               }`}
             >
@@ -126,30 +126,30 @@ export default function SocialLoginTab() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-black text-slate-450 uppercase tracking-wider">Google Client ID</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right">{t("admin_google_client_id_label", "Google Client ID")}</span>
             <input
               type="text"
               value={googleClientId}
               onChange={(e) => setGoogleClientId(e.target.value)}
               placeholder="e.g. 1234567890-abcdefg.apps.googleusercontent.com"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition text-left rtl:text-right"
             />
           </div>
         </div>
 
         {/* Facebook Authentication Settings */}
-        <div className="flex flex-col gap-5 pb-2 text-slate-800">
-          <div className="flex justify-between items-center">
-            <div>
-              <h4 className="text-sm font-extrabold text-slate-800 font-sans">Facebook Login Integration</h4>
-              <p className="text-xs text-slate-500 mt-1 leading-normal">Enable or disable Facebook login button on the registration and login pages.</p>
+        <div className="flex flex-col gap-5 pb-2 text-slate-800 text-left rtl:text-right">
+          <div className="flex justify-between items-center gap-3">
+            <div className="text-left rtl:text-right min-w-0">
+              <h4 className="text-sm font-extrabold text-slate-800 font-sans text-left rtl:text-right">{t("admin_fb_login_title", "Facebook Login Integration")}</h4>
+              <p className="text-xs text-slate-500 mt-1 leading-normal text-left rtl:text-right">{t("admin_fb_login_desc", "Enable or disable Facebook login button on the registration and login pages.")}</p>
             </div>
             
             <button
               type="button"
               onClick={() => setFacebookEnabled(!facebookEnabled)}
-              className={`w-12 h-6.5 rounded-full p-1 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center ${
+              className={`w-12 h-6.5 rounded-full p-1 transition-colors duration-200 cursor-pointer focus:outline-none flex items-center border-none shrink-0 ${
                 facebookEnabled ? "bg-teal-700" : "bg-slate-200"
               }`}
             >
@@ -159,14 +159,14 @@ export default function SocialLoginTab() {
             </button>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <span className="text-[10px] font-black text-slate-450 uppercase tracking-wider">Facebook App ID</span>
+          <div className="flex flex-col gap-1.5 text-left rtl:text-right">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right">{t("admin_fb_app_id_label", "Facebook App ID")}</span>
             <input
               type="text"
               value={facebookAppId}
               onChange={(e) => setFacebookAppId(e.target.value)}
               placeholder="e.g. 987654321098765"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:border-teal-700 transition text-left rtl:text-right"
             />
           </div>
         </div>

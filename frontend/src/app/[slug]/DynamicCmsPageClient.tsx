@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { FiSearch, FiChevronDown, FiHelpCircle, FiMail, FiMapPin, FiClock, FiBriefcase, FiActivity, FiSliders, FiX, FiUpload, FiCheckCircle, FiFileText } from "react-icons/fi";
 import CustomSelect from "@/components/CustomSelect";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface BuilderBlock {
   id: string;
@@ -16,6 +17,7 @@ interface BuilderBlock {
 }
 
 function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -124,50 +126,50 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
             <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-2xl font-black">
               <FiCheckCircle className="w-8 h-8" />
             </div>
-            <h3 className="text-xl font-black text-slate-900">Application Submitted!</h3>
+            <h3 className="text-xl font-black text-slate-900">{t("application_submitted_title", "Application Submitted!")}</h3>
             <p className="text-xs text-slate-500 max-w-sm">
-              Thank you for expressing interest in joining Buy2Lancer. Our HR team will review your resume and profile shortly.
+              {t("application_submitted_desc", "Thank you for expressing interest in joining Buy2Lancer. Our HR team will review your resume and profile shortly.")}
             </p>
             <button
               onClick={onClose}
-              className="mt-2 px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-xl transition"
+              className="mt-2 px-6 py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold rounded-xl transition cursor-pointer"
             >
-              Close Window
+              {t("close_window_btn", "Close Window")}
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
-              <span className="text-[10px] font-black uppercase tracking-wider text-teal-600">Career Opportunities</span>
-              <h3 className="text-lg font-black text-slate-900 mt-0.5">Submit Your CV / Resume</h3>
+              <span className="text-[10px] font-black uppercase tracking-wider text-teal-600">{t("career_opportunities_badge", "Career Opportunities")}</span>
+              <h3 className="text-lg font-black text-slate-900 mt-0.5">{t("submit_cv_resume_title", "Submit Your CV / Resume")}</h3>
             </div>
 
             {errorMsg && (
               <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs font-bold rounded-xl">
-                {errorMsg}
+                {t(errorMsg, errorMsg)}
               </div>
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Full Name *</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t("full_name_required", "Full Name *")}</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Alex Morgan"
+                  placeholder={t("full_name_placeholder", "e.g. Alex Morgan")}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-teal-600"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Email Address *</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t("email_address_required", "Email Address *")}</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="alex@example.com"
+                  placeholder={t("email_placeholder", "alex@example.com")}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-teal-600"
                 />
               </div>
@@ -175,40 +177,40 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Phone Number *</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t("phone_number_required", "Phone Number *")}</label>
                 <input
                   type="tel"
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/[^\d\s\-\+\(\)]/g, ""))}
-                  placeholder="e.g. 5550000000"
+                  placeholder={t("phone_placeholder", "e.g. 5550000000")}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:border-teal-600"
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Target Position / Role</label>
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">{t("target_position_role", "Target Position / Role")}</label>
                 <CustomSelect
                   value={role}
                   onChange={(val) => setRole(val)}
                   options={[
-                    { value: "Full Stack Developer", label: "Full Stack Developer" },
-                    { value: "Senior Frontend Engineer", label: "Senior Frontend Engineer" },
-                    { value: "Backend / Systems Architect", label: "Backend / Systems Architect" },
-                    { value: "UI/UX Product Designer", label: "UI/UX Product Designer" },
-                    { value: "Mobile App Developer", label: "Mobile App Developer" },
-                    { value: "DevOps / Cloud Engineer", label: "DevOps / Cloud Engineer" },
-                    { value: "General Candidate", label: "General Candidate" }
+                    { value: "Full Stack Developer", label: t("full_stack_developer_option", "Full Stack Developer") },
+                    { value: "Senior Frontend Engineer", label: t("senior_frontend_engineer_option", "Senior Frontend Engineer") },
+                    { value: "Backend / Systems Architect", label: t("backend_systems_architect_option", "Backend / Systems Architect") },
+                    { value: "UI/UX Product Designer", label: t("ui_ux_product_designer_option", "UI/UX Product Designer") },
+                    { value: "Mobile App Developer", label: t("mobile_app_developer_option", "Mobile App Developer") },
+                    { value: "DevOps / Cloud Engineer", label: t("devops_cloud_engineer_option", "DevOps / Cloud Engineer") },
+                    { value: "General Candidate", label: t("general_candidate_option", "General Candidate") }
                   ]}
-                  placeholder="Select Position / Role"
+                  placeholder={t("select_position_role_placeholder", "Select Position / Role")}
                 />
               </div>
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Cover Letter / Message</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t("cover_letter_message", "Cover Letter / Message")}</label>
               <textarea
                 rows={3}
-                placeholder="Briefly introduce your background, key projects, and expertise..."
+                placeholder={t("cover_letter_placeholder", "Briefly introduce your background, key projects, and expertise...")}
                 value={coverLetter}
                 onChange={(e) => setCoverLetter(e.target.value)}
                 className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:border-teal-500 resize-none"
@@ -217,23 +219,23 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
 
             {/* CV Upload Drop Area */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Attach CV / Resume (PDF or DOC)</label>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t("attach_cv_resume_label", "Attach CV / Resume (PDF or DOC)")}</label>
               <label className="border-2 border-dashed border-slate-200 hover:border-teal-500 bg-slate-50/70 hover:bg-teal-50/30 rounded-xl p-4 flex items-center justify-between gap-3 cursor-pointer transition">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-teal-55 text-teal-700 flex items-center justify-center shrink-0">
                     <FiFileText className="w-5 h-5" />
                   </div>
                   <div>
                     <span className="text-xs font-bold text-slate-700 block">
-                      {resumeFile ? resumeFile.name : "Click to upload CV / Resume"}
+                      {resumeFile ? resumeFile.name : t("click_upload_cv_resume", "Click to upload CV / Resume")}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-semibold block">
-                      {uploadingResume ? "Uploading file..." : resumeUrl ? "✓ Uploaded & Attached" : "Supports PDF, DOC, DOCX up to 10MB"}
+                    <span className="text-[10px] text-slate-404 font-semibold block">
+                      {uploadingResume ? t("uploading_file_indicator", "Uploading file...") : resumeUrl ? t("uploaded_attached_indicator", "✓ Uploaded & Attached") : t("resume_support_formats_desc", "Supports PDF, DOC, DOCX up to 10MB")}
                     </span>
                   </div>
                 </div>
                 <div className="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 shadow-sm shrink-0">
-                  {uploadingResume ? "Uploading..." : resumeFile ? "Change File" : "Browse File"}
+                  {uploadingResume ? t("uploading_btn_state", "Uploading...") : resumeFile ? t("change_file_btn", "Change File") : t("browse_file_btn", "Browse File")}
                 </div>
                 <input
                   type="file"
@@ -252,14 +254,14 @@ function CvApplicationModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
                 onClick={onClose}
                 className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50 transition cursor-pointer"
               >
-                Cancel
+                {t("cancel_btn", "Cancel")}
               </button>
               <button
                 type="submit"
                 disabled={submitting || uploadingResume}
                 className="px-6 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-650 text-white font-bold text-xs shadow-md transition disabled:opacity-50 cursor-pointer"
               >
-                {submitting ? "Submitting..." : "Submit CV Application"}
+                {submitting ? t("submitting_indicator", "Submitting...") : t("submit_cv_application_btn", "Submit CV Application")}
               </button>
             </div>
           </form>
@@ -345,6 +347,7 @@ function CarouselSection({ blockId, slides }: { blockId: string; slides: any[] }
 }
 
 function ContactForm() {
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
@@ -355,7 +358,7 @@ function ContactForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !message) {
-      setSubmitStatus({ type: "error", message: "Email and message are required fields." });
+      setSubmitStatus({ type: "error", message: t("email_msg_required", "Email and message are required fields.") });
       return;
     }
 
@@ -369,28 +372,28 @@ function ContactForm() {
       });
 
       if (res.ok) {
-        setSubmitStatus({ type: "success", message: "Thank you! Your inquiry has been submitted successfully." });
+        setSubmitStatus({ type: "success", message: t("inquiry_success_msg", "Thank you! Your inquiry has been submitted successfully.") });
         setName("");
         setEmail("");
         setSubject("");
         setMessage("");
       } else {
         const errData = await res.json();
-        setSubmitStatus({ type: "error", message: errData.error || "Failed to submit inquiry. Please try again." });
+        setSubmitStatus({ type: "error", message: t(errData.error || "Failed to submit inquiry. Please try again.", errData.error) });
       }
     } catch (err) {
       console.error("Submit inquiry error:", err);
-      setSubmitStatus({ type: "error", message: "Network error. Please check your connection and try again." });
+      setSubmitStatus({ type: "error", message: t("network_error_msg", "Network error. Please check your connection and try again.") });
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-slate-50 border border-slate-100 p-6 sm:p-8 rounded-xl flex flex-col gap-5 text-left">
+    <form onSubmit={handleSubmit} className="bg-slate-50 border border-slate-100 p-6 sm:p-8 rounded-xl flex flex-col gap-5 text-left font-sans">
       <div>
-        <h3 className="text-base font-black text-slate-800 tracking-tight leading-none mb-2 select-none">Send Message</h3>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none">Our team will respond back shortly</p>
+        <h3 className="text-base font-black text-slate-800 tracking-tight leading-none mb-2 select-none">{t("send_message_title", "Send Message")}</h3>
+        <p className="text-[11px] font-bold text-slate-404 uppercase tracking-wider select-none">{t("team_respond_back_desc", "Our team will respond back shortly")}</p>
       </div>
 
       {submitStatus && (
@@ -405,10 +408,10 @@ function ContactForm() {
 
       {/* Name */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Full Name</label>
+        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("full_name_label", "Full Name")}</label>
         <input
           type="text"
-          placeholder="John Doe"
+          placeholder={t("john_doe_placeholder", "John Doe")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
@@ -417,11 +420,11 @@ function ContactForm() {
 
       {/* Email */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Email Address <span className="text-rose-500">*</span></label>
+        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("email_address_required", "Email Address *")}</label>
         <input
           type="email"
           required
-          placeholder="john@example.com"
+          placeholder={t("email_placeholder", "john@example.com")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
@@ -430,10 +433,10 @@ function ContactForm() {
 
       {/* Subject */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Subject</label>
+        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("subject_label", "Subject")}</label>
         <input
           type="text"
-          placeholder="Business Inquiry / Partnership"
+          placeholder={t("subject_placeholder", "Business Inquiry / Partnership")}
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
@@ -442,11 +445,11 @@ function ContactForm() {
 
       {/* Message */}
       <div className="flex flex-col gap-1.5">
-        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Your Message <span className="text-rose-500">*</span></label>
+        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("your_message_required", "Your Message *")}</label>
         <textarea
           required
           rows={4}
-          placeholder="Write your inquiry details here..."
+          placeholder={t("message_placeholder", "Write your inquiry details here...")}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-3 text-xs font-bold text-slate-700 focus:outline-none resize-none transition-all"
@@ -461,10 +464,10 @@ function ContactForm() {
         {submitting ? (
           <>
             <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            <span>Sending Inquiry...</span>
+            <span>{t("sending_inquiry_indicator", "Sending Inquiry...")}</span>
           </>
         ) : (
-          <span>Submit Inquiry</span>
+          <span>{t("submit_inquiry_btn", "Submit Inquiry")}</span>
         )}
       </button>
     </form>
@@ -472,6 +475,7 @@ function ContactForm() {
 }
 
 function NewsletterForm() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -479,7 +483,7 @@ function NewsletterForm() {
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      setSubmitStatus({ type: "error", message: "Email address is required." });
+      setSubmitStatus({ type: "error", message: t("email_required", "Email address is required.") });
       return;
     }
 
@@ -493,15 +497,15 @@ function NewsletterForm() {
       });
 
       if (res.ok) {
-        setSubmitStatus({ type: "success", message: "Successfully subscribed to our newsletter!" });
+        setSubmitStatus({ type: "success", message: t("newsletter_success_msg", "Successfully subscribed to our newsletter!") });
         setEmail("");
       } else {
         const errData = await res.json();
-        setSubmitStatus({ type: "error", message: errData.error || "Failed to subscribe. Please try again." });
+        setSubmitStatus({ type: "error", message: t(errData.error || "Failed to subscribe. Please try again.", errData.error) });
       }
     } catch (err) {
       console.error("Newsletter subscribe error:", err);
-      setSubmitStatus({ type: "error", message: "Network error. Please check your connection and try again." });
+      setSubmitStatus({ type: "error", message: t("network_error_msg", "Network error. Please check your connection and try again.") });
     } finally {
       setSubmitting(false);
     }
@@ -510,15 +514,15 @@ function NewsletterForm() {
   return (
     <form onSubmit={handleSubscribe} className="bg-slate-50 border border-slate-100 p-6 sm:p-8 rounded-xl flex flex-col gap-5 text-left font-sans">
       <div>
-        <h3 className="text-base font-black text-slate-800 tracking-tight leading-none mb-2 select-none">Subscribe</h3>
-        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none font-sans">Get remote jobs & marketplace trends</p>
+        <h3 className="text-base font-black text-slate-800 tracking-tight leading-none mb-2 select-none">{t("subscribe_title", "Subscribe")}</h3>
+        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider select-none font-sans">{t("subscribe_subtitle", "Get remote jobs & marketplace trends")}</p>
       </div>
 
       {submitStatus && (
         <div className={`p-4 rounded-xl text-xs font-bold leading-normal font-sans ${
           submitStatus.type === "success" 
             ? "bg-primary/5 text-primary border border-primary/20" 
-            : "bg-rose-50 text-rose-800 border border-rose-100"
+            : "bg-rose-50 text-rose-805 border border-rose-100"
         }`}>
           {submitStatus.message}
         </div>
@@ -526,11 +530,11 @@ function NewsletterForm() {
 
       {/* Email */}
       <div className="flex flex-col gap-1.5 font-sans">
-        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">Email Address <span className="text-rose-500">*</span></label>
+        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block select-none">{t("email_address_required", "Email Address *")}</label>
         <input
           type="email"
           required
-          placeholder="your.email@example.com"
+          placeholder={t("email_placeholder_your", "your.email@example.com")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 focus:outline-none transition-all"
@@ -545,10 +549,10 @@ function NewsletterForm() {
         {submitting ? (
           <>
             <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            <span>Subscribing...</span>
+            <span>{t("subscribing_indicator", "Subscribing...")}</span>
           </>
         ) : (
-          <span>Subscribe Now</span>
+          <span>{t("subscribe_now_btn", "Subscribe Now")}</span>
         )}
       </button>
     </form>
@@ -556,12 +560,42 @@ function NewsletterForm() {
 }
 
 export default function DynamicCmsPageClient() {
+  const { t, direction } = useLanguage();
   const params = useParams();
   const slug = params?.slug as string;
 
   const [pageData, setPageData] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+
+  const [supportEmail, setSupportEmail] = useState("support@buy2lancer.com");
+  const [partnershipEmail, setPartnershipEmail] = useState("partners@buy2lancer.com");
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await fetch(`${API_URL}/settings`);
+        if (res.ok) {
+          const settingsList = await res.json();
+          const emailSet = settingsList.find((s: any) => s.setting_key === "email_settings");
+          if (emailSet) {
+            let val = emailSet.setting_value;
+            if (typeof val === "string") {
+              try { val = JSON.parse(val); } catch {}
+            }
+            if (val && val.email_id) {
+              setSupportEmail(val.email_id);
+              const domain = val.email_id.includes("@") ? val.email_id.split("@")[1] : "buy2lancer.com";
+              setPartnershipEmail(`partners@${domain}`);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load settings in CMS contact page:", err);
+      }
+    };
+    loadSettings();
+  }, []);
 
   // FAQ state
   const [openFaqIdx, setOpenFaqIdx] = useState<number | null>(null);
@@ -777,10 +811,7 @@ export default function DynamicCmsPageClient() {
                   <div>
                     <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider mb-1 select-none">Support & Business</h4>
                     <p className="text-xs text-slate-500 font-semibold">
-                      Client Support: <a href="mailto:support@buy2lancer.com" className="text-primary hover:underline font-bold">support@buy2lancer.com</a>
-                    </p>
-                    <p className="text-xs text-slate-500 font-semibold mt-1">
-                      Partnerships: <a href="mailto:partners@buy2lancer.com" className="text-primary hover:underline font-bold">partners@buy2lancer.com</a>
+                      Email Address: <a href={`mailto:${supportEmail}`} className="text-primary hover:underline font-bold">{supportEmail}</a>
                     </p>
                   </div>
                 </div>
@@ -867,23 +898,23 @@ export default function DynamicCmsPageClient() {
           
           <div className="max-w-4xl mx-auto relative z-10 flex flex-col items-center gap-4">
             <span className="bg-primary/5 border border-primary/10 text-primary text-[10px] font-black tracking-widest uppercase py-1.5 px-4 rounded-full shadow-sm shrink-0 inline-block mb-1 select-none">
-              Stay Informed
+              {t("stay_informed_badge", "Stay Informed")}
             </span>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-none font-display text-slate-800">
-              {pageTitle}
+              {t(pageTitle || "", pageTitle)}
             </h1>
             <p className="text-slate-500 text-sm sm:text-base md:text-lg max-w-2xl mx-auto leading-relaxed font-semibold">
-              {pageSubtitle}
+              {t(pageSubtitle || "", pageSubtitle)}
             </p>
           </div>
         </section>
 
         {/* Main One-Column Workspace */}
-        <main className="flex-1 w-full max-w-5xl mx-auto py-16 px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col gap-12">
+        <main className="flex-1 w-full max-w-5xl mx-auto py-16 px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col gap-12 font-sans">
           
           {/* Centered Subscription Box */}
           <div className="max-w-2xl mx-auto w-full">
-            <div className="bg-white border border-slate-200/60 shadow-xl rounded-xl p-6 sm:p-12 relative overflow-hidden text-center">
+            <div className="bg-white border border-slate-200/60 shadow-xl rounded-xl p-6 sm:p-12 relative overflow-hidden text-center animate-fadeIn">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full filter blur-xl pointer-events-none" />
               <div className="absolute bottom-0 left-0 w-20 h-20 bg-secondary/5 rounded-full filter blur-xl pointer-events-none" />
               
@@ -895,25 +926,25 @@ export default function DynamicCmsPageClient() {
 
           {/* Horizontal Benefit Columns */}
           <div className="w-full mt-4">
-            <div className="text-center mb-8">
+            <div className="text-center mb-8 font-sans">
               <span className="text-[10px] font-black text-primary bg-primary/5 border border-primary/10 px-3 py-1 rounded-full uppercase tracking-wider select-none">
-                Subscribers Privileges
+                {t("subscribers_privileges_badge", "Subscribers Privileges")}
               </span>
               <h2 className="text-2xl font-black text-slate-800 mt-4 tracking-tight leading-tight select-none">
-                Exclusive Weekly Insights
+                {t("exclusive_weekly_insights_title", "Exclusive Weekly Insights")}
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-sans">
               {/* Weekly curated remote jobs */}
               <div className="flex flex-col gap-4 p-6 bg-white border border-slate-200/55 rounded-xl hover:border-primary/20 hover:shadow-md hover:shadow-primary/5 transition-all duration-300 shadow-sm text-left">
                 <div className="w-11 h-11 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shrink-0 text-lg">
                   <FiBriefcase className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-2 select-none">Curated Job Lists</h4>
+                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-2 select-none">{t("curated_job_lists_title", "Curated Job Lists")}</h4>
                   <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                    Get premium, hand-picked remote opportunities matching your skills directly in your inbox.
+                    {t("curated_job_lists_desc", "Get premium, hand-picked remote opportunities matching your skills directly in your inbox.")}
                   </p>
                 </div>
               </div>
@@ -924,9 +955,9 @@ export default function DynamicCmsPageClient() {
                   <FiActivity className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-2 select-none">Guides & Tips</h4>
+                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-2 select-none">{t("guides_tips_title", "Guides & Tips")}</h4>
                   <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                    Learn interviewing success strategies, contract best practices, and rate negotiation tips.
+                    {t("guides_tips_desc", "Learn interviewing success strategies, contract best practices, and rate negotiation tips.")}
                   </p>
                 </div>
               </div>
@@ -937,9 +968,9 @@ export default function DynamicCmsPageClient() {
                   <FiSliders className="w-4 h-4" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-2 select-none">Marketplace Insights</h4>
+                  <h4 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-2 select-none">{t("marketplace_insights_title", "Marketplace Insights")}</h4>
                   <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                    Stay updated on the latest hiring trends, average contract values, and in-demand skills.
+                    {t("marketplace_insights_desc", "Stay updated on the latest hiring trends, average contract values, and in-demand skills.")}
                   </p>
                 </div>
               </div>
@@ -982,17 +1013,17 @@ export default function DynamicCmsPageClient() {
               {/* Header section with page title */}
               <div className="border-b border-slate-100 pb-6 mb-8 text-left">
                 <span className="bg-teal-50 border border-teal-100 text-teal-800 text-[10px] font-black tracking-widest uppercase py-1.5 px-4 rounded-full shadow-sm shrink-0 inline-block mb-3 select-none">
-                  Information Portal
+                  {t("information_portal_badge", "Information Portal")}
                 </span>
                 <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight leading-none capitalize">
-                  {pageData.title?.replace(/-/g, " ")}
+                  {t(pageData.title, pageData.title?.replace(/-/g, " "))}
                 </h1>
               </div>
 
               {/* Rich HTML Content styling container */}
               <div 
                 className="cms-html-content text-left"
-                dangerouslySetInnerHTML={{ __html: pageData.content }} 
+                dangerouslySetInnerHTML={{ __html: t(pageData.content, pageData.content) }} 
               />
             </div>
           </div>
@@ -1012,10 +1043,10 @@ export default function DynamicCmsPageClient() {
                     
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center flex flex-col items-center gap-6">
                       <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-800 tracking-tight font-display max-w-3xl leading-tight">
-                        {data.headline}
+                        {t(data.headline || "", data.headline)}
                       </h1>
                       <p className="text-base sm:text-lg text-slate-500 max-w-2xl font-medium leading-relaxed">
-                        {data.subheadline}
+                        {t(data.subheadline || "", data.subheadline)}
                       </p>
                     </div>
                   </section>
@@ -1026,7 +1057,7 @@ export default function DynamicCmsPageClient() {
                   <section key={block.id} className="py-10 bg-slate-100/40 border-b border-slate-200/50 text-center">
                     <div className="max-w-7xl mx-auto px-4">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-4">
-                        {data.title}
+                        {t(data.title || "", data.title)}
                       </span>
                       <div className="flex flex-wrap justify-center items-center gap-8 sm:gap-12">
                         {data.logos?.split(",").map((logo: string, idx: number) => (
@@ -1034,7 +1065,7 @@ export default function DynamicCmsPageClient() {
                             key={idx}
                             className="text-base sm:text-lg font-black text-slate-400 tracking-tight select-none opacity-70 hover:opacity-100 hover:-translate-y-0.5 hover:scale-105 transition-all duration-250 cursor-pointer"
                           >
-                            {logo.trim()}
+                            {t(logo.trim(), logo.trim())}
                           </span>
                         ))}
                       </div>
@@ -1047,11 +1078,11 @@ export default function DynamicCmsPageClient() {
                   <section key={block.id} className="py-12 bg-white text-center">
                     <div className="max-w-7xl mx-auto px-4">
                       <h2 className="text-3xl font-black text-slate-850 tracking-tight font-display">
-                        {data.title}
+                        {t(data.title || "", data.title)}
                       </h2>
                       {data.subtitle && (
                         <p className="text-sm text-slate-450 mt-2 font-medium">
-                          {data.subtitle}
+                          {t(data.subtitle || "", data.subtitle)}
                         </p>
                       )}
                     </div>
@@ -1062,8 +1093,8 @@ export default function DynamicCmsPageClient() {
                 return (
                   <section key={block.id} className="py-16 bg-white">
                     <div
-                      className="max-w-4xl mx-auto px-4 prose prose-slate text-slate-650 leading-relaxed font-serif"
-                      dangerouslySetInnerHTML={{ __html: data.content || "" }}
+                      className="max-w-4xl mx-auto px-4 prose prose-slate text-slate-650 leading-relaxed font-serif text-left"
+                      dangerouslySetInnerHTML={{ __html: t(data.content || "", data.content) }}
                     />
                   </section>
                 );
@@ -1073,7 +1104,7 @@ export default function DynamicCmsPageClient() {
                   <section key={block.id} className="py-20 bg-slate-50 border-t border-b border-slate-205/50">
                     <div className="max-w-3xl mx-auto px-4">
                       <h2 className="text-3xl font-black text-center text-slate-850 tracking-tight font-display mb-10">
-                        {data.title}
+                        {t(data.title || "", data.title)}
                       </h2>
                       
                       <div className="flex flex-col gap-3">
@@ -1090,14 +1121,14 @@ export default function DynamicCmsPageClient() {
                               >
                                 <span className="flex items-center gap-2.5">
                                   <FiHelpCircle className="w-4 h-4 text-teal-655 shrink-0" />
-                                  {item.q}
+                                  {t(item.q || "", item.q)}
                                 </span>
                                 <FiChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
                               </button>
                               
                               {isOpen && (
-                                <div className="px-5 pb-5 text-xs text-slate-500 leading-relaxed border-t border-slate-50 pt-3">
-                                  {item.a}
+                                <div className="px-5 pb-5 text-xs text-slate-500 leading-relaxed border-t border-slate-50 pt-3 text-left">
+                                  {t(item.a || "", item.a)}
                                 </div>
                               )}
                             </div>
@@ -1115,10 +1146,10 @@ export default function DynamicCmsPageClient() {
                     
                     <div className="max-w-7xl mx-auto px-4 text-center flex flex-col items-center gap-4 relative z-10">
                       <h2 className="text-3xl sm:text-4xl font-black tracking-tight font-display text-white">
-                        {data.title}
+                        {t(data.title || "", data.title)}
                       </h2>
                       <p className="text-sm sm:text-base text-white/90 max-w-xl font-semibold leading-relaxed">
-                        {data.description}
+                        {t(data.description || "", data.description)}
                       </p>
                       <a
                         href={data.buttonLink || "#"}
@@ -1132,7 +1163,7 @@ export default function DynamicCmsPageClient() {
                         className="!bg-white hover:!bg-slate-100 !text-slate-900 font-black text-xs sm:text-sm px-8 py-3.5 rounded-xl shadow-xl hover:shadow-2xl hover:scale-[1.03] mt-3 transition-all transform active:scale-95 cursor-pointer inline-flex items-center gap-2 border border-white/20 opacity-100 select-none"
                       >
                         <span style={{ color: "#0f172a", opacity: 1 }} className="text-slate-900 font-black">
-                          {data.buttonText && data.buttonText.trim() ? data.buttonText : "Email CV"}
+                          {t(data.buttonText || "Email CV", data.buttonText || "Email CV")}
                         </span>
                       </a>
                     </div>
@@ -1154,11 +1185,11 @@ export default function DynamicCmsPageClient() {
                     <div className="max-w-7xl mx-auto px-4">
                       <div className="text-center mb-12">
                         <h2 className="text-3xl font-black text-slate-850 tracking-tight font-display">
-                          {data.title}
+                          {t(data.title || "", data.title)}
                         </h2>
                         {data.subtitle && (
                           <p className="text-sm text-slate-450 mt-2 font-medium">
-                            {data.subtitle}
+                            {t(data.subtitle || "", data.subtitle)}
                           </p>
                         )}
                       </div>
@@ -1167,16 +1198,16 @@ export default function DynamicCmsPageClient() {
                         {data.features?.map((feat: any, idx: number) => (
                           <div
                             key={idx}
-                            className="bg-white p-8 rounded-xl border border-slate-200/80 hover:shadow-2xl hover:border-teal-500/20 hover:-translate-y-1.5 transition-all duration-300 flex flex-col gap-3"
+                            className="bg-white p-8 rounded-xl border border-slate-200/80 hover:shadow-2xl hover:border-teal-500/20 hover:-translate-y-1.5 transition-all duration-300 flex flex-col gap-3 text-left"
                           >
                             <div className="w-10 h-10 rounded-xl bg-teal-55 border border-teal-250 flex items-center justify-center text-teal-700 font-extrabold shadow-sm shrink-0">
                               <span className="text-sm font-black">{idx + 1}</span>
                             </div>
                             <h4 className="font-extrabold text-slate-805 text-base transition-colors group-hover:text-teal-750">
-                              {feat.title}
+                              {t(feat.title || "", feat.title)}
                             </h4>
                             <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                              {feat.description}
+                              {t(feat.description || "", feat.description)}
                             </p>
                           </div>
                         ))}
@@ -1191,11 +1222,11 @@ export default function DynamicCmsPageClient() {
                     <div className="max-w-7xl mx-auto px-4">
                       <div className="text-center mb-12">
                         <h2 className="text-3xl font-black text-slate-850 tracking-tight font-display">
-                          {data.title}
+                          {t(data.title || "", data.title)}
                         </h2>
                         {data.subtitle && (
                           <p className="text-sm text-slate-450 mt-2 font-medium">
-                            {data.subtitle}
+                            {t(data.subtitle || "", data.subtitle)}
                           </p>
                         )}
                       </div>
@@ -1206,7 +1237,7 @@ export default function DynamicCmsPageClient() {
                           return (
                             <div
                               key={idx}
-                              className={`p-8 rounded-xl border flex flex-col gap-6 relative transition-all duration-350 hover:shadow-2xl hover:-translate-y-2 ${
+                              className={`p-8 rounded-xl border flex flex-col gap-6 relative transition-all duration-350 hover:shadow-2xl hover:-translate-y-2 text-left ${
                                 isPromo
                                   ? "bg-gradient-to-tr from-slate-900 to-slate-950 text-white border-slate-800 hover:border-teal-500/25"
                                   : "bg-slate-50/50 border-slate-200 hover:border-teal-700/20"
@@ -1214,17 +1245,17 @@ export default function DynamicCmsPageClient() {
                             >
                               {isPromo && (
                                 <span className="absolute top-4 right-4 bg-teal-500 text-white font-bold text-[9px] uppercase px-2 py-0.5 rounded-full tracking-wider animate-pulse">
-                                  Most Popular
+                                  {t("most_popular_badge", "Most Popular")}
                                 </span>
                               )}
                               <div>
                                 <h4 className={`text-base font-extrabold ${isPromo ? "text-teal-400" : "text-slate-805"}`}>
-                                  {tier.name}
+                                  {t(tier.name || "", tier.name)}
                                 </h4>
                                 <div className="flex items-baseline gap-1 mt-2">
-                                  <span className="text-4xl font-black tracking-tight">{tier.price}</span>
+                                  <span className="text-4xl font-black tracking-tight">{t(tier.price || "", tier.price)}</span>
                                   <span className={`text-xs font-bold ${isPromo ? "text-slate-400" : "text-slate-500"}`}>
-                                    {tier.billing}
+                                    {t(tier.billing || "", tier.billing)}
                                   </span>
                                 </div>
                               </div>
@@ -1233,7 +1264,7 @@ export default function DynamicCmsPageClient() {
                                 {tier.features?.map((f: string, fIdx: number) => (
                                   <li key={fIdx} className="text-xs font-semibold flex items-center gap-2">
                                     <span className="w-1.5 h-1.5 bg-teal-500 rounded-full shrink-0 animate-pulse" />
-                                    <span className={isPromo ? "text-slate-350" : "text-slate-600"}>{f}</span>
+                                    <span className={isPromo ? "text-slate-350" : "text-slate-600"}>{t(f || "", f)}</span>
                                   </li>
                                 ))}
                               </ul>
@@ -1246,7 +1277,7 @@ export default function DynamicCmsPageClient() {
                                     : "bg-slate-850 hover:bg-slate-950 text-white hover:shadow-lg hover:shadow-slate-800/10"
                                 }`}
                               >
-                                Select Plan
+                                {t("select_plan_btn", "Select Plan")}
                               </a>
                             </div>
                           );
@@ -1262,11 +1293,11 @@ export default function DynamicCmsPageClient() {
                     <div className="max-w-7xl mx-auto px-4">
                       <div className="text-center mb-12">
                         <h2 className="text-3xl font-black text-slate-850 tracking-tight font-display">
-                          {data.title}
+                          {t(data.title || "", data.title)}
                         </h2>
                         {data.subtitle && (
                           <p className="text-sm text-slate-450 mt-2 font-medium">
-                            {data.subtitle}
+                            {t(data.subtitle || "", data.subtitle)}
                           </p>
                         )}
                       </div>
@@ -1275,15 +1306,15 @@ export default function DynamicCmsPageClient() {
                         {data.reviews?.map((rev: any, idx: number) => (
                           <div
                             key={idx}
-                            className="bg-white p-8 rounded-xl border border-slate-200/80 flex flex-col justify-between gap-4 hover:shadow-2xl hover:-translate-y-1.5 hover:border-teal-500/10 transition-all duration-300"
+                            className="bg-white p-8 rounded-xl border border-slate-200/80 flex flex-col justify-between gap-4 hover:shadow-2xl hover:-translate-y-1.5 hover:border-teal-500/10 transition-all duration-300 text-left"
                           >
                             <p className="text-sm italic text-slate-650 leading-relaxed font-medium">
-                              "{rev.quote}"
+                              "{t(rev.quote || "", rev.quote)}"
                             </p>
                             <div className="flex items-center justify-between mt-2 border-t pt-4 border-slate-100">
                               <div>
-                                <h5 className="font-extrabold text-sm text-slate-805">{rev.author}</h5>
-                                <p className="text-[10px] font-bold text-slate-450 uppercase tracking-wider">{rev.role}</p>
+                                <h5 className="font-extrabold text-sm text-slate-805">{t(rev.author || "", rev.author)}</h5>
+                                <p className="text-[10px] font-bold text-slate-450 uppercase tracking-wider">{t(rev.role || "", rev.role)}</p>
                               </div>
                               <div className="flex gap-0.5 text-amber-400 text-xs">
                                 {Array.from({ length: Number(rev.rating || 5) }).map((_, rIdx) => (
@@ -1300,14 +1331,14 @@ export default function DynamicCmsPageClient() {
 
               case "Categories":
                 return (
-                  <section key={block.id} className="py-20 bg-white border-b border-slate-200/50">
+                  <section key={block.id} className="py-20 bg-white border-b border-slate-200/50 font-sans">
                     <div className="max-w-7xl mx-auto px-4">
                       <div className="text-center mb-12">
                         <h2 className="text-3xl font-black text-slate-850 tracking-tight font-display">
-                          {data.title}
+                          {t(data.title || "", data.title)}
                         </h2>
                         <p className="text-sm text-slate-450 mt-2 font-medium">
-                          {data.subtitle}
+                          {t(data.subtitle || "", data.subtitle)}
                         </p>
                       </div>
 
@@ -1326,10 +1357,10 @@ export default function DynamicCmsPageClient() {
                               {cat.name.charAt(0)}
                             </div>
                             <h4 className="font-extrabold text-sm text-slate-805 mt-2 group-hover:text-teal-750 transition-colors">
-                              {cat.name}
+                              {t(cat.name, cat.name)}
                             </h4>
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                              {cat.count}
+                              {t(cat.count, cat.count)}
                             </span>
                           </div>
                         ))}

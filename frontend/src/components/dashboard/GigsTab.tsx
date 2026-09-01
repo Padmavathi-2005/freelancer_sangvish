@@ -82,7 +82,7 @@ const handleDownloadVideo = async (rawUrl: string, filename = "showcase-video.mp
 };
 
 const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
-  const { formatPrice } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const { 
     isCreatingGig, 
     setIsCreatingGig,
@@ -103,6 +103,14 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
   } = useDashboard();
 
   const [onboardingCheckLoading, setOnboardingCheckLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const gigsPerPage = 6;
+  const totalPages = Math.ceil((gigs?.length || 0) / gigsPerPage);
+  const paginatedGigs = gigs ? gigs.slice((currentPage - 1) * gigsPerPage, currentPage * gigsPerPage) : [];
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [gigs?.length]);
 
   const handleCreateGigClick = async () => {
     const token = localStorage.getItem("token");
@@ -1001,10 +1009,10 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
               </div>
               <div>
                 <h2 className="text-base font-extrabold text-slate-800 whitespace-nowrap" style={{ whiteSpace: 'nowrap' }}>
-                  {editingGig ? `Edit Gig Settings` : `Create a Service Gig`}
+                  {editingGig ? t("edit_gig_settings_title", "Edit Gig Settings") : t("create_service_gig_title", "Create a Service Gig")}
                 </h2>
                 <p className="text-slate-404 text-xs mt-0.5">
-                  {editingGig ? `Update your service pricing, showcases, or descriptions.` : `Package your expert skills into a purchaseable service.`}
+                  {editingGig ? t("edit_gig_settings_desc", "Update your service pricing, showcases, or descriptions.") : t("create_service_gig_desc", "Package your expert skills into a purchaseable service.")}
                 </p>
               </div>
             </div>
@@ -1020,7 +1028,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
               className="text-xs font-bold text-slate-505 hover:text-slate-855 bg-slate-100 px-3 py-1.5 rounded-xl cursor-pointer transition-colors border border-slate-200 hover:bg-slate-200/60 whitespace-nowrap shrink-0"
               style={{ whiteSpace: 'nowrap' }}
             >
-              ← Back to Gigs
+              {t("back_to_gigs_btn", "← Back to Gigs")}
             </button>
           </div>
 
@@ -1046,9 +1054,9 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
             {/* Step progress bar */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-5 mb-4 w-full gap-2 sm:gap-4">
               {[
-                { num: 1, label: "Overview", desc: "Basic details & skills" },
-                { num: 2, label: "Pricing & Logistics", desc: "Rates & delivery days" },
-                { num: 3, label: "Media & Description", desc: "Showcases & service info" }
+                { num: 1, label: t("overview_step_label", "Overview"), desc: t("overview_step_desc", "Basic details & skills") },
+                { num: 2, label: t("pricing_logistics_step_label", "Pricing & Logistics"), desc: t("pricing_logistics_step_desc", "Rates & delivery days") },
+                { num: 3, label: t("media_desc_step_label", "Media & Description"), desc: t("media_desc_step_desc", "Showcases & service info") }
               ].map((s, idx, arr) => {
                 const completed = isStepCompleted(s.num);
                 const isActive = activeFormStep === s.num;
@@ -1090,11 +1098,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
               <div className="flex flex-col gap-4 animate-fadeIn">
                 {/* Gig Title */}
                 <div>
-                  <label className="text-xs font-bold block mb-1 text-slate-655">Gig Title *</label>
+                  <label className="text-xs font-bold block mb-1 text-slate-655">{t("gig_title_label", "Gig Title *")}</label>
                   <input
                     id="gig-title-input"
                     type="text"
-                    placeholder="e.g. I will build a premium responsive Next.js landing page"
+                    placeholder={t("gig_title_placeholder", "e.g. I will build a premium responsive Next.js landing page")}
                     value={gigTitle}
                     onChange={(e) => setGigTitle(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
@@ -1103,7 +1111,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                 {/* Gig Slug (Custom URL identifier) */}
                 <div>
-                  <label className="text-xs font-bold block mb-1 text-slate-655">Custom URL Slug *</label>
+                  <label className="text-xs font-bold block mb-1 text-slate-655">{t("custom_url_slug_label", "Custom URL Slug *")}</label>
                   <div className="flex items-center bg-slate-50/50 border border-slate-250 hover:border-slate-350 focus-within:border-primary/50 focus-within:bg-white rounded-xl overflow-hidden transition-all relative">
                     <span className="bg-slate-100 text-slate-450 border-r border-slate-250 px-3.5 py-3 text-xxs font-extrabold select-none shrink-0">
                       {typeof window !== "undefined"
@@ -1115,7 +1123,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       <input
                         id="gig-slug-input"
                         type="text"
-                        placeholder="custom-url-identifier"
+                        placeholder={t("custom_url_slug_placeholder", "custom-url-identifier")}
                         value={gigSlug}
                         onChange={(e) => setGigSlug(slugifyText(e.target.value))}
                         className="w-full bg-transparent px-4 py-3 text-xs focus:outline-none font-bold border-none outline-none pr-10"
@@ -1134,36 +1142,36 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     </div>
                   </div>
                   {slugAvailable === true && (
-                    <p className="text-[10px] text-emerald-600 font-bold mt-1">✓ URL slug is available!</p>
+                    <p className="text-[10px] text-emerald-600 font-bold mt-1">{t("slug_available_msg", "✓ URL slug is available!")}</p>
                   )}
                   {slugAvailable === false && (
-                    <p className="text-[10px] text-rose-500 font-bold mt-1">✗ Slug is already taken by another service.</p>
+                    <p className="text-[10px] text-rose-500 font-bold mt-1">{t("slug_taken_msg", "✗ Slug is already taken by another service.")}</p>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Category Selection */}
                   <div>
-                    <label className="text-xs font-bold block mb-1 text-slate-650">Category *</label>
+                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("category_label", "Category *")}</label>
                     <div id="gig-category-select">
                       <CustomSelect
-                        options={gigCategories.map((c) => ({ value: c.category_id.toString(), label: c.category_name }))}
+                        options={gigCategories.map((c) => ({ value: c.category_id.toString(), label: t(c.category_name, c.category_name) }))}
                         value={gigCategoryId}
                         onChange={handleGigCategoryChange}
-                        placeholder="Select Category"
+                        placeholder={t("select_category_placeholder", "Select Category")}
                       />
                     </div>
                   </div>
 
                   {/* Subcategory Selection */}
                   <div>
-                    <label className="text-xs font-bold block mb-1 text-slate-650">Sub-category *</label>
+                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("subcategory_label", "Sub-category *")}</label>
                     <div id="gig-subcategory-select">
                       <CustomSelect
-                        options={gigSubCategories.map((sc) => ({ value: sc.sub_category_id.toString(), label: sc.sub_category_name }))}
+                        options={gigSubCategories.map((sc) => ({ value: sc.sub_category_id.toString(), label: t(sc.sub_category_name, sc.sub_category_name) }))}
                         value={gigSubCategoryId}
                         onChange={handleGigSubCategoryChange}
-                        placeholder="Select Subcategory"
+                        placeholder={t("select_subcategory_placeholder", "Select Subcategory")}
                         disabled={!gigCategoryId}
                       />
                     </div>
@@ -1172,7 +1180,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                 {/* Skills tags selection */}
                 <div>
-                  <label className="text-xs font-bold block mb-2 text-slate-655">Associated Skills *</label>
+                  <label className="text-xs font-bold block mb-2 text-slate-655">{t("associated_skills_label", "Associated Skills *")}</label>
                   {gigAvailableSkills.length > 0 ? (
                     <div id="gig-skills-container" className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-3.5 bg-slate-50 border border-slate-200 rounded-xl no-scrollbar">
                       {gigAvailableSkills.map((skill) => {
@@ -1188,14 +1196,14 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                 : "bg-white border-slate-200 text-slate-600 hover:border-slate-350"
                             }`}
                           >
-                            {skill.skill_name}
+                            {t(skill.skill_name, skill.skill_name)}
                           </button>
                         );
                       })}
                     </div>
                   ) : (
                     <div className="p-4 border border-dashed border-slate-200 rounded-xl text-center text-slate-400 text-xs font-medium bg-slate-50/50">
-                      Select category and sub-category to load matching skill tags.
+                      {t("select_cat_subcat_skills_msg", "Select category and sub-category to load matching skill tags.")}
                     </div>
                   )}
                 </div>
@@ -1210,7 +1218,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                   }}
                   className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5 self-end hover:scale-[1.02] active:scale-95 mt-2 whitespace-nowrap"
                 >
-                  <span>Continue to Pricing</span>
+                  <span>{t("continue_pricing_btn", "Continue to Pricing")}</span>
                   <FiArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -1222,7 +1230,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Payment Type Selection */}
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-bold block mb-2 text-slate-655">Payment Structure *</label>
+                    <label className="text-xs font-bold block mb-2 text-slate-655">{t("payment_structure_label", "Payment Structure *")}</label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
@@ -1234,8 +1242,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         }`}
                       >
                         <FiDollarSign className="w-5 h-5" />
-                        <span className="text-xs font-black">Fixed Amount</span>
-                        <span className="text-[10px] text-slate-400 font-semibold">Single price or budget range</span>
+                        <span className="text-xs font-black">{t("fixed_amount_label", "Fixed Amount")}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold">{t("fixed_amount_desc", "Single price or budget range")}</span>
                       </button>
                       <button
                         type="button"
@@ -1247,8 +1255,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         }`}
                       >
                         <FiCheckCircle className="w-5 h-5" />
-                        <span className="text-xs font-black">Milestone-based</span>
-                        <span className="text-[10px] text-slate-400 font-semibold">Multiple payment checkpoints</span>
+                        <span className="text-xs font-black">{t("milestone_based_label", "Milestone-based")}</span>
+                        <span className="text-[10px] text-slate-400 font-semibold">{t("milestone_based_desc", "Multiple payment checkpoints")}</span>
                       </button>
                     </div>
                   </div>
@@ -1258,8 +1266,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     <div className="sm:col-span-2 flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-xl p-5">
                       <div className="flex items-center justify-between border-b border-slate-200/60 pb-3">
                         <div>
-                          <label className="text-xs font-black block text-slate-800">Tiered Pricing Packages</label>
-                          <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">Enable Fiverr-style packages or offer a single fixed price.</p>
+                          <label className="text-xs font-black block text-slate-800">{t("tiered_pricing_packages_title", "Tiered Pricing Packages")}</label>
+                          <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">{t("tiered_pricing_packages_desc", "Enable Fiverr-style packages or offer a single fixed price.")}</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer select-none">
                           <input
@@ -1277,7 +1285,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                             className="sr-only peer"
                           />
                           <div className="relative w-9 h-5 bg-slate-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
-                          <span className="ml-2 text-xs font-bold text-slate-700">Tiered Packages</span>
+                          <span className="ml-2 text-xs font-bold text-slate-700">{t("tiered_packages_toggle", "Tiered Packages")}</span>
                         </label>
                       </div>
 
@@ -1285,7 +1293,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         /* SINGLE PACKAGES & RANGES (DEFAULT FLOW) */
                         <div className="flex flex-col gap-4">
                           <div>
-                            <label className="text-xs font-bold block mb-2 text-slate-655">Pricing Mode</label>
+                            <label className="text-xs font-bold block mb-2 text-slate-655">{t("pricing_mode_label", "Pricing Mode")}</label>
                             <div className="flex flex-col sm:flex-row gap-2">
                               <button
                                 type="button"
@@ -1296,7 +1304,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                     : "bg-white text-slate-600 border-slate-200 hover:border-slate-350"
                                 }`}
                               >
-                                Single Fixed Price
+                                {t("single_fixed_price_btn", "Single Fixed Price")}
                               </button>
                               <button
                                 type="button"
@@ -1307,14 +1315,14 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                     : "bg-white text-slate-600 border-slate-200 hover:border-slate-350"
                                 }`}
                               >
-                                Budget Range (Min/Max)
+                                {t("budget_range_btn", "Budget Range (Min/Max)")}
                               </button>
                             </div>
                           </div>
 
                           {priceType === "single" ? (
                             <div>
-                              <label className="text-xs font-bold block mb-1 text-slate-655">Fixed Price *</label>
+                              <label className="text-xs font-bold block mb-1 text-slate-655">{t("fixed_price_label", "Fixed Price *")}</label>
                               <div className="flex items-center bg-white border border-slate-200 rounded-xl focus-within:border-primary transition duration-150 overflow-hidden">
                                 <span className="bg-slate-50 border-r border-slate-200 px-3.5 py-2.5 text-xs text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
                                 <input
@@ -1330,7 +1338,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           ) : (
                             <div className="grid grid-cols-2 gap-4">
                               <div>
-                                <label className="text-xs font-bold block mb-1 text-slate-655">Minimum Price *</label>
+                                <label className="text-xs font-bold block mb-1 text-slate-655">{t("minimum_price_label", "Minimum Price *")}</label>
                                 <div className="flex items-center bg-white border border-slate-200 rounded-xl focus-within:border-primary transition duration-150 overflow-hidden">
                                   <span className="bg-slate-50 border-r border-slate-200 px-3.5 py-2.5 text-xs text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
                                   <input
@@ -1347,7 +1355,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                 </div>
                               </div>
                               <div>
-                                <label className="text-xs font-bold block mb-1 text-slate-655">Maximum Price *</label>
+                                <label className="text-xs font-bold block mb-1 text-slate-655">{t("maximum_price_label", "Maximum Price *")}</label>
                                 <div className="flex items-center bg-white border border-slate-200 rounded-xl focus-within:border-primary transition duration-150 overflow-hidden">
                                   <span className="bg-slate-50 border-r border-slate-200 px-3.5 py-2.5 text-xs text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
                                   <input
@@ -1373,7 +1381,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                 const isTabEnabled = tab === "Basic" || (tab === "Standard" ? enabledPlans.Standard : enabledPlans.Premium);
                                 const pIdx = tab === "Basic" ? 0 : tab === "Standard" ? 1 : 2;
                                 const plan = gigPlans[pIdx];
-                                const label = plan?.title?.trim() ? plan.title : `${tab} Package`;
+                                const label = plan?.title?.trim() ? plan.title : t(`${tab.toLowerCase()}_package_tab`, `${tab} Package`);
                                 return (
                                   <button
                                     type="button"
@@ -1381,7 +1389,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                     onClick={() => isTabEnabled && setActivePlanTab(tab)}
                                     className={`px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer select-none border ${
                                       !isTabEnabled
-                                        ? "bg-slate-100 border-slate-100 text-slate-350 cursor-not-allowed opacity-50"
+                                        ? "bg-slate-100 border-slate-100 text-slate-355 cursor-not-allowed opacity-50"
                                         : activePlanTab === tab
                                           ? "bg-primary border-primary text-white shadow-sm"
                                           : "bg-slate-50 border-slate-200 text-slate-600 hover:border-slate-300"
@@ -1406,7 +1414,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                   }}
                                   className="rounded border-slate-300 text-primary w-4 h-4 cursor-pointer"
                                 />
-                                <span>Standard</span>
+                                <span>{t("standard_label", "Standard")}</span>
                               </label>
                               <label className="flex items-center gap-1.5 cursor-pointer">
                                 <input
@@ -1420,7 +1428,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                   }}
                                   className="rounded border-slate-300 text-primary w-4 h-4 cursor-pointer"
                                 />
-                                <span>Premium</span>
+                                <span>{t("premium_label", "Premium")}</span>
                               </label>
                             </div>
                           </div>
@@ -1433,18 +1441,18 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                               <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-4">
                                 <div className="flex justify-between items-center border-b border-slate-100 pb-2">
                                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                    Configure {activePlanTab} Package
+                                    {t("configure_package_title", "Configure {package} Package").replace("{package}", t(activePlanTab.toLowerCase() + "_label", activePlanTab))}
                                   </span>
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                   {/* Package custom title */}
                                   <div className="sm:col-span-2">
-                                    <label className="text-xs font-bold block mb-1 text-slate-655">Package Title / Custom Name *</label>
+                                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("package_title_label", "Package Title / Custom Name *")}</label>
                                     <input
                                       id={`plan-title-${activePlanTab}`}
                                       type="text"
-                                      placeholder={`e.g. ${activePlanTab} Package`}
+                                      placeholder={t("package_title_placeholder", "e.g. {package} Package").replace("{package}", t(activePlanTab.toLowerCase() + "_label", activePlanTab))}
                                       value={p.title}
                                       onChange={(e) => updatePlanField(activePlanTab, "title", e.target.value)}
                                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
@@ -1453,11 +1461,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                                   {/* Package description/tagline */}
                                   <div className="sm:col-span-2">
-                                    <label className="text-xs font-bold block mb-1 text-slate-655">Package Tagline / Description *</label>
+                                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("package_description_label", "Package Tagline / Description *")}</label>
                                     <input
                                       id={`plan-desc-${activePlanTab}`}
                                       type="text"
-                                      placeholder="e.g. Starter Store Setup with homepage & shop"
+                                      placeholder={t("package_description_placeholder", "e.g. Starter Store Setup with homepage & shop")}
                                       value={p.description}
                                       onChange={(e) => updatePlanField(activePlanTab, "description", e.target.value)}
                                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
@@ -1466,7 +1474,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                                   {/* Price */}
                                   <div>
-                                    <label className="text-xs font-bold block mb-1 text-slate-655">Package Price *</label>
+                                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("package_price_label", "Package Price *")}</label>
                                     <div className="flex items-center bg-slate-5 border border-slate-200 rounded-xl focus-within:border-primary transition duration-150 overflow-hidden">
                                       <span className="bg-slate-100/80 border-r border-slate-200 px-3.5 py-2.5 text-xs text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
                                       <input
@@ -1488,7 +1496,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                                   {/* Delivery Days */}
                                   <div>
-                                    <label className="text-xs font-bold block mb-1 text-slate-655">Delivery Time (Days) *</label>
+                                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("delivery_time_days_label", "Delivery Time (Days) *")}</label>
                                     <input
                                       id={`plan-days-${activePlanTab}`}
                                       type="number"
@@ -1507,7 +1515,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                                   {/* Revisions */}
                                   <div>
-                                    <label className="text-xs font-bold block mb-1 text-slate-655">Revisions *</label>
+                                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("revisions_label", "Revisions *")}</label>
                                     <input
                                       id={`plan-revisions-${activePlanTab}`}
                                       type="number"
@@ -1531,19 +1539,19 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           {/* Custom Features Matrix */}
                           <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-4 mt-2">
                             <div>
-                              <span className="text-xs font-black text-slate-800">Customize Included Features Matrix</span>
-                              <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">Add features and choose whether they are included (checkmark) or set a specific text value for each plan.</p>
+                              <span className="text-xs font-black text-slate-800">{t("customize_features_matrix_title", "Customize Included Features Matrix")}</span>
+                              <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">{t("customize_features_matrix_desc", "Add features and choose whether they are included (checkmark) or set a specific text value for each plan.")}</p>
                             </div>
 
                             <div className="overflow-x-auto -mx-1 px-1 pb-2">
                               <table className="w-full min-w-[520px] text-left border-collapse text-xs">
                                 <thead>
                                   <tr className="border-b border-slate-200 text-slate-400 font-extrabold uppercase text-[9px] tracking-wider">
-                                    <th className="pb-2 pr-4 min-w-[150px]">Feature Name</th>
-                                    <th className="pb-2 pr-4 w-[110px] min-w-[110px]">Type</th>
-                                    <th className="pb-2 pr-4 text-center w-[75px] min-w-[75px]">Basic</th>
-                                    {enabledPlans.Standard && <th className="pb-2 pr-4 text-center w-[75px] min-w-[75px]">Standard</th>}
-                                    {enabledPlans.Premium && <th className="pb-2 pr-4 text-center w-[75px] min-w-[75px]">Premium</th>}
+                                    <th className="pb-2 pr-4 min-w-[150px]">{t("feature_name_header", "Feature Name")}</th>
+                                    <th className="pb-2 pr-4 w-[110px] min-w-[110px]">{t("type_header", "Type")}</th>
+                                    <th className="pb-2 pr-4 text-center w-[75px] min-w-[75px]">{t("basic_header", "Basic")}</th>
+                                    {enabledPlans.Standard && <th className="pb-2 pr-4 text-center w-[75px] min-w-[75px]">{t("standard_header", "Standard")}</th>}
+                                    {enabledPlans.Premium && <th className="pb-2 pr-4 text-center w-[75px] min-w-[75px]">{t("premium_header", "Premium")}</th>}
                                     <th className="pb-2 w-[40px]"></th>
                                   </tr>
                                 </thead>
@@ -1594,8 +1602,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                           }}
                                           className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xxs font-bold text-slate-600 focus:outline-none cursor-pointer"
                                         >
-                                          <option value="checkbox">Yes / No</option>
-                                          <option value="text">Custom Text</option>
+                                          <option value="checkbox">{t("yes_no_option", "Yes / No")}</option>
+                                          <option value="text">{t("custom_text_option", "Custom Text")}</option>
                                         </select>
                                       </td>
                                       
@@ -1686,7 +1694,6 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                 </tbody>
                               </table>
                             </div>
-
                             <button
                               type="button"
                               onClick={() => {
@@ -1694,7 +1701,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                               }}
                               className="text-xxs font-black text-primary hover:text-primary-hover flex items-center justify-center gap-1 bg-slate-50 border border-slate-200 rounded-xl py-2 w-full cursor-pointer hover:bg-slate-100/50 mt-1 transition-all"
                             >
-                              + Add Feature Matrix Row
+                              {t("add_feature_matrix_row_btn", "+ Add Feature Matrix Row")}
                             </button>
                           </div>
                         </div>
@@ -1706,15 +1713,15 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                   {gigPaymentType === "milestone" && (
                     <div className="sm:col-span-2 flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-xl p-5">
                       <div>
-                        <h4 className="text-xs font-black text-slate-800">Define Service Milestones</h4>
-                        <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">Specify tasks and deliverables. The total price of the Gig will be the sum of these milestones.</p>
+                        <h4 className="text-xs font-black text-slate-800">{t("define_service_milestones_title", "Define Service Milestones")}</h4>
+                        <p className="text-[10px] text-slate-400 mt-0.5 font-semibold">{t("define_service_milestones_desc", "Specify tasks and deliverables. The total price of the Gig will be the sum of these milestones.")}</p>
                       </div>
                       
                       <div className="flex flex-col gap-3">
                         {gigMilestones.map((m, idx) => (
                           <div key={idx} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 relative">
                             <div className="flex justify-between items-center border-b border-slate-100 pb-2">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Milestone #{idx + 1}</span>
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("milestone_number_label", "Milestone #{num}").replace("{num}", (idx + 1).toString())}</span>
                               {gigMilestones.length > 1 && (
                                 <button
                                   type="button"
@@ -1726,14 +1733,14 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                   }}
                                   className="text-rose-550 hover:text-rose-750 text-[10px] font-bold cursor-pointer"
                                 >
-                                  Remove
+                                  {t("remove_btn", "Remove")}
                                 </button>
                               )}
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               <div className="sm:col-span-2">
-                                <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide block mb-1">Title *</label>
+                                <label className="text-[10px] font-extrabold text-slate-455 uppercase tracking-wide block mb-1">{t("title_label_required", "Title *")}</label>
                                 <input
                                   id={`milestone-title-${idx}`}
                                   type="text"
@@ -1748,7 +1755,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                 />
                               </div>
                               <div>
-                                <label className="text-[10px] font-extrabold text-slate-455 uppercase block mb-1">Amount *</label>
+                                <label className="text-[10px] font-extrabold text-slate-455 uppercase block mb-1">{t("amount_label_required", "Amount *")}</label>
                                 <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg focus-within:border-primary transition duration-150 overflow-hidden">
                                   <span className="bg-slate-100 border-r border-slate-200 px-2.5 py-2 text-[10px] text-slate-450 font-bold select-none">{activeCurrencySymbol}</span>
                                   <input
@@ -1770,10 +1777,10 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                             </div>
 
                             <div>
-                              <label className="text-[10px] font-extrabold text-slate-450 uppercase tracking-wide block mb-1">Description (Optional)</label>
+                              <label className="text-[10px] font-extrabold text-slate-455 uppercase tracking-wide block mb-1">{t("description_label_optional", "Description (Optional)")}</label>
                               <textarea
                                 rows={2}
-                                placeholder="Describe deliverables for this milestone..."
+                                placeholder={t("milestone_description_placeholder", "Describe deliverables for this milestone...")}
                                 value={m.description}
                                 onChange={(e) => {
                                   const updated = [...gigMilestones];
@@ -1793,11 +1800,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         onClick={() => setGigMilestones([...gigMilestones, { title: "", amount: "", description: "" }])}
                         className="text-xs font-bold text-primary hover:text-primary-hover flex items-center justify-center gap-1 bg-white border border-dashed border-primary/30 rounded-xl py-3 w-full cursor-pointer hover:bg-slate-50"
                       >
-                        + Add Milestone
+                        {t("add_milestone_btn", "+ Add Milestone")}
                       </button>
 
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-t border-slate-200 pt-3 mt-1 bg-white/60 p-3 rounded-xl border">
-                        <span className="text-xs font-bold text-slate-650 leading-snug">Total Gig Price (Milestones Sum):</span>
+                        <span className="text-xs font-bold text-slate-655 leading-snug">{t("total_gig_price_milestones_label", "Total Gig Price (Milestones Sum):")}</span>
                         <span className="text-xs sm:text-sm font-black text-teal-800 bg-teal-50/80 border border-teal-200/80 px-3 py-1.5 rounded-xl font-sans max-w-full truncate [word-break:break-all]">
                           {currencies.find(c => c.currency_id.toString() === gigCurrencyId)?.symbol || "$"}{parseFloat(gigPrice || "0").toLocaleString()}
                         </span>
@@ -1805,11 +1812,9 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     </div>
                   )}
 
-
-
                   {/* Delivery Days */}
                   <div>
-                    <label className="text-xs font-bold block mb-1 text-slate-655">Delivery Days *</label>
+                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("delivery_days_label", "Delivery Days *")}</label>
                     <input
                       id="gig-delivery-days-input"
                       type="number"
@@ -1823,7 +1828,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                   {/* Revisions */}
                   <div>
-                    <label className="text-xs font-bold block mb-1 text-slate-655">Revisions</label>
+                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("revisions_label_optional", "Revisions")}</label>
                     <input
                       id="gig-revisions-input"
                       type="number"
@@ -1837,7 +1842,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                   {/* Discount Percentage */}
                   <div>
-                    <label className="text-xs font-bold block mb-1 text-slate-655">Discount Percentage (0-99%)</label>
+                    <label className="text-xs font-bold block mb-1 text-slate-655">{t("discount_percentage_label", "Discount Percentage (0-99%)")}</label>
                     <input
                       id="gig-discount-percent-input"
                       type="number"
@@ -1860,15 +1865,15 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       className="w-4.5 h-4.5 text-primary border-slate-300 rounded focus:ring-primary focus:ring-opacity-40 cursor-pointer"
                     />
                     <label htmlFor="negotiation-checkbox" className="text-xs font-bold text-slate-705 cursor-pointer select-none">
-                      Enable price negotiation (allow clients to propose custom budgets)
+                      {t("enable_negotiation_label", "Enable price negotiation (allow clients to propose custom budgets)")}
                     </label>
                   </div>
 
                   {/* Gig Add-ons Section */}
                   <div className="sm:col-span-2 flex flex-col gap-4 bg-slate-50/50 border border-slate-200/60 rounded-xl p-5 mt-2 text-left">
                     <div>
-                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Gig Add-ons (Upsells)</h4>
-                      <p className="text-[10px] text-slate-405 mt-0.5 font-semibold">Offer optional extras that clients can purchase with this service (e.g. source files, fast delivery).</p>
+                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t("gig_addons_title", "Gig Add-ons (Upsells)")}</h4>
+                      <p className="text-[10px] text-slate-405 mt-0.5 font-semibold">{t("gig_addons_desc", "Offer optional extras that clients can purchase with this service (e.g. source files, fast delivery).")}</p>
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -1876,7 +1881,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         <div key={idx} className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center gap-3 relative shadow-sm hover:shadow transition-shadow">
                           <div className="flex-grow grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div className="sm:col-span-2 text-left">
-                              <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Add-on Title *</label>
+                              <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">{t("addon_title_label", "Add-on Title *")}</label>
                               <input
                                 type="text"
                                 required
@@ -1887,11 +1892,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                                   updated[idx].title = e.target.value;
                                   setGigAddons(updated);
                                 }}
-                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-850 focus:outline-none focus:bg-white transition"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-855 focus:outline-none focus:bg-white transition"
                               />
                             </div>
                             <div className="text-left">
-                              <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">Extra Price ($) *</label>
+                              <label className="text-[9px] font-black text-slate-400 uppercase block mb-1">{t("extra_price_label", "Extra Price ($) *")}</label>
                               <input
                                 type="number"
                                 required
@@ -1914,7 +1919,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                               setGigAddons(updated);
                             }}
                             className="text-rose-500 hover:text-rose-700 hover:scale-105 transition-all text-xs font-black cursor-pointer border-none bg-transparent self-end pb-2"
-                            title="Remove Add-on"
+                            title={t("remove_addon_title", "Remove Add-on")}
                           >
                             <svg className="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -1931,7 +1936,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       }}
                       className="text-xxs font-black text-primary hover:text-primary-hover flex items-center justify-center gap-1.5 bg-white border border-dashed border-primary/30 rounded-xl py-3 w-full cursor-pointer hover:bg-slate-50/50 transition-all"
                     >
-                      <span>+ Add Custom Extra Add-on</span>
+                      <span>{t("add_custom_extra_addon_btn", "+ Add Custom Extra Add-on")}</span>
                     </button>
                   </div>
                 </div>
@@ -1943,8 +1948,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     onClick={() => setActiveFormStep(1)}
                     className="w-full sm:w-auto bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200/80 border border-slate-200 font-extrabold text-xs px-5 py-3 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 order-last sm:order-first whitespace-nowrap"
                   >
-                    <FiArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back</span>
+                    <FiArrowLeft className="w-3.5 h-3.5 rtl-flip" />
+                    <span>{t("back_btn", "Back")}</span>
                   </button>
                   <button
                     type="button"
@@ -1956,8 +1961,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     className="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md cursor-pointer transition-all flex items-center justify-center gap-1.5 hover:scale-[1.02] active:scale-95 whitespace-nowrap"
                     style={{ whiteSpace: 'nowrap' }}
                   >
-                    <span>Continue to Media</span>
-                    <FiArrowRight className="w-3.5 h-3.5" />
+                    <span>{t("continue_media_btn", "Continue to Media")}</span>
+                    <FiArrowRight className="w-3.5 h-3.5 rtl-flip" />
                   </button>
                 </div>
               </div>
@@ -1969,7 +1974,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 
                 {/* Showcase Image URL & Upload */}
                 <div className="flex flex-col gap-2">
-                  <label className="text-xs font-bold block text-slate-655">Showcase Images *</label>
+                  <label className="text-xs font-bold block text-slate-655">{t("showcase_images_label", "Showcase Images *")}</label>
                   <div className="flex flex-wrap gap-3 items-center">
                     {/* Image preview cards */}
                     {gigImages.split(",").map(u => u.trim()).filter(Boolean).map((imgUrl, index) => (
@@ -1984,7 +1989,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           }}
                           className="absolute inset-0 bg-slate-900/40 text-white flex items-center justify-center opacity-0 group/thumb:opacity-100 transition-opacity font-bold text-xs cursor-pointer"
                         >
-                          Delete
+                          {t("delete_btn", "Delete")}
                         </button>
                       </div>
                     ))}
@@ -1996,7 +2001,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       ) : (
                         <>
                           <FiImage className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
-                          <span className="text-[9px] font-black uppercase text-slate-500">Upload</span>
+                          <span className="text-[9px] font-black uppercase text-slate-500">{t("upload_btn", "Upload")}</span>
                         </>
                       )}
                       <input
@@ -2016,13 +2021,13 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       className="w-20 h-20 border-2 border-dashed border-slate-250 hover:border-primary/50 hover:bg-slate-50/50 rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all gap-1 select-none text-slate-400 bg-transparent group"
                     >
                       <FiType className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
-                      <span className="text-[9px] font-black uppercase text-slate-500">Design</span>
+                      <span className="text-[9px] font-black uppercase text-slate-500">{t("design_btn", "Design")}</span>
                     </button>
                   </div>
                    <input
                     id="gig-images-input"
                     type="text"
-                    placeholder="Paste image URLs here (comma-separated) or click above to upload"
+                    placeholder={t("paste_image_urls_placeholder", "Paste image URLs here (comma-separated) or click above to upload")}
                     value={gigImages}
                     onChange={(e) => setGigImages(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
@@ -2032,7 +2037,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Showcase Video URL & Upload */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold block text-slate-655">Showcase Video</label>
+                    <label className="text-xs font-bold block text-slate-655">{t("showcase_video_label", "Showcase Video")}</label>
                     <div className="flex flex-wrap gap-3 items-center min-h-[5rem]">
                       {gigVideoUrl ? (
                         <div className="relative w-28 h-20 border border-slate-200 rounded-xl overflow-hidden group/vid bg-slate-950 flex items-center justify-center shadow-xs">
@@ -2040,7 +2045,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover/vid:opacity-100 transition-opacity flex items-center justify-center gap-2 p-1">
                             <button
                               type="button"
-                              title="Download Video"
+                              title={t("download_video_title", "Download Video")}
                               onClick={() => handleDownloadVideo(gigVideoUrl, "gig-showcase-video.mp4")}
                               className="p-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg text-xs transition cursor-pointer flex items-center gap-1 shadow-sm"
                             >
@@ -2048,7 +2053,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                             </button>
                             <button
                               type="button"
-                              title="Delete Video"
+                              title={t("delete_video_title", "Delete Video")}
                               onClick={() => setGigVideoUrl("")}
                               className="p-1.5 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg text-xs transition cursor-pointer flex items-center gap-1 shadow-sm"
                             >
@@ -2063,7 +2068,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           ) : (
                             <>
                               <FiVideo className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
-                              <span className="text-[9px] font-black uppercase text-slate-500">Upload</span>
+                              <span className="text-[9px] font-black uppercase text-slate-500">{t("upload_btn", "Upload")}</span>
                             </>
                           )}
                           <input
@@ -2079,7 +2084,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
-                        placeholder="Paste video URL here or click above to upload"
+                        placeholder={t("paste_video_url_placeholder", "Paste video URL here or click above to upload")}
                         value={gigVideoUrl}
                         onChange={(e) => setGigVideoUrl(e.target.value)}
                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
@@ -2091,7 +2096,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           className="px-3.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shrink-0 flex items-center gap-1.5 shadow-xs"
                         >
                           <FiDownload className="w-3.5 h-3.5 shrink-0" />
-                          <span>Download Video</span>
+                          <span>{t("download_video_btn", "Download Video")}</span>
                         </button>
                       )}
                     </div>
@@ -2099,7 +2104,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                   {/* Documents / PDF Link & Upload */}
                   <div className="flex flex-col gap-2">
-                    <label className="text-xs font-bold block text-slate-655">Showcase Documents</label>
+                    <label className="text-xs font-bold block text-slate-655">{t("showcase_documents_label", "Showcase Documents")}</label>
                     <div className="flex flex-wrap gap-3 items-center min-h-[5rem]">
                       {gigDocuments.split(",").map(u => u.trim()).filter(Boolean).map((docUrl, index) => {
                         const name = docUrl.split("/").pop() || "Document";
@@ -2118,7 +2123,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                               }}
                               className="absolute inset-0 bg-slate-900/40 text-white flex items-center justify-center opacity-0 group-hover/doc:opacity-100 transition-opacity font-bold text-xs cursor-pointer"
                             >
-                              Delete
+                              {t("delete_btn", "Delete")}
                             </button>
                           </div>
                         );
@@ -2130,7 +2135,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                         ) : (
                           <>
                             <FiFileText className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
-                            <span className="text-[9px] font-black uppercase text-slate-500">Upload</span>
+                            <span className="text-[9px] font-black uppercase text-slate-500">{t("upload_btn", "Upload")}</span>
                           </>
                         )}
                         <input
@@ -2145,7 +2150,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     </div>
                     <input
                       type="text"
-                      placeholder="Paste document URLs (comma-separated) or click above to upload"
+                      placeholder={t("paste_documents_placeholder", "Paste document URLs (comma-separated) or click above to upload")}
                       value={gigDocuments}
                       onChange={(e) => setGigDocuments(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
@@ -2155,14 +2160,14 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
 
                 {/* Detailed Description */}
                 <div>
-                  <label className="text-xs font-bold block mb-1 text-slate-655">Gig Description *</label>
+                  <label className="text-xs font-bold block mb-1 text-slate-655">{t("gig_description_label", "Gig Description *")}</label>
                   
                   {/* Rich Text Format Toolbar */}
                   <div className="flex items-center gap-1 border border-b-0 border-slate-200 bg-slate-50 p-1.5 rounded-t-xl select-none">
                     <button
                       type="button"
                       onClick={() => insertFormat("bold")}
-                      title="Bold <strong>"
+                      title={t("bold_btn_title", "Bold <strong>")}
                       className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg cursor-pointer transition-colors"
                     >
                       <FiBold className="w-3.5 h-3.5" />
@@ -2170,7 +2175,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     <button
                       type="button"
                       onClick={() => insertFormat("italic")}
-                      title="Italic <em>"
+                      title={t("italic_btn_title", "Italic <em>")}
                       className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg cursor-pointer transition-colors"
                     >
                       <FiItalic className="w-3.5 h-3.5" />
@@ -2178,7 +2183,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     <button
                       type="button"
                       onClick={() => insertFormat("heading")}
-                      title="Heading <h3>"
+                      title={t("heading_btn_title", "Heading <h3>")}
                       className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg cursor-pointer transition-colors"
                     >
                       <FiType className="w-3.5 h-3.5" />
@@ -2186,7 +2191,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     <button
                       type="button"
                       onClick={() => insertFormat("bullet")}
-                      title="Bullet List <ul><li>"
+                      title={t("bullet_list_btn_title", "Bullet List <ul><li>")}
                       className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-lg cursor-pointer transition-colors"
                     >
                       <FiList className="w-3.5 h-3.5" />
@@ -2202,26 +2207,26 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       }`}
                     >
                       <FiEye className="w-3 h-3" />
-                      <span>{previewHtml ? "Edit Mode" : "Preview Description"}</span>
+                      <span>{previewHtml ? t("edit_mode_btn", "Edit Mode") : t("preview_description_btn", "Preview Description")}</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleGenerateGigDescription}
                       disabled={generatingGigDesc}
-                      title="Generate a professional description using AI"
+                      title={t("generate_description_ai_tooltip", "Generate a professional description using AI")}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-black rounded-lg cursor-pointer transition-all border bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-750 hover:to-purple-750 border-none disabled:opacity-60"
                     >
                       {generatingGigDesc ? (
                         <>
                           <div className="w-3 h-3 border-2 border-t-transparent border-white rounded-full animate-spin" />
-                          <span>Generating...</span>
+                          <span>{t("generating_btn", "Generating...")}</span>
                         </>
                       ) : (
                         <>
                           <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
                           </svg>
-                          <span>AI Write</span>
+                          <span>{t("ai_write_btn", "AI Write")}</span>
                         </>
                       )}
                     </button>
@@ -2230,12 +2235,12 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                   {previewHtml ? (
                     <div 
                       className="w-full bg-slate-50 border border-slate-200 rounded-b-xl px-3.5 py-2.5 text-xs text-slate-850 h-32 overflow-y-auto prose prose-emerald prose-xs max-w-none text-left"
-                      dangerouslySetInnerHTML={{ __html: gigDescription.trim() || "<p class='text-slate-400 italic font-medium'>No description text provided yet. Use the formatting bar above to design your description.</p>" }}
+                      dangerouslySetInnerHTML={{ __html: gigDescription.trim() || `<p class='text-slate-400 italic font-medium'>${t("no_description_placeholder", "No description text provided yet. Use the formatting bar above to design your description.")}</p>` }}
                     />
                   ) : (
                     <textarea
                       id="gig-description-textarea"
-                      placeholder="Provide a detailed description of your service, deliverables, and scope of work... (HTML formatting allowed)"
+                      placeholder={t("provide_description_placeholder", "Provide a detailed description of your service, deliverables, and scope of work... (HTML formatting allowed)")}
                       value={gigDescription}
                       onChange={(e) => setGigDescription(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-b-xl px-3.5 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none h-32 resize-none"
@@ -2246,8 +2251,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                 {/* Custom FAQs Section */}
                 <div className="border-t border-slate-100 pt-5 mt-3 flex flex-col gap-4 text-left">
                   <div>
-                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">Custom FAQs (Optional)</h4>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Add frequently asked questions and answers to show on your public gig page.</p>
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t("custom_faqs_title", "Custom FAQs (Optional)")}</h4>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">{t("custom_faqs_desc", "Add frequently asked questions and answers to show on your public gig page.")}</p>
                   </div>
                   
                   {gigFaqs.length > 0 && (
@@ -2263,11 +2268,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                             }}
                             className="absolute top-3 right-3 text-rose-505 hover:text-rose-700 text-xs font-bold bg-white hover:bg-rose-50 border border-slate-200 px-2.5 py-1.5 rounded-lg cursor-pointer shadow-sm opacity-100 transition-opacity"
                           >
-                            Remove FAQ
+                            {t("remove_faq_btn", "Remove FAQ")}
                           </button>
                           
                           <div className="flex flex-col gap-1 pr-24">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase">Question {idx + 1}</label>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase">{t("question_number_label", "Question {num}").replace("{num}", (idx + 1).toString())}</label>
                             <input
                               type="text"
                               value={faq.q}
@@ -2282,7 +2287,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           </div>
                           
                           <div className="flex flex-col gap-1">
-                            <label className="text-[10px] font-bold text-slate-500 uppercase">Answer {idx + 1}</label>
+                            <label className="text-[10px] font-bold text-slate-500 uppercase">{t("answer_number_label", "Answer {num}").replace("{num}", (idx + 1).toString())}</label>
                             <textarea
                               value={faq.a}
                               placeholder="e.g. Yes, I provide complete Figma source files for the basic and premium plans."
@@ -2306,15 +2311,15 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     }}
                     className="self-start text-[10px] font-black text-primary hover:text-primary-hover border border-dashed border-primary/20 hover:border-primary/50 bg-primary/5 px-4.5 py-2.5 rounded-xl cursor-pointer transition-all flex items-center gap-1.5"
                   >
-                    <span>+ Add FAQ Item</span>
+                    <span>{t("add_faq_item_btn", "+ Add FAQ Item")}</span>
                   </button>
                 </div>
 
                 {/* SEO & Sharing Meta Settings */}
                 <div className="border-t border-slate-100 pt-5 mt-3 flex flex-col gap-4 text-left">
                   <div>
-                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">SEO & Social Sharing Settings (Optional)</h4>
-                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">Customize the preview card displayed when your gig is shared on Email, Facebook, WhatsApp, LinkedIn, or Twitter.</p>
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t("seo_social_settings_title", "SEO & Social Sharing Settings (Optional)")}</h4>
+                    <p className="text-[10px] text-slate-400 font-medium mt-0.5">{t("seo_social_settings_desc", "Customize the preview card displayed when your gig is shared on Email, Facebook, WhatsApp, LinkedIn, or Twitter.")}</p>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
@@ -2323,14 +2328,14 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     <div className="flex flex-col gap-3">
                       <div>
                         <div className="flex justify-between items-center mb-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Meta SEO Title</label>
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">{t("meta_seo_title_label", "Meta SEO Title")}</label>
                           <span className="text-[9px] text-slate-400 font-semibold">{seoTitle.length}/70</span>
                         </div>
                         <input
                           type="text"
                           maxLength={70}
                           value={seoTitle}
-                          placeholder={gigTitle || "Defaults to Gig Title"}
+                          placeholder={gigTitle || t("defaults_to_gig_title_placeholder", "Defaults to Gig Title")}
                           onChange={(e) => setSeoTitle(e.target.value)}
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none font-semibold"
                         />
@@ -2338,24 +2343,24 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                       
                       <div>
                         <div className="flex justify-between items-center mb-1">
-                          <label className="text-[10px] font-bold text-slate-500 uppercase">Meta SEO Description</label>
+                          <label className="text-[10px] font-bold text-slate-500 uppercase">{t("meta_seo_description_label", "Meta SEO Description")}</label>
                           <span className="text-[9px] text-slate-400 font-semibold">{seoDescription.length}/160</span>
                         </div>
                         <textarea
                           maxLength={160}
                           value={seoDescription}
-                          placeholder={gigDescription ? gigDescription.replace(/<[^>]*>/g, '').substring(0, 120) + "..." : "Defaults to Gig Description"}
+                          placeholder={gigDescription ? gigDescription.replace(/<[^>]*>/g, '').substring(0, 120) + "..." : t("defaults_to_gig_description_placeholder", "Defaults to Gig Description")}
                           onChange={(e) => setSeoDescription(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-850 focus:border-primary focus:outline-none h-20 resize-none"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-855 focus:border-primary focus:outline-none h-20 resize-none"
                         />
                       </div>
                       
                       <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Custom Sharing Image</label>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">{t("custom_sharing_image_label", "Custom Sharing Image")}</label>
                         <div className="flex gap-2">
                           <input
                             type="text"
-                            placeholder="Paste image URL or upload ->"
+                            placeholder={t("paste_image_url_placeholder2", "Paste image URL or upload ->")}
                             value={seoImage}
                             onChange={(e) => setSeoImage(e.target.value)}
                             className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:border-primary focus:outline-none"
@@ -2366,7 +2371,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                             ) : (
                               <>
                                 <FiUpload className="w-3.5 h-3.5 animate-bounce" />
-                                <span>Upload</span>
+                                <span>{t("upload_btn", "Upload")}</span>
                               </>
                             )}
                             <input
@@ -2383,7 +2388,7 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     
                     {/* Live Preview Card */}
                     <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 flex flex-col gap-3 text-left">
-                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Social Share Preview Card:</span>
+                      <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">{t("social_share_preview_card_label", "Social Share Preview Card:")}</span>
                       
                       <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm flex flex-col">
                         <div className="relative aspect-[1.91/1] w-full bg-slate-100 border-b border-slate-100 flex items-center justify-center overflow-hidden">
@@ -2396,17 +2401,17 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                           ) : (
                             <div className="flex flex-col items-center gap-1.5 text-slate-350">
                               <FiGlobe className="w-8 h-8" />
-                              <span className="text-[9px] font-black uppercase tracking-widest text-center">Share Image Placeholder</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest text-center">{t("share_image_placeholder_label", "Share Image Placeholder")}</span>
                             </div>
                           )}
                         </div>
-                        <div className="p-3 flex flex-col gap-1 text-left">
+                        <div className="p-3 flex flex-col gap-1">
                           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">lancerflow.net</span>
                           <h5 className="text-xs font-extrabold text-slate-800 line-clamp-1">
-                            {seoTitle.trim() || gigTitle.trim() || "Awesome Freelancer Gig Title"}
+                            {seoTitle.trim() || gigTitle.trim() || t("awesome_freelancer_gig_title", "Awesome Freelancer Gig Title")}
                           </h5>
-                          <p className="text-[10px] text-slate-500 font-medium line-clamp-2 leading-relaxed">
-                            {seoDescription.trim() || (gigDescription ? gigDescription.replace(/<[^>]*>/g, '').substring(0, 110) + "..." : "Hire the best freelance professionals for your project on lancerflow.net.")}
+                          <p className="text-[10px] text-slate-505 font-medium line-clamp-2 leading-relaxed">
+                            {seoDescription.trim() || (gigDescription ? gigDescription.replace(/<[^>]*>/g, '').substring(0, 110) + "..." : t("seo_default_description", "Hire the best freelance professionals for your project on lancerflow.net."))}
                           </p>
                         </div>
                       </div>
@@ -2422,8 +2427,8 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     onClick={() => setActiveFormStep(2)}
                     className="w-full sm:w-auto bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200/80 border border-slate-200 font-extrabold text-xs px-5 py-3 rounded-xl cursor-pointer transition-all flex items-center justify-center gap-1.5 order-last sm:order-first whitespace-nowrap"
                   >
-                    <FiArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back</span>
+                    <FiArrowLeft className="w-3.5 h-3.5 rtl-flip" />
+                    <span>{t("back_btn", "Back")}</span>
                   </button>
                   <button
                     type="submit"
@@ -2433,11 +2438,11 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
                     {gigPublishing ? (
                       <>
                         <div className="w-3.5 h-3.5 border-2 border-t-transparent border-white rounded-full animate-spin shrink-0"></div>
-                        <span>{editingGig ? "Saving Changes..." : "Publishing Gig..."}</span>
+                        <span>{editingGig ? t("saving_changes_btn", "Saving Changes...") : t("publishing_gig_btn", "Publishing Gig...")}</span>
                       </>
                     ) : (
                       <>
-                        <span>{editingGig ? "Save Changes" : "Publish Service Gig"}</span>
+                        <span>{editingGig ? t("save_changes_btn", "Save Changes") : t("publish_service_gig_btn", "Publish Service Gig")}</span>
                         <FiCheck className="w-3.5 h-3.5 shrink-0" />
                       </>
                     )}
@@ -2450,37 +2455,37 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
         </div>
       </div>
     ) : (
-      <div className="relative z-10 w-full animate-fadeIn flex flex-col gap-6 text-slate-800 text-left">
+      <div className="relative z-10 w-full animate-fadeIn flex flex-col gap-6 text-slate-800 text-left font-sans">
         
         {/* Header Info */}
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-lg font-black text-slate-800">My Service Gigs</h2>
-            <p className="text-slate-404 text-xs mt-0.5">List and offer pre-priced services directly to clients.</p>
+            <h2 className="text-lg font-black text-slate-800">{t("my_service_gigs_header", "My Service Gigs")}</h2>
+            <p className="text-slate-404 text-xs mt-0.5">{t("my_service_gigs_desc", "List and offer pre-priced services directly to clients.")}</p>
           </div>
           <button
             disabled={onboardingCheckLoading}
             onClick={handleCreateGigClick}
             className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-4.5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 self-start sm:self-auto font-display disabled:opacity-50 disabled:pointer-events-none"
           >
-            <span>{onboardingCheckLoading ? "Checking..." : "+ Create New Gig"}</span>
+            <span>{onboardingCheckLoading ? t("checking_btn", "Checking...") : t("create_new_gig_btn", "+ Create New Gig")}</span>
           </button>
         </div>
 
         {loadingGigs ? (
           <div className="bg-white border border-slate-200/80 rounded-xl p-16 flex flex-col items-center justify-center text-center gap-3.5 shadow-sm">
             <div className="w-8 h-8 border-4 border-t-primary border-slate-200 rounded-full animate-spin"></div>
-            <p className="text-slate-404 text-xs font-semibold">Loading your service gigs...</p>
+            <p className="text-slate-404 text-xs font-semibold">{t("loading_gigs_indicator", "Loading your service gigs...")}</p>
           </div>
         ) : gigs.length === 0 ? (
-          <div className="bg-white border border-slate-200/80 rounded-xl p-12 flex flex-col items-center justify-center text-center gap-4.5 shadow-sm">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-12 flex flex-col items-center justify-center text-center gap-4.5 shadow-sm font-sans">
             <div className="w-16 h-16 rounded-full bg-primary/5 text-primary flex items-center justify-center text-2xl font-bold animate-pulse">
               <i className="fa-solid fa-briefcase"></i>
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-slate-800">No active service gigs</h3>
+              <h3 className="text-base font-extrabold text-slate-800">{t("no_active_gigs_title", "No active service gigs")}</h3>
               <p className="text-slate-500 text-xs mt-1.5 max-w-sm leading-relaxed">
-                Package your core professional skills into standardized, flat-rate services (e.g. logo design, database setups) so clients can purchase them instantly.
+                {t("no_active_gigs_desc", "Package your core professional skills into standardized, flat-rate services (e.g. logo design, database setups) so clients can purchase them instantly.")}
               </p>
             </div>
             <button
@@ -2488,107 +2493,152 @@ const GigsTab: React.FC<GigsTabProps> = ({ triggerToast }) => {
               onClick={handleCreateGigClick}
               className="bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-5 py-3 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer font-display disabled:opacity-50 disabled:pointer-events-none"
             >
-              {onboardingCheckLoading ? "Checking..." : "Create Your First Gig"}
+              {onboardingCheckLoading ? t("checking_btn", "Checking...") : t("create_your_first_gig_btn", "Create Your First Gig")}
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {gigs.map((gig) => {
-              const gigImg = gig.images && Array.isArray(gig.images) && gig.images.length > 0
-                ? gig.images[0]
-                : null;
-              return (
-                <div 
-                  key={gig.gig_id} 
-                  onClick={() => setSelectedGigForDetails(gig)}
-                  className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-350 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between relative group cursor-pointer"
-                >
-                  
-                  <span className={`absolute top-3.5 right-3.5 z-10 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md border ${
-                    gig.status === "Active" || gig.status === "active"
-                      ? "bg-emerald-700 text-white border-emerald-600 shadow-emerald-900/20"
-                      : "bg-amber-600 text-white border-amber-500 shadow-amber-900/20"
-                  }`}>
-                    {gig.status || "Active"}
-                  </span>
-
-                  <div className="relative w-full h-40 bg-slate-50 border-b border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
-                    {gigImg ? (
-                      <img
-                        src={gigImg}
-                        alt={gig.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-tr from-primary/5 to-cyan-500/5 flex flex-col items-center justify-center text-slate-400 gap-1 font-mono text-[10px] select-none">
-                        <span className="text-xl">🎨</span>
-                        <span className="font-extrabold text-slate-500 uppercase tracking-widest text-[8px]">No Image Preview</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-5 flex-grow flex flex-col gap-3 justify-between">
-                    <div className="flex flex-col gap-2">
-                      <span className="text-[9px] font-extrabold text-primary uppercase tracking-wider">
-                        {gig.sub_category_name || gig.category_name || "General Service"}
-                      </span>
-
-                      <h3 className="text-xs font-black text-slate-800 line-clamp-2 leading-snug group-hover:text-primary transition-colors text-left">
-                        {gig.title}
-                      </h3>
-
-                      <p className="text-[10px] leading-relaxed text-slate-455 font-medium line-clamp-2 text-left">
-                        {stripHtml(gig.description)}
-                      </p>
-                    </div>
-
-                    {gig.skills && Array.isArray(gig.skills) && gig.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2 justify-start">
-                        {gig.skills.slice(0, 3).map((s: any) => (
-                          <span key={s.skill_id} className="text-[8px] font-bold text-slate-650 bg-slate-100/50 border border-slate-200/50 px-2 py-0.5 rounded">
-                            {s.skill_name}
-                          </span>
-                        ))}
-                        {gig.skills.length > 3 && (
-                          <span className="text-[8px] font-black text-slate-400 px-1 py-0.5">
-                            +{gig.skills.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="border-t border-slate-100 px-5 py-4 bg-slate-50/50 flex items-center justify-between shrink-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-extrabold text-slate-450 uppercase flex items-center gap-1">
-                        ⏱ {gig.delivery_days} Days
-                      </span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.location.href = `/gigs/${gig.slug || gig.gig_id}`;
-                        }}
-                        className="text-[8px] font-black text-teal-700 bg-teal-50 border border-teal-150 px-2 py-0.5 rounded-lg hover:bg-teal-100 transition-all cursor-pointer"
-                      >
-                        View Page
-                      </button>
-                    </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 font-sans">
+              {paginatedGigs.map((gig) => {
+                const gigImg = gig.images && Array.isArray(gig.images) && gig.images.length > 0
+                  ? gig.images[0]
+                  : null;
+                return (
+                  <div 
+                    key={gig.gig_id} 
+                    onClick={() => setSelectedGigForDetails(gig)}
+                    className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-350 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between relative group cursor-pointer"
+                  >
                     
-                    <div className="flex flex-col items-end text-right min-w-0">
-                      <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block leading-none">Starting At</span>
-                      <span className="text-xs sm:text-sm font-black text-slate-900 mt-1 block leading-none">
-                        {formatPrice(parseFloat(gig.price || 0))}
-                      </span>
-                    </div>
-                  </div>
+                    <span className={`absolute top-3.5 right-3.5 z-10 text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-md shadow-md border ${
+                      gig.status === "Active" || gig.status === "active"
+                        ? "bg-emerald-700 text-white border-emerald-600 shadow-emerald-900/20"
+                        : "bg-amber-600 text-white border-amber-500 shadow-amber-900/20"
+                    }`}>
+                      {t(gig.status || "Active", gig.status || "Active")}
+                    </span>
 
+                    <div className="relative w-full h-40 bg-slate-50 border-b border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                      {gigImg ? (
+                        <img
+                          src={gigImg}
+                          alt={gig.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-tr from-primary/5 to-cyan-500/5 flex flex-col items-center justify-center text-slate-400 gap-1 font-mono text-[10px] select-none">
+                          <span className="text-xl">🎨</span>
+                          <span className="font-extrabold text-slate-500 uppercase tracking-widest text-[8px]">{t("no_image_preview", "No Image Preview")}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-5 flex-grow flex flex-col gap-3 justify-between">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[9px] font-extrabold text-primary uppercase tracking-wider text-left">
+                          {t(gig.sub_category_name || gig.category_name || "General Service", gig.sub_category_name || gig.category_name || "General Service")}
+                        </span>
+
+                        <h3 className="text-xs font-black text-slate-800 line-clamp-2 leading-snug group-hover:text-primary transition-colors text-left">
+                          {gig.title}
+                        </h3>
+
+                        <p className="text-[10px] leading-relaxed text-slate-455 font-medium line-clamp-2 text-left">
+                          {stripHtml(gig.description)}
+                        </p>
+                      </div>
+
+                      {gig.skills && Array.isArray(gig.skills) && gig.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2 justify-start">
+                          {gig.skills.slice(0, 3).map((s: any) => (
+                            <span key={s.skill_id} className="text-[8px] font-bold text-slate-650 bg-slate-100/50 border border-slate-200/50 px-2 py-0.5 rounded">
+                              {t(s.skill_name, s.skill_name)}
+                            </span>
+                          ))}
+                          {gig.skills.length > 3 && (
+                            <span className="text-[8px] font-black text-slate-400 px-1 py-0.5">
+                              +{gig.skills.length - 3} {t("more_skills_label", "more")}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t border-slate-100 px-5 py-4 bg-slate-50/50 flex items-center justify-between shrink-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-extrabold text-slate-450 uppercase flex items-center gap-1">
+                          ⏱ {t("days_with_count", "{count} Days").replace("{count}", String(gig.delivery_days))}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.location.href = `/gigs/${gig.slug || gig.gig_id}`;
+                          }}
+                          className="text-[8px] font-black text-teal-700 bg-teal-50 border border-teal-150 px-2 py-0.5 rounded-lg hover:bg-teal-100 transition-all cursor-pointer"
+                        >
+                          {t("view_page_btn", "View Page")}
+                        </button>
+                      </div>
+                      
+                      <div className="flex flex-col items-end text-right min-w-0">
+                        <span className="text-[8px] font-bold text-slate-404 uppercase tracking-wider block leading-none">{t("starting_at_label", "Starting At")}</span>
+                        <span className="text-xs sm:text-sm font-black text-slate-900 mt-1 block leading-none">
+                          {formatPrice(parseFloat(gig.price || 0))}
+                        </span>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination Controls */}
+            {gigs.length > gigsPerPage && (
+              <div className="flex items-center justify-between border border-slate-200/80 bg-white rounded-xl p-4 shadow-sm mt-2">
+                <button
+                  type="button"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
+                >
+                  <FiArrowLeft className="w-3.5 h-3.5 rtl-flip" />
+                  <span>{t("prev_btn", "Previous")}</span>
+                </button>
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: totalPages }).map((_, idx) => {
+                    const pageNum = idx + 1;
+                    return (
+                      <button
+                        type="button"
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-8.5 h-8.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center border ${
+                          currentPage === pageNum
+                            ? "bg-primary text-white border-primary shadow-md"
+                            : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+                <button
+                  type="button"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  className="px-3.5 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>{t("next_btn", "Next")}</span>
+                  <FiArrowRight className="w-3.5 h-3.5 rtl-flip" />
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {selectedGigForDetails && (
@@ -2734,7 +2784,7 @@ export function GigConsoleModal({
   currencies: any[];
   defaultCurrencyCode: string;
 }) {
-  const { formatPrice } = useLanguage();
+  const { t, formatPrice } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   useEffect(() => {
@@ -2750,20 +2800,20 @@ export function GigConsoleModal({
           onClick={() => setSelectedGigForDetails(null)}
           className="absolute top-6 right-6 font-bold text-xs px-3 py-1.5 rounded-xl transition-all bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-500 hover:text-slate-855 cursor-pointer"
         >
-          Close
+          {t("close_btn", "Close")}
         </button>
 
         <div className="border-b border-slate-100 pb-4 pr-16 shrink-0">
-          <span className="text-[10px] font-bold text-primary tracking-widest uppercase mb-1">Gig Management Console</span>
+          <span className="text-[10px] font-bold text-primary tracking-widest uppercase mb-1">{t("gig_management_console_title", "Gig Management Console")}</span>
           <h2 className="text-base font-black text-slate-855 line-clamp-1">{selectedGigForDetails.title}</h2>
-          <p className="text-slate-405 text-xs font-semibold mt-1">Status: <span className="text-white bg-emerald-700 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider uppercase ml-1 shadow-sm">{selectedGigForDetails.status || "Active"}</span></p>
+          <p className="text-slate-405 text-xs font-semibold mt-1">{t("status_label", "Status:")} <span className="text-white bg-emerald-700 px-2 py-0.5 rounded-md text-[10px] font-black tracking-wider uppercase ml-1 shadow-sm">{t(selectedGigForDetails.status || "Active", selectedGigForDetails.status || "Active")}</span></p>
         </div>
 
         <div className="flex-grow overflow-y-auto my-6 flex flex-col gap-6 pr-1">
           {/* Media Gallery */}
           {selectedGigForDetails.images && selectedGigForDetails.images.length > 0 && (
             <div>
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Showcase Images</h4>
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">{t("showcase_images_title", "Showcase Images")}</h4>
               <div className="flex flex-wrap gap-2.5">
                 {selectedGigForDetails.images.map((img: string, idx: number) => (
                   <div 
@@ -2780,7 +2830,7 @@ export function GigConsoleModal({
 
           {/* Description */}
           <div>
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Gig Description</h4>
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t("gig_description_title", "Gig Description")}</h4>
             <div 
               className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs leading-relaxed text-slate-700 font-medium whitespace-pre-wrap font-sans"
               dangerouslySetInnerHTML={{ __html: selectedGigForDetails.description }}
@@ -2791,14 +2841,14 @@ export function GigConsoleModal({
           {selectedGigForDetails.video_url && (
             <div>
               <div className="flex items-center justify-between mb-2.5 max-w-md">
-                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Showcase Video</h4>
+                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t("showcase_video_title", "Showcase Video")}</h4>
                 <button
                   type="button"
                   onClick={() => handleDownloadVideo(selectedGigForDetails.video_url, "gig-showcase-video.mp4")}
                   className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xxs font-bold transition flex items-center gap-1 cursor-pointer"
                 >
                   <FiDownload className="w-3 h-3" />
-                  <span>Download Video</span>
+                  <span>{t("download_video_btn", "Download Video")}</span>
                 </button>
               </div>
               <div className="w-full max-w-md rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-sm relative aspect-video">
@@ -2810,7 +2860,7 @@ export function GigConsoleModal({
           {/* Reference Documents */}
           {selectedGigForDetails.documents && selectedGigForDetails.documents.length > 0 && (
             <div>
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">Reference Documents</h4>
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2.5">{t("reference_documents_title", "Reference Documents")}</h4>
               <div className="flex flex-col gap-2">
                 {selectedGigForDetails.documents.map((docUrl: string, idx: number) => {
                   const fileName = docUrl.split("/").pop() || `Document_${idx + 1}`;
@@ -2824,7 +2874,7 @@ export function GigConsoleModal({
                     >
                       <FiFileText className="w-4 h-4 text-slate-400 shrink-0" />
                       <span className="truncate flex-1 text-left">{fileName}</span>
-                      <span className="text-[9px] bg-slate-200 text-slate-500 font-bold px-1.5 py-0.5 rounded-md uppercase">View</span>
+                      <span className="text-[9px] bg-slate-200 text-slate-500 font-bold px-1.5 py-0.5 rounded-md uppercase">{t("view_btn", "View")}</span>
                     </a>
                   );
                 })}
@@ -2835,10 +2885,10 @@ export function GigConsoleModal({
           {/* Attributes & Settings */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50/50 border border-slate-200/60 rounded-xl p-4 shrink-0">
             <div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Price Package</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("price_package_label", "Price Package")}</span>
               <span className="text-xs font-black text-slate-800 mt-1 block">
                 {selectedGigForDetails.payment_type === "milestone" ? (
-                  <span className="text-primary font-bold">Milestone-based</span>
+                  <span className="text-primary font-bold">{t("milestone_based_label", "Milestone-based")}</span>
                 ) : (
                   selectedGigForDetails.min_price || selectedGigForDetails.max_price ? (
                     <span>
@@ -2853,24 +2903,24 @@ export function GigConsoleModal({
               </span>
             </div>
             <div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Discount Campaign</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("discount_campaign_label", "Discount Campaign")}</span>
               <span className="text-xs font-bold text-slate-800 mt-1 block">
                 {selectedGigForDetails.discount_percent && parseFloat(selectedGigForDetails.discount_percent) > 0 
-                  ? `${parseFloat(selectedGigForDetails.discount_percent)}% Off`
-                  : "None"
+                  ? t("discount_percent_off", "{percent}% Off").replace("{percent}", String(parseFloat(selectedGigForDetails.discount_percent)))
+                  : t("none_label", "None")
                 }
               </span>
             </div>
             <div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Negotiations</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("negotiations_label", "Negotiations")}</span>
               <span className="text-xs font-bold text-slate-800 mt-1 block">
-                {selectedGigForDetails.negotiation ? "Enabled" : "Disabled"}
+                {selectedGigForDetails.negotiation ? t("enabled_label", "Enabled") : t("disabled_label", "Disabled")}
               </span>
             </div>
             <div>
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Revisions / Days</span>
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">{t("revisions_days_label", "Revisions / Days")}</span>
               <span className="text-xs font-bold text-slate-800 mt-1 block">
-                {selectedGigForDetails.revisions || "Unlimited"} Revs / {selectedGigForDetails.delivery_days} days
+                {selectedGigForDetails.revisions ? t("revisions_count", "{count} Revs").replace("{count}", String(selectedGigForDetails.revisions)) : t("unlimited_label", "Unlimited")} / {t("days_count", "{count} days").replace("{count}", String(selectedGigForDetails.delivery_days))}
               </span>
             </div>
           </div>
@@ -2878,7 +2928,7 @@ export function GigConsoleModal({
           {/* Milestones Breakdown */}
           {selectedGigForDetails.payment_type === "milestone" && selectedGigForDetails.milestones && (
             <div className="flex flex-col gap-2 shrink-0 text-left">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Milestone Breakdown</h4>
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{t("milestone_breakdown_title", "Milestone Breakdown")}</h4>
               <div className="flex flex-col gap-2 bg-slate-50 border border-slate-200 rounded-xl p-4">
                 {(typeof selectedGigForDetails.milestones === "string" 
                   ? JSON.parse(selectedGigForDetails.milestones) 
@@ -2895,7 +2945,7 @@ export function GigConsoleModal({
                   </div>
                 ))}
                 <div className="flex justify-between items-center border-t border-slate-200 pt-2 font-black text-xs text-slate-800">
-                  <span>Total Budget:</span>
+                  <span>{t("total_budget_label", "Total Budget:")}</span>
                   <span>{formatPrice(parseFloat(selectedGigForDetails.price))}</span>
                 </div>
               </div>
@@ -2904,11 +2954,11 @@ export function GigConsoleModal({
         </div>
 
         {/* Action CTAs */}
-        <div className="border-t border-slate-100 pt-4 flex justify-between gap-3 shrink-0">
-          <div className="flex gap-2">
+        <div className="border-t border-slate-100 pt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
+          <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
             <button
               onClick={async () => {
-                if (window.confirm("Are you sure you want to delete this service gig permanently? This action cannot be undone.")) {
+                if (window.confirm(t("delete_gig_confirmation", "Are you sure you want to delete this service gig permanently? This action cannot be undone."))) {
                   const token = localStorage.getItem("token");
                   try {
                     const res = await fetch(`${API_URL}/freelancer/gigs/${selectedGigForDetails.gig_id}`, {
@@ -2916,29 +2966,29 @@ export function GigConsoleModal({
                       headers: { Authorization: `Bearer ${token}` }
                     });
                     if (res.ok) {
-                      triggerToast("success", "Service gig deleted successfully!");
+                      triggerToast("success", t("delete_gig_success", "Service gig deleted successfully!"));
                       setSelectedGigForDetails(null);
                       fetchGigs();
                     } else {
                       const data = await res.json();
-                      triggerToast("error", data.message || "Failed to delete gig.");
+                      triggerToast("error", data.message || t("delete_gig_failed", "Failed to delete gig."));
                     }
                   } catch (e) {
-                    triggerToast("error", "Network error. Failed to delete gig.");
+                    triggerToast("error", t("delete_gig_network_error", "Network error. Failed to delete gig."));
                   }
                 }
               }}
-              className="bg-rose-50 hover:bg-rose-100 text-rose-605 border border-rose-200 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 border-0"
+              className="bg-rose-50 hover:bg-rose-100 text-rose-655 border border-rose-200 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer flex items-center justify-center gap-1.5 border-0 text-center w-full sm:w-auto whitespace-nowrap"
             >
               <FiX className="w-4 h-4 shrink-0" />
-              <span>Delete Gig</span>
+              <span>{t("delete_gig_btn", "Delete Gig")}</span>
             </button>
             <a
               href={`/gigs/${selectedGigForDetails.slug || selectedGigForDetails.gig_id}`}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-black text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5 border border-slate-200"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-black text-xs shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1.5 border border-slate-200 text-center w-full sm:w-auto whitespace-nowrap"
             >
               <FiExternalLink className="w-4 h-4 shrink-0" />
-              <span>View Public Page</span>
+              <span>{t("view_public_page_btn", "View Public Page")}</span>
             </a>
           </div>
 
@@ -3143,10 +3193,10 @@ export function GigConsoleModal({
               setIsCreatingGig(true);
               setSelectedGigForDetails(null);
             }}
-            className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-black text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5 border-0"
+            className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 border-0 text-center w-full sm:w-auto whitespace-nowrap"
           >
             <i className="fa-solid fa-pen-to-square text-[10px]"></i>
-            <span>Edit Gig Settings</span>
+            <span>{t("edit_gig_settings_btn", "Edit Gig Settings")}</span>
           </button>
         </div>
       </div>
@@ -3162,7 +3212,7 @@ export function GigConsoleModal({
               onClick={() => setLightboxImage(null)}
               className="absolute -top-12 right-0 text-white hover:text-slate-200 text-xs font-black bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1.5 rounded-xl cursor-pointer"
             >
-              Close ×
+              {t("close_lightbox_btn", "Close ×")}
             </button>
             <img 
               src={lightboxImage} 

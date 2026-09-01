@@ -3,6 +3,7 @@ import { API_URL } from "@/config/api";
 import CustomSelect from "@/components/CustomSelect";
 import React, { useState, useEffect, useRef } from "react";
 import { FiEdit2, FiEye, FiEyeOff, FiPlus, FiTrash2, FiUpload, FiX, FiSearch, FiCheck } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
 
 function getAdminToken() {
   if (typeof window !== "undefined") {
@@ -88,6 +89,7 @@ const emptyForm = (): Plan => ({
 });
 
 export default function SubscriptionPlansPage() {
+  const { t } = useLanguage();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [roleTab, setRoleTab] = useState<"seller" | "buyer">("seller");
@@ -333,47 +335,47 @@ export default function SubscriptionPlansPage() {
   const labelClass = "text-[10px] font-black text-slate-500 uppercase tracking-wider block mb-1";
 
   return (
-    <div className="flex flex-col gap-6 w-full text-left animate-fadeIn">
+    <div className="flex flex-col gap-6 w-full min-w-0 max-w-full text-left rtl:text-right animate-fadeIn">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-black text-slate-900 tracking-tight">Subscription Plans</h1>
-        <p className="text-slate-500 text-xs mt-1 font-semibold">
-          Manage pricing packages for freelancers and clients separately.
+        <h1 className="text-xl font-black text-slate-900 tracking-tight">{t("admin_subscription_plans", "Subscription Plans")}</h1>
+        <p className="text-slate-505 text-xs mt-1 font-semibold">
+          {t("admin_subscription_plans_desc", "Manage pricing packages for freelancers and clients separately.")}
         </p>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
+      <div className="flex flex-col lg:flex-row gap-6 items-start w-full min-w-0 max-w-full">
         {/* ── LEFT PANEL: Add / Edit Package Form ── */}
-        <div className="w-full lg:w-80 shrink-0 flex flex-col gap-4">
+        <div className="w-full lg:w-80 shrink-0 flex flex-col gap-4 min-w-0 max-w-full">
           {/* Package options settings card */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
             <h3 className="text-sm font-extrabold text-slate-800">
-              Package options settings
+              {t("admin_package_options_settings", "Package options settings")}
             </h3>
             <form onSubmit={handleSavePackageSettings} className="flex flex-col gap-3">
               <div>
-                <label className={labelClass}>Package options</label>
+                <label className={labelClass}>{t("admin_package_options", "Package options")}</label>
                 <CustomSelect
                   value={packageOption}
                   onChange={setPackageOption}
                   options={[
-                    { value: "Free listing for both type of users", label: "Free listing for both type of users" },
-                    { value: "Paid listing for both", label: "Paid listing for both" },
-                    { value: "Paid listing for sellers", label: "Paid listing for sellers" },
-                    { value: "Paid listing for buyers", label: "Paid listing for buyers" },
+                    { value: "Free listing for both type of users", label: t("free_listing_both", "Free listing for both type of users") },
+                    { value: "Paid listing for both", label: t("paid_listing_both", "Paid listing for both") },
+                    { value: "Paid listing for sellers", label: t("paid_listing_sellers", "Paid listing for sellers") },
+                    { value: "Paid listing for buyers", label: t("paid_listing_buyers", "Paid listing for buyers") },
                   ]}
                 />
               </div>
 
               <div>
-                <label className={labelClass}>Credits to apply on a single project</label>
+                <label className={labelClass}>{t("credits_per_project", "Credits to apply on a single project")}</label>
                 <input
                   type="number"
                   min={0}
                   value={creditsPerProject}
                   onChange={(e) => setCreditsPerProject(parseInt(e.target.value) || 0)}
                   className={inputClass}
-                  placeholder="Add credits"
+                  placeholder={t("add_credits", "Add credits")}
                 />
               </div>
 
@@ -382,7 +384,7 @@ export default function SubscriptionPlansPage() {
                 disabled={savingSettings}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs py-2.5 rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {savingSettings ? "Saving..." : "Save settings"}
+                {savingSettings ? t("saving", "Saving...") : t("save_settings", "Save settings")}
               </button>
             </form>
           </div>
@@ -391,7 +393,7 @@ export default function SubscriptionPlansPage() {
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-extrabold text-slate-800">
-                {editingId ? "Edit Package" : "Add Package"}
+                {editingId ? t("edit_package", "Edit Package") : t("add_package", "Add Package")}
               </h3>
               {editingId && (
                 <button
@@ -407,7 +409,7 @@ export default function SubscriptionPlansPage() {
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               {/* Package for */}
               <div>
-                <label className={labelClass}>Package for</label>
+                <label className={labelClass}>{t("package_for", "Package for")}</label>
                 <div className="flex gap-5 mt-1">
                   {(["buyer", "seller"] as const).map((role) => (
                     <label key={role} className="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
@@ -419,7 +421,7 @@ export default function SubscriptionPlansPage() {
                         onChange={() => setField("plan_role", role)}
                         className="accent-teal-600"
                       />
-                      {role === "buyer" ? "Client" : "Freelancer"}
+                      {role === "buyer" ? t("client", "Client") : t("freelancer", "Freelancer")}
                     </label>
                   ))}
                 </div>
@@ -427,33 +429,33 @@ export default function SubscriptionPlansPage() {
 
               {/* Package name */}
               <div>
-                <label className={labelClass}>Package name</label>
+                <label className={labelClass}>{t("package_name", "Package name")}</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setField("name", e.target.value)}
                   className={inputClass}
-                  placeholder="Add package name"
+                  placeholder={t("add_package_name", "Add package name")}
                   required
                 />
               </div>
 
               {/* Package duration */}
               <div>
-                <label className={labelClass}>Package duration (in days)</label>
+                <label className={labelClass}>{t("package_duration_days", "Package duration (in days)")}</label>
                 <input
                   type="number"
                   min={1}
                   value={form.plan_duration}
                   onChange={(e) => setField("plan_duration", parseInt(e.target.value) || 1)}
                   className={inputClass}
-                  placeholder="Add package duration in days"
+                  placeholder={t("add_package_duration_placeholder", "Add package duration in days")}
                 />
               </div>
 
               {/* Package price */}
               <div>
-                <label className={labelClass}>Package price</label>
+                <label className={labelClass}>{t("package_price", "Package price")}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -461,79 +463,79 @@ export default function SubscriptionPlansPage() {
                   value={form.price}
                   onChange={(e) => setField("price", parseFloat(e.target.value) || 0)}
                   className={inputClass}
-                  placeholder="Add package price"
+                  placeholder={t("add_package_price_placeholder", "Add package price")}
                   required
                 />
               </div>
 
               {/* Number of credits */}
               <div>
-                <label className={labelClass}>Number of credits</label>
+                <label className={labelClass}>{t("number_of_credits", "Number of credits")}</label>
                 <input
                   type="number"
                   min={0}
                   value={form.credits}
                   onChange={(e) => setField("credits", parseInt(e.target.value) || 0)}
                   className={inputClass}
-                  placeholder="Add number of credits"
+                  placeholder={t("add_credits_placeholder", "Add number of credits")}
                 />
               </div>
 
               {/* Profile featured duration */}
               <div>
-                <label className={labelClass}>Profile featured duration (in days)</label>
+                <label className={labelClass}>{t("profile_featured_duration_days", "Profile featured duration (in days)")}</label>
                 <input
                   type="number"
                   min={0}
                   value={form.profile_featured_duration}
                   onChange={(e) => setField("profile_featured_duration", parseInt(e.target.value) || 0)}
                   className={inputClass}
-                  placeholder="Add feature duration"
+                  placeholder={t("add_feature_duration_placeholder", "Add feature duration")}
                 />
               </div>
 
               {/* Number of projects to post */}
               <div>
-                <label className={labelClass}>Number of projects to post</label>
+                <label className={labelClass}>{t("number_of_projects_to_post", "Number of projects to post")}</label>
                 <input
                   type="number"
                   min={0}
                   value={form.job_posting_limit}
                   onChange={(e) => setField("job_posting_limit", parseInt(e.target.value) || 0)}
                   className={inputClass}
-                  placeholder="Number of projects to post"
+                  placeholder={t("number_of_projects_placeholder", "Number of projects to post")}
                 />
               </div>
 
               {/* Featured projects */}
               <div>
-                <label className={labelClass}>Featured projects</label>
+                <label className={labelClass}>{t("featured_projects", "Featured projects")}</label>
                 <input
                   type="number"
                   min={0}
                   value={form.featured_project_limit}
                   onChange={(e) => setField("featured_project_limit", parseInt(e.target.value) || 0)}
                   className={inputClass}
-                  placeholder="Featured projects"
+                  placeholder={t("featured_projects_placeholder", "Featured projects")}
                 />
               </div>
 
               {/* Featured projects duration */}
               <div>
-                <label className={labelClass}>Featured projects duration</label>
+                <label className={labelClass}>{t("featured_projects_duration", "Featured projects duration")}</label>
                 <input
                   type="number"
                   min={0}
                   value={form.featured_project_duration}
                   onChange={(e) => setField("featured_project_duration", parseInt(e.target.value) || 0)}
                   className={inputClass}
-                  placeholder="Featured projects duration"
+                  placeholder={t("featured_projects_duration_placeholder", "Featured projects duration")}
                 />
               </div>
 
               {/* Upload image */}
               <div>
-                <label className={labelClass}>Upload image</label>
+                <label className={labelClass}>{t("upload_image", "Upload image")}</label>
                 <div
                   className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-xs text-slate-500 cursor-pointer hover:border-teal-300 transition"
                   onClick={() => badgeInputRef.current?.click()}
@@ -558,10 +560,10 @@ export default function SubscriptionPlansPage() {
                   ) : (
                     <div>
                       <p className="leading-relaxed">
-                        You can upload <span className="text-rose-500 font-bold">.jpg, .jpeg, .gif, .png</span> file formats only. Make sure your file size should not exceed <span className="font-bold">5MB</span>.
+                        {t("upload_file_formats_limit", "You can upload .jpg, .jpeg, .gif, .png file formats only. Make sure your file size should not exceed 5MB.")}
                       </p>
                       <p className="text-teal-600 font-bold mt-1 flex items-center gap-1">
-                        <FiUpload className="w-3 h-3" /> Click here to upload
+                        <FiUpload className="w-3 h-3" /> {t("click_to_upload", "Click here to upload")}
                       </p>
                     </div>
                   )}
@@ -577,13 +579,13 @@ export default function SubscriptionPlansPage() {
 
               {/* Features textarea */}
               <div>
-                <label className={labelClass}>Features (one per line)</label>
+                <label className={labelClass}>{t("features_one_per_line", "Features (one per line)")}</label>
                 <textarea
                   rows={3}
                   value={typeof form.features === "string" ? form.features : (form.features as string[]).join("\n")}
                   onChange={(e) => setField("features", e.target.value)}
                   className={`${inputClass} resize-y`}
-                  placeholder={"Feature 1\nFeature 2"}
+                  placeholder={t("features_placeholder", "Feature 1\nFeature 2")}
                 />
               </div>
 
@@ -592,60 +594,60 @@ export default function SubscriptionPlansPage() {
                 disabled={saving}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs py-3 rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {saving ? "Saving..." : (editingId ? "Update & Save" : "Add Package")}
+                {saving ? t("saving", "Saving...") : (editingId ? t("update_save", "Update & Save") : t("add_package", "Add Package"))}
               </button>
             </form>
           </div>
         </div>
 
         {/* ── RIGHT PANEL: Packages Table ── */}
-        <div className="flex-1 flex flex-col gap-4">
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="flex-1 flex flex-col gap-4 min-w-0 max-w-full w-full">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden min-w-0 max-w-full w-full">
             {/* Table Header */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 border-b border-slate-100">
-              <h3 className="text-base font-extrabold text-slate-800">Packages</h3>
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-5 border-b border-slate-100 min-w-0 max-w-full">
+              <h3 className="text-base font-extrabold text-slate-800">{t("packages", "Packages")}</h3>
+              <div className="flex items-center gap-3 flex-wrap w-full sm:w-auto">
                 {/* Search */}
-                <div className="relative">
+                <div className="relative w-full sm:w-auto">
                   <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <input
                     type="text"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search"
-                    className="pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-50 w-40"
+                    placeholder={t("search", "Search")}
+                    className="pl-8 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-teal-500 bg-slate-50 w-full sm:w-40"
                   />
                 </div>
               </div>
             </div>
 
             {/* Role Tabs */}
-            <div className="flex border-b border-slate-100 px-5">
+            <div className="flex border-b border-slate-100 px-4 sm:px-5 overflow-x-auto min-w-0 max-w-full">
               {(["seller", "buyer"] as const).map((role) => (
                 <button
                   key={role}
                   onClick={() => setRoleTab(role)}
-                  className={`px-5 py-3 text-xs font-bold transition-all cursor-pointer border-b-2 -mb-px ${
+                  className={`px-4 sm:px-5 py-3 text-xs font-bold transition-all cursor-pointer border-b-2 -mb-px shrink-0 ${
                     roleTab === role
                       ? "border-teal-600 text-teal-700"
                       : "border-transparent text-slate-500 hover:text-slate-700"
                   }`}
                 >
-                  {role === "seller" ? "Freelancer" : "Client"}
+                  {role === "seller" ? t("freelancer", "Freelancer") : t("client", "Client")}
                 </button>
               ))}
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
+            <div className="overflow-x-auto min-w-0 max-w-full w-full">
+              <table className="w-full text-left rtl:text-right min-w-[500px] sm:min-w-[550px]">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="px-5 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Name</th>
-                    <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Package For</th>
-                    <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Price</th>
-                    <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider">Status</th>
-                    <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-right">Actions</th>
+                    <th className="px-4 sm:px-5 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right whitespace-nowrap">{t("name", "Name")}</th>
+                    <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right whitespace-nowrap">{t("package_for", "Package For")}</th>
+                    <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right whitespace-nowrap">{t("price", "Price")}</th>
+                    <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-left rtl:text-right whitespace-nowrap">{t("status_label", "Status")}</th>
+                    <th className="px-3 py-3 text-[9px] font-black text-slate-400 uppercase tracking-wider text-right rtl:text-left whitespace-nowrap">{t("actions", "Actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -654,54 +656,54 @@ export default function SubscriptionPlansPage() {
                       <td colSpan={5} className="text-center py-10 text-xs text-slate-400 font-semibold">
                         <div className="flex items-center justify-center gap-2">
                           <div className="w-4 h-4 border-2 border-t-teal-600 border-slate-200 rounded-full animate-spin" />
-                          Loading packages...
+                          {t("loading_packages", "Loading packages...")}
                         </div>
                       </td>
                     </tr>
                   ) : filteredPlans.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="text-center py-12 text-xs text-slate-400 font-semibold">
-                        No packages found for {roleTab === "seller" ? "Freelancers" : "Clients"}.
+                        {roleTab === "seller" ? t("no_packages_found_freelancers", "No packages found for Freelancers.") : t("no_packages_found_clients", "No packages found for Clients.")}
                       </td>
                     </tr>
                   ) : (
                     filteredPlans.map((plan) => (
                       <tr key={plan.plan_id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
-                        <td className="px-5 py-3.5">
-                          <div className="flex items-center gap-3">
+                        <td className="px-4 sm:px-5 py-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-3 text-left rtl:text-right">
                             <BadgeAvatar src={plan.badge_image} name={plan.name} />
                             <span className="text-xs font-extrabold text-teal-700">{plan.name}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-3.5">
+                        <td className="px-3 py-3.5 whitespace-nowrap">
                           <span className="text-xs font-semibold text-slate-600 capitalize">
-                            {plan.plan_role === "seller" ? "Freelancer" : "Client"}
+                            {plan.plan_role === "seller" ? t("freelancer", "Freelancer") : t("client", "Client")}
                           </span>
                         </td>
-                        <td className="px-3 py-3.5">
+                        <td className="px-3 py-3.5 whitespace-nowrap">
                           <span className="text-xs font-bold text-slate-800">{plan.price}</span>
                         </td>
-                        <td className="px-3 py-3.5">
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full flex items-center gap-1 w-fit ${
+                        <td className="px-3 py-3.5 whitespace-nowrap">
+                          <span className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full inline-flex items-center gap-1 w-fit ${
                             plan.is_enabled !== false
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                               : "bg-slate-100 text-slate-500 border border-slate-200"
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${plan.is_enabled !== false ? "bg-emerald-500" : "bg-slate-400"}`} />
-                            {plan.is_enabled !== false ? "Enabled" : "Disabled"}
+                            {plan.is_enabled !== false ? t("status_enabled", "Enabled") : t("status_disabled", "Disabled")}
                           </span>
                         </td>
-                        <td className="px-3 py-3.5">
+                        <td className="px-3 py-3.5 whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              title="Edit"
+                              title={t("edit", "Edit")}
                               onClick={() => handleEdit(plan)}
                               className="text-slate-400 hover:text-teal-700 transition-colors cursor-pointer p-1 rounded-lg hover:bg-teal-50"
                             >
                               <FiEdit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              title={plan.is_enabled !== false ? "Disable" : "Enable"}
+                              title={plan.is_enabled !== false ? t("disable", "Disable") : t("enable", "Enable")}
                               onClick={() => handleToggleEnabled(plan)}
                               className="text-slate-400 hover:text-amber-600 transition-colors cursor-pointer p-1 rounded-lg hover:bg-amber-50"
                             >
@@ -711,7 +713,7 @@ export default function SubscriptionPlansPage() {
                               }
                             </button>
                             <button
-                              title="Delete"
+                              title={t("delete", "Delete")}
                               onClick={() => handleDelete(plan.plan_id!, plan.name)}
                               className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer p-1 rounded-lg hover:bg-rose-50"
                             >
@@ -735,7 +737,7 @@ export default function SubscriptionPlansPage() {
           <div className="w-8 h-8 rounded-lg bg-emerald-500 text-white flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
             ✓
           </div>
-          <div className="flex flex-col text-left">
+          <div className="flex flex-col text-left rtl:text-right">
             <span className="text-xs font-black text-white leading-tight">{toast.title || "Notification"}</span>
             {toast.text && (
               <span className="text-[11px] text-slate-300 font-semibold mt-0.5 leading-snug">{toast.text}</span>

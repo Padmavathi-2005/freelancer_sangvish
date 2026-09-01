@@ -6,11 +6,11 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 import { convertPrice } from "@/utils/currencyHelper";
-import { 
-  FiCheck, 
-  FiInfo, 
-  FiPercent, 
-  FiChevronDown, 
+import {
+  FiCheck,
+  FiInfo,
+  FiPercent,
+  FiChevronDown,
   FiChevronUp,
   FiZap,
   FiShoppingBag,
@@ -108,7 +108,7 @@ export default function Pricing() {
   ]);
   const [loading, setLoading] = useState(false);
   const [activePlanId, setActivePlanId] = useState<number | null>(null);
-  
+
   // Interactive Calculator States
   const [monthlySpend, setMonthlySpend] = useState<number>(800); // expected spend on gig purchases
   const [monthlyEarnings, setMonthlyEarnings] = useState<number>(1500); // expected earnings as freelancer
@@ -156,27 +156,27 @@ export default function Pricing() {
   // Enterprise: 20% gig discount, 0.0% commission
   const calculateSavings = (planName: string) => {
     if (planName === "Starter") return 0;
-    
+
     if (planName === "Professional") {
       const gigSavings = monthlySpend * 0.10;
       const commissionSavings = monthlyEarnings * (0.05 - 0.02);
       return parseFloat((gigSavings + commissionSavings).toFixed(2));
     }
-    
+
     if (planName === "Enterprise") {
       const gigSavings = monthlySpend * 0.20;
       const commissionSavings = monthlyEarnings * (0.05 - 0.00);
       return parseFloat((gigSavings + commissionSavings).toFixed(2));
     }
-    
+
     return 0;
   };
 
   const filteredPlans = plans.filter((p: any) => (p.plan_role || "seller") === selectedRole);
   const planCount = filteredPlans.length;
   const containerMaxWidth = planCount === 2 || planCount === 4 ? "max-w-4xl" : "max-w-7xl";
-  const cardWidthClass = planCount === 2 || planCount === 4 
-    ? "w-full md:w-[calc(50%-12px)] max-w-[360px]" 
+  const cardWidthClass = planCount === 2 || planCount === 4
+    ? "w-full md:w-[calc(50%-12px)] max-w-[360px]"
     : "w-full md:w-[calc(33.33%-16px)] min-w-[210px] max-w-[340px]";
 
   const FAQs = [
@@ -266,7 +266,7 @@ export default function Pricing() {
       </div>
 
       <div className="max-w-7xl mx-auto relative z-10">
-        
+
         {/* Header Section */}
         <div className="text-center mb-12">
           <span className="bg-teal-50 border border-teal-100 text-teal-800 text-[10px] font-black tracking-widest uppercase py-1.5 px-4 rounded-full shadow-sm shrink-0 inline-block mb-3">
@@ -286,21 +286,19 @@ export default function Pricing() {
         <div className="flex justify-center items-center gap-2 mb-10 bg-slate-100 p-1.5 rounded-xl w-fit mx-auto border border-slate-200">
           <button
             onClick={() => setSelectedRole("seller")}
-            className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-none ${
-              selectedRole === "seller"
+            className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-none ${selectedRole === "seller"
                 ? "bg-primary text-white shadow-md"
                 : "bg-transparent text-slate-500 hover:text-primary"
-            }`}
+              }`}
           >
             {t("freelancer_plans_tab", "Freelancer Plans")}
           </button>
           <button
             onClick={() => setSelectedRole("buyer")}
-            className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-none ${
-              selectedRole === "buyer"
+            className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer border-none ${selectedRole === "buyer"
                 ? "bg-primary text-white shadow-md"
                 : "bg-transparent text-slate-500 hover:text-primary"
-            }`}
+              }`}
           >
             {t("client_plans_tab", "Client Plans")}
           </button>
@@ -312,7 +310,7 @@ export default function Pricing() {
             const planId = dbPlan.plan_id;
             const isPopular = dbPlan.is_popular;
             const isCurrent = activePlanId ? activePlanId === planId : dbPlan.is_current;
-            
+
             const discountValue = dbPlan.gig_discount_percent ? parseInt(dbPlan.gig_discount_percent as any) : 0;
             const proposalLimit = dbPlan.proposal_limit ? parseInt(dbPlan.proposal_limit as any) : 5;
             const jobLimit = dbPlan.job_posting_limit ? parseInt(dbPlan.job_posting_limit as any) : 3;
@@ -323,15 +321,15 @@ export default function Pricing() {
             const credits = dbPlan.credits ?? 0;
             if (credits > 0) {
               realFeatures.push(
-                credits >= 9999 
-                  ? t("unlimited_bids_month", "Unlimited bids / month") 
+                credits >= 9999
+                  ? t("unlimited_bids_month", "Unlimited bids / month")
                   : t("bids_per_month_count", "{{count}} bids / month").replace("{{count}}", String(credits))
               );
             }
             if (jobLimit > 0) {
               realFeatures.push(
-                jobLimit >= 9999 
-                  ? t("unlimited_job_postings_month", "Unlimited job postings / month") 
+                jobLimit >= 9999
+                  ? t("unlimited_job_postings_month", "Unlimited job postings / month")
                   : t("job_postings_per_month_count", "{{count}} job postings / month").replace("{{count}}", String(jobLimit))
               );
             }
@@ -355,20 +353,17 @@ export default function Pricing() {
             const delay = `${idx * 0.12}s`;
             const isLight = idx === 0;
             return (
-              <div 
-                key={planId} 
-                className={`relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 ${cardWidthClass} ${
-                  isPopular 
-                    ? "card-popular z-10" 
+              <div
+                key={planId}
+                className={`relative flex flex-col rounded-2xl overflow-hidden transition-all duration-300 ${cardWidthClass} ${isPopular
+                    ? "card-popular z-10"
                     : "hover:scale-[1.025] hover:shadow-xl hover:-translate-y-1"
-                } ${
-                  isPopular
-                    ? "border border-primary-dark/40 shadow-2xl text-white"
-                    : "bg-[#0f172a] dark:bg-slate-950/90 border border-slate-800/80 shadow-xl text-white"
-                }`}
+                  } ${isPopular
+                    ? "bg-primary text-white border border-primary-hover shadow-2xl"
+                    : "bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800/80 shadow-lg text-slate-800 dark:text-zinc-100"
+                  }`}
                 style={{
-                  animationDelay: delay,
-                  ...(isPopular ? { background: "linear-gradient(180deg, var(--color-primary-dark, #0a504a) 0%, rgba(15, 23, 42, 0.95) 100%)" } : {})
+                  animationDelay: delay
                 }}
               >
                 {/* Popular special top glow bar */}
@@ -379,7 +374,7 @@ export default function Pricing() {
                 {/* Popular badge */}
                 {isPopular && (
                   <div className="flex justify-center pt-5 pb-0">
-                    <span className="shimmer-badge rotateBadge flex items-center gap-1.5 bg-white/10 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border border-white/15">
+                    <span className="shimmer-badge rotateBadge flex items-center gap-1.5 bg-white/15 text-white text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full shadow-lg border border-white/20">
                       <FiStar className="w-2.5 h-2.5" style={{ animation: "rotateBadge 2s ease-in-out infinite" }} />
                       {t("most_popular_badge", "Most Popular")}
                     </span>
@@ -391,39 +386,38 @@ export default function Pricing() {
                   <div>
                     {/* Card Header */}
                     <div className="mb-6">
-                      <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-[#5eead4]" : isLight ? "text-[#5eead4]" : "text-amber-400"}`}>
-                        {t("plan_name_label", "{{name}} Plan").replace("{{name}}", dbPlan.name)}
+                      <span className={`text-[10px] font-black uppercase tracking-widest ${isPopular ? "text-teal-200" : isLight ? "text-primary dark:text-teal-400" : "text-amber-500 dark:text-amber-400"}`}>
+                        {t("plan_name_label", "{{name}} Plan").replace("{{name}}", t(dbPlan.name, dbPlan.name))}
                       </span>
-                      <p className="text-xs mt-2 font-semibold leading-relaxed text-white/70">
-                        {dbPlan.description}
+                      <p className={`text-xs mt-2 font-semibold leading-relaxed ${isPopular ? "text-white/80" : "text-slate-500 dark:text-zinc-400"}`}>
+                        {t(dbPlan.description, dbPlan.description)}
                       </p>
                     </div>
 
                     {/* Card Pricing */}
                     <div className="flex items-baseline gap-1.5 mb-8">
-                      <span className="text-4xl sm:text-5xl font-black tracking-tight text-white">
-                        {parseFloat((dbPlan.price || 0).toString()) === 0 
-                          ? t("plan_free", "Free") 
+                      <span className={`text-4xl sm:text-5xl font-black tracking-tight ${isPopular ? "text-white" : "text-slate-900 dark:text-white"}`}>
+                        {parseFloat((dbPlan.price || 0).toString()) === 0
+                          ? t("plan_free", "Free")
                           : convertPrice(parseFloat((dbPlan.price || 0).toString().replace(/[^0-9.]/g, "") || "0"), currency).formatted
                         }
                       </span>
-                      <span className="text-xs font-bold text-white/60">
+                      <span className={`text-xs font-bold ${isPopular ? "text-white/70" : "text-slate-400 dark:text-zinc-500"}`}>
                         {dbPlan.plan_duration ? `/ ${dbPlan.plan_duration} ${t("plan_duration_days", "DAYS")}` : ""}
                       </span>
                     </div>
 
                     {/* Card Features list */}
-                    <ul className={`flex flex-col gap-3.5 pt-6 ${isPopular ? "border-t border-white/10" : "border-t border-slate-800"}`}>
+                    <ul className={`flex flex-col gap-3.5 pt-6 ${isPopular ? "border-t border-white/15" : "border-t border-slate-100 dark:border-zinc-800"}`}>
                       {realFeatures.map((feature, idx) => (
                         <li key={idx} className="flex items-center gap-3.5 text-xs font-semibold">
-                          <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow-md ${
-                            isPopular 
-                              ? "bg-white text-teal-900 font-black" 
-                              : "bg-emerald-500 text-white font-black"
-                          }`}>
-                            <FiCheck className="w-3.5 h-3.5 stroke-[3]" />
+                          <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow-md ${isPopular
+                              ? "bg-white font-black"
+                              : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-450 font-black"
+                            }`}>
+                            <FiCheck className={`w-3.5 h-3.5 stroke-[3] ${isPopular ? "text-primary" : ""}`} />
                           </span>
-                          <span className={isPopular ? "text-white font-bold" : "text-slate-100 font-semibold"}>
+                          <span className={isPopular ? "text-white font-bold" : "text-slate-700 dark:text-zinc-300 font-semibold"}>
                             {feature}
                           </span>
                         </li>
@@ -434,24 +428,22 @@ export default function Pricing() {
                   {/* Upgrade Button */}
                   <div className="mt-8 pt-4">
                     {isCurrent ? (
-                      <button 
+                      <button
                         disabled
-                        className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold cursor-default transition ${
-                          isPopular
-                            ? "bg-white/10 border border-white/20 text-white"
-                            : "bg-slate-800 border border-slate-700 text-slate-300"
-                        }`}
+                        className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold cursor-default transition ${isPopular
+                            ? "bg-white/20 border border-white/20 text-white"
+                            : "bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-500 dark:text-slate-400"
+                          }`}
                       >
                         {t("active_plan_btn", "Active Plan")}
                       </button>
                     ) : (
-                      <Link 
+                      <Link
                         href={`/pricing/${planId}`}
-                        className={`btn-shine w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold transition-all duration-200 active:scale-[0.98] ${
-                          isPopular
+                        className={`btn-shine w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-extrabold transition-all duration-200 active:scale-[0.98] ${isPopular
                             ? "bg-white hover:bg-slate-100 text-slate-950 shadow-lg hover:shadow-white/15 font-black"
                             : "bg-primary hover:bg-primary-hover text-white shadow-md"
-                        }`}
+                          }`}
                       >
                         {t("choose_plan_btn", "Choose Plan")}
                       </Link>

@@ -431,7 +431,7 @@ export default function FreelancerProfileClient() {
       )}
 
       {/* Breadcrumb Navigation */}
-      <div className="hidden sm:block bg-slate-50 text-left border-b border-slate-200/50">
+      <div className="hidden sm:block bg-slate-50 text-left rtl:text-right border-b border-slate-200/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
           <button
             onClick={() => {
@@ -443,14 +443,14 @@ export default function FreelancerProfileClient() {
             }}
             className="flex items-center gap-1.5 text-xs font-extrabold text-slate-500 hover:text-teal-700 transition-colors cursor-pointer"
           >
-            <FiArrowLeft className="w-4 h-4" />
+            <FiArrowLeft className="w-4 h-4 rtl-flip" />
             <span>{t("btn_back", "Back")}</span>
           </button>
         </div>
       </div>
 
       {/* Profile Cover & Header Area - High Contrast Styling */}
-      <div className="relative w-full bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 py-8 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden text-left">
+      <div className="relative w-full bg-slate-100 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 py-8 sm:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden text-left rtl:text-right">
         {/* Cover Abstract Art */}
         <div className="absolute inset-0 pointer-events-none opacity-40">
           <div className="absolute top-[-40%] left-[-10%] w-[40rem] h-[40rem] bg-teal-500/10 rounded-full filter blur-[120px]"></div>
@@ -458,7 +458,7 @@ export default function FreelancerProfileClient() {
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row items-center md:items-end justify-between gap-8">
-          <div className="flex flex-col md:flex-row items-center md:items-end gap-6 text-center md:text-left">
+          <div className="flex flex-col md:flex-row items-center md:items-end gap-6 text-center md:text-left rtl:md:text-right">
             {/* Avatar */}
             {user.profile_image && !imageError ? (
               <img
@@ -468,13 +468,13 @@ export default function FreelancerProfileClient() {
                 onError={() => setImageError(true)}
               />
             ) : (
-              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-[#0a5a54] text-white flex items-center justify-center font-black text-3xl sm:text-4xl border-4 border-white dark:border-zinc-800 shadow-xl ring-2 ring-slate-200/80 dark:ring-zinc-700 select-none">
+              <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-primary text-white flex items-center justify-center font-black text-3xl sm:text-4xl border-4 border-white dark:border-zinc-800 shadow-xl ring-2 ring-slate-200/80 dark:ring-zinc-700 select-none">
                 {(user.name || user.email || "Freelancer").substring(0, 2).toUpperCase()}
               </div>
             )}
 
             {/* Profile Info */}
-            <div className="text-slate-900 dark:text-slate-100 flex flex-col items-center md:items-start text-center md:text-left">
+            <div className="text-slate-900 dark:text-slate-100 flex flex-col items-center md:items-start text-center md:text-left rtl:md:text-right">
               {/* Name & Verified Badge */}
               <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
                 <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
@@ -549,7 +549,7 @@ export default function FreelancerProfileClient() {
             {loggedInUserId && (loggedInUserId === Number(user?.user_id) || loggedInUserId === Number(profile?.user_id)) ? (
               <button
                 onClick={() => router.push("/dashboard/settings")}
-                className="flex-1 md:flex-none justify-center bg-[#0a5a54] hover:bg-[#074540] text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-2 border-none"
+                className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-extrabold text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex items-center gap-2 border-none"
               >
                 <FiSliders className="w-4 h-4" />
                 <span>{t("btn_edit_profile", "Edit Profile")}</span>
@@ -583,7 +583,7 @@ export default function FreelancerProfileClient() {
                       setShowHireModal(true);
                     }
                   }}
-                  className="flex-1 md:flex-none justify-center bg-[#0a5a54] hover:bg-[#074540] text-white font-black text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border-none flex items-center gap-2"
+                  className="flex-1 md:flex-none justify-center bg-primary hover:bg-primary-hover text-white font-black text-xs px-6 py-3.5 rounded-xl shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer border-none flex items-center gap-2"
                 >
                   <FiUser className="w-4 h-4" />
                   <span>{t("btn_hire_freelancer", "Hire Freelancer")}</span>
@@ -595,33 +595,33 @@ export default function FreelancerProfileClient() {
       </div>
 
       {/* Main Grid Content - No Card Containers (Box Boxes) */}
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-14 flex-grow text-left">
+      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-14 flex-grow text-left rtl:text-right">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
           
           {/* LEFT COLUMN: About, Timelines */}
-          <div className="lg:col-span-2 flex flex-col gap-12 text-left">
+          <div className="lg:col-span-2 flex flex-col gap-12 text-left rtl:text-right">
             
             {/* Professional Summary */}
-            <div className="text-left">
+            <div className="text-left rtl:text-right">
               <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 mb-4 select-none">
                 {t("professional_bio", "Professional Bio")}
               </h2>
-              <p className="text-sm leading-relaxed text-slate-600 font-medium whitespace-pre-line text-left">
+              <p className="text-sm leading-relaxed text-slate-600 font-medium whitespace-pre-line text-left rtl:text-right">
                 {profile?.bio || profile?.company_description || `Highly qualified and meticulous specialist in web application architectures and developer integration. Possessing extensive experience in resolving frontend performance layouts, developing secure backend API systems, and customizing comprehensive user interface designs. Committed to implementing code solutions aligned with user requirement specifications.`}
               </p>
             </div>
 
             {/* Experience timeline */}
-            <div className="text-left">
+            <div className="text-left rtl:text-right">
               <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 mb-6 flex items-center gap-2 select-none">
                 <FiBriefcase className="w-5 h-5 text-teal-700 shrink-0" />
                 <span>{t("work_experience_label", "Work Experience")}</span>
               </h2>
 
               {experiences && experiences.length > 0 ? (
-                <div className="space-y-8 text-left">
+                <div className="space-y-8 text-left rtl:text-right">
                   {experiences.map((exp: any, idx: number) => (
-                    <div key={idx} className="relative pl-5 border-l-2 border-teal-650/20 hover:border-teal-700 transition-all duration-300 py-1.5 flex items-start gap-4 text-left group select-none">
+                    <div key={idx} className="relative pl-5 rtl:pl-0 rtl:pr-5 border-l-2 rtl:border-l-0 rtl:border-r-2 border-teal-650/20 hover:border-teal-700 transition-all duration-300 py-1.5 flex items-start gap-4 text-left rtl:text-right group select-none">
                       <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 shrink-0 group-hover:scale-105 transition-transform shadow-sm">
                         <FiBriefcase className="w-5 h-5 text-teal-700" />
                       </div>
@@ -646,23 +646,23 @@ export default function FreelancerProfileClient() {
                   ))}
                 </div>
               ) : (
-                <div className="text-left py-2">
+                <div className="text-left rtl:text-right py-2">
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">{t("no_work_history", "No Work History Logged")}</p>
                 </div>
               )}
             </div>
 
             {/* Education timeline */}
-            <div className="text-left">
+            <div className="text-left rtl:text-right">
               <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 mb-6 flex items-center gap-2 select-none">
                 <FiBookOpen className="w-5 h-5 text-teal-700 shrink-0" />
                 <span>{t("education_history_label", "Education")}</span>
               </h2>
 
               {education && education.length > 0 ? (
-                <div className="space-y-8 text-left">
+                <div className="space-y-8 text-left rtl:text-right">
                   {education.map((edu: any, idx: number) => (
-                    <div key={idx} className="relative pl-5 border-l-2 border-teal-650/20 hover:border-teal-700 transition-all duration-300 py-1.5 flex items-start gap-4 text-left group select-none">
+                    <div key={idx} className="relative pl-5 rtl:pl-0 rtl:pr-5 border-l-2 rtl:border-l-0 rtl:border-r-2 border-teal-650/20 hover:border-teal-700 transition-all duration-300 py-1.5 flex items-start gap-4 text-left rtl:text-right group select-none">
                       <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 shrink-0 group-hover:scale-105 transition-transform shadow-sm">
                         <FiBookOpen className="w-5 h-5 text-teal-700" />
                       </div>
@@ -679,23 +679,23 @@ export default function FreelancerProfileClient() {
                   ))}
                 </div>
               ) : (
-                <div className="text-left py-2">
+                <div className="text-left rtl:text-right py-2">
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">{t("no_education_details", "No Education Details Logged")}</p>
                 </div>
               )}
             </div>
 
             {/* Certifications timeline */}
-            <div className="text-left">
+            <div className="text-left rtl:text-right">
               <h2 className="text-lg font-black text-slate-900 border-b border-slate-100 pb-3 mb-6 flex items-center gap-2 select-none">
                 <FiAward className="w-5 h-5 text-teal-700 shrink-0" />
                 <span>{t("certifications_label", "Certifications")}</span>
               </h2>
 
               {certifications && certifications.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-left rtl:text-right">
                   {certifications.map((cert: any, idx: number) => (
-                    <div key={idx} className="relative pl-5 border-l-2 border-teal-650/20 hover:border-teal-700 transition-all duration-300 py-1.5 flex items-start gap-4 text-left group select-none">
+                    <div key={idx} className="relative pl-5 rtl:pl-0 rtl:pr-5 border-l-2 rtl:border-l-0 rtl:border-r-2 border-teal-650/20 hover:border-teal-700 transition-all duration-300 py-1.5 flex items-start gap-4 text-left rtl:text-right group select-none">
                       <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 shrink-0 group-hover:scale-105 transition-transform shadow-sm">
                         <FiAward className="w-5 h-5 text-teal-700" />
                       </div>
@@ -721,7 +721,7 @@ export default function FreelancerProfileClient() {
                   ))}
                 </div>
               ) : (
-                <div className="text-left py-2">
+                <div className="text-left rtl:text-right py-2">
                   <p className="text-xs text-slate-400 font-bold uppercase tracking-wider italic">{t("no_certifications", "No Certifications Logged")}</p>
                 </div>
               )}
@@ -730,10 +730,10 @@ export default function FreelancerProfileClient() {
           </div>
 
           {/* RIGHT COLUMN: Metadata Sidebar (Single clean visual sidebar) */}
-          <div className="bg-slate-50/40 border border-slate-100 rounded-xl p-6 sm:p-8 flex flex-col gap-8 text-left">
+          <div className="bg-slate-50/40 border border-slate-100 rounded-xl p-6 sm:p-8 flex flex-col gap-8 text-left rtl:text-right">
             
             {/* Contact details */}
-            <div className="flex flex-col gap-4 text-left">
+            <div className="flex flex-col gap-4 text-left rtl:text-right">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 select-none">
                 {t("freelancer_metadata", "Freelancer Metadata")}
               </h3>
@@ -771,7 +771,7 @@ export default function FreelancerProfileClient() {
             </div>
 
             {/* Skills */}
-            <div className="flex flex-col gap-4 text-left">
+            <div className="flex flex-col gap-4 text-left rtl:text-right">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 select-none">
                 {t("core_competencies", "Core Competencies")}
               </h3>
@@ -792,7 +792,7 @@ export default function FreelancerProfileClient() {
             </div>
 
             {/* Languages */}
-            <div className="flex flex-col gap-4 text-left">
+            <div className="flex flex-col gap-4 text-left rtl:text-right">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-2 select-none">
                 {t("spoken_languages", "Spoken Languages")}
               </h3>
@@ -857,7 +857,7 @@ export default function FreelancerProfileClient() {
 
         {/* PORTFOLIO PROJECTS SHOWCASE */}
         {projects && projects.length > 0 && (
-          <div className="mt-20 border-t border-slate-100 pt-12 text-left">
+          <div className="mt-20 border-t border-slate-100 pt-12 text-left rtl:text-right">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight select-none">
               {t("portfolio_showcase", "Portfolio Showcase")}
             </h2>
@@ -882,7 +882,7 @@ export default function FreelancerProfileClient() {
                 return (
                   <div 
                     key={idx} 
-                    className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-350 transition-all duration-300 flex flex-col justify-between text-left"
+                    className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-slate-350 transition-all duration-300 flex flex-col justify-between text-left rtl:text-right"
                   >
                     <div>
                       {imgArr.length > 0 ? (
@@ -930,7 +930,7 @@ export default function FreelancerProfileClient() {
 
         {/* ACTIVE GIGS SERVICES */}
         {gigs && gigs.length > 0 && (
-          <div className="mt-20 border-t border-slate-100 pt-12 text-left">
+          <div className="mt-20 border-t border-slate-100 pt-12 text-left rtl:text-right">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight select-none">
               {t("active_gigs_services", "Active Gigs & Services")}
             </h2>
@@ -949,7 +949,7 @@ export default function FreelancerProfileClient() {
                   <div 
                     key={idx} 
                     onClick={() => router.push(`/gigs/${gig.gig_id}`)}
-                    className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-teal-500/35 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between text-left cursor-pointer group"
+                    className="bg-white border border-slate-200/80 rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:border-teal-500/35 hover:scale-[1.01] transition-all duration-300 flex flex-col justify-between text-left rtl:text-right cursor-pointer group"
                   >
                     <div>
                       {gigImages.length > 0 ? (
@@ -986,7 +986,7 @@ export default function FreelancerProfileClient() {
 
         {/* CLIENT REVIEWS & RATINGS */}
         {reviews && reviews.length > 0 && (
-          <div className="mt-20 border-t border-slate-100 pt-12 text-left">
+          <div className="mt-20 border-t border-slate-100 pt-12 text-left rtl:text-right">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 select-none">
               <div>
                 <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
@@ -1014,7 +1014,7 @@ export default function FreelancerProfileClient() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
               {reviews.map((rev: any, idx: number) => (
-                <div key={idx} className="relative pl-5 border-l-2 border-teal-650/20 hover:border-teal-700 transition-all duration-300 py-1 flex flex-col justify-between gap-3 select-none text-left group">
+                <div key={idx} className="relative pl-5 rtl:pl-0 rtl:pr-5 border-l-2 rtl:border-l-0 rtl:border-r-2 border-teal-650/20 hover:border-teal-700 transition-all duration-300 py-1 flex flex-col justify-between gap-3 select-none text-left rtl:text-right group">
                   <div>
                     <div className="flex items-center justify-between gap-2.5">
                       <div className="flex items-center gap-2.5">
@@ -1031,7 +1031,11 @@ export default function FreelancerProfileClient() {
                           </div>
                         )}
                         <div>
-                          <h4 className="text-xs font-black text-slate-800">{rev.reviewer_name || "Client"}</h4>
+                          <h4 className="text-xs font-black text-slate-800">
+                            {rev.reviewer_name && rev.reviewer_name.length > 15 
+                              ? `${rev.reviewer_name.substring(0, 15)}...` 
+                              : (rev.reviewer_name || "Client")}
+                          </h4>
                           <p className="text-[9px] text-teal-600 font-extrabold uppercase tracking-wider mt-0.5">
                             {t("client_review_badge", "Client Review")} • {rev.review_type === 'gig' ? t("gig_service", "Gig Service") : t("project_contract", "Project Contract")}
                           </p>
@@ -1064,7 +1068,7 @@ export default function FreelancerProfileClient() {
       {/* Hire Modal Portal */}
       {showHireModal && (
         <div className="fixed inset-0 z-[99999] bg-slate-900/35 backdrop-blur-[2px] flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-lg overflow-visible p-6 sm:p-8 animate-fadeIn text-left relative flex flex-col">
+          <div className="bg-white border border-slate-200/80 shadow-2xl rounded-xl w-full max-w-lg overflow-visible p-6 sm:p-8 animate-fadeIn text-left rtl:text-right relative flex flex-col">
             <button
               onClick={() => {
                 setShowHireModal(false);

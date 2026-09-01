@@ -146,7 +146,7 @@ export default function Home1Freelancers() {
             className="inline-flex items-center gap-1.5 text-sm font-black text-[#0a5a54] dark:text-teal-400 hover:text-[#073f3a] transition-all duration-200 group shrink-0"
           >
             {t("featured_btn", "See all")}
-            <FiArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+            <FiArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform rtl:rotate-180 rtl:group-hover:-translate-x-1" />
           </Link>
         </div>
 
@@ -193,7 +193,7 @@ export default function Home1Freelancers() {
                             onError={() => setFailedImages((prev) => ({ ...prev, [freelancer.user_id]: true }))}
                           />
                         ) : (
-                          <div className="w-14 h-14 rounded-full bg-[#0a5a54] dark:bg-teal-750 flex items-center justify-center font-black text-white text-base shrink-0 shadow-sm border border-teal-600/20">
+                          <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center font-black text-white text-base shrink-0 shadow-sm border border-primary/20">
                             {getInitials(freelancer.name || freelancer.email || "FL")}
                           </div>
                         )}
@@ -201,7 +201,10 @@ export default function Home1Freelancers() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-black text-slate-900 dark:text-white text-lg sm:text-xl truncate">
-                              {freelancer.name || freelancer.email || "Freelancer"}
+                              {(() => {
+                                const rawName = freelancer.name || freelancer.email || "Freelancer";
+                                return rawName.length > 15 ? `${rawName.substring(0, 15)}...` : rawName;
+                              })()}
                             </span>
                             <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -247,7 +250,7 @@ export default function Home1Freelancers() {
                           e.stopPropagation();
                           router.push(freelancer.user_id ? `/freelancer/${slugParam}?hire=true` : "/talent");
                         }}
-                        className="bg-[#0a5a54] hover:bg-[#073f3a] text-white font-bold text-xs px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.97] hover:shadow-md cursor-pointer border-none"
+                        className="bg-primary hover:bg-primary-hover text-white font-bold text-xs px-4 py-2 rounded-xl transition-all duration-200 active:scale-[0.97] hover:shadow-md cursor-pointer border-none"
                       >
                         {t("btn_hire_now", "Hire Now")}
                       </button>

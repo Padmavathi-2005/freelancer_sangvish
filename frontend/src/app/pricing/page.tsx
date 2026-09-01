@@ -147,11 +147,11 @@ export default function PricingPage() {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950/80 text-slate-800 dark:text-slate-100 transition-colors duration-300">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-teal-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950/80">
         <Header />
 
         {/* ── Hero ── */}
-        <section className="relative bg-white dark:bg-slate-900/40 overflow-hidden border-b border-slate-100/80 dark:border-slate-800/80 pt-20 pb-10 px-4 text-center transition-colors duration-300">
+        <section className="relative bg-white dark:bg-slate-900/40 overflow-hidden border-b border-slate-100/80 dark:border-slate-800/80 pt-20 pb-10 px-4 text-center text-slate-800 dark:text-slate-100 transition-colors duration-300">
           {/* Animated blobs */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <div className="blob-a absolute -top-24 -left-24 w-80 h-80 bg-teal-100/50 dark:bg-teal-900/10 rounded-full blur-3xl" />
@@ -292,11 +292,13 @@ export default function PricingPage() {
                                 animationDelay: `${parseFloat(delay) + i * 0.06}s`,
                               }}
                             >
-                              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow-md ${
-                                isPopular 
-                                  ? "bg-white text-teal-900 font-black" 
-                                  : "bg-emerald-500 text-white font-black"
-                              }`}>
+                              <span
+                                className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 shadow-md font-black"
+                                style={{
+                                  backgroundColor: isPopular ? "#ffffff" : "#0d9488",
+                                  color: isPopular ? "#0f766e" : "#ffffff"
+                                }}
+                              >
                                 <FiCheck className="w-3.5 h-3.5 stroke-[3]" />
                               </span>
                               <span className={`text-xs font-semibold ${isPopular ? "text-white font-bold" : "text-slate-100 font-semibold"}`}>{f}</span>

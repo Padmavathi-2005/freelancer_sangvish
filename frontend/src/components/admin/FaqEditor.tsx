@@ -4,6 +4,7 @@ import { API_URL } from "@/config/api";
 
 import React, { useState, useEffect } from "react";
 import { FiPlus, FiTrash2 } from "react-icons/fi";
+import { useLanguage } from "@/context/LanguageContext";
 
 function getAdminToken() {
   if (typeof window !== "undefined") {
@@ -17,6 +18,7 @@ interface FaqEditorProps {
 }
 
 export default function FaqEditor({ triggerToast }: FaqEditorProps) {
+  const { t } = useLanguage();
   const [faqs, setFaqs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [availLanguages, setAvailLanguages] = useState<{ name: string; code: string }[]>([]);
@@ -133,11 +135,11 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
         });
       }
 
-      triggerToast("FAQ Saved", "Frequently Asked Question updated successfully!");
+      triggerToast(t("admin_faq_saved", "FAQ Saved"), t("admin_faq_saved_desc", "Frequently Asked Question updated successfully!"));
       fetchTranslations();
     } catch (e) {
       console.error(e);
-      triggerToast("Error Saving", "Failed to update FAQ translations.");
+      triggerToast(t("admin_error_saving", "Error Saving"), t("admin_error_saving_desc", "Failed to update FAQ translations."));
     } finally {
       setSavingId(null);
     }
@@ -152,15 +154,15 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
       if (res.ok) {
-        triggerToast("FAQ Created", "Successfully added a new FAQ item!");
+        triggerToast(t("admin_faq_created", "FAQ Created"), t("admin_faq_created_desc", "Successfully added a new FAQ item!"));
         await fetchFaqs();
         await fetchTranslations();
       } else {
-        triggerToast("Error Creating", "Failed to append FAQ item.");
+        triggerToast(t("admin_error_creating", "Error Creating"), t("admin_error_creating_desc", "Failed to append FAQ item."));
       }
     } catch (e) {
       console.error(e);
-      triggerToast("Error Creating", "Error generating new FAQ item.");
+      triggerToast(t("admin_error_creating", "Error Creating"), t("admin_error_creating_desc", "Failed to append FAQ item."));
     } finally {
       setCreating(false);
     }
@@ -171,7 +173,7 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
     const qKey = `faq_q_${suffix}`;
     const questionText = translationsByLang[selectedContentLang]?.[qKey] || "this FAQ item";
     
-    if (!window.confirm(`Are you sure you want to delete "${questionText}"?`)) {
+    if (!window.confirm(t("admin_faq_delete_confirm", "Are you sure you want to delete this item?") + ` ("${questionText}")`)) {
       return;
     }
 
@@ -181,41 +183,41 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
         headers: { Authorization: `Bearer ${getAdminToken()}` }
       });
       if (res.ok) {
-        triggerToast("FAQ Deleted", "Removed FAQ item and translations successfully.");
+        triggerToast(t("admin_faq_deleted", "FAQ Deleted"), t("admin_faq_deleted_desc", "Removed FAQ item and translations successfully."));
         await fetchFaqs();
         await fetchTranslations();
       } else {
-        triggerToast("Error Deleting", "Failed to remove FAQ item.");
+        triggerToast(t("admin_error_deleting", "Error Deleting"), t("admin_error_deleting_desc", "Failed to remove FAQ item."));
       }
     } catch (e) {
       console.error(e);
-      triggerToast("Error Deleting", "Error deleting FAQ item.");
+      triggerToast(t("admin_error_deleting", "Error Deleting"), t("admin_error_deleting_desc", "Failed to remove FAQ item."));
     }
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-fadeIn text-slate-800">
+    <div className="flex flex-col gap-6 animate-fadeIn text-slate-805 text-left rtl:text-right">
       
       {/* Header action */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-100">
-        <div>
-          <h4 className="text-base font-bold text-slate-800">Frequently Asked Questions (FAQ)</h4>
-          <p className="text-xs text-slate-505 mt-1">Manage translatable accordions displayed on the landing page FAQ section.</p>
+        <div className="text-left rtl:text-right">
+          <h4 className="text-base font-bold text-slate-855 text-left rtl:text-right">{t("faq", "Frequently Asked Questions (FAQ)")}</h4>
+          <p className="text-xs text-slate-505 mt-1 font-semibold text-left rtl:text-right">{t("admin_faq_subtitle_desc", "Manage translatable accordions displayed on the landing page FAQ section.")}</p>
         </div>
         <button
           onClick={handleAddFaq}
           disabled={creating}
-          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-xs px-5 py-2.5 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer flex items-center gap-2"
+          className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition duration-150 shadow-sm shrink-0 cursor-pointer flex items-center justify-center gap-2 border-none whitespace-nowrap w-full sm:w-auto text-center"
         >
           <FiPlus className="w-4 h-4" />
-          {creating ? "Creating..." : "Add New FAQ"}
+          {creating ? t("admin_creating_btn", "Creating...") : t("admin_add_new_faq_btn", "Add New FAQ")}
         </button>
       </div>
 
       {/* Select Language Switcher */}
-      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200/50">
-        <span className="text-xs font-bold text-slate-500">Edit translations for:</span>
-        <div className="flex items-center gap-1">
+      <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200/50 flex-row rtl:flex-row-reverse">
+        <span className="text-xs font-bold text-slate-500 text-left rtl:text-right">{t("admin_edit_translations_for", "Edit translations for:")}</span>
+        <div className="flex items-center gap-1 flex-row rtl:flex-row-reverse">
           {(availLanguages.length > 0 ? availLanguages : [
             { name: "English", code: "EN" },
             { name: "Arabic", code: "AR" },
@@ -226,10 +228,10 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
               key={langItem.code}
               type="button"
               onClick={() => setSelectedContentLang(langItem.code.toUpperCase())}
-              className={`px-3 py-1.5 text-[11px] font-extrabold rounded-xl transition cursor-pointer ${
+              className={`px-3 py-1.5 text-[11px] font-extrabold rounded-xl transition cursor-pointer border-none ${
                 selectedContentLang === langItem.code.toUpperCase()
                   ? "bg-teal-700 text-white shadow-sm"
-                  : "text-slate-550 hover:bg-slate-150"
+                  : "text-slate-550 hover:bg-slate-150 bg-transparent"
               }`}
             >
               {langItem.code.toUpperCase()}
@@ -252,27 +254,27 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
             return (
               <div 
                 key={faq.faq_id} 
-                className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row gap-4 justify-between items-stretch shadow-sm"
+                className="bg-white border border-slate-200 rounded-xl p-5 flex flex-col md:flex-row gap-4 justify-between items-stretch shadow-sm text-left rtl:text-right"
               >
                 {/* Inputs container */}
-                <div className="flex-1 flex flex-col gap-3">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Question #{index + 1} ({selectedContentLang})</label>
+                <div className="flex-1 flex flex-col gap-3 text-left rtl:text-right">
+                  <div className="flex flex-col gap-1 text-left rtl:text-right">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_faq_question_label", "Question #")}{index + 1} ({selectedContentLang})</label>
                     <input
                       type="text"
                       value={translationsByLang[selectedContentLang]?.[qKey] || ""}
                       onChange={(e) => handleFaqFieldChange(faq.key_suffix, "q", e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-800 font-bold focus:outline-none focus:border-teal-700 transition w-full"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-805 font-bold focus:outline-none focus:border-teal-700 transition w-full text-left rtl:text-right"
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Answer Details ({selectedContentLang})</label>
+                  <div className="flex flex-col gap-1 text-left rtl:text-right">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{t("admin_faq_answer_label", "Answer Details")} ({selectedContentLang})</label>
                     <textarea
                       rows={3}
                       value={translationsByLang[selectedContentLang]?.[aKey] || ""}
                       onChange={(e) => handleFaqFieldChange(faq.key_suffix, "a", e.target.value)}
-                      className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-teal-700 transition resize-y leading-relaxed w-full font-medium"
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-700 focus:outline-none focus:border-teal-700 transition resize-y leading-relaxed w-full font-medium text-left rtl:text-right"
                     />
                   </div>
                 </div>
@@ -283,9 +285,9 @@ export default function FaqEditor({ triggerToast }: FaqEditorProps) {
                     type="button"
                     onClick={() => handleSaveFaq(faq.faq_id, faq.key_suffix)}
                     disabled={savingId === faq.faq_id}
-                    className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition duration-150 shadow-sm cursor-pointer shrink-0 text-center min-w-[80px]"
+                    className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition duration-150 shadow-sm cursor-pointer shrink-0 text-center min-w-[80px] border-none"
                   >
-                    {savingId === faq.faq_id ? "Saving..." : "Save"}
+                    {savingId === faq.faq_id ? t("admin_saving_btn", "Saving...") : t("admin_save_btn", "Save")}
                   </button>
                   <button
                     type="button"

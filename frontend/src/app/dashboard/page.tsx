@@ -81,7 +81,12 @@ export default function DashboardPage() {
               cleanParams.delete("stripe_proposal_success");
               cleanParams.delete("proposal_id");
               cleanParams.delete("amount");
-              window.history.replaceState({}, document.title, `${window.location.pathname}?${cleanParams.toString()}`);
+              if (data.job_id) {
+                cleanParams.set("project_id", data.job_id.toString());
+              }
+              const searchStr = cleanParams.toString();
+              const newUrl = searchStr ? `${window.location.pathname}?${searchStr}` : window.location.pathname;
+              window.history.replaceState({}, document.title, newUrl);
             } else {
               triggerToast("error", data.message || "Failed to confirm payment.");
             }

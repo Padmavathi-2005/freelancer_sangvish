@@ -3,8 +3,10 @@ import { createPortal } from "react-dom";
 import { FiCheckCircle, FiXCircle } from "react-icons/fi";
 import { useAdmin } from "@/app/admin/AdminContext";
 import Table from "@/components/Table";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function WalletManagementTab() {
+  const { t } = useLanguage();
   const {
     adminWalletStats,
     loadingAdminWallet,
@@ -167,11 +169,11 @@ export default function WalletManagementTab() {
   // Columns Definitions
   const requestColumns = [
     {
-      header: "Req ID",
+      header: t("req_id", "Req ID"),
       accessor: (req: any) => <span className="text-slate-400 font-bold">#{req.request_id}</span>
     },
     {
-      header: "User Details",
+      header: t("user_details", "User Details"),
       accessor: (req: any) => (
         <div className="min-w-0">
           <p className="text-xs font-bold text-slate-800">{req.user_name}</p>
@@ -180,11 +182,11 @@ export default function WalletManagementTab() {
       )
     },
     {
-      header: "Method",
+      header: t("method", "Method"),
       accessor: (req: any) => <span className="text-slate-600 font-semibold">{req.payment_method}</span>
     },
     {
-      header: "Payout Target Details",
+      header: t("payout_target_details", "Payout Target Details"),
       accessor: (req: any) => (
         <span className="max-w-[200px] truncate block text-slate-500 font-semibold" title={req.account_details}>
           {req.account_details}
@@ -192,17 +194,17 @@ export default function WalletManagementTab() {
       )
     },
     {
-      header: "Amount",
+      header: t("amount", "Amount"),
       className: "text-right",
       accessor: (req: any) => <span className="text-slate-850 text-xs font-black">${parseFloat(req.amount).toFixed(2)}</span>
     },
     {
-      header: "User Balance",
+      header: t("user_balance", "User Balance"),
       className: "text-right",
       accessor: (req: any) => <span className="text-slate-400 font-semibold">${parseFloat(req.current_wallet_balance).toFixed(2)}</span>
     },
     {
-      header: "Status",
+      header: t("status_label", "Status"),
       className: "text-right",
       accessor: (req: any) => (
         <span
@@ -214,12 +216,12 @@ export default function WalletManagementTab() {
               : "bg-amber-50 text-amber-600 border border-amber-100"
           }`}
         >
-          {req.status}
+          {req.status === "Approved" ? t("approved", "Approved") : req.status === "Rejected" ? t("rejected", "Rejected") : t("pending", "Pending")}
         </span>
       )
     },
     {
-      header: "Action",
+      header: t("actions", "Action"),
       className: "text-right",
       accessor: (req: any) => req.status === "Pending" ? (
         <div className="flex gap-1.5 justify-end">
@@ -234,7 +236,7 @@ export default function WalletManagementTab() {
             })}
             className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition shadow-sm"
           >
-            Approve
+            {t("approve", "Approve")}
           </button>
           <button
             onClick={() => setPendingAction({
@@ -247,22 +249,22 @@ export default function WalletManagementTab() {
             })}
             className="bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition border border-rose-100"
           >
-            Reject
+            {t("reject", "Reject")}
           </button>
         </div>
       ) : (
-        <span className="text-[10px] text-slate-350 font-bold">PROCESSED</span>
+        <span className="text-[10px] text-slate-350 font-bold">{t("processed", "PROCESSED")}</span>
       )
     }
   ];
 
   const referralColumns = [
     {
-      header: "Payout ID",
+      header: t("payout_id", "Payout ID"),
       accessor: (p: any) => <span className="text-slate-400 font-bold">#{p.payout_id}</span>
     },
     {
-      header: "User Details",
+      header: t("user_details", "User Details"),
       accessor: (p: any) => (
         <div className="min-w-0">
           <p className="text-xs font-bold text-slate-800">{p.referred_name || p.referrer_name || "User"}</p>
@@ -271,7 +273,7 @@ export default function WalletManagementTab() {
       )
     },
     {
-      header: "Bonus Type",
+      header: t("bonus_type", "Bonus Type"),
       accessor: (p: any) => {
         let details: any = {};
         try { details = typeof p.details === "string" ? JSON.parse(p.details) : (p.details || {}); } catch(e) {}
@@ -280,18 +282,18 @@ export default function WalletManagementTab() {
           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
             isSignup ? "bg-purple-50 text-purple-700 border border-purple-100" : "bg-emerald-50 text-emerald-700 border border-emerald-100"
           }`}>
-            {isSignup ? "🎁 Sign-up Bonus" : "💰 Referral Reward"}
+            {isSignup ? `🎁 ${t("signup_bonus", "Sign-up Bonus")}` : `💰 ${t("referral_reward", "Referral Reward")}`}
           </span>
         );
       }
     },
     {
-      header: "Amount",
+      header: t("amount", "Amount"),
       className: "text-right",
       accessor: (p: any) => <span className="text-slate-900 text-xs font-black">${parseFloat(p.amount || 0).toFixed(2)}</span>
     },
     {
-      header: "Status",
+      header: t("status_label", "Status"),
       className: "text-right",
       accessor: (p: any) => (
         <span
@@ -303,12 +305,12 @@ export default function WalletManagementTab() {
               : "bg-amber-50 text-amber-600 border border-amber-100 animate-pulse"
           }`}
         >
-          {p.status}
+          {p.status === "approved" || p.status === "Approved" ? t("approved", "Approved") : p.status === "rejected" || p.status === "Rejected" ? t("rejected", "Rejected") : t("pending", "Pending")}
         </span>
       )
     },
     {
-      header: "Action",
+      header: t("actions", "Action"),
       className: "text-right",
       accessor: (p: any) => (p.status === "pending" || p.status === "Pending") ? (
         <div className="flex gap-1.5 justify-end">
@@ -322,7 +324,7 @@ export default function WalletManagementTab() {
             })}
             className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition shadow-sm"
           >
-            Approve
+            {t("approve", "Approve")}
           </button>
           <button
             onClick={() => setPendingAction({
@@ -334,46 +336,46 @@ export default function WalletManagementTab() {
             })}
             className="bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg px-2.5 py-1 text-[10px] font-black cursor-pointer transition border border-rose-100"
           >
-            Reject
+            {t("reject", "Reject")}
           </button>
         </div>
       ) : (
-        <span className="text-[10px] text-slate-350 font-bold uppercase">{p.status}</span>
+        <span className="text-[10px] text-slate-350 font-bold uppercase">{p.status === "approved" || p.status === "Approved" ? t("approved", "Approved") : p.status === "rejected" || p.status === "Rejected" ? t("rejected", "Rejected") : t("pending", "Pending")}</span>
       )
     }
   ];
 
   const ledgerColumns = [
     {
-      header: "Wallet ID",
+      header: t("wallet_id_header", "Wallet ID"),
       accessor: (w: any) => <span className="text-slate-400 font-bold whitespace-nowrap">W-LDT-{w.wallet_id}</span>
     },
     {
-      header: "User",
+      header: t("user", "User"),
       accessor: (w: any) => <span className="font-black text-slate-850 whitespace-nowrap">{w.user_name || "Platform User"}</span>
     },
     {
-      header: "Email Address",
+      header: t("email_address", "Email Address"),
       accessor: (w: any) => <span className="text-slate-500 font-semibold">{w.email}</span>
     },
     {
-      header: "Workspace Role",
+      header: t("workspace_role", "Workspace Role"),
       accessor: (w: any) => (
         <span className={`uppercase text-[10px] font-black px-2 py-0.5 rounded-md whitespace-nowrap ${w.role === "client" ? "bg-blue-50 text-blue-600 border border-blue-100" : "bg-teal-50 text-teal-600 border border-teal-100"}`}>
-          {w.role}
+          {w.role === "client" ? t("client", "Client") : t("freelancer", "Freelancer")}
         </span>
       )
     },
     {
-      header: "Account Setup",
+      header: t("account_setup", "Account Setup"),
       accessor: (w: any) => (
         <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${w.is_onboarded ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"}`}>
-          {w.is_onboarded ? "Onboarding complete" : "Draft"}
+          {w.is_onboarded ? t("onboarding_complete", "Onboarding complete") : t("draft", "Draft")}
         </span>
       )
     },
     {
-      header: "Virtual Balance (USD)",
+      header: t("virtual_balance", "Virtual Balance (USD)"),
       className: "text-right",
       accessor: (w: any) => <span className="font-black text-slate-850 text-sm whitespace-nowrap">${parseFloat(w.balance).toFixed(2)}</span>
     }
@@ -381,23 +383,23 @@ export default function WalletManagementTab() {
 
   const transactionColumns = [
     {
-      header: "Tx ID",
+      header: t("tx_id", "Tx ID"),
       accessor: (tx: any) => <span className="text-slate-400 font-bold">TX-{tx.transaction_id}</span>
     },
     {
-      header: "Timestamp",
+      header: t("timestamp", "Timestamp"),
       accessor: (tx: any) => <span className="text-[10px] text-slate-500 font-semibold">{new Date(tx.created_at).toLocaleString()}</span>
     },
     {
-      header: "Sender User",
-      accessor: (tx: any) => <span className="text-slate-600 font-bold">{tx.sender_name || "External Deposit"}</span>
+      header: t("sender_user", "Sender User"),
+      accessor: (tx: any) => <span className="text-slate-600 font-bold">{tx.sender_name || t("external_deposit", "External Deposit")}</span>
     },
     {
-      header: "Receiver User",
-      accessor: (tx: any) => <span className="text-slate-600 font-bold">{tx.receiver_name || "Platform Escrow"}</span>
+      header: t("receiver_user", "Receiver User"),
+      accessor: (tx: any) => <span className="text-slate-600 font-bold">{tx.receiver_name || t("platform_escrow", "Platform Escrow")}</span>
     },
     {
-      header: "Type",
+      header: t("type", "Type"),
       accessor: (tx: any) => (
         <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md">
           {tx.type}
@@ -405,7 +407,7 @@ export default function WalletManagementTab() {
       )
     },
     {
-      header: "Description",
+      header: t("description", "Description"),
       accessor: (tx: any) => (
         <span className="max-w-[200px] truncate block text-slate-500 font-semibold" title={tx.description}>
           {tx.description}
@@ -413,7 +415,7 @@ export default function WalletManagementTab() {
       )
     },
     {
-      header: "Commission",
+      header: t("commission", "Commission"),
       className: "text-right",
       accessor: (tx: any) => (
         <span className="text-rose-500 font-bold">
@@ -422,7 +424,7 @@ export default function WalletManagementTab() {
       )
     },
     {
-      header: "Net Amount",
+      header: t("net_amount", "Net Amount"),
       className: "text-right",
       accessor: (tx: any) => <span className="font-black text-slate-850">${parseFloat(tx.amount).toFixed(2)}</span>
     }
@@ -433,23 +435,23 @@ export default function WalletManagementTab() {
       <div className="flex-1 flex items-center justify-center p-8 bg-slate-50/50">
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 border-4 border-teal-700/30 border-t-teal-700 rounded-full animate-spin"></div>
-          <p className="text-sm font-bold text-slate-500">Loading platform wallet analytics...</p>
+          <p className="text-sm font-bold text-slate-500">{t("admin_loading_wallet_analytics", "Loading platform wallet analytics...")}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-left rtl:text-right">
       
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <span>🛡️</span> Platform Escrow & Payouts
+            <span>🛡️</span> {t("admin_platform_escrow_payouts", "Platform Escrow & Payouts")}
           </h1>
           <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
-            Audit system transactions, platform commission settings, and process user withdrawals.
+            {t("admin_platform_escrow_payouts_desc", "Audit system transactions, platform commission settings, and process user withdrawals.")}
           </p>
         </div>
         <button
@@ -459,7 +461,7 @@ export default function WalletManagementTab() {
           }}
           className="px-4 py-2 border border-slate-200 hover:border-slate-350 bg-white rounded-xl text-xs font-bold text-slate-700 transition hover:bg-slate-50 shadow-sm cursor-pointer"
         >
-          🔄 Refresh Ledger
+          🔄 {t("admin_refresh_ledger", "Refresh Ledger")}
         </button>
       </div>
 
@@ -469,15 +471,15 @@ export default function WalletManagementTab() {
         {/* System Escrow Wallet Balance */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">System Wallet Reserve</span>
-            <span className="text-xs font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full border border-teal-100">PLATFORM</span>
+            <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">{t("admin_system_wallet_reserve", "System Wallet Reserve")}</span>
+            <span className="text-xs font-bold bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full border border-teal-100">{t("admin_platform", "PLATFORM")}</span>
           </div>
           <div className="space-y-1">
             <p className="text-2xl font-black text-slate-850">
               ${parseFloat(systemWallet?.balance || "0.00").toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-[10px] text-slate-400 font-semibold">
-              Total funds stored in neutral system wallet.
+              {t("admin_system_wallet_reserve_desc", "Total funds stored in neutral system wallet.")}
             </p>
           </div>
         </div>
@@ -485,15 +487,15 @@ export default function WalletManagementTab() {
         {/* Total Active Escrow Contracts */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Active Project Escrows</span>
-            <span className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100">CONTRACTS</span>
+            <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">{t("admin_active_project_escrows", "Active Project Escrows")}</span>
+            <span className="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100">{t("admin_contracts", "CONTRACTS")}</span>
           </div>
           <div className="space-y-1">
             <p className="text-2xl font-black text-slate-850">
               ${totalEscrow.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </p>
             <p className="text-[10px] text-slate-400 font-semibold">
-              Sum value of all active milestones in progress.
+              {t("admin_active_project_escrows_desc", "Sum value of all active milestones in progress.")}
             </p>
           </div>
         </div>
@@ -501,15 +503,15 @@ export default function WalletManagementTab() {
         {/* Net Platform Commissions */}
         <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-2 flex flex-col justify-between">
           <div className="flex justify-between items-center">
-            <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">Net Platform Profit</span>
-            <span className="text-xs font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100">COMMISSIONS</span>
+            <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider">{t("admin_net_platform_profit", "Net Platform Profit")}</span>
+            <span className="text-xs font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100">{t("admin_commissions", "COMMISSIONS")}</span>
           </div>
           <div className="space-y-1">
             <p className="text-2xl font-black text-slate-850">
               ${totalCommissions.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </p>
             <p className="text-[10px] text-slate-400 font-semibold">
-              Platform fees generated (net non-escrow).
+              {t("admin_net_platform_profit_desc", "Platform fees generated (net non-escrow).")}
             </p>
           </div>
         </div>
@@ -517,50 +519,50 @@ export default function WalletManagementTab() {
       </div>
 
       {/* TABS & DETAILS */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden flex flex-col min-w-0 max-w-full">
         
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-100 bg-slate-50/50 px-6 py-3 justify-between items-center">
-          <div className="flex gap-2">
+        <div className="flex border-b border-slate-100 bg-slate-50/50 px-4 sm:px-6 py-3 items-center overflow-x-auto min-w-0 max-w-full">
+          <div className="flex gap-2 shrink-0">
             <button
               onClick={() => setActiveSubTab("requests")}
-              className={`px-4 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer whitespace-nowrap shrink-0 ${
                 activeSubTab === "requests"
                   ? "bg-slate-800 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              Payout Requests ({pendingWithdrawalsCount})
+              {t("admin_payout_requests", "Payout Requests")} ({pendingWithdrawalsCount})
             </button>
             <button
               onClick={() => setActiveSubTab("referrals")}
-              className={`px-4 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer whitespace-nowrap shrink-0 ${
                 activeSubTab === "referrals"
                   ? "bg-purple-800 text-white shadow-sm"
                   : "text-purple-600 hover:text-purple-900 bg-purple-50/50"
               }`}
             >
-              Referral & Signup Bonuses ({pendingReferralsCount})
+              {t("admin_referral_signup_bonuses", "Referral & Signup Bonuses")} ({pendingReferralsCount})
             </button>
             <button
               onClick={() => setActiveSubTab("ledger")}
-              className={`px-4 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer whitespace-nowrap shrink-0 ${
                 activeSubTab === "ledger"
                   ? "bg-slate-800 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              User Wallet Ledgers ({wallets.length})
+              {t("admin_user_wallet_ledgers", "User Wallet Ledgers")} ({wallets.length})
             </button>
-             <button
+            <button
               onClick={() => setActiveSubTab("transactions")}
-              className={`px-4 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer whitespace-nowrap shrink-0 ${
                 activeSubTab === "transactions"
                   ? "bg-slate-800 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              System Transactions Log
+              {t("admin_system_transactions_log", "System Transactions Log")}
             </button>
             <button
               onClick={() => {
@@ -571,25 +573,25 @@ export default function WalletManagementTab() {
                 setTransferSuccessMsg("");
                 setTransferError("");
               }}
-              className={`px-4 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition cursor-pointer whitespace-nowrap shrink-0 ${
                 activeSubTab === "pay"
                   ? "bg-slate-800 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-800"
               }`}
             >
-              Pay to Someone
+              {t("admin_pay_to_someone", "Pay to Someone")}
             </button>
           </div>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6 min-w-0 max-w-full">
           
           {/* TAB 1: PENDING WITHDRAWALS */}
           {activeSubTab === "requests" && (
             <div className="space-y-4">
               {loadingWithdrawals ? (
                 <div className="text-center py-8 text-xs font-bold text-slate-400 animate-pulse">
-                  Querying payout tables...
+                  {t("admin_querying_payout_tables", "Querying payout tables...")}
                 </div>
               ) : (
                 <Table
@@ -600,7 +602,7 @@ export default function WalletManagementTab() {
                   onPageChange={setRequestsPage}
                   totalItems={withdrawalRequests.length}
                   itemsPerPage={itemsPerPage}
-                  emptyMessage="No payout/withdrawal requests recorded."
+                  emptyMessage={t("admin_no_payout_requests", "No payout/withdrawal requests recorded.")}
                 />
               )}
             </div>
@@ -611,7 +613,7 @@ export default function WalletManagementTab() {
             <div className="space-y-4">
               {loadingReferralPayouts ? (
                 <div className="text-center py-8 text-xs font-bold text-slate-400 animate-pulse">
-                  Loading referral & sign-up bonus payouts...
+                  {t("admin_loading_referral_payouts", "Loading referral & sign-up bonus payouts...")}
                 </div>
               ) : (
                 <Table
@@ -622,7 +624,7 @@ export default function WalletManagementTab() {
                   onPageChange={setReferralsPage}
                   totalItems={(referralPayouts || []).length}
                   itemsPerPage={itemsPerPage}
-                  emptyMessage="No referral or sign-up bonus payout requests recorded."
+                  emptyMessage={t("admin_no_referrals_recorded", "No referral or sign-up bonus payout requests recorded.")}
                 />
               )}
             </div>
@@ -635,7 +637,7 @@ export default function WalletManagementTab() {
                 <div className="w-full sm:w-64 relative">
                   <input
                     type="text"
-                    placeholder="Search user ledgers..."
+                    placeholder={t("admin_search_user_ledgers", "Search user ledgers...")}
                     value={ledgerSearch}
                     onChange={(e) => setLedgerSearch(e.target.value)}
                     className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 focus:bg-white rounded-xl pl-3.5 pr-4 py-2 text-xs text-slate-800 focus:outline-none transition-all"
@@ -650,7 +652,7 @@ export default function WalletManagementTab() {
                 onPageChange={setLedgerPage}
                 totalItems={filteredWallets.length}
                 itemsPerPage={itemsPerPage}
-                emptyMessage="No active user wallets match search."
+                emptyMessage={t("admin_no_user_wallets_match", "No active user wallets match search.")}
               />
             </div>
           )}
@@ -662,7 +664,7 @@ export default function WalletManagementTab() {
                 <div className="w-full sm:w-64 relative">
                   <input
                     type="text"
-                    placeholder="Search transactions log..."
+                    placeholder={t("admin_search_transactions_log", "Search transactions log...")}
                     value={transactionsSearch}
                     onChange={(e) => setTransactionsSearch(e.target.value)}
                     className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 focus:bg-white rounded-xl pl-3.5 pr-4 py-2 text-xs text-slate-800 focus:outline-none transition-all"
@@ -677,7 +679,7 @@ export default function WalletManagementTab() {
                 onPageChange={setTransactionsPage}
                 totalItems={filteredTransactionsLog.length}
                 itemsPerPage={itemsPerPage}
-                emptyMessage="No matching system transactions found."
+                emptyMessage={t("admin_no_transactions_found", "No matching system transactions found.")}
               />
             </div>
           )}
@@ -689,14 +691,14 @@ export default function WalletManagementTab() {
               {/* Left Column: Search & Select Recipient */}
               <div className="lg:col-span-7 space-y-4">
                 <div className="space-y-1">
-                  <h3 className="text-sm font-black uppercase text-slate-400 tracking-wider">1. Select Recipient Wallet</h3>
-                  <p className="text-xs text-slate-500 font-semibold">Search for the contractor or client you want to credit.</p>
+                  <h3 className="text-sm font-black uppercase text-slate-400 tracking-wider">{t("admin_select_recipient_wallet", "1. Select Recipient Wallet")}</h3>
+                  <p className="text-xs text-slate-500 font-semibold">{t("admin_select_recipient_wallet_desc", "Search for the contractor or client you want to credit.")}</p>
                 </div>
                 
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search by name, email, or user ID..."
+                    placeholder={t("admin_search_by_name_email_id", "Search by name, email, or user ID...")}
                     value={searchUserQuery}
                     onChange={(e) => setSearchUserQuery(e.target.value)}
                     className="w-full bg-slate-50/50 border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 focus:bg-white rounded-xl pl-4 pr-4 py-2.5 text-xs text-slate-800 focus:outline-none transition-all duration-200"
@@ -717,7 +719,7 @@ export default function WalletManagementTab() {
                     if (filteredWalletsForPay.length === 0) {
                       return (
                         <p className="text-xs text-slate-400 font-semibold text-center py-8">
-                          No matching user wallets found.
+                          {t("admin_no_user_wallets_found", "No matching user wallets found.")}
                         </p>
                       );
                     }
@@ -739,7 +741,7 @@ export default function WalletManagementTab() {
                           }`}
                         >
                           <div className="min-w-0">
-                            <p className={`text-xs font-black ${isSelected ? (isDark ? "text-teal-400" : "text-teal-950") : (isDark ? "text-slate-100" : "text-slate-900")}`}>
+                            <p className={`text-xs font-black ${isSelected ? (isDark ? "text-teal-400" : "text-teal-950") : (isDark ? "text-slate-105" : "text-slate-900")}`}>
                               {w.user_name || "Platform User"}
                             </p>
                             <p className={`text-[10px] font-semibold truncate ${isDark ? "text-slate-400" : "text-slate-500"}`}>{w.email}</p>
@@ -749,14 +751,14 @@ export default function WalletManagementTab() {
                                   ? (isDark ? "bg-blue-950/40 text-blue-400 border border-blue-900/50" : "bg-blue-50 text-blue-600 border border-blue-100")
                                   : (isDark ? "bg-teal-950/40 text-teal-400 border border-teal-900/50" : "bg-teal-50 text-teal-600 border border-teal-100")
                               }`}>
-                                {w.role}
+                                {w.role === "Client" || w.role === "client" ? t("client", "Client") : t("freelancer", "Freelancer")}
                               </span>
-                              <span className={`text-[9px] font-semibold ${isDark ? "text-slate-500" : "text-slate-400"}`}>ID: #{w.user_id}</span>
+                              <span className={`text-[9px] font-semibold ${isDark ? "text-slate-500" : "text-slate-400"}`}>{t("id_label", "ID")}: #{w.user_id}</span>
                             </div>
                           </div>
                           <div className="text-right shrink-0">
                             <p className={`text-xs font-black ${isDark ? "text-slate-105" : "text-slate-900"}`}>${parseFloat(w.balance).toFixed(2)}</p>
-                            <span className={`text-[9px] uppercase font-bold tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}>Current Balance</span>
+                            <span className={`text-[9px] uppercase font-bold tracking-wider ${isDark ? "text-slate-500" : "text-slate-400"}`}>{t("admin_current_balance", "Current Balance")}</span>
                           </div>
                         </div>
                       );
@@ -769,7 +771,7 @@ export default function WalletManagementTab() {
               <div className="lg:col-span-5 border border-slate-200/80 rounded-xl p-6 bg-slate-50/50 flex flex-col justify-between shadow-sm min-h-[350px]">
                 
                 <div>
-                  <h3 className="text-sm font-black uppercase text-slate-800 tracking-wider mb-4">2. Payment Details</h3>
+                  <h3 className="text-sm font-black uppercase text-slate-800 tracking-wider mb-4">{t("admin_payment_details", "2. Payment Details")}</h3>
                   
                   {selectedUserId ? (
                     (() => {
@@ -780,7 +782,7 @@ export default function WalletManagementTab() {
                           {/* Recipient info panel */}
                           <div className="bg-white border border-slate-200 p-3.5 rounded-xl flex items-center justify-between">
                             <div>
-                              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">Recipient</span>
+                              <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider block">{t("admin_recipient", "Recipient")}</span>
                               <span className="text-xs font-black text-slate-850">{recipient?.user_name || "Selected User"}</span>
                               <span className="text-[10px] text-slate-450 block font-semibold">{recipient?.email}</span>
                             </div>
@@ -789,13 +791,13 @@ export default function WalletManagementTab() {
                               onClick={() => setSelectedUserId("")}
                               className="text-[10px] font-bold text-slate-400 hover:text-rose-600 transition-colors cursor-pointer border-0 bg-transparent"
                             >
-                              Clear
+                              {t("admin_clear", "Clear")}
                             </button>
                           </div>
 
                           {/* Amount Input */}
                           <div className="space-y-1">
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Amount to Transfer (USD)</label>
+                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">{t("admin_amount_to_transfer", "Amount to Transfer (USD)")}</label>
                             <div className="relative">
                               <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">$</span>
                               <input
@@ -810,17 +812,17 @@ export default function WalletManagementTab() {
                             </div>
                             {systemWallet && (
                               <span className="text-[9px] text-slate-400 font-semibold block">
-                                Available Escrow: <strong className="text-slate-650">${parseFloat(systemWallet.balance).toFixed(2)}</strong>
+                                {t("admin_available_escrow", "Available Escrow:")} <strong className="text-slate-650">${parseFloat(systemWallet.balance).toFixed(2)}</strong>
                               </span>
                             )}
                           </div>
 
                           {/* Description Input */}
                           <div className="space-y-1">
-                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Transfer Description / Reason</label>
+                            <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">{t("admin_transfer_description_reason", "Transfer Description / Reason")}</label>
                             <textarea
                               rows={3}
-                              placeholder="Describe the reason for this manual transfer (e.g. Milestone settlement, special bonus payout, admin adjustment...)"
+                              placeholder={t("admin_transfer_desc_placeholder", "Describe the reason for this manual transfer (e.g. Milestone settlement, special bonus payout, admin adjustment...)")}
                               value={transferDescription}
                               onChange={(e) => setTransferDescription(e.target.value)}
                               className="w-full bg-white border border-slate-200 hover:border-slate-350 focus:border-teal-700/50 rounded-xl p-3.5 text-xs text-slate-800 font-medium focus:outline-none transition-all resize-none"
@@ -846,7 +848,7 @@ export default function WalletManagementTab() {
                   ) : (
                     <div className="flex-1 flex flex-col items-center justify-center py-10 text-center gap-2">
                       <span className="text-2xl">👈</span>
-                      <p className="text-xs font-bold text-slate-400">Please select a recipient wallet from the list on the left to begin.</p>
+                      <p className="text-xs font-bold text-slate-400">{t("admin_please_select_recipient", "Please select a recipient wallet from the list on the left to begin.")}</p>
                     </div>
                   )}
 
@@ -893,10 +895,10 @@ export default function WalletManagementTab() {
                     {transferLoading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>Processing payout...</span>
+                        <span>{t("admin_processing_payout", "Processing payout...")}</span>
                       </>
                     ) : (
-                      <span>Release Escrow Payout 💸</span>
+                      <span>{t("admin_release_escrow_payout", "Release Escrow Payout 💸")}</span>
                     )}
                   </button>
                 )}
@@ -924,10 +926,10 @@ export default function WalletManagementTab() {
 
             <div>
               <h2 className="text-lg font-black text-slate-900 dark:text-zinc-100">
-                {pendingAction.type.startsWith("approve") ? "Confirm Approval" : "Confirm Rejection"}
+                {pendingAction.type.startsWith("approve") ? t("admin_confirm_approval", "Confirm Approval") : t("admin_confirm_rejection", "Confirm Rejection")}
               </h2>
               <p className="text-xs text-slate-500 dark:text-zinc-400 font-semibold mt-2.5 leading-relaxed">
-                Are you sure you want to {pendingAction.type.startsWith("approve") ? "approve" : "reject"} the payout request of{" "}
+                {pendingAction.type.startsWith("approve") ? "Are you sure you want to approve the payout request of " : "Are you sure you want to reject the payout request of "}
                 <strong className="text-slate-800 dark:text-zinc-200 font-black">${pendingAction.amount.toFixed(2)}</strong> for{" "}
                 <span className="font-bold text-slate-700 dark:text-zinc-300">
                   {pendingAction.userName} ({pendingAction.email})
@@ -941,7 +943,7 @@ export default function WalletManagementTab() {
                 onClick={() => setPendingAction(null)}
                 className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-300 font-extrabold text-xs py-3 rounded-xl transition cursor-pointer border border-slate-200 dark:border-zinc-700"
               >
-                Cancel
+                {t("admin_cancel", "Cancel")}
               </button>
               <button
                 onClick={async () => {
@@ -963,7 +965,7 @@ export default function WalletManagementTab() {
                     : "bg-rose-600 hover:bg-rose-700"
                 }`}
               >
-                Yes, {pendingAction.type.startsWith("approve") ? "Approve" : "Reject"}
+                {pendingAction.type.startsWith("approve") ? t("admin_yes_approve", "Yes, Approve") : t("admin_yes_reject", "Yes, Reject")}
               </button>
             </div>
           </div>

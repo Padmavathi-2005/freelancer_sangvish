@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { FiPlus, FiEdit2, FiTrash2, FiCheck, FiX, FiAlertCircle, FiFileText, FiSearch } from "react-icons/fi";
 import { API_URL } from "@/config/api";
 import { useAdmin } from "@/app/admin/AdminContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface DocumentField {
   field_id: number;
@@ -21,6 +22,7 @@ interface DocumentField {
 }
 
 export default function DocumentVettingTab() {
+  const { t } = useLanguage();
   const { adminTheme } = useAdmin();
   const isDark = adminTheme === "dark";
 
@@ -192,7 +194,7 @@ export default function DocumentVettingTab() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.field_name.trim()) {
-      alert("Field name is required");
+      alert(t("admin_doc_vetting_err_name_required", "Field name is required"));
       return;
     }
 
@@ -227,23 +229,23 @@ export default function DocumentVettingTab() {
 
       const resData = await res.json();
       if (!res.ok) {
-        throw new Error(resData.message || "Failed to save document field.");
+        throw new Error(resData.message || t("admin_doc_vetting_err_save_failed", "Failed to save document field."));
       }
 
-      setSuccess(editingField ? "Field updated successfully!" : "Field created successfully!");
+      setSuccess(editingField ? t("admin_doc_vetting_success_updated", "Field updated successfully!") : t("admin_doc_vetting_success_created", "Field created successfully!"));
       fetchFields();
       handleCloseModal();
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "An error occurred.");
+      alert(err.message || t("admin_doc_vetting_err_occurred", "An error occurred."));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Are you sure you want to delete this document requirement? This will also delete any files uploaded by freelancers for this field.")) {
+    if (!confirm(t("admin_doc_vetting_confirm_delete", "Are you sure you want to delete this document requirement? This will also delete any files uploaded by freelancers for this field."))) {
       return;
     }
 
@@ -260,15 +262,15 @@ export default function DocumentVettingTab() {
 
       if (!res.ok) {
         const resData = await res.json();
-        throw new Error(resData.message || "Failed to delete document field.");
+        throw new Error(resData.message || t("admin_doc_vetting_err_delete_failed", "Failed to delete document field."));
       }
 
-      setSuccess("Field deleted successfully!");
+      setSuccess(t("admin_doc_vetting_success_deleted", "Field deleted successfully!"));
       fetchFields();
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "An error occurred.");
+      alert(err.message || t("admin_doc_vetting_err_occurred", "An error occurred."));
     }
   };
 
@@ -303,14 +305,14 @@ export default function DocumentVettingTab() {
   return (
     <div className="flex flex-col gap-6 animate-fadeIn text-left text-slate-800">
       {/* Title Header */}
-      <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-left rtl:text-right">
         <div>
-          <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+          <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2 text-left rtl:text-right">
             <FiFileText className="w-5 h-5 text-teal-700" />
-            Document Verification Requirements
+            {t("admin_doc_vetting_title", "Document Verification Requirements")}
           </h2>
-          <p className="text-slate-500 dark:text-slate-350 text-xs mt-1 font-semibold">
-            Manage the list of documents freelancers are required or prompted to upload during onboarding verification.
+          <p className="text-slate-500 dark:text-slate-355 text-xs mt-1 font-semibold text-left rtl:text-right">
+            {t("admin_doc_vetting_desc", "Manage the list of documents freelancers are required or prompted to upload during onboarding verification.")}
           </p>
         </div>
         <button
@@ -318,7 +320,7 @@ export default function DocumentVettingTab() {
           className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-black tracking-wider rounded-xl transition cursor-pointer shadow-sm shadow-teal-700/10 border border-teal-650 dark:border-teal-500"
         >
           <FiPlus className="w-4 h-4" />
-          <span>Add Requirement</span>
+          <span>{t("admin_doc_vetting_add", "Add Requirement")}</span>
         </button>
       </div>
 
@@ -346,13 +348,13 @@ export default function DocumentVettingTab() {
             </span>
             <input
               type="text"
-              placeholder="Search by name, key, or description..."
+              placeholder={t("admin_doc_vetting_search_placeholder", "Search by name, key, or description...")}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-700 hover:border-slate-350 dark:hover:border-slate-600 focus:border-teal-700 rounded-xl pl-10 pr-8 py-2 text-xs focus:outline-none transition-all font-semibold text-slate-800 dark:text-slate-100"
+              className="w-full bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-700 hover:border-slate-355 dark:hover:border-slate-600 focus:border-teal-700 rounded-xl pl-10 pr-8 py-2 text-xs focus:outline-none transition-all font-semibold text-slate-800 dark:text-slate-100"
             />
             {searchQuery && (
               <button
@@ -378,13 +380,13 @@ export default function DocumentVettingTab() {
                 }}
                 className="bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-700 hover:border-slate-355 dark:hover:border-slate-600 rounded-xl pl-3 pr-8 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
               >
-                <option value="all">All Steps</option>
-                <option value="1">Step 1</option>
-                <option value="2">Step 2</option>
-                <option value="3">Step 3</option>
-                <option value="4">Step 4</option>
-                <option value="5">Step 5</option>
-                <option value="6">Step 6</option>
+                <option value="all">{t("admin_doc_vetting_all_steps", "All Steps")}</option>
+                <option value="1">{t("admin_doc_vetting_step_1", "Step 1")}</option>
+                <option value="2">{t("admin_doc_vetting_step_2", "Step 2")}</option>
+                <option value="3">{t("admin_doc_vetting_step_3", "Step 3")}</option>
+                <option value="4">{t("admin_doc_vetting_step_4", "Step 4")}</option>
+                <option value="5">{t("admin_doc_vetting_step_5", "Step 5")}</option>
+                <option value="6">{t("admin_doc_vetting_step_6", "Step 6")}</option>
               </select>
             </div>
 
@@ -398,10 +400,10 @@ export default function DocumentVettingTab() {
                 }}
                 className="bg-white dark:bg-slate-950 border border-slate-250 dark:border-slate-700 hover:border-slate-355 dark:hover:border-slate-600 rounded-xl pl-3 pr-8 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat pr-7"
               >
-                <option value="all">All Roles</option>
-                <option value="freelancer">Freelancer only</option>
-                <option value="client">Client only</option>
-                <option value="both">Both</option>
+                <option value="all">{t("admin_doc_vetting_all_roles", "All Roles")}</option>
+                <option value="freelancer">{t("admin_doc_vetting_freelancer_only", "Freelancer only")}</option>
+                <option value="client">{t("admin_doc_vetting_client_only", "Client only")}</option>
+                <option value="both">{t("admin_doc_vetting_both", "Both")}</option>
               </select>
             </div>
           </div>
@@ -412,12 +414,12 @@ export default function DocumentVettingTab() {
             <div className="w-8 h-8 border-2 border-t-transparent border-teal-700 rounded-full animate-spin" />
           </div>
         ) : fields.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 font-semibold text-xs">
-            No document verification fields configured yet. Click "Add Requirement" to create one.
+          <div className="p-12 text-center text-slate-400 font-semibold text-xs bg-slate-50/50">
+            {t("admin_doc_vetting_empty", "No document verification fields configured yet. Click \"Add Requirement\" to create one.")}
           </div>
         ) : filteredFields.length === 0 ? (
           <div className="p-12 text-center text-slate-400 font-semibold text-xs bg-slate-50/50">
-            No fields found matching your filters.
+            {t("admin_doc_vetting_no_match", "No fields found matching your filters.")}
           </div>
         ) : (
           <>
@@ -431,29 +433,33 @@ export default function DocumentVettingTab() {
             >
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-slate-50/75 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-400 font-black uppercase tracking-wider select-none">
-                    <th className="px-6 py-4">Field Name</th>
-                    <th className="px-6 py-4">Description</th>
-                    <th className="px-6 py-4 text-center">Applies To</th>
-                    <th className="px-6 py-4 text-center">Field Type</th>
-                    <th className="px-6 py-4 text-center">Step</th>
-                    <th className="px-6 py-4 text-center">Required</th>
-                    <th className="px-6 py-4 text-center">Expiry Date Required</th>
-                    <th className="px-6 py-4 text-center">Status</th>
-                    <th className="px-6 py-4 text-center">Actions</th>
+                  <tr className="bg-slate-50/75 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 text-slate-400 font-black uppercase tracking-wider select-none text-left rtl:text-right">
+                    <th className="px-6 py-4 text-left rtl:text-right">{t("admin_doc_vetting_th_name", "Field Name")}</th>
+                    <th className="px-6 py-4 text-left rtl:text-right">{t("admin_doc_vetting_th_desc", "Description")}</th>
+                    <th className="px-6 py-4 text-center">{t("admin_doc_vetting_th_applies", "Applies To")}</th>
+                    <th className="px-6 py-4 text-center">{t("admin_doc_vetting_th_type", "Field Type")}</th>
+                    <th className="px-6 py-4 text-center">{t("admin_doc_vetting_th_step", "Step")}</th>
+                    <th className="px-6 py-4 text-center">{t("admin_doc_vetting_th_required", "Required")}</th>
+                    <th className="px-6 py-4 text-center">{t("admin_doc_vetting_th_expiry", "Expiry Date Required")}</th>
+                    <th className="px-6 py-4 text-center">{t("admin_doc_vetting_th_status", "Status")}</th>
+                    <th className="px-6 py-4 text-center">{t("admin_doc_vetting_th_actions", "Actions")}</th>
                   </tr>
                 </thead>
                 <tbody className="font-semibold text-slate-700 dark:text-slate-200">
                   {paginatedFields.map((field) => (
-                    <tr key={field.field_id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors">
+                    <tr key={field.field_id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/40 transition-colors text-left rtl:text-right">
                       <td className="px-6 py-4">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-black text-slate-800 dark:text-slate-100">{field.field_name}</span>
-                          <span className="text-[10px] text-slate-400 font-mono">Key: {field.field_key}</span>
+                        <div className="flex flex-col gap-0.5 text-left rtl:text-right">
+                          <span className="font-black text-slate-800 dark:text-slate-100 text-left rtl:text-right">
+                            {t("doc_field_name_" + field.field_key, field.field_name)}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono text-left rtl:text-right">
+                            {t("admin_doc_vetting_key_label", "Key: ")}{field.field_key}
+                          </span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 max-w-xs text-slate-550 leading-relaxed">
-                        {field.field_description || <span className="text-slate-300 italic">No description</span>}
+                      <td className="px-6 py-4 max-w-xs text-slate-550 leading-relaxed text-left rtl:text-right">
+                        {field.field_description ? t("doc_field_desc_" + field.field_key, field.field_description) : <span className="text-slate-300 italic">{t("admin_doc_vetting_no_desc", "No description")}</span>}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
@@ -463,16 +469,20 @@ export default function DocumentVettingTab() {
                             ? "bg-blue-50 text-blue-705 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
                             : "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
                         }`}>
-                          {field.applicable_to || "freelancer"}
+                          {field.applicable_to === "both" 
+                            ? t("admin_doc_vetting_both", "Both") 
+                            : field.applicable_to === "client" 
+                            ? t("admin_doc_vetting_client_only", "Client only") 
+                            : t("admin_doc_vetting_freelancer_only", "Freelancer only")}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-center capitalize text-[10px] font-bold text-slate-500 dark:text-slate-350">
+                      <td className="px-6 py-4 text-center capitalize text-[10px] font-bold text-slate-500 dark:text-slate-355">
                         {field.field_type ? field.field_type.replace("file_", "File: ") : "Any File"}
                       </td>
                       <td className="px-6 py-4 text-center">
                         <span className="font-extrabold text-slate-808 dark:text-slate-100 bg-slate-100 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-2 py-0.5 rounded text-[10px] whitespace-nowrap">
-                          Step {field.step_number || (field.applicable_to === 'client' ? 4 : 5)}
-                          {field.is_system && <span className="text-[7.5px] text-teal-650 ml-1 uppercase font-black tracking-wide">System</span>}
+                          {t("admin_doc_vetting_step_num", "Step {step}").replace("{step}", String(field.step_number || (field.applicable_to === 'client' ? 4 : 5)))}
+                          {field.is_system && <span className="text-[7.5px] text-teal-650 ml-1 uppercase font-black tracking-wide">{t("admin_doc_vetting_system", "System")}</span>}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -481,7 +491,7 @@ export default function DocumentVettingTab() {
                             ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-350 dark:border-rose-800"
                             : "bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900/60 dark:text-slate-400 dark:border-slate-800"
                         }`}>
-                          {field.is_required ? "Required" : "Optional"}
+                          {field.is_required ? t("admin_doc_vetting_badge_required", "Required") : t("admin_doc_vetting_badge_optional", "Optional")}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -490,7 +500,7 @@ export default function DocumentVettingTab() {
                             ? "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800"
                             : "bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-900/60 dark:text-slate-400 dark:border-slate-800"
                         }`}>
-                          {field.has_expiry ? "Yes" : "No"}
+                          {field.has_expiry ? t("admin_doc_vetting_yes", "Yes") : t("admin_doc_vetting_no", "No")}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -502,7 +512,7 @@ export default function DocumentVettingTab() {
                               : "bg-rose-50 text-rose-700 border-rose-250 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
                           }`}
                         >
-                          {field.is_enabled ? "Active" : "Disabled"}
+                          {field.is_enabled ? t("admin_doc_vetting_active", "Active") : t("admin_doc_vetting_disabled", "Disabled")}
                         </button>
                       </td>
                       <td className="px-6 py-4">
@@ -510,7 +520,7 @@ export default function DocumentVettingTab() {
                           <button
                             onClick={() => handleOpenEditModal(field)}
                             className="bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-355 border border-slate-200 dark:border-slate-800 p-2 rounded-lg cursor-pointer transition-all flex items-center justify-center"
-                            title="Edit Settings"
+                            title={t("admin_doc_vetting_edit_title", "Edit Settings")}
                           >
                             <FiEdit2 className="w-3.5 h-3.5" />
                           </button>
@@ -518,7 +528,7 @@ export default function DocumentVettingTab() {
                             <button
                               onClick={() => handleDelete(field.field_id)}
                               className="bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 border border-rose-150 dark:border-rose-900/60 p-2 rounded-lg cursor-pointer transition-all flex items-center justify-center"
-                              title="Delete Requirement"
+                              title={t("admin_doc_vetting_delete_title", "Delete Requirement")}
                             >
                               <FiTrash2 className="w-3.5 h-3.5" />
                             </button>
@@ -537,42 +547,46 @@ export default function DocumentVettingTab() {
 
             {/* Pagination Footer */}
             {filteredFields.length > 0 && (
-              <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 font-bold select-none text-xs">
-                <div className="flex items-center gap-2">
-                  <span>Show</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="bg-white border border-slate-250 rounded-lg px-2.5 py-1 text-slate-700 focus:outline-none cursor-pointer"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                  <span>entries</span>
-                  <span className="text-slate-400 ml-2 font-semibold">
-                    Showing {Math.min(totalItems, (currentPage - 1) * pageSize + 1)} to{" "}
-                    {Math.min(totalItems, currentPage * pageSize)} of {totalItems} entries
+              <div className="p-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 font-bold select-none text-xs text-left rtl:text-right">
+                <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start text-left rtl:text-right">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                    <span>{t("admin_doc_vetting_show", "Show")}</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="bg-white border border-slate-250 rounded-lg px-2.5 py-1 text-slate-700 focus:outline-none cursor-pointer"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <span>{t("admin_doc_vetting_entries", "entries")}</span>
+                  </div>
+                  <span className="text-slate-400 font-semibold whitespace-nowrap sm:ml-2">
+                    {t("admin_doc_vetting_showing_text", "Showing {start} to {end} of {total} entries")
+                      .replace("{start}", String(Math.min(totalItems, (currentPage - 1) * pageSize + 1)))
+                      .replace("{end}", String(Math.min(totalItems, currentPage * pageSize)))
+                      .replace("{total}", String(totalItems))}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-end">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold cursor-pointer"
+                    className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold cursor-pointer whitespace-nowrap"
                   >
-                    Previous
+                    {t("admin_doc_vetting_prev", "Previous")}
                   </button>
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`px-3 py-1.5 rounded-lg border transition-all font-bold cursor-pointer ${
+                      className={`w-8 h-8 rounded-lg border transition-all font-bold cursor-pointer text-xs flex items-center justify-center shrink-0 ${
                         page === currentPage
                           ? "bg-teal-700 border-teal-700 text-white"
                           : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
@@ -584,9 +598,9 @@ export default function DocumentVettingTab() {
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold cursor-pointer"
+                    className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all font-semibold cursor-pointer whitespace-nowrap"
                   >
-                    Next
+                    {t("admin_doc_vetting_next", "Next")}
                   </button>
                 </div>
               </div>
@@ -601,7 +615,7 @@ export default function DocumentVettingTab() {
           <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-fadeIn text-left flex flex-col my-8">
             <div className="bg-white border-b border-slate-150 px-6 py-4 flex justify-between items-center text-slate-800 shrink-0">
               <h3 className="font-black text-xs uppercase tracking-wider text-slate-905">
-                {editingField ? "Edit Requirement Settings" : "Add New Document Requirement"}
+                {editingField ? t("admin_doc_vetting_edit_title", "Edit Requirement Settings") : t("admin_doc_vetting_add_title", "Add New Document Requirement")}
               </h3>
               <button
                 type="button"
@@ -612,16 +626,16 @@ export default function DocumentVettingTab() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-4 text-left rtl:text-right">
               {editingField?.is_system && (
-                <div className="bg-teal-50 border border-teal-200 rounded-xl p-3.5 text-[10px] text-teal-800 leading-relaxed font-bold select-none">
-                  ℹ️ This is a System Profile Field. The field key, name, role, and type are locked, but you can configure its Description, Step Number, and toggles below.
+                <div className="bg-teal-50 border border-teal-200 rounded-xl p-3.5 text-[10px] text-teal-800 leading-relaxed font-bold select-none text-left rtl:text-right">
+                  {t("admin_doc_vetting_system_info", "ℹ️ This is a System Profile Field. The field key, name, role, and type are locked, but you can configure its Description, Step Number, and toggles below.")}
                 </div>
               )}
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                  Field Name *
+              <div className="flex flex-col gap-1 text-left rtl:text-right">
+                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider text-left rtl:text-right">
+                  {t("admin_doc_vetting_form_name", "Field Name *")}
                 </label>
                 <input
                   type="text"
@@ -636,9 +650,9 @@ export default function DocumentVettingTab() {
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                  Applies To
+              <div className="flex flex-col gap-1 text-left rtl:text-right">
+                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider text-left rtl:text-right">
+                  {t("admin_doc_vetting_form_applies", "Applies To")}
                 </label>
                 <select
                   value={formData.applicable_to}
@@ -648,15 +662,15 @@ export default function DocumentVettingTab() {
                   }`}
                   disabled={editingField?.is_system}
                 >
-                  <option value="freelancer">Freelancer only</option>
-                  <option value="client">Client only</option>
-                  <option value="both">Both Freelancer & Client</option>
+                  <option value="freelancer">{t("admin_doc_vetting_freelancer_only", "Freelancer only")}</option>
+                  <option value="client">{t("admin_doc_vetting_client_only", "Client only")}</option>
+                  <option value="both">{t("admin_doc_vetting_form_both", "Both Freelancer & Client")}</option>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                  Field Type
+              <div className="flex flex-col gap-1 text-left rtl:text-right">
+                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider text-left rtl:text-right">
+                  {t("admin_doc_vetting_form_type", "Field Type")}
                 </label>
                 <select
                   value={formData.field_type}
@@ -666,41 +680,41 @@ export default function DocumentVettingTab() {
                   }`}
                   disabled={editingField?.is_system}
                 >
-                  <optgroup label="Text Inputs">
-                    <option value="text">Short Text</option>
-                    <option value="number">Number</option>
-                    <option value="date">Date Picker</option>
+                  <optgroup label={t("admin_doc_vetting_form_text_inputs", "Text Inputs")}>
+                    <option value="text">{t("admin_doc_vetting_form_short_text", "Short Text")}</option>
+                    <option value="number">{t("admin_doc_vetting_form_number", "Number")}</option>
+                    <option value="date">{t("admin_doc_vetting_form_date_picker", "Date Picker")}</option>
                   </optgroup>
-                  <optgroup label="File Uploads">
-                    <option value="file_pdf">PDF Document Only</option>
-                    <option value="file_image">Image Only (PNG/JPG)</option>
-                    <option value="file_word">Word Document (.doc, .docx)</option>
-                    <option value="file_any">Any File</option>
+                  <optgroup label={t("admin_doc_vetting_form_file_uploads", "File Uploads")}>
+                    <option value="file_pdf">{t("admin_doc_vetting_form_pdf_only", "PDF Document Only")}</option>
+                    <option value="file_image">{t("admin_doc_vetting_form_image_only", "Image Only (PNG/JPG)")}</option>
+                    <option value="file_word">{t("admin_doc_vetting_form_word_only", "Word Document (.doc, .docx)")}</option>
+                    <option value="file_any">{t("admin_doc_vetting_form_any_file", "Any File")}</option>
                   </optgroup>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                  Onboarding Step *
+              <div className="flex flex-col gap-1 text-left rtl:text-right">
+                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider text-left rtl:text-right">
+                  {t("admin_doc_vetting_form_step", "Onboarding Step *")}
                 </label>
                 <select
                   value={formData.step_number}
                   onChange={(e) => setFormData({ ...formData, step_number: Number(e.target.value) })}
                   className="bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-teal-750 focus:bg-white transition-all text-slate-800 font-bold appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2020%2020%27%20fill%3D%27none%27%3E%3Cpath%20d%3D%27M7%209l3%203%203-3%27%20stroke%3D%27%2364748B%27%20stroke-width%3D%271.5%27%20stroke-linecap%3D%27round%27%20stroke-linejoin%3D%27round%27%2F%3E%3C%2Fsvg%3E')] bg-[length:1.25rem] bg-[right_0.75rem_center] bg-no-repeat pr-10 cursor-pointer"
                 >
-                  <option value={1}>Step 1</option>
-                  <option value={2}>Step 2</option>
-                  <option value={3}>Step 3</option>
-                  <option value={4}>Step 4</option>
-                  <option value={5}>Step 5</option>
-                  <option value={6}>Step 6</option>
+                  <option value={1}>{t("admin_doc_vetting_step_1", "Step 1")}</option>
+                  <option value={2}>{t("admin_doc_vetting_step_2", "Step 2")}</option>
+                  <option value={3}>{t("admin_doc_vetting_step_3", "Step 3")}</option>
+                  <option value={4}>{t("admin_doc_vetting_step_4", "Step 4")}</option>
+                  <option value={5}>{t("admin_doc_vetting_step_5", "Step 5")}</option>
+                  <option value={6}>{t("admin_doc_vetting_step_6", "Step 6")}</option>
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
-                  Requirement Description
+              <div className="flex flex-col gap-1 text-left rtl:text-right">
+                <label className="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider text-left rtl:text-right">
+                  {t("admin_doc_vetting_form_description", "Requirement Description")}
                 </label>
                 <textarea
                   placeholder="Upload instructions or criteria for the freelancer..."
@@ -710,61 +724,61 @@ export default function DocumentVettingTab() {
                 />
               </div>
 
-              <div className="flex flex-col gap-3.5 border-t border-slate-100 pt-3.5">
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <div className="flex flex-col gap-3.5 border-t border-slate-100 pt-3.5 text-left rtl:text-right">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none flex-row rtl:flex-row-reverse">
                   <input
                     type="checkbox"
                     checked={formData.is_required}
                     onChange={(e) => setFormData({ ...formData, is_required: e.target.checked })}
                     className="w-4 h-4 accent-teal-750"
                   />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-black text-slate-700">Required Field</span>
-                    <span className="text-[9px] text-slate-400">Freelancers cannot complete onboarding without this document.</span>
+                  <div className="flex flex-col text-left rtl:text-right">
+                    <span className="text-xs font-black text-slate-700 text-left rtl:text-right">{t("admin_doc_vetting_form_required_field", "Required Field")}</span>
+                    <span className="text-[9px] text-slate-400 text-left rtl:text-right">{t("admin_doc_vetting_form_required_help", "Freelancers cannot complete onboarding without this document.")}</span>
                   </div>
                 </label>
 
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none flex-row rtl:flex-row-reverse">
                   <input
                     type="checkbox"
                     checked={formData.has_expiry}
                     onChange={(e) => setFormData({ ...formData, has_expiry: e.target.checked })}
                     className="w-4 h-4 accent-teal-750"
                   />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-black text-slate-700">Requires Expiry Date</span>
-                    <span className="text-[9px] text-slate-400">Freelancers must enter a valid document expiration date.</span>
+                  <div className="flex flex-col text-left rtl:text-right">
+                    <span className="text-xs font-black text-slate-700 text-left rtl:text-right">{t("admin_doc_vetting_form_requires_expiry", "Requires Expiry Date")}</span>
+                    <span className="text-[9px] text-slate-400 text-left rtl:text-right">{t("admin_doc_vetting_form_expiry_help", "Freelancers must enter a valid document expiration date.")}</span>
                   </div>
                 </label>
 
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <label className="flex items-center gap-2.5 cursor-pointer select-none flex-row rtl:flex-row-reverse">
                   <input
                     type="checkbox"
                     checked={formData.is_enabled}
                     onChange={(e) => setFormData({ ...formData, is_enabled: e.target.checked })}
                     className="w-4 h-4 accent-teal-750"
                   />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-black text-slate-700">Enable Field</span>
-                    <span className="text-[9px] text-slate-400">Display this document requirement to onboarding freelancers.</span>
+                  <div className="flex flex-col text-left rtl:text-right">
+                    <span className="text-xs font-black text-slate-700 text-left rtl:text-right">{t("admin_doc_vetting_form_enable_field", "Enable Field")}</span>
+                    <span className="text-[9px] text-slate-400 text-left rtl:text-right">{t("admin_doc_vetting_form_enable_help", "Display this document requirement to onboarding freelancers.")}</span>
                   </div>
                 </label>
               </div>
 
-              <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
+              <div className="flex justify-end gap-3 border-t border-slate-100 pt-4 mt-2 flex-row rtl:flex-row-reverse">
                 <button
                   type="button"
                   onClick={handleCloseModal}
                   className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition cursor-pointer"
                 >
-                  Cancel
+                  {t("admin_doc_vetting_form_cancel", "Cancel")}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
                   className="px-5 py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-black uppercase tracking-wider rounded-xl transition cursor-pointer disabled:opacity-50"
                 >
-                  {submitting ? "Saving..." : "Save Requirement"}
+                  {submitting ? t("admin_doc_vetting_form_saving", "Saving...") : t("admin_doc_vetting_form_save", "Save Requirement")}
                 </button>
               </div>
             </form>

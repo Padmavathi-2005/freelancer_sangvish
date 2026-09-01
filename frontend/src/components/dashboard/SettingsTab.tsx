@@ -238,6 +238,43 @@ export default function SettingsTab({
     }
   };
 
+  const [savingNames, setSavingNames] = useState(false);
+  const handleSaveHubNames = async () => {
+    if (!profileBasics.display_name?.trim()) {
+      triggerToast("error", "Display Name is required.");
+      return;
+    }
+    setSavingNames(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/users/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          first_name: profileBasics.first_name || "",
+          last_name: profileBasics.last_name || "",
+          display_name: profileBasics.display_name || ""
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        triggerToast("success", "Profile name details saved successfully!");
+        if (dashboardContext?.fetchOnboardingDetails) {
+          await dashboardContext.fetchOnboardingDetails();
+        }
+      } else {
+        triggerToast("error", data.message || "Failed to save name details.");
+      }
+    } catch (err: any) {
+      triggerToast("error", "An error occurred while saving name details.");
+    } finally {
+      setSavingNames(false);
+    }
+  };
+
   const processSeoImage = (file: File): Promise<File> => {
     const MIN_W = 300, MIN_H = 200, MAX_W = 1200, MAX_H = 630;
     return new Promise((resolve, reject) => {
@@ -301,10 +338,11 @@ export default function SettingsTab({
   };
 
   const handleDisplayFreelancerNameChange = (nameVal: string) => {
-    const slugVal = slugifyText(nameVal);
+    const limitedVal = nameVal.substring(0, 20);
+    const slugVal = slugifyText(limitedVal);
     setProfileBasics({
       ...profileBasics,
-      display_name: nameVal,
+      display_name: limitedVal,
       slug: slugVal
     });
   };
@@ -637,6 +675,106 @@ export default function SettingsTab({
         <div>
           <h2 className="text-xl font-black text-slate-800 dark:text-white">{t("settings_hub_header", "Settings Hub")}</h2>
           <p className="text-xs text-slate-400 dark:text-slate-400">{t("settings_hub_desc", "Configure your professional identity, view platform details, and manage subscriptions.")}</p>
+        </div>
+
+        {/* Profile Summary & Name Editor Banner (Improved bordered and padded card container) */}
+        <div className="border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 sm:p-8 bg-white dark:bg-zinc-900/40 w-full mb-6 mt-2 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-[180px_1px_1fr] gap-8 items-center w-full">
+            
+            {/* Left Column (Column 1): Profile Avatar Uploader centered and vertically balanced */}
+            <div className="flex flex-col items-center justify-center select-none w-full shrink-0">
+              <div className="relative w-36 h-36">
+                <div className="w-full h-full rounded-full flex items-center justify-center font-black text-4xl text-white shadow-lg overflow-hidden border-4 border-white dark:border-zinc-900 ring-4 ring-slate-100 dark:ring-zinc-800 bg-gradient-to-tr from-teal-700 to-cyan-500 relative">
+                  <span className="text-4xl font-black text-white">
+                    {profileBasics.display_name ? profileBasics.display_name.substring(0, 2).toUpperCase() : (profileBasics.first_name ? profileBasics.first_name.substring(0, 2).toUpperCase() : "US")}
+                  </span>
+                  {profileImage && (
+                    <img
+                      src={profileImage.startsWith("http") ? profileImage : `https://freelancer.sangvish.com${profileImage}`}
+                      alt={profileBasics.display_name || userName}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={(e: any) => {
+                        e.target.style.display = "none";
+                      }}
+                    />
+                  )}
+                </div>
+                
+                {handleProfileImageUpload && (
+                  <label className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-teal-700 hover:bg-teal-800 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-zinc-900 cursor-pointer transition-all hover:scale-105 active:scale-95 group" title={t("change_photo_tooltip", "Change photo")}>
+                    <i className="fa-solid fa-camera text-xs transition-transform group-hover:scale-110"></i>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          await handleProfileImageUpload(e.target.files[0]);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-455 dark:text-slate-400 font-extrabold uppercase tracking-wider mt-3.5">{t("profile_avatar_label", "Profile Avatar")}</p>
+            </div>
+
+            {/* Middle Column (Column 2): Sleek vertical divider (Desktop Only) */}
+            <div className="hidden md:block w-[1px] h-36 bg-slate-200 dark:bg-zinc-805 self-center"></div>
+
+            {/* Right Column (Column 3): Name Inputs restricted to max-w-xl */}
+            <div className="flex flex-col gap-4.5 w-full max-w-xl text-left">
+              <div className="mb-1">
+                <h3 className="text-xs font-black uppercase tracking-widest text-slate-450 dark:text-slate-400">{t("account_identity_header", "Account Identity")}</h3>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                <label className="text-[10px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-widest sm:w-28 shrink-0">{t("first_name_label", "First Name")}</label>
+                <input
+                  type="text"
+                  placeholder={t("first_name_placeholder", "e.g. David")}
+                  value={profileBasics.first_name || ""}
+                  onChange={(e) => setProfileBasics({ ...profileBasics, first_name: e.target.value })}
+                  className="flex-grow w-full bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-teal-700 focus:bg-white transition-all text-slate-800 dark:text-white font-bold"
+                />
+              </div>
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                <label className="text-[10px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-widest sm:w-28 shrink-0">{t("last_name_label", "Last Name")}</label>
+                <input
+                  type="text"
+                  placeholder={t("last_name_placeholder", "e.g. Miller")}
+                  value={profileBasics.last_name || ""}
+                  onChange={(e) => setProfileBasics({ ...profileBasics, last_name: e.target.value })}
+                  className="flex-grow w-full bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-teal-700 focus:bg-white transition-all text-slate-800 dark:text-white font-bold"
+                />
+              </div>
+              
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                <label className="text-[10px] font-black text-slate-450 dark:text-slate-400 uppercase tracking-widest sm:w-28 shrink-0">{t("display_name_label", "Display Name")}</label>
+                <input
+                  type="text"
+                  maxLength={20}
+                  placeholder={t("display_name_placeholder", "e.g. David Miller")}
+                  value={profileBasics.display_name || ""}
+                  onChange={(e) => handleDisplayFreelancerNameChange(e.target.value)}
+                  className="flex-grow w-full bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-teal-700 focus:bg-white transition-all text-slate-800 dark:text-white font-bold"
+                />
+              </div>
+
+              <div className="text-left mt-2 pl-0 sm:pl-[124px]">
+                <button
+                  type="button"
+                  disabled={savingNames}
+                  onClick={handleSaveHubNames}
+                  className="bg-teal-700 hover:bg-teal-800 disabled:opacity-50 text-white font-extrabold text-xs px-6 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-[0.97] cursor-pointer"
+                >
+                  {savingNames ? t("saving_label", "Saving...") : t("save_name_details_btn", "Save Name Details")}
+                </button>
+              </div>
+            </div>
+
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-2">
@@ -1189,6 +1327,42 @@ export default function SettingsTab({
                 </div>
 
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">First Name</label>
+                    <input
+                      type="text"
+                      value={profileBasics.first_name || ""}
+                      onChange={(e) => setProfileBasics({ ...profileBasics, first_name: e.target.value })}
+                      placeholder="e.g. Alex"
+                      className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Last Name</label>
+                    <input
+                      type="text"
+                      value={profileBasics.last_name || ""}
+                      onChange={(e) => setProfileBasics({ ...profileBasics, last_name: e.target.value })}
+                      placeholder="e.g. Rivera"
+                      className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Display Name</label>
+                    <input
+                      type="text"
+                      maxLength={20}
+                      value={profileBasics.display_name || ""}
+                      onChange={(e) => handleDisplayFreelancerNameChange(e.target.value)}
+                      placeholder="e.g. Alex Rivera"
+                      className="bg-slate-50 border border-slate-250 hover:border-slate-355 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
+                    />
+                  </div>
+                </div>
+
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div className="flex flex-col gap-1.5 text-left">
@@ -1418,16 +1592,16 @@ export default function SettingsTab({
                         <div key={idx} className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl flex justify-between items-start gap-4">
                           <div className="min-w-0">
                             <h4 className="text-sm font-extrabold text-slate-800">{exp.job_title}</h4>
-                            <p className="text-xs text-slate-505 font-bold mt-0.5">{exp.company_name} • {exp.employment_type}</p>
+                            <p className="text-xs text-slate-505 font-bold mt-0.5">{exp.company_name} • {t("employment_type_" + exp.employment_type.toLowerCase().replace("-", "_"), exp.employment_type)}</p>
                             <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                              {formatExpDate(exp.start_date) || "N/A"} to {exp.currently_working ? "Present" : (formatExpDate(exp.end_date) || "N/A")}
+                              {formatExpDate(exp.start_date) || "N/A"} {t("date_range_separator_to", "to")} {exp.currently_working ? t("present_label", "Present") : (formatExpDate(exp.end_date) || "N/A")}
                             </p>
                             {exp.description && <p className="text-xs text-slate-500 mt-2 leading-relaxed">{exp.description}</p>}
                           </div>
                           <button
                             onClick={() => deleteExperience(idx)}
                             className="text-rose-600 bg-rose-50 border border-rose-200/40 p-2 rounded-lg hover:bg-rose-100 cursor-pointer shrink-0 transition-all flex items-center justify-center"
-                            title="Delete"
+                            title={t("delete_label", "Delete")}
                           >
                             <FiTrash2 className="w-4 h-4" />
                           </button>
@@ -1438,23 +1612,23 @@ export default function SettingsTab({
                 )}
 
                 <div className="border border-slate-200/80 bg-slate-50/50 p-5 rounded-xl flex flex-col gap-4">
-                  <h3 className="text-xs font-black text-slate-800">Add Professional Experience</h3>
+                  <h3 className="text-xs font-black text-slate-800">{t("add_professional_experience_header", "Add Professional Experience")}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Job Title</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("job_title_label", "Job Title")}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Senior Frontend Engineer"
+                        placeholder={t("job_title_placeholder", "e.g. Senior Frontend Engineer")}
                         value={newExp.job_title}
                         onChange={(e) => setNewExp({ ...newExp, job_title: e.target.value })}
                         className="bg-white border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-850 font-bold"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Company Name</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("company_name_label", "Company Name")}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Acme Solutions"
+                        placeholder={t("company_name_placeholder", "e.g. Acme Solutions")}
                         value={newExp.company_name}
                         onChange={(e) => setNewExp({ ...newExp, company_name: e.target.value })}
                         className="bg-white border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-855 font-bold"
@@ -1464,21 +1638,21 @@ export default function SettingsTab({
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Employment Type</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("employment_type_label", "Employment Type")}</label>
                       <CustomSelect
                         value={newExp.employment_type}
                         onChange={(val) => setNewExp({ ...newExp, employment_type: val })}
                         options={[
-                          { value: "Full-time", label: "Full-time" },
-                          { value: "Part-time", label: "Part-time" },
-                          { value: "Contract", label: "Contract" },
-                          { value: "Freelance", label: "Freelance" },
-                          { value: "Internship", label: "Internship" },
+                          { value: "Full-time", label: t("employment_type_full_time", "Full-time") },
+                          { value: "Part-time", label: t("employment_type_part_time", "Part-time") },
+                          { value: "Contract", label: t("employment_type_contract", "Contract") },
+                          { value: "Freelance", label: t("employment_type_freelance", "Freelance") },
+                          { value: "Internship", label: t("employment_type_internship", "Internship") },
                         ]}
                       />
                     </div>
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Start Date</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("start_date_label", "Start Date")}</label>
                       <input
                         type="date"
                         value={newExp.start_date}
@@ -1487,7 +1661,7 @@ export default function SettingsTab({
                       />
                     </div>
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">End Date</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("end_date_label", "End Date")}</label>
                       <input
                         type="date"
                         disabled={!!newExp.currently_working}
@@ -1506,12 +1680,12 @@ export default function SettingsTab({
                       onChange={(e) => setNewExp({ ...newExp, currently_working: e.target.checked })}
                       className="w-4 h-4 text-primary border-slate-300 rounded focus:ring-primary cursor-pointer"
                     />
-                    <label htmlFor="currently_working" className="cursor-pointer">I am currently working in this role</label>
+                    <label htmlFor="currently_working" className="cursor-pointer">{t("currently_working_role_checkbox", "I am currently working in this role")}</label>
                   </div>
 
                   <textarea
                     rows={3}
-                    placeholder="Describe your responsibilities and achievements..."
+                    placeholder={t("experience_description_placeholder", "Describe your responsibilities and achievements...")}
                     value={newExp.description}
                     onChange={(e) => setNewExp({ ...newExp, description: e.target.value })}
                     className="bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs text-slate-850 font-medium"
@@ -1521,7 +1695,7 @@ export default function SettingsTab({
                     type="button"
                     onClick={() => {
                       if (!newExp.company_name || !newExp.job_title) {
-                        triggerToast("error", "Company name and job title are required!");
+                        triggerToast("error", t("company_job_required_error", "Company name and job title are required!"));
                         return;
                       }
                       const updated = [...experiences, newExp];
@@ -1536,11 +1710,11 @@ export default function SettingsTab({
                         currently_working: false,
                         description: "",
                       });
-                      triggerToast("success", "Work history item added locally!");
+                      triggerToast("success", t("work_history_added_success", "Work history item added locally!"));
                     }}
                     className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all cursor-pointer self-start"
                   >
-                    + Add Experience to List
+                    {t("add_experience_to_list_btn", "+ Add Experience to List")}
                   </button>
                 </div>
 
@@ -1570,21 +1744,21 @@ export default function SettingsTab({
               <div className="flex flex-col gap-6">
                 {education.length > 0 && (
                   <div className="flex flex-col gap-3">
-                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">Added Academic History</h3>
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">{t("added_academic_history_header", "Added Academic History")}</h3>
                     <div className="flex flex-col gap-2.5">
                       {education.map((edu, idx) => (
                         <div key={idx} className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl flex justify-between items-start gap-4">
                           <div className="min-w-0">
-                            <h4 className="text-sm font-extrabold text-slate-805">{edu.degree} in {edu.field_of_study}</h4>
+                            <h4 className="text-sm font-extrabold text-slate-805">{edu.degree} {t("in_study_field", "in")} {edu.field_of_study}</h4>
                             <p className="text-xs text-slate-500 font-bold mt-0.5">{edu.institution_name}</p>
                             <p className="text-[10px] text-slate-400 font-semibold mt-1">
-                              Graduation: {edu.start_year} - {edu.end_year}
+                              {t("graduation_label", "Graduation:")} {edu.start_year} - {edu.end_year}
                             </p>
                           </div>
                           <button
                             onClick={() => deleteEducation(idx)}
                             className="text-rose-600 bg-rose-50 border border-rose-200/40 p-2 rounded-lg hover:bg-rose-100 cursor-pointer shrink-0 transition-all flex items-center justify-center"
-                            title="Delete"
+                            title={t("delete_label", "Delete")}
                           >
                             <FiTrash2 className="w-4 h-4" />
                           </button>
@@ -1595,23 +1769,23 @@ export default function SettingsTab({
                 )}
 
                 <div className="border border-slate-200/80 bg-slate-50/50 p-5 rounded-xl flex flex-col gap-4">
-                  <h3 className="text-xs font-black text-slate-800">Add Academic History</h3>
+                  <h3 className="text-xs font-black text-slate-800">{t("add_academic_history_header", "Add Academic History")}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1.5 md:col-span-2 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Institution Name</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("institution_name_label", "Institution Name")}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Stanford University"
+                        placeholder={t("institution_name_placeholder", "e.g. Stanford University")}
                         value={newEdu.institution_name}
                         onChange={(e) => setNewEdu({ ...newEdu, institution_name: e.target.value })}
                         className="bg-white border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-850 font-bold"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Degree</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("degree_label", "Degree")}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Bachelor of Science"
+                        placeholder={t("degree_placeholder", "e.g. Bachelor of Science")}
                         value={newEdu.degree}
                         onChange={(e) => setNewEdu({ ...newEdu, degree: e.target.value })}
                         className="bg-white border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-850 font-bold"
@@ -1621,17 +1795,17 @@ export default function SettingsTab({
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Field of Study</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("field_of_study_label", "Field of Study")}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Computer Science"
+                        placeholder={t("field_of_study_placeholder", "e.g. Computer Science")}
                         value={newEdu.field_of_study}
                         onChange={(e) => setNewEdu({ ...newEdu, field_of_study: e.target.value })}
                         className="bg-white border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-850 font-bold"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Start Year</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("start_year_label", "Start Year")}</label>
                       <input
                         type="number"
                         value={newEdu.start_year}
@@ -1640,7 +1814,7 @@ export default function SettingsTab({
                       />
                     </div>
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">End Year (Expected)</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("end_year_label", "End Year (Expected)")}</label>
                       <input
                         type="number"
                         value={newEdu.end_year}
@@ -1654,7 +1828,7 @@ export default function SettingsTab({
                     type="button"
                     onClick={() => {
                       if (!newEdu.institution_name || !newEdu.degree) {
-                        triggerToast("error", "Institution name and Degree level are required!");
+                        triggerToast("error", t("institution_degree_required_error", "Institution name and Degree level are required!"));
                         return;
                       }
                       const updated = [...education, newEdu];
@@ -1667,11 +1841,11 @@ export default function SettingsTab({
                         start_year: 2022,
                         end_year: 2026,
                       });
-                      triggerToast("success", "Education history item added locally!");
+                      triggerToast("success", t("education_added_success", "Education history item added locally!"));
                     }}
                     className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all cursor-pointer self-start"
                   >
-                    + Add Education to List
+                    {t("add_education_to_list_btn", "+ Add Education to List")}
                   </button>
                 </div>
 
@@ -1680,7 +1854,7 @@ export default function SettingsTab({
                     onClick={() => setProfileStep(2)}
                     className="text-slate-500 hover:text-slate-800 text-xs font-extrabold whitespace-nowrap shrink-0"
                   >
-                    ← Previous Step
+                    {t("previous_step_btn", "← Previous Step")}
                   </button>
                   <button
                     onClick={async () => {
@@ -1689,7 +1863,7 @@ export default function SettingsTab({
                     }}
                     className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
                   >
-                    <span>Save & Continue</span>
+                    <span>{t("save_continue_btn", "Save & Continue")}</span>
                     <span className="text-xxs">→</span>
                   </button>
                 </div>
@@ -1701,23 +1875,23 @@ export default function SettingsTab({
               <div className="flex flex-col gap-6">
                 {certifications.length > 0 && (
                   <div className="flex flex-col gap-3">
-                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">Added Certifications</h3>
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">{t("added_certifications_header", "Added Certifications")}</h3>
                     <div className="flex flex-col gap-2.5">
                       {certifications.map((cert, idx) => (
                         <div key={idx} className="bg-slate-50 border border-slate-200/60 p-4 rounded-xl flex justify-between items-start gap-4">
                           <div className="min-w-0">
                             <h4 className="text-sm font-extrabold text-slate-800">{cert.certificate_name}</h4>
-                            <p className="text-xs text-slate-505 font-bold mt-0.5">{cert.issuing_organization} • Issued: {cert.issue_date}</p>
+                            <p className="text-xs text-slate-505 font-bold mt-0.5">{cert.issuing_organization} • {t("issued_label", "Issued")}: {cert.issue_date}</p>
                             {cert.credential_url && (
                               <a href={ensureAbsoluteUrl(cert.credential_url)} target="_blank" rel="noreferrer" className="text-xxs text-primary font-bold hover:underline block mt-1">
-                                Verification URL Link ↗
+                                {t("verification_url_link", "Verification URL Link ↗")}
                               </a>
                             )}
                           </div>
                           <button
                             onClick={() => deleteCertification(idx)}
                             className="text-rose-600 bg-rose-50 border border-rose-200/40 p-2 rounded-lg hover:bg-rose-100 cursor-pointer shrink-0 transition-all flex items-center justify-center"
-                            title="Delete"
+                            title={t("delete_label", "Delete")}
                           >
                             <FiTrash2 className="w-4 h-4" />
                           </button>
@@ -1728,23 +1902,23 @@ export default function SettingsTab({
                 )}
 
                 <div className="border border-slate-200/80 bg-slate-50/50 p-5 rounded-xl flex flex-col gap-4">
-                  <h3 className="text-xs font-black text-slate-800">Add Professional Certification</h3>
+                  <h3 className="text-xs font-black text-slate-800">{t("add_professional_certification_header", "Add Professional Certification")}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Certificate Name</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("certificate_name_label", "Certificate Name")}</label>
                       <input
                         type="text"
-                        placeholder="e.g. AWS Solutions Architect"
+                        placeholder={t("certificate_name_placeholder", "e.g. AWS Solutions Architect")}
                         value={newCert.certificate_name}
                         onChange={(e) => setNewCert({ ...newCert, certificate_name: e.target.value })}
                         className="bg-white border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-850 font-bold"
                       />
                     </div>
                     <div className="flex flex-col gap-1.5 text-left">
-                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">Issuing Organization</label>
+                      <label className="text-[10px] font-extrabold text-slate-400 uppercase">{t("issuing_organization_label", "Issuing Organization")}</label>
                       <input
                         type="text"
-                        placeholder="e.g. Amazon Web Services"
+                        placeholder={t("issuing_organization_placeholder", "e.g. Amazon Web Services")}
                         value={newCert.issuing_organization}
                         onChange={(e) => setNewCert({ ...newCert, issuing_organization: e.target.value })}
                         className="bg-white border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-850 font-bold"
@@ -1754,7 +1928,7 @@ export default function SettingsTab({
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Issue Date</span>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">{t("issue_date_label", "Issue Date")}</span>
                       <input
                         type="date"
                         value={newCert.issue_date}
@@ -1763,10 +1937,10 @@ export default function SettingsTab({
                       />
                     </div>
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Credential URL</span>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">{t("credential_url_label", "Credential URL")}</span>
                       <input
                         type="url"
-                        placeholder="https://credly.com/..."
+                        placeholder={t("credential_url_placeholder", "https://credly.com/...")}
                         value={newCert.credential_url}
                         onChange={(e) => setNewCert({ ...newCert, credential_url: e.target.value })}
                         className="bg-white border border-slate-250 rounded-xl px-3 py-2.5 text-xs text-slate-850 font-medium"
@@ -1778,7 +1952,7 @@ export default function SettingsTab({
                     type="button"
                     onClick={() => {
                       if (!newCert.certificate_name || !newCert.issuing_organization) {
-                        triggerToast("error", "Certificate name and Issuing org are required!");
+                        triggerToast("error", t("certificate_issuing_required_error", "Certificate name and Issuing org are required!"));
                         return;
                       }
                       const updated = [...certifications, newCert];
@@ -1790,11 +1964,11 @@ export default function SettingsTab({
                         issue_date: "",
                         credential_url: "",
                       });
-                      triggerToast("success", "Certification added locally!");
+                      triggerToast("success", t("certification_added_success", "Certification added locally!"));
                     }}
                     className="bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 py-2.5 px-4 rounded-xl text-xs font-extrabold transition-all cursor-pointer self-start"
                   >
-                    + Add Certification to List
+                    {t("add_certification_to_list_btn", "+ Add Certification to List")}
                   </button>
                 </div>
 
@@ -1803,7 +1977,7 @@ export default function SettingsTab({
                     onClick={() => setProfileStep(3)}
                     className="text-slate-500 hover:text-slate-800 text-xs font-extrabold"
                   >
-                    ← Previous Step
+                    {t("previous_step_btn", "← Previous Step")}
                   </button>
                   <button
                     onClick={async () => {
@@ -1812,7 +1986,7 @@ export default function SettingsTab({
                     }}
                     className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                   >
-                    <span>Save & Continue</span>
+                    <span>{t("save_continue_btn", "Save & Continue")}</span>
                     <span className="text-xxs">→</span>
                   </button>
                 </div>
@@ -1823,7 +1997,7 @@ export default function SettingsTab({
             {userRole !== "client" && profileStep === 5 && (
               <div className="flex flex-col gap-6">
                 <p className="text-xs text-slate-500 font-semibold leading-relaxed text-left">
-                  Select tags representing your expert programming languages, frameworks, or design systems.
+                  {t("select_skills_tags_desc", "Select tags representing your expert programming languages, frameworks, or design systems.")}
                 </p>
 
                 <div className="flex flex-wrap gap-2.5">
@@ -1857,7 +2031,7 @@ export default function SettingsTab({
                     onClick={() => setProfileStep(4)}
                     className="text-slate-500 hover:text-slate-800 text-xs font-bold"
                   >
-                    ← Previous Step
+                    {t("previous_step_btn", "← Previous Step")}
                   </button>
                   <button
                     onClick={async () => {
@@ -1866,7 +2040,7 @@ export default function SettingsTab({
                     }}
                     className="bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs px-6 py-3 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                   >
-                    <span>Save & Continue</span>
+                    <span>{t("save_continue_btn", "Save & Continue")}</span>
                     <span className="text-xxs text-white">→</span>
                   </button>
                 </div>
@@ -1878,11 +2052,11 @@ export default function SettingsTab({
               <div className="flex flex-col gap-6 text-left">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                   <div>
-                    <h3 className="text-base font-extrabold text-slate-850">Contact & Account Verification</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">Verify your registered email address and mobile phone number with 6-digit OTP codes.</p>
+                    <h3 className="text-base font-extrabold text-slate-855">{t("contact_verification_header", "Contact & Account Verification")}</h3>
+                    <p className="text-xs text-slate-404 mt-0.5">{t("contact_verification_desc", "Verify your registered email address and mobile phone number with 6-digit OTP codes.")}</p>
                   </div>
                   <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider ${emailVerified && phoneVerified ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
-                    {emailVerified && phoneVerified ? "100% Verified" : "Pending Verification"}
+                    {emailVerified && phoneVerified ? t("verified_100_percent", "100% Verified") : t("pending_verification", "Pending Verification")}
                   </span>
                 </div>
 
@@ -1906,15 +2080,15 @@ export default function SettingsTab({
                     <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                       <div className="flex items-center gap-2.5">
                         <FiMail className="w-4 h-4 text-teal-600" />
-                        <span className="text-xs font-extrabold text-slate-800">Email Address</span>
+                        <span className="text-xs font-extrabold text-slate-800">{t("email_address_label", "Email Address")}</span>
                       </div>
                       {emailVerified ? (
                         <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                          <FiCheck className="w-3 h-3" /> Verified
+                          <FiCheck className="w-3 h-3" /> {t("verified_status", "Verified")}
                         </span>
                       ) : (
                         <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                          Unverified
+                          {t("unverified_status", "Unverified")}
                         </span>
                       )}
                     </div>
@@ -1937,12 +2111,12 @@ export default function SettingsTab({
                               {sendingEmailOtp ? (
                                 <>
                                   <FiLoader className="w-3.5 h-3.5 animate-spin" />
-                                  <span>Sending Email OTP...</span>
+                                  <span>{t("sending_email_otp", "Sending Email OTP...")}</span>
                                 </>
                               ) : (
                                 <>
                                   <FiSend className="w-3.5 h-3.5 text-white" />
-                                  <span className="text-white">Send Email OTP</span>
+                                  <span className="text-white">{t("send_email_otp_btn", "Send Email OTP")}</span>
                                 </>
                               )}
                             </button>
@@ -1952,7 +2126,7 @@ export default function SettingsTab({
                                 <input
                                   type="text"
                                   maxLength={6}
-                                  placeholder="Enter 6-digit OTP"
+                                  placeholder={t("enter_otp_placeholder", "Enter 6-digit OTP")}
                                   value={emailOtp}
                                   onChange={(e) => setEmailOtp(e.target.value)}
                                   className="flex-1 bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs font-mono font-bold text-center tracking-widest"
@@ -1966,10 +2140,10 @@ export default function SettingsTab({
                                   {verifyingEmailOtp ? (
                                     <>
                                       <FiLoader className="w-3 h-3 animate-spin text-white" />
-                                      <span className="text-white">Verifying...</span>
+                                      <span className="text-white">{t("verifying_otp_status", "Verifying...")}</span>
                                     </>
                                   ) : (
-                                    <span className="text-white">Verify</span>
+                                    <span className="text-white">{t("verify_btn", "Verify")}</span>
                                   )}
                                 </button>
                               </div>
@@ -1979,7 +2153,7 @@ export default function SettingsTab({
                                 onClick={handleSendEmailOtp}
                                 className="text-[11px] font-bold text-slate-400 hover:text-slate-600 text-left border-none bg-transparent cursor-pointer disabled:opacity-50"
                               >
-                                {sendingEmailOtp ? "Resending Email OTP..." : "Resend OTP"}
+                                {sendingEmailOtp ? t("resending_email_otp", "Resending Email OTP...") : t("resend_otp_btn", "Resend OTP")}
                               </button>
                             </div>
                           )}
@@ -1993,15 +2167,15 @@ export default function SettingsTab({
                     <div className="flex justify-between items-center pb-3 border-b border-slate-100">
                       <div className="flex items-center gap-2.5">
                         <FiPhone className="w-4 h-4 text-teal-600" />
-                        <span className="text-xs font-extrabold text-slate-800">Mobile Phone Number</span>
+                        <span className="text-xs font-extrabold text-slate-800">{t("mobile_phone_number_label", "Mobile Phone Number")}</span>
                       </div>
                       {phoneVerified ? (
                         <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                          <FiCheck className="w-3 h-3" /> Verified
+                          <FiCheck className="w-3 h-3" /> {t("verified_status", "Verified")}
                         </span>
                       ) : (
                         <span className="text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-                          Unverified
+                          {t("unverified_status", "Unverified")}
                         </span>
                       )}
                     </div>
@@ -2043,12 +2217,12 @@ export default function SettingsTab({
                               {sendingPhoneOtp ? (
                                 <>
                                   <FiLoader className="w-3.5 h-3.5 animate-spin" />
-                                  <span>Sending Mobile OTP...</span>
+                                  <span>{t("sending_mobile_otp", "Sending Mobile OTP...")}</span>
                                 </>
                               ) : (
                                 <>
                                   <FiSend className="w-3.5 h-3.5 text-white" />
-                                  <span className="text-white">Send Mobile OTP</span>
+                                  <span className="text-white">{t("send_mobile_otp_btn", "Send Mobile OTP")}</span>
                                 </>
                               )}
                             </button>
@@ -2058,7 +2232,7 @@ export default function SettingsTab({
                                 <input
                                   type="text"
                                   maxLength={6}
-                                  placeholder="Enter 6-digit OTP"
+                                  placeholder={t("enter_otp_placeholder", "Enter 6-digit OTP")}
                                   value={phoneOtp}
                                   onChange={(e) => setPhoneOtp(e.target.value)}
                                   className="flex-1 bg-white border border-slate-250 rounded-xl px-3 py-2 text-xs font-mono font-bold text-center tracking-widest"
@@ -2072,10 +2246,10 @@ export default function SettingsTab({
                                   {verifyingPhoneOtp ? (
                                     <>
                                       <FiLoader className="w-3 h-3 animate-spin text-white" />
-                                      <span className="text-white">Verifying...</span>
+                                      <span className="text-white">{t("verifying_otp_status", "Verifying...")}</span>
                                     </>
                                   ) : (
-                                    <span className="text-white">Verify</span>
+                                    <span className="text-white">{t("verify_btn", "Verify")}</span>
                                   )}
                                 </button>
                               </div>
@@ -2085,7 +2259,7 @@ export default function SettingsTab({
                                 onClick={handleSendPhoneOtp}
                                 className="text-[11px] font-bold text-slate-400 hover:text-slate-600 text-left border-none bg-transparent cursor-pointer disabled:opacity-50"
                               >
-                                {sendingPhoneOtp ? "Resending Mobile OTP..." : "Resend OTP"}
+                                {sendingPhoneOtp ? t("resending_mobile_otp", "Resending Mobile OTP...") : t("resend_otp_btn", "Resend OTP")}
                               </button>
                             </div>
                           )}
@@ -2101,7 +2275,7 @@ export default function SettingsTab({
                     onClick={() => setProfileStep(userRole === "client" ? 3 : 5)}
                     className="text-slate-500 hover:text-slate-800 text-xs font-bold"
                   >
-                    ← Previous Step
+                    {t("previous_step_btn", "← Previous Step")}
                   </button>
                   <button
                     type="button"
@@ -2112,7 +2286,7 @@ export default function SettingsTab({
                         await handleSaveStep(5);
                       }
                       localStorage.setItem("onboarding_completed", "true");
-                      triggerToast("success", "Profile setup & verification completed!");
+                      triggerToast("success", t("profile_setup_completed_success", "Profile setup & verification completed!"));
                       setTimeout(() => {
                         setActiveTab("workspace");
                         if (typeof window !== "undefined") {
@@ -2123,7 +2297,7 @@ export default function SettingsTab({
                     className="bg-teal-700 hover:bg-teal-800 text-white font-black text-xs px-8 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer flex items-center gap-2"
                   >
                     <FiCheckCircle className="w-4 h-4 shrink-0 text-white" />
-                    <span className="text-white">Complete Profile Setup</span>
+                    <span className="text-white">{t("complete_profile_setup_btn", "Complete Profile Setup")}</span>
                   </button>
                 </div>
               </div>
@@ -2854,18 +3028,43 @@ export default function SettingsTab({
                     <div className="flex flex-col gap-5">
 
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div className="flex flex-col gap-1.5 text-left">
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">First Name</label>
+                          <input
+                            type="text"
+                            value={profileBasics.first_name || ""}
+                            onChange={(e) => setProfileBasics({ ...profileBasics, first_name: e.target.value })}
+                            placeholder="e.g. Alex"
+                            className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 text-left">
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Last Name</label>
+                          <input
+                            type="text"
+                            value={profileBasics.last_name || ""}
+                            onChange={(e) => setProfileBasics({ ...profileBasics, last_name: e.target.value })}
+                            placeholder="e.g. Rivera"
+                            className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
+                          />
+                        </div>
+
                         <div className="flex flex-col gap-1.5 text-left">
                           <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Display Name</label>
                           <input
                             type="text"
+                            maxLength={20}
                             value={profileBasics.display_name || ""}
                             onChange={(e) => handleDisplayFreelancerNameChange(e.target.value)}
                             placeholder="e.g. Alex Rivera"
                             className="bg-slate-50 border border-slate-250 hover:border-slate-350 rounded-xl px-4 py-3 text-xs focus:outline-none focus:border-primary/50 focus:bg-white transition-all text-slate-855 font-bold"
                           />
                         </div>
+                      </div>
 
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div className="flex flex-col gap-1.5 text-left">
                           <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide">Profile URL Slug</label>
                           <div className="relative">

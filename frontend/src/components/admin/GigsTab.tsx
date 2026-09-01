@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Table from "@/components/Table";
 import { FiEye, FiEdit, FiTrash2, FiX, FiCheck, FiImage, FiPlus, FiExternalLink, FiUser, FiClock, FiRefreshCw, FiDollarSign } from "react-icons/fi";
 import { API_BASE_URL } from "@/config/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface GigsTabProps {
   gigsSearch: string;
@@ -35,6 +36,7 @@ export default function GigsTab({
   handleDeleteGig,
   categoriesList = []
 }: GigsTabProps) {
+  const { t } = useLanguage();
   // Modal states
   const [selectedViewGig, setSelectedViewGig] = useState<any | null>(null);
   const [selectedEditGig, setSelectedEditGig] = useState<any | null>(null);
@@ -197,15 +199,15 @@ export default function GigsTab({
 
   const gigColumns = [
     {
-      header: "S.No",
+      header: t("s_no", "S.No"),
       accessor: (row: any, idx: number) => ((gigsPage - 1) * itemsPerPage) + idx + 1
     },
     {
-      header: "Gig Listing",
+      header: t("admin_gig_listing_header", "Gig Listing"),
       accessor: (row: any) => {
         const coverSrc = getGigCover(row);
         return (
-          <div className="flex items-center gap-3 py-1">
+          <div className="flex items-center gap-3 py-1 text-left rtl:text-right">
             <div className="w-12 h-10 rounded-lg overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 border border-slate-200 dark:border-zinc-700 shadow-xs">
               <img
                 src={coverSrc}
@@ -230,9 +232,9 @@ export default function GigsTab({
       }
     },
     {
-      header: "Freelancer",
+      header: t("freelancer", "Freelancer"),
       accessor: (row: any) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-left rtl:text-right">
           {row.freelancer_image ? (
             <img src={resolveImgUrl(row.freelancer_image)} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
           ) : (
@@ -241,21 +243,21 @@ export default function GigsTab({
             </div>
           )}
           <span className="text-xs font-semibold text-slate-700 dark:text-zinc-300 truncate max-w-[120px]">
-            {row.freelancer_name || "Unknown"}
+            {row.freelancer_name || t("unknown", "Unknown")}
           </span>
         </div>
       )
     },
     {
-      header: "Category",
+      header: t("category", "Category"),
       accessor: (row: any) => (
         <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300">
-          {row.category_name || row.sub_category_name || "Uncategorized"}
+          {row.category_name || row.sub_category_name || t("uncategorized", "Uncategorized")}
         </span>
       )
     },
     {
-      header: "Price",
+      header: t("price", "Price"),
       accessor: (row: any) => (
         <span className="font-extrabold text-teal-700 dark:text-teal-400 text-xs">
           ${Number(row.price).toLocaleString()}
@@ -263,26 +265,26 @@ export default function GigsTab({
       )
     },
     {
-      header: "Status",
+      header: t("status_label", "Status"),
       accessor: (row: any) => {
         const isAct = row.status?.toLowerCase() === "active";
         return (
           <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
             isAct ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"
           }`}>
-            {row.status || "Inactive"}
+            {isAct ? t("status_active", "Active") : t("status_inactive", "Inactive")}
           </span>
         );
       }
     },
     {
-      header: "Actions",
+      header: t("actions", "Actions"),
       accessor: (row: any) => (
         <div className="flex items-center justify-center gap-1.5 select-none">
           {/* View Details */}
           <button
             onClick={() => { setSelectedViewGig(row); setActiveGalleryIndex(0); }}
-            title="View Full Details"
+            title={t("view_details", "View Details")}
             className="p-1.5 text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg cursor-pointer transition-colors bg-white dark:bg-zinc-900"
           >
             <FiEye className="w-3.5 h-3.5 text-teal-600" />
@@ -291,7 +293,7 @@ export default function GigsTab({
           {/* Edit Gig */}
           <button
             onClick={() => openEditModal(row)}
-            title="Edit Gig Details"
+            title={t("edit_gig_details", "Edit Gig Details")}
             className="p-1.5 text-xs font-bold text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg cursor-pointer transition-colors bg-white dark:bg-zinc-900"
           >
             <FiEdit className="w-3.5 h-3.5 text-indigo-600" />
@@ -302,14 +304,14 @@ export default function GigsTab({
             onClick={() => handleUpdateGigStatus(row.gig_id, row.status?.toLowerCase() === "active" ? "Inactive" : "Active")}
             className="px-2 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-50 border border-teal-200 rounded-lg cursor-pointer transition-colors bg-white dark:bg-zinc-900"
           >
-            {row.status?.toLowerCase() === "active" ? "Deactivate" : "Activate"}
+            {row.status?.toLowerCase() === "active" ? t("deactivate", "Deactivate") : t("activate", "Activate")}
           </button>
 
           {/* Delete */}
           <button
             onClick={() => handleDeleteGig(row.gig_id)}
-            title="Delete Gig"
-            className="p-1.5 text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg cursor-pointer transition-colors bg-white dark:bg-zinc-900"
+            title={t("delete", "Delete")}
+            className="p-1.5 text-xs font-bold text-rose-605 hover:bg-rose-50 border border-rose-200 rounded-lg cursor-pointer transition-colors bg-white dark:bg-zinc-900"
           >
             <FiTrash2 className="w-3.5 h-3.5" />
           </button>
@@ -319,11 +321,11 @@ export default function GigsTab({
   ];
 
   return (
-    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-6 shadow-xs animate-fadeIn text-left">
+    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl p-6 flex flex-col gap-6 shadow-xs animate-fadeIn text-left rtl:text-right">
       <div>
-        <h3 className="text-lg font-bold text-slate-800 dark:text-zinc-100">Gig Listings Management</h3>
+        <h3 className="text-lg font-bold text-slate-800 dark:text-zinc-100">{t("admin_gig_listings_management", "Gig Listings Management")}</h3>
         <p className="text-slate-500 dark:text-zinc-400 text-xs sm:text-sm mt-0.5">
-          View full details, gallery images, edit gig parameters, and manage active service offerings.
+          {t("admin_gig_listings_management_desc", "View full details, gallery images, edit gig parameters, and manage active service offerings.")}
         </p>
       </div>
 
@@ -331,7 +333,7 @@ export default function GigsTab({
         <div className="relative w-full md:w-72">
           <input
             type="text"
-            placeholder="Search by gig title, freelancer, category..."
+            placeholder={t("admin_search_gigs_placeholder", "Search by gig title, freelancer, category...")}
             value={gigsSearch}
             onChange={(e) => setGigsSearch(e.target.value)}
             className="w-full bg-slate-50 dark:bg-zinc-800/60 border border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-800 dark:text-zinc-100 focus:outline-none focus:border-teal-600 transition-all duration-200"
@@ -350,7 +352,7 @@ export default function GigsTab({
         onPageChange={setGigsPage}
         totalItems={filteredGigs.length}
         itemsPerPage={itemsPerPage}
-        emptyMessage="No service gig listings found."
+        emptyMessage={t("admin_no_gigs_found", "No service gig listings found.")}
       />
 
       {/* ========================================================================= */}

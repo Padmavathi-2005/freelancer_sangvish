@@ -3,6 +3,7 @@ import { FiChevronLeft, FiChevronRight, FiAlertTriangle, FiX, FiCpu } from "reac
 import UpgradeOverlay from "./UpgradeOverlay";
 import { API_URL } from "@/config/api";
 import { useLanguage } from "@/context/LanguageContext";
+import { useRouter } from "next/navigation";
 
 interface FindWorkTabProps {
   userRole: string | null;
@@ -60,6 +61,7 @@ export default function FindWorkTab({
   setSelectedFreelancerProfile,
 }: FindWorkTabProps) {
   const { t, formatPrice } = useLanguage();
+  const router = useRouter();
   const catScrollRef = useRef<HTMLDivElement>(null);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [onboardingCheckLoading, setOnboardingCheckLoading] = useState<any | null>(null);
@@ -201,32 +203,36 @@ export default function FindWorkTab({
   };
 
   // Compute displayed jobs list
-  const displayedJobs = showAiMatches
-    ? aiMatches
-    : allJobs.filter((job) => {
-        let matchesSearch = true;
-        if (jobSearchQuery.trim()) {
-          const q = jobSearchQuery.toLowerCase().trim();
-          const matchTitle = job.title?.toLowerCase().includes(q);
-          const matchDesc = job.description?.toLowerCase().includes(q);
-          const matchCategory = job.category_name?.toLowerCase().includes(q);
-          const matchSubCat = job.sub_category_name?.toLowerCase().includes(q);
-          const matchClient = (job.client_name || job.username || job.posted_by || "")?.toLowerCase().includes(q);
-          const matchBudget = (job.budget || job.max_budget) ? `${job.budget || job.max_budget}`.includes(q) || `$${job.budget || job.max_budget}`.includes(q) : false;
-          const matchType = job.project_type?.toLowerCase().includes(q);
-          const matchDuration = job.duration?.toLowerCase().includes(q) || (job.delivery_days ? `${job.delivery_days}`.includes(q) || `${job.delivery_days} days`.toLowerCase().includes(q) : false);
-          const matchLevel = job.experience_level?.toLowerCase().includes(q);
-          const matchSkills = Array.isArray(job.skills) && job.skills.some((s: any) => {
-            const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
-            return str.toLowerCase().includes(q);
-          });
+  const displayedJobs = (showAiMatches ? aiMatches : allJobs)
+    .filter((job) => {
+      // Exclude jobs the freelancer has already submitted a proposal for
+      if (appliedJobIds.has(job.job_id)) return false;
 
-          matchesSearch = matchTitle || matchDesc || matchCategory || matchSubCat || matchClient || matchBudget || matchType || matchDuration || matchLevel || matchSkills;
-        }
-        const matchesCategory =
-          jobSelectedCategory === "all" || job.category_name === jobSelectedCategory;
-        return matchesSearch && matchesCategory;
-      });
+      if (showAiMatches) return true;
+
+      let matchesSearch = true;
+      if (jobSearchQuery.trim()) {
+        const q = jobSearchQuery.toLowerCase().trim();
+        const matchTitle = job.title?.toLowerCase().includes(q);
+        const matchDesc = job.description?.toLowerCase().includes(q);
+        const matchCategory = job.category_name?.toLowerCase().includes(q);
+        const matchSubCat = job.sub_category_name?.toLowerCase().includes(q);
+        const matchClient = (job.client_name || job.username || job.posted_by || "")?.toLowerCase().includes(q);
+        const matchBudget = (job.budget || job.max_budget) ? `${job.budget || job.max_budget}`.includes(q) || `$${job.budget || job.max_budget}`.includes(q) : false;
+        const matchType = job.project_type?.toLowerCase().includes(q);
+        const matchDuration = job.duration?.toLowerCase().includes(q) || (job.delivery_days ? `${job.delivery_days}`.includes(q) || `${job.delivery_days} days`.toLowerCase().includes(q) : false);
+        const matchLevel = job.experience_level?.toLowerCase().includes(q);
+        const matchSkills = Array.isArray(job.skills) && job.skills.some((s: any) => {
+          const str = typeof s === "object" && s !== null ? s.skill_name || s.name || "" : `${s}`;
+          return str.toLowerCase().includes(q);
+        });
+
+        matchesSearch = matchTitle || matchDesc || matchCategory || matchSubCat || matchClient || matchBudget || matchType || matchDuration || matchLevel || matchSkills;
+      }
+      const matchesCategory =
+        jobSelectedCategory === "all" || job.category_name === jobSelectedCategory;
+      return matchesSearch && matchesCategory;
+    });
 
   const handleBidClick = async (e: React.MouseEvent, job: any) => {
     e.stopPropagation();
@@ -588,16 +594,19 @@ export default function FindWorkTab({
                     setProposalError("");
                     setShowProposalModal(true);
                   }
+                } else {
+                  setActiveTab("proposals");
+                  router.push(`/dashboard/proposals?job_id=${job.job_id}`);
                 }
               };
               return (
                 <div
                   key={job.job_id}
                   onClick={handleCardClick}
-                  className={`bg-white border rounded-xl p-6 shadow-sm transition-all duration-300 flex flex-col gap-4 relative overflow-hidden ${
+                  className={`bg-white border rounded-xl p-6 shadow-sm transition-all duration-300 flex flex-col gap-4 relative overflow-hidden cursor-pointer ${
                     isApplied
-                      ? "border-emerald-200 bg-emerald-50/20"
-                      : "border-slate-200/80 hover:shadow-md cursor-pointer hover:border-teal-600/40"
+                      ? "border-emerald-200 bg-emerald-50/20 hover:bg-emerald-50/40 hover:shadow-md"
+                      : "border-slate-200/80 hover:shadow-md hover:border-teal-600/40"
                   }`}
                 >
                   {/* Top accent bar — green if applied, brand gradient otherwise */}
@@ -688,67 +697,70 @@ export default function FindWorkTab({
                   </div>
                 )}
                 <div className="flex flex-wrap items-center justify-between pt-4 border-t border-slate-100 mt-2 gap-4">
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-slate-500 text-xxs font-semibold">
-                    <div className="flex items-center gap-1.5">
-                      <i className="fa-solid fa-wallet text-slate-400"></i>
-                      <span>{t("budget_label", "Budget")}: <strong className="text-slate-700">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-slate-500 text-[11px] font-medium">
+                    <div className="flex items-center gap-1">
+                      <i className="fa-solid fa-wallet text-[11px] text-slate-400"></i>
+                      <span>{t("budget_label", "Budget")}: <span className="font-bold text-slate-800">
                         {job.min_budget && job.max_budget 
                           ? `$${parseFloat(job.min_budget).toLocaleString()} - $${parseFloat(job.max_budget).toLocaleString()}`
                           : `$${parseFloat(job.budget).toLocaleString()}`}
                         {job.project_type === "Hourly" ? " / hr" : ""}
-                      </strong></span>
+                      </span></span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <i className="fa-solid fa-graduation-cap text-slate-400"></i>
-                      <span>{t("experience_required_label", "Experience Required:")} <strong className="text-slate-700">{job.experience_level && job.experience_level !== "null" ? job.experience_level : t("any_experience", "Any Experience")}</strong></span>
+                    <div className="flex items-center gap-1">
+                      <i className="fa-solid fa-graduation-cap text-[11px] text-slate-400"></i>
+                      <span>{t("experience_required_label", "Experience Required:")} <span className="font-bold text-slate-800">{job.experience_level && job.experience_level !== "null" ? job.experience_level : t("any_experience", "Any Experience")}</span></span>
                     </div>
                     {job.sub_category_name && (
-                      <div className="flex items-center gap-1.5">
-                        <i className="fa-solid fa-tags text-slate-400"></i>
-                        <span>{t("subcategory_label", "Subcategory:")} <strong className="text-slate-700">{job.sub_category_name}</strong></span>
+                      <div className="flex items-center gap-1">
+                        <i className="fa-solid fa-tags text-[11px] text-slate-400"></i>
+                        <span>{t("subcategory_label", "Subcategory:")} <span className="font-bold text-slate-800">{job.sub_category_name}</span></span>
                       </div>
                     )}
                     {job.duration && (
-                      <div className="flex items-center gap-1.5">
-                        <i className="fa-solid fa-calendar text-slate-400"></i>
-                        <span>{t("duration_label", "Duration:")} <strong className="text-slate-700">{job.duration}</strong></span>
+                      <div className="flex items-center gap-1">
+                        <i className="fa-solid fa-calendar text-[11px] text-slate-400"></i>
+                        <span>{t("duration_label", "Duration:")} <span className="font-bold text-slate-800">{job.duration}</span></span>
                       </div>
                     )}
                     {job.num_freelancers && (
-                      <div className="flex items-center gap-1.5">
-                        <i className="fa-solid fa-users text-slate-400"></i>
-                        <span>{t("freelancers_label", "Freelancers:")} <strong className="text-slate-700">{job.num_freelancers}</strong></span>
+                      <div className="flex items-center gap-1">
+                        <i className="fa-solid fa-users text-[11px] text-slate-400"></i>
+                        <span>{t("freelancers_label", "Freelancers:")} <span className="font-bold text-slate-800">{job.num_freelancers}</span></span>
                       </div>
                     )}
                     {job.project_type === "Hourly" && job.max_hours && (
-                      <div className="flex items-center gap-1.5">
-                        <i className="fa-solid fa-clock text-slate-400"></i>
-                        <span>{t("hours_limit_label", "Hours Limit:")} <strong className="text-slate-700">{job.max_hours} hrs/week</strong></span>
+                      <div className="flex items-center gap-1">
+                        <i className="fa-solid fa-clock text-[11px] text-slate-400"></i>
+                        <span>{t("hours_limit_label", "Hours Limit:")} <span className="font-bold text-slate-800">{job.max_hours} hrs/week</span></span>
                       </div>
                     )}
                     {job.project_type === "Hourly" && job.payment_mode && (
-                      <div className="flex items-center gap-1.5">
-                        <i className="fa-solid fa-money-check text-slate-400"></i>
-                        <span>{t("payout_label", "Payout:")} <strong className="text-slate-700">{job.payment_mode}</strong></span>
+                      <div className="flex items-center gap-1">
+                        <i className="fa-solid fa-money-check text-[11px] text-slate-400"></i>
+                        <span>{t("payout_label", "Payout:")} <span className="font-bold text-slate-800">{job.payment_mode}</span></span>
                       </div>
                     )}
                   </div>
-                  {isApplied ? (
-                    <button
-                      disabled
-                      className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 py-2 px-4 rounded-xl cursor-not-allowed flex items-center gap-1.5 select-none"
-                    >
-                      <i className="fa-solid fa-circle-check text-emerald-600"></i> {t("proposal_submitted_badge", "Proposal Submitted")}
-                    </button>
-                  ) : (
-                    <button
-                      disabled={onboardingCheckLoading === job.job_id}
-                      onClick={(e) => handleBidClick(e, job)}
-                      className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-2 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      <i className="fa-solid fa-paper-plane"></i> {onboardingCheckLoading === job.job_id ? t("checking_btn", "Checking...") : t("submit_proposal_btn", "Submit Proposal")}
-                    </button>
-                  )}
+
+                  <div className="ml-auto shrink-0">
+                    {isApplied ? (
+                      <button
+                        disabled
+                        className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 py-2 px-4 rounded-xl cursor-not-allowed flex items-center gap-1.5 select-none"
+                      >
+                        <i className="fa-solid fa-circle-check text-emerald-600"></i> {t("proposal_submitted_badge", "Proposal Submitted")}
+                      </button>
+                    ) : (
+                      <button
+                        disabled={onboardingCheckLoading === job.job_id}
+                        onClick={(e) => handleBidClick(e, job)}
+                        className="text-[10px] font-bold text-white bg-primary hover:bg-primary-hover py-2 px-4 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <i className="fa-solid fa-paper-plane"></i> {onboardingCheckLoading === job.job_id ? t("checking_btn", "Checking...") : t("submit_proposal_btn", "Submit Proposal")}
+                      </button>
+                    )}
+                  </div>
                   </div>
                 </div>
               );
